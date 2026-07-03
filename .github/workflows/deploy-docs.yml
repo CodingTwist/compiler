@@ -5,9 +5,10 @@ name: Deploy docs
 #
 # The site is a monorepo build: docs consumes the *built dist/* of helix (for the
 # live playground) and typedoc over helix/spool/twine (for the API reference), so
-# CI builds bottom-up: helix -> spool/twine -> docs. npm install (not `npm ci`)
-# because per-package lockfiles are gitignored. helix's build re-fetches Mojang
-# version data from misode/mcmeta at build time (needs network, which CI has).
+# CI builds bottom-up: helix -> spool/twine -> docs. Each package has its own
+# committed lockfile, so CI uses `npm ci` for reproducible installs. helix's build
+# re-fetches Mojang version data from misode/mcmeta at build time (needs network,
+# which CI has).
 
 on:
   push:
@@ -36,24 +37,24 @@ jobs:
       - name: Build helix (core compiler)
         working-directory: helix
         run: |
-          npm install
+          npm ci
           npm run build
 
       - name: Build spool
         working-directory: spool
         run: |
-          npm install
+          npm ci
           npm run build
 
       - name: Build twine
         working-directory: twine
         run: |
-          npm install
+          npm ci
           npm run build
 
       - name: Install docs deps
         working-directory: docs
-        run: npm install
+        run: npm ci
 
       - name: Generate API reference (typedoc over helix/spool/twine)
         working-directory: docs

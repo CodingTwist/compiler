@@ -116,8 +116,6 @@ export class TellrawCommand extends CommandHandler<TellrawNode> {
   private generateClick(event: ClickEvent, ctx: CodegenContext): any {
     let command: string;
 
-    // console.log("Generating click event for", event.action, "with value", event.value);
-
     if (typeof event.value === "string") {
       command = event.value;
     } else {

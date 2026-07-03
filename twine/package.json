@@ -19,8 +19,8 @@
     "docs": "typedoc"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Sam Hardy",
+  "license": "MIT",
   "dependencies": {
     "helix": "file:../helix",
     "reflect-metadata": "^0.2.2"

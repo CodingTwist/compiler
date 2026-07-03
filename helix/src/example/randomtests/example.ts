@@ -363,9 +363,7 @@ main.build((ctx) => {
 // Ship any .nbt files dropped in ./structures (e.g. example:cog for clip.swaps).
 dp.addStructures(structuresDir);
 
-dp.writeDatapack(
-  "/home/sam/.local/share/PrismLauncher/instances/Fabulously Optimized(5)/.minecraft/saves/New World/datapacks/cogs",
-);
+dp.writeDatapack("./out/cogs");
 // writeDatapack(dp, "./out/example_datapack");
 
 

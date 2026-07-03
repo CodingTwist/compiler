@@ -1,7 +1,6 @@
 dist/*
 node_modules/*
 out/*
-package-lock.json
 generated/*
 libraries/*
 versions/26.2/server-26.2.jar
