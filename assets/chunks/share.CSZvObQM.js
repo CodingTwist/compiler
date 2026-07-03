@@ -1,0 +1,1 @@
+function a(r){const e=/[#&]code=([^&]+)/.exec(r);if(!e)return null;try{const t=e[1].replace(/-/g,"+").replace(/_/g,"/"),c=atob(t),n=Uint8Array.from(c,o=>o.charCodeAt(0));return new TextDecoder().decode(n)}catch{return null}}export{a as decodeShare};
