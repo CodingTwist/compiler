@@ -4,7 +4,7 @@ Orientation for the whole repo. This is a multi-package workspace for a TypeScri
 **Minecraft-datapack compiler** and the layers built on it. Start here, then read the
 `CLAUDE.md` inside whichever package you're working in - each one has its own.
 
-## The five packages
+## The three packages
 
 They are siblings under `/home/sam/compiler`. They form a layered stack: each builds
 **only on the public API of the one below**, and the split is deliberate - the core stays
@@ -15,8 +15,6 @@ un-opinionated, the opinions live in the upper layers.
 | [`helix`](helix/CLAUDE.md) | core compiler | AST → IR → `.mcfunction` + tag JSON, version-profile aware. **Mechanism, never policy.** |
 | [`spool`](spool/CLAUDE.md) | conveniences | Opt-in `KitPlugin`s composed from helix's public API. Nothing on by default. |
 | [`twine`](twine/CLAUDE.md) | framework | The opinionated layer: NestJS-style module / area / lifecycle composition of a whole pack. |
-| [`lab`](lab/CLAUDE.md) | consumer | Sandbox of concrete features on twine + spool. Builds a playable pack. |
-| [`unravel`](unravel/CLAUDE.md) | consumer | Plain-helix worked example (`TSTrivia`), no twine/spool. Pinned to an older version profile. |
 
 The governing stance: **helix is un-opinionated, twine is opinionated, spool is the opt-in
 middle.** If something feels like a *shortcut* or a *best practice* rather than a
@@ -25,13 +23,12 @@ primitive, it does not belong in helix - push it up to spool or twine. See
 
 ## How they link (read this before debugging stale types)
 
-`spool`, `twine`, `lab`, `unravel` all depend on helix (and each other) via
-`file:../<pkg>` - they consume the **built `dist/`**, symlinked into `node_modules`, not
-the source. So:
+`spool` and `twine` depend on helix (and each other) via `file:../<pkg>` - they consume
+the **built `dist/`**, symlinked into `node_modules`, not the source. So:
 
 - After changing a package's source, **`npm run build` it** before any consumer sees the
   new types/behaviour. A stale `dist/` silently hides breaking changes.
-- Build downward-up: helix first, then spool/twine, then lab/unravel.
+- Build downward-up: helix first, then spool, then twine.
 
 ## Conventions shared across every package
 

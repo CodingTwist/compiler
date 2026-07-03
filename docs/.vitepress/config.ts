@@ -96,9 +96,7 @@ export default defineConfig({
           text: "Examples",
           items: [
             { text: "Overview", link: "/examples/" },
-            { text: "Plain helix: TSTrivia", link: "/examples/helix-trivia" },
             { text: "Spool plugin: player motion", link: "/examples/spool-player-motion" },
-            { text: "Twine module: the door", link: "/examples/twine-door" },
           ],
         },
       ],

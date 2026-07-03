@@ -18,8 +18,6 @@ Concretely:
   that dictates how a whole pack is composed - which features are enabled, how they
   nest, and when their behaviour runs. Where helix refuses to dictate structure, twine
   *is* the structure.
-- `lab` and `unravel` are consumers: `lab` is a sandbox of concrete features built on
-  twine + spool; `unravel` is a plain-helix worked example with no framework at all.
 
 ## How the layers link
 
@@ -29,7 +27,7 @@ The packages consume each other's **built `dist/`** via `file:../<pkg>` links in
 - After changing a package's source, you must rebuild it (`npm run build`) before any
   consumer sees the new types or behaviour. A stale `dist/` silently hides breaking
   changes.
-- Build **downward-up**: helix first, then spool and twine, then lab and unravel.
+- Build **downward-up**: helix first, then spool and twine.
 
 ## Compilation model (helix)
 

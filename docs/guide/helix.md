@@ -147,7 +147,5 @@ not folded into `writeDatapack`. Attach a model to an item with
 
 ## Where to go next
 
-- The [plain-helix example](/examples/helix-trivia) - a full worked pack (`TSTrivia`)
-  authored entirely against this surface.
 - The [API reference](/api/) - the authoring surface grouped by task, plus the full
   generated listing of every export.

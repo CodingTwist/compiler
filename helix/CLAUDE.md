@@ -20,7 +20,7 @@ how a pack is composed. Anything that picks a convention belongs in a layer abov
 feature feels like a shortcut or a best-practice rather than a primitive, it does **not**
 go here.
 
-Four sibling packages live beside it under `/home/sam/compiler` and consume its built
+Two sibling packages live beside it under `/home/sam/compiler` and consume its built
 `dist/` via `file:../helix` (symlinked in their `node_modules`). Each owns the opinions
 helix refuses to:
 
@@ -28,8 +28,6 @@ helix refuses to:
   shortcuts live here, not in core.
 - **`twine`** - the opinionated framework: an NestJS-style module/area/lifecycle system
   that dictates how a whole pack is composed.
-- **`lab`** - sandbox of concrete modules built on twine + spool.
-- **`unravel`** - plain-helix example pack.
 
 Each sibling has its own `CLAUDE.md`; read that for how to work in it. The rule of thumb:
 if you're about to add something *helpful* to helix, it probably belongs in `spool` or
@@ -46,7 +44,7 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
   (`src/example/randomtests/example.ts`). The examples read sibling `structures/*.nbt` assets by
   `__dirname`, which `tsc` does not copy into `dist`, so they are run from source, not from a
   `dist` build. **`src/example/` is excluded from `tsc`** (see `tsconfig.json`) - it's tsx-run dev
-  scratch. For a live display demo, see `lab`'s door module.
+  scratch.
 - `npx tsx src/example/randomtests/example.ts` - run an example directly (same thing, no data sync)
 - `npm run gen:commands` - regenerate `src/core/commands/*` + `values/resource.generated.ts` from
   version data (see landmines below)
