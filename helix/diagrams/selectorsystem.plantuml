@@ -1,0 +1,82 @@
+@startuml Selector_System
+
+title Selector System
+
+package "frontend/nodes/" {
+  class Selector {
+    - base: SelectorBase
+    - scores: Map<Objective, Range>
+    - tags: string[]
+    - limit?: number
+    - sort?: string
+    - team?: string
+    - nameValue?: string
+    --
+    + {static} allPlayers(): Selector
+    + {static} allEntities(): Selector
+    + {static} nearest(): Selector
+    + {static} random(): Selector
+    + {static} self(): Selector
+    --
+    + score(obj, range): this
+    + tag(name): this
+    + limit(n): this
+    + sort(order): this
+    + team(name): this
+    + name(name): this
+    + build(): SelectorNode
+  }
+}
+
+package "ast" {
+  class SelectorNode {
+    + type = "selector"
+    + base: SelectorBase
+    + scores: Map<Objective, Range>
+    + tags: string[]
+    + limit?: number
+    + sort?: string
+    + team?: string
+    + playerName?: string
+  }
+}
+
+package "ir/handlers/" {
+  class SelectorCommand {
+    + type = "selector"
+    + generate(node, ctx): void
+    + resolve(node: SelectorNode): string
+  }
+}
+
+package "consumers" {
+  class TellrawCommand
+  class ExecuteAsHandler
+  class TellrawNode {
+    + target: string | SelectorNode
+  }
+  class ExecuteAsNode {
+    + selector: SelectorNode
+  }
+}
+
+Selector ..> SelectorNode : build()
+SelectorCommand ..> SelectorNode : resolves to string
+TellrawCommand ..> SelectorCommand : resolve(node.target)
+ExecuteAsHandler ..> SelectorCommand : resolve(node.selector)
+TellrawNode o-- SelectorNode : target
+ExecuteAsNode o-- SelectorNode : selector
+
+note bottom of SelectorNode
+  Pure data - no methods
+  no toString(), no logic
+  IR owns serialization
+end note
+
+note bottom of Selector
+  Frontend builder only
+  call .build() to get
+  an immutable SelectorNode
+end note
+
+@enduml

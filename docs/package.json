@@ -1,0 +1,22 @@
+{
+  "name": "docs",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Documentation site for helix, spool, and twine",
+  "type": "module",
+  "scripts": {
+    "gen:api": "npm --prefix ../helix run docs && npm --prefix ../spool run docs && npm --prefix ../twine run docs && node scripts/fix-api-md.mjs && node scripts/group-api.mjs",
+    "gen:playground": "node scripts/gen-playground-assets.mjs",
+    "dev": "npm run gen:playground && vitepress dev",
+    "build": "npm run gen:playground && vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "esbuild-wasm": "^0.28.1",
+    "monaco-editor": "^0.55.1",
+    "vitepress": "^1.6.4"
+  },
+  "dependencies": {
+    "helix": "file:../helix"
+  }
+}

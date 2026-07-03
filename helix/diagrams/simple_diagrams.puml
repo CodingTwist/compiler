@@ -1,0 +1,110 @@
+@startuml Frontend
+
+
+title Frontend - Building the AST
+
+abstract class ASTNode {
+  {abstract} + type: string
+}
+
+class FunctionNode {
+  + name: string
+  + nodes: ASTNode[]
+}
+
+class FunctionContext {
+  - fn: FunctionNode
+  + emit(node: ASTNode)
+  + say(text)
+  + tellraw(target, message)
+  + ...(value)
+  + if(condition, fn): IfBuilder
+}
+
+class Datapack {
+  + name: string
+  + functions: Map<string, FunctionNode>
+  + createFunction(name): FunctionRef
+  + objective(name): Objective
+}
+
+class FunctionRef {
+  + node: FunctionNode
+  + build(ctx => void)
+}
+
+' note right of FunctionContext
+'   Every method on ctx
+'   constructs an ASTNode
+'   and pushes it into fn.nodes[]
+' end note
+
+note right of FunctionRef
+  User entry point.
+  build() wraps FunctionNode
+  in a FunctionContext and
+  hands it to the user.
+end note
+
+Datapack --> FunctionRef : createFunction()
+FunctionRef --> FunctionNode : wraps
+FunctionRef --> FunctionContext : build() creates
+FunctionContext --> FunctionNode : pushes ASTNode into
+FunctionNode --|> ASTNode
+
+@enduml
+
+
+@startuml Backend
+
+
+title Backend - Walking the AST
+
+' abstract class ASTNode {
+'   {abstract} + type: string
+' }
+
+abstract class CommandHandler {
+  {abstract} + type: string
+  {abstract} + generate(node: ASTNode, ctx: CodegenContext): void
+}
+
+class Dispatcher {
+  - handlers: Map<type, CommandHandler>
+  + dispatch(node: ASTNode, ctx: CodegenContext): void
+}
+
+class CodegenContext {
+  + lines: string[]
+  + datapack: Datapack
+  + dispatcher: Dispatcher
+  + emit(line: string): void
+}
+
+note right of Dispatcher
+  Looks up handler by node.type
+  and calls generate().
+  Handlers never import each other -
+  only Dispatcher.
+end note
+
+note right of CodegenContext
+  Passed into every handler.
+  Creating a new scratch context
+  lets any handler recursively
+  dispatch child nodes without
+  circular imports.
+end note
+
+note right of CommandHandler
+  One subclass per ASTNode type.
+  generate() emits one or more
+  mcfunction lines via ctx.emit().
+end note
+
+Dispatcher o-- CommandHandler : handlers map
+CommandHandler ..> CodegenContext : emits into
+CommandHandler ..> Dispatcher : dispatch() child nodes
+CodegenContext o-- Dispatcher : carries
+
+@enduml

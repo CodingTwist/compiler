@@ -1,0 +1,195 @@
+/**
+ * Fetch Minecraft version data from misode/mcmeta. The data is NOT vendored in
+ * this repo (it is Mojang-derived game data); it is downloaded at build time
+ * into src/versions/data/ (gitignored) and copied into dist by copy-data.mjs.
+ *
+ * REQUIRES NETWORK ACCESS.
+ *
+ *   node scripts/versions.mjs sync            # fetch any missing supported data
+ *   node scripts/versions.mjs sync --force    # re-fetch everything
+ *   node scripts/versions.mjs add <id>        # add a new supported version
+ *
+ * `sync` runs as part of `npm run build` / `npm test`; it skips versions whose
+ * data is already present, so a normal build needs no network.
+ */
+import fs from "fs";
+import path from "path";
+import {
+  CONCEPT_REGISTRIES,
+  CONCEPT_TAG_REGISTRIES,
+  idsConstName,
+  tagsConstName,
+  memberKey,
+} from "./concept-registries.mjs";
+
+const RAW = "https://raw.githubusercontent.com/misode/mcmeta";
+const VERSIONS_URL = `${RAW}/summary/versions/data.min.json`;
+
+const DATA_DIR = path.join("src", "versions", "data");
+const MANIFEST = path.join("scripts", "supported-versions.json");
+
+const sanitize = (id) => id.replace(/[.\-]/g, "_");
+const dataFile = (id) => path.join(DATA_DIR, `${sanitize(id)}.json`);
+const readManifest = () => JSON.parse(fs.readFileSync(MANIFEST, "utf-8"));
+
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`GET ${url} -> ${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+/** Download one version's combined raw data into src/versions/data/. */
+async function fetchVersion(id) {
+  const versions = await fetchJson(VERSIONS_URL);
+  const meta = versions.find((v) => v.id === id);
+  if (!meta) throw new Error(`Version "${id}" not found in mcmeta versions`);
+
+  const [registries, commands] = await Promise.all([
+    fetchJson(`${RAW}/${id}-summary/registries/data.min.json`),
+    fetchJson(`${RAW}/${id}-summary/commands/data.min.json`),
+  ]);
+
+  const data = {
+    id,
+    dataVersion: meta.data_version,
+    dataPackVersion: meta.data_pack_version,
+    dataPackVersionMinor: meta.data_pack_version_minor ?? 0,
+    // Resource packs carry a DIFFERENT pack_format from datapacks (e.g. 1.21.4
+    // data 61 / resource 46). Fall back to the data format if the summary omits
+    // it, so an older/odd version never breaks the build.
+    resourcePackVersion: meta.resource_pack_version ?? meta.data_pack_version,
+    resourcePackVersionMinor: meta.resource_pack_version_minor ?? 0,
+    registries,
+    commands,
+  };
+
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(dataFile(id), JSON.stringify(data));
+  return dataFile(id);
+}
+
+async function sync(force) {
+  for (const id of readManifest()) {
+    if (!force && fs.existsSync(dataFile(id))) {
+      console.error(`skip ${id} (data present)`);
+      continue;
+    }
+    console.error(`fetch ${id} ...`);
+    await fetchVersion(id);
+    console.error(`  wrote ${dataFile(id)}`);
+  }
+  writeIds();
+}
+
+/**
+ * Emit `src/versions/data/ids.ts`: one `<X>_IDS` const per concept registry
+ * (see scripts/concept-registries.mjs), mapping a SCREAMING_SNAKE member key to
+ * its full `minecraft:` id - e.g. `BLOCK_IDS.GRASS_BLOCK = "minecraft:grass_block"`.
+ * The value layer wraps each id in its concept type to give typed member
+ * accessors (`Block.GRASS_BLOCK`, `Enchantment.SHARPNESS`).
+ *
+ * Generated from the newest supported version as a superset - per-version
+ * correctness stays the job of the runtime registry validation in handlers.
+ * This file imports nothing (pure data), so the value layer can depend on it
+ * without an import cycle. Gitignored like the data JSON; regenerated on `sync`.
+ */
+function writeIds() {
+  const present = readManifest()
+    .map(sanitize)
+    .filter((base) => fs.existsSync(path.join(DATA_DIR, `${base}.json`)))
+    .map((base) => JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${base}.json`), "utf-8")));
+  if (present.length === 0) return;
+
+  const newest = present.reduce((a, b) => (b.dataVersion > a.dataVersion ? b : a));
+
+  // A `{ MEMBER_KEY: "minecraft:id" }` const body from a list of bare ids.
+  // Dedupe member keys (distinct ids can't collide, but guard anyway).
+  const constBody = (ids) => {
+    const seen = new Set();
+    const entries = [...ids]
+      .sort()
+      .map((id) => {
+        let key = memberKey(`minecraft:${id}`);
+        while (seen.has(key)) key += "_";
+        seen.add(key);
+        return `  ${key}: "minecraft:${id}",`;
+      })
+      .join("\n");
+    return entries ? `\n${entries}\n` : "";
+  };
+
+  const blocks = [];
+  for (const registry of CONCEPT_REGISTRIES) {
+    const regKey = registry.replace(/^minecraft:/, "");
+    const body = constBody(newest.registries[regKey] ?? []);
+    blocks.push(`export const ${idsConstName(registry)} = {${body}} as const;`);
+  }
+  // Tag namespaces (`BLOCK_TAGS.AIR = "minecraft:air"`), from the same summary's
+  // `tag/<registry>` lists. Values carry no leading `#` (like the id maps) - the
+  // value layer's `Block.tag(...)` adds it.
+  for (const registry of CONCEPT_TAG_REGISTRIES) {
+    const body = constBody(newest.registries[registry] ?? []);
+    blocks.push(`export const ${tagsConstName(registry)} = {${body}} as const;`);
+  }
+
+  const out = path.join(DATA_DIR, "ids.ts");
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(
+    out,
+    `// GENERATED by scripts/versions.mjs -- do not edit by hand.\n` +
+      `// Minecraft ids + tags (from ${newest.id}), keyed for typed member accessors:\n` +
+      `//   Block.GRASS_BLOCK   Item.DIAMOND   Enchantment.SHARPNESS   Block.tag(BLOCK_TAGS.AIR)\n` +
+      `// Pure data (no imports) so the value layer can wrap these without a cycle.\n` +
+      `// Mojang-derived data: gitignored, regenerated at build, not committed.\n\n` +
+      blocks.join("\n\n") +
+      "\n",
+  );
+  console.error(`  wrote ${out} (ids from ${newest.id})`);
+}
+
+async function add(id) {
+  console.error(`fetch ${id} ...`);
+  await fetchVersion(id);
+  console.error(`  wrote ${dataFile(id)}`);
+
+  const base = sanitize(id);
+  const tsPath = path.join("src", "versions", `${base}.ts`);
+  fs.writeFileSync(
+    tsPath,
+    `// GENERATED by scripts/versions.mjs -- do not edit by hand.
+// Source: misode/mcmeta (${id}). Data fetched into ./data/${base}.json at build.
+import { loadProfile } from "./load";
+
+export const v${base} = loadProfile("${base}.json");
+`,
+  );
+  console.error(`  wrote ${tsPath}`);
+
+  const ids = readManifest();
+  if (!ids.includes(id)) {
+    ids.push(id);
+    fs.writeFileSync(MANIFEST, JSON.stringify(ids, null, 2) + "\n");
+    console.error(`  added "${id}" to ${MANIFEST}`);
+  }
+
+  writeIds();
+
+  console.error(`\nNow add to src/versions/index.ts:`);
+  console.error(`  export { v${base} } from "./${base}";`);
+}
+
+const args = process.argv.slice(2);
+const force = args.includes("--force");
+const cmd = args.find((a) => !a.startsWith("--")) ?? "sync";
+
+const run =
+  cmd === "add"
+    ? add(args[args.indexOf("add") + 1])
+    : cmd === "sync"
+      ? sync(force)
+      : Promise.reject(new Error(`Unknown command "${cmd}"`));
+
+run.catch((err) => {
+  console.error(err.message ?? err);
+  process.exit(1);
+});

@@ -1,0 +1,72 @@
+/* Helix Compiler branding: a cyan -> violet "twist" gradient echoing the two
+   strands of the double helix in the logo. Cyan is the 5'->3' strand, violet
+   the complement; they meet on every accent in the site. */
+:root {
+  --vp-c-brand-1: #8b5cf6;
+  --vp-c-brand-2: #7c3aed;
+  --vp-c-brand-3: #6d28d9;
+  --vp-c-brand-soft: rgba(139, 92, 246, 0.14);
+
+  /* Home hero: the name itself twists cyan -> violet. */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #22d3ee 20%, #8b5cf6 82%);
+
+  /* The glow behind the logo picks up both strands. */
+  --vp-home-hero-image-background-image: linear-gradient(
+    120deg,
+    rgba(34, 211, 238, 0.5),
+    rgba(139, 92, 246, 0.5)
+  );
+  --vp-home-hero-image-filter: blur(48px);
+}
+
+.dark {
+  --vp-c-brand-1: #a78bfa;
+  --vp-c-brand-2: #8b5cf6;
+  --vp-c-brand-3: #7c3aed;
+  --vp-c-brand-soft: rgba(167, 139, 250, 0.16);
+}
+
+/* Home feature cards: make them pop with a gradient hairline border, a hover
+   lift + glow, and a title that twists cyan -> violet on hover. */
+.VPFeatures .VPFeature {
+  position: relative;
+  border: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg-soft);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  overflow: hidden;
+}
+
+/* A gradient accent bar down the left edge, revealed on hover. */
+.VPFeatures .VPFeature::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, #22d3ee, #8b5cf6);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.VPFeatures .VPFeature:hover {
+  transform: translateY(-4px);
+  border-color: transparent;
+  box-shadow:
+    0 12px 30px -12px rgba(139, 92, 246, 0.45),
+    0 0 0 1px rgba(139, 92, 246, 0.35);
+}
+
+.VPFeatures .VPFeature:hover::before {
+  opacity: 1;
+}
+
+/* Feature title = a name with a quietly muted role after it, no hyphen. */
+.VPFeatures .VPFeature .feat-role {
+  color: var(--vp-c-text-3);
+  font-weight: 400;
+}
+
+.VPFeatures .VPFeature .feat-role::before {
+  content: " · ";
+  color: var(--vp-c-divider);
+}

@@ -1,0 +1,52 @@
+@startuml IfElse_Recursion_Tree
+
+
+title Function Tree - Nested If Compilation
+
+class "main.mcfunction" as main {
+  SayNode "Hello"
+  IfElseNode (score > 20)
+  SayNode "End"
+}
+
+class "__internal_main_if_0.mcfunction" as if0 {
+  IfElseNode (score == 4)
+  SayNode "High"
+}
+
+class "__internal_main_if_0_if_0.mcfunction" as ifif0 {
+  SayNode "Exactly 4"
+}
+
+class "__internal_main_elif_0.mcfunction" as elif0 {
+  SayNode "Medium"
+  PlayerGiveNode diamond 3
+}
+
+class "__internal_main_else_0.mcfunction" as else0 {
+  SayNode "Low"
+}
+
+class "__internal_main_if_0_else_0.mcfunction" as ifelse0 {
+  SayNode "High but not 4"
+}
+
+main "if score > 20" --> if0
+main "elif score == 4" --> elif0
+main "else" --> else0
+
+if0 "if score == 4" --> ifif0
+if0 "else" --> ifelse0
+
+note bottom of main
+  compiled first by buildDatapack()
+  each IfElseNode triggers recursive
+  generateFunction() calls
+end note
+
+note bottom of ifif0
+  last node - no further
+  recursion needed
+end note
+
+@enduml

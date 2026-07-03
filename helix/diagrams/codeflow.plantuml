@@ -1,0 +1,52 @@
+@startuml Codegen_Flow
+
+title Codegen Flow
+
+start
+
+:User creates **Datapack**;
+note right
+  new Datapack("name")
+end note
+
+:User calls **createFunction()**;
+note right
+  returns FunctionRef
+  registers FunctionNode
+  auto-tags if name == "tick" / "load"
+end note
+
+:User calls **fn.build(ctx => …)**;
+note right
+  FunctionContext wraps FunctionNode
+  ctx.say(), ctx.tellraw(), ctx.if()…
+  each call pushes an ASTNode
+end note
+
+:FunctionNode holds **ASTNode[]**;
+
+:User calls **dp.writeDatapack(path)**;
+
+:buildDatapack() iterates **dp.functions**;
+
+fork
+  :generateFunction() per FunctionNode;
+  :Dispatcher.dispatch() per node;
+  :CommandHandler.generate(node, ctx);
+  :ctx.emit(mcfunction string);
+  :dp.files.set(name, lines.join);
+fork again
+  :Write **tick.json / load.json**
+  from dp.tags map;
+end fork
+
+:writeDatapack() writes all files;
+note right
+  data/<ns>/function/*.mcfunction
+  data/minecraft/tags/function/*.json
+  pack.mcmeta
+end note
+
+stop
+
+@enduml

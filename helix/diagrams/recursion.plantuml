@@ -1,0 +1,11 @@
+@startuml
+
+participant generateFunction
+participant dispatch
+participant "handler.generate" as handler
+
+generateFunction -> dispatch
+dispatch -> handler : generate()
+handler -> generateFunction : generateFunction()
+
+@enduml

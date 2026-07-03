@@ -1,0 +1,34 @@
+@startuml Layer_Overview
+
+title Layer Overview
+
+
+package "Frontend  (src/core/frontend/)" {
+  [context.ts\nFunctionContext]
+  [nodes/\nText, Score, TellrawPart\nTellrawText, Selector\nClickEvent, HoverEvent]
+}
+
+package "AST  (src/core/frontend/ast.ts)" {
+  [ASTNode subclasses\nTellrawNode, SayNode\nIfElseNode, SelectorNode\nExecuteAsNode, …]
+}
+
+package "IR  (src/core/ir/)" {
+  [handlers/\nTellrawCommand, IfHandler\nExecuteStoreHandler\nSelectorCommand, …]
+  [datapack.ts\nDatapack, Dispatcher\nCodegenContext]
+}
+
+package "Output" {
+  [data/<ns>/function/\n*.mcfunction]
+  [data/minecraft/tags/\nfunction/tick.json\nfunction/load.json]
+  [pack.mcmeta]
+}
+
+[User Code] --> [context.ts\nFunctionContext] : calls fluent API
+[context.ts\nFunctionContext] --> [ASTNode subclasses\nTellrawNode, SayNode\nIfElseNode, SelectorNode\nExecuteAsNode, …] : pushes nodes
+[nodes/\nText, Score, TellrawPart\nTellrawText, Selector\nClickEvent, HoverEvent] --> [ASTNode subclasses\nTellrawNode, SayNode\nIfElseNode, SelectorNode\nExecuteAsNode, …] : held by nodes
+[ASTNode subclasses\nTellrawNode, SayNode\nIfElseNode, SelectorNode\nExecuteAsNode, …] --> [handlers/\nTellrawCommand, IfHandler\nExecuteStoreHandler\nSelectorCommand, …] : dispatched to
+[handlers/\nTellrawCommand, IfHandler\nExecuteStoreHandler\nSelectorCommand, …] --> [data/<ns>/function/\n*.mcfunction] : emits
+[datapack.ts\nDatapack, Dispatcher\nCodegenContext] --> [data/minecraft/tags/\nfunction/tick.json\nfunction/load.json] : writes tags
+[datapack.ts\nDatapack, Dispatcher\nCodegenContext] --> [pack.mcmeta] : writes
+
+@enduml

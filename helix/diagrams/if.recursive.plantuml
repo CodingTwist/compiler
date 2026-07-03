@@ -1,0 +1,68 @@
+@startuml IfElse_Recursion_Sequence
+
+
+title generateFunction() - Recursive Compilation
+
+participant "buildDatapack()" as build
+participant "generateFunction(main)" as genmain
+participant "IfHandler" as if1
+participant "generateFunction(__if_0)" as genif
+participant "IfHandler (nested)" as if2
+participant "generateFunction(__if_0_if_0)" as genifif
+participant "dp.files" as files
+
+build -> genmain : generateFunction(main)
+note right of genmain
+  iterates main.nodes[]
+end note
+
+genmain -> if1 : dispatch(IfElseNode)
+
+group "compile then branch"
+  if1 -> genif : generateFunction(__internal_main_if_0)
+  note right of genif
+    iterates __internal_main_if_0.nodes[]
+    finds another IfElseNode inside
+  end note
+
+  genif -> if2 : dispatch(IfElseNode)
+
+  group "compile nested then branch"
+    if2 -> genifif : generateFunction(__internal_main_if_0_if_0)
+    note right of genifif
+      no more IfElseNodes
+      just leaf nodes (say, tellraw…)
+    end note
+    genifif -> files : dp.files.set("__internal_main_if_0_if_0", "say Deep")
+    if2 <-- genifif : "function ns:__internal_main_if_0_if_0"
+  end
+
+  if2 -> files : dp.files.set("__internal_main_if_0", "execute if score … run function ns:__internal_main_if_0_if_0\nsay After nested if")
+  genif <-- if2 : done
+  if1 <-- genif : "function ns:__internal_main_if_0"
+end
+
+if1 -> files : emit to main: "execute if score … run function ns:__internal_main_if_0"
+genmain <-- if1 : done
+
+build <-- genmain : dp.files.set("main", lines)
+
+note over files
+  dp.files after full compilation:
+  
+  main.mcfunction
+    execute if score rng trivia matches 20..
+      run function ns:__internal_main_if_0
+
+  __internal_main_if_0.mcfunction
+    execute if score rng trivia matches 4..4
+      run function ns:__internal_main_if_0_if_0
+    say After nested if
+
+  __internal_main_if_0_if_0.mcfunction
+    say Deep
+end note
+
+@enduml
+
+

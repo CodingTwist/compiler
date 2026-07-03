@@ -1,0 +1,84 @@
+@startuml IfElse_AST_Structure
+
+
+title IfElseNode - AST Structure
+
+class IfElseNode {
+  + type = "if_else"
+  + condition: ExpressionNode
+  + thenBody: FunctionNode
+  + elifs: ElifClause[]
+  + elseBody?: FunctionNode
+}
+
+class ElifClause {
+  + condition: ExpressionNode
+  + body: FunctionNode
+}
+
+abstract class ExpressionNode {
+  {abstract} + type: string
+}
+
+class ScoreRangeNode {
+  + type = "score_range"
+  + target: string
+  + targetObjective: Objective
+  + range: Range
+}
+
+class ScoreCompareNode {
+  + type = "score_compare"
+  + target: string
+  + targetObjective: Objective
+  + operator: "<" | "<=" | "=" | ">=" | ">"
+  + source: string
+  + sourceObjective: Objective
+}
+
+class FunctionNode {
+  + type = "function"
+  + name: string
+  + nodes: ASTNode[]
+}
+
+class Range {
+  + min?: number
+  + max?: number
+  + toString(): string
+}
+
+IfElseNode "1" o-- "1" ExpressionNode : condition
+IfElseNode "1" o-- "1" FunctionNode : thenBody
+IfElseNode "1" o-- "0..*" ElifClause : elifs
+IfElseNode "1" o-- "0..1" FunctionNode : elseBody
+
+ElifClause "1" o-- "1" ExpressionNode : condition
+ElifClause "1" o-- "1" FunctionNode : body
+
+ExpressionNode <|-- ScoreRangeNode
+ExpressionNode <|-- ScoreCompareNode
+
+ScoreRangeNode o-- Range : range
+
+note right of IfElseNode
+  Each branch body is its own
+  named FunctionNode compiled
+  to a separate .mcfunction file
+end note
+
+note right of ElifClause
+  Arbitrary number of elif
+  branches, each with its
+  own condition + body
+end note
+
+note bottom of ScoreRangeNode
+  Covers: equal(n), greaterThan(n),
+  lessThan(n) - all compile to
+  scoreboard range checks
+end note
+
+@enduml
+
+

@@ -1,0 +1,10 @@
+node_modules
+api/helix
+api/spool
+api/twine
+.vitepress/cache
+.vitepress/dist
+.vitepress/api-sidebar.json
+package-lock.json
+public/versions
+public/helix-types.json

@@ -1,0 +1,72 @@
+name: Deploy docs
+
+# Build the VitePress site (docs/) and publish it to the gh-pages branch, which
+# GitHub Pages serves at helix.gamingtwist.uk (see docs/public/CNAME).
+#
+# The site is a monorepo build: docs consumes the *built dist/* of helix (for the
+# live playground) and typedoc over helix/spool/twine (for the API reference), so
+# CI builds bottom-up: helix -> spool/twine -> docs. npm install (not `npm ci`)
+# because per-package lockfiles are gitignored. helix's build re-fetches Mojang
+# version data from misode/mcmeta at build time (needs network, which CI has).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# peaceiris/actions-gh-pages needs write access to push the gh-pages branch.
+permissions:
+  contents: write
+
+# Never run two deploys at once; a newer push supersedes an in-flight build.
+concurrency:
+  group: deploy-docs
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build helix (core compiler)
+        working-directory: helix
+        run: |
+          npm install
+          npm run build
+
+      - name: Build spool
+        working-directory: spool
+        run: |
+          npm install
+          npm run build
+
+      - name: Build twine
+        working-directory: twine
+        run: |
+          npm install
+          npm run build
+
+      - name: Install docs deps
+        working-directory: docs
+        run: npm install
+
+      - name: Generate API reference (typedoc over helix/spool/twine)
+        working-directory: docs
+        run: npm run gen:api
+
+      - name: Build the site (playground assets + vitepress build)
+        working-directory: docs
+        run: npm run build
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/.vitepress/dist
+          # CNAME travels via docs/public/CNAME -> dist/CNAME, so the custom
+          # domain survives every deploy.

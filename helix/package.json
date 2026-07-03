@@ -1,0 +1,67 @@
+{
+  "name": "helix",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node scripts/versions.mjs sync && rm -rf dist && tsc && node scripts/copy-data.mjs",
+    "gen:commands": "node scripts/gen-commands.mjs",
+    "watch": "tsc -w",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "example": "node scripts/versions.mjs sync && tsx src/example/randomtests/example.ts",
+    "test": "vitest",
+    "pretest": "node scripts/versions.mjs sync",
+    "docs": "typedoc"
+  },
+  "keywords": [],
+  "author": "Sam Hardy",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^25.9.4",
+    "@typescript-eslint/eslint-plugin": "^8.52.0",
+    "@typescript-eslint/parser": "^8.52.0",
+    "eslint": "^9.39.2",
+    "globals": "^17.0.0",
+    "jiti": "^2.6.1",
+    "prettier": "^3.7.4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.22.4",
+    "typedoc": "^0.28.0",
+    "typedoc-plugin-markdown": "^4.3.0",
+    "typedoc-vitepress-theme": "^1.1.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.52.0",
+    "vitest": "^4.0.18"
+  },
+  "oclif": {
+    "bin": "helix",
+    "commands": "./dist/commands",
+    "dirname": "helix",
+    "topicSeparator": " "
+  },
+  "dependencies": {
+    "@oclif/core": "^4.8.0"
+  },
+  "optionalDependencies": {
+    "@spyglassmc/core": "^0.4.50",
+    "@spyglassmc/java-edition": "^0.3.63",
+    "@spyglassmc/mcdoc": "^0.3.54"
+  }
+}

@@ -1,0 +1,77 @@
+@startuml Tellraw_System
+
+
+title Tellraw System
+
+package "frontend/nodes" {
+  abstract class TellrawPart {
+    # boldFlag?: boolean
+    # colorValue?: string
+    + clickEvent?: ClickEvent
+    + hoverEvent?: HoverEvent
+    + setBold(value?): this
+    + setColor(color): this
+    + setClick(event): this
+    + setHover(event): this
+  }
+
+  class Text {
+    + text: string
+  }
+
+  class Score {
+    + objective: Objective
+    + target: string
+    + value?: number
+    + equal(n): ExpressionNode
+    + greaterThan(n): ExpressionNode
+    + lessThan(n): ExpressionNode
+    + set(value, ctx?): this
+    + storeResult(ctx, cmd): void
+  }
+
+  class TellrawText {
+    + parts: TellrawPart[]
+    + append(part): this
+  }
+
+  class ClickEvent {
+    + action: ClickAction
+    + value: ASTNode | string
+  }
+
+  class HoverEvent {
+    + parts: TellrawPart[]
+  }
+}
+
+package "ast" {
+  class TellrawNode {
+    + type = "tellraw"
+    + target: string | SelectorNode
+    + message: TellrawText
+  }
+}
+
+package "ir/handlers" {
+  class TellrawCommand {
+    + type = "tellraw"
+    + generate(node, ctx): void
+    - generatePart(part, ctx): any
+    - generateClick(event, ctx): any
+    - generateHover(event, ctx): any
+  }
+}
+
+TellrawPart <|-- Text
+TellrawPart <|-- Score
+
+TellrawText o-- TellrawPart : parts[]
+TellrawNode o-- TellrawText : message
+HoverEvent o-- TellrawPart : parts[]
+TellrawPart o-- ClickEvent : clickEvent
+TellrawPart o-- HoverEvent : hoverEvent
+TellrawCommand ..> TellrawNode : handles
+TellrawCommand ..> ClickEvent : resolves via dispatcher
+
+@enduml

@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+docs/public/versions
+docs/public/helix-types.json
+docs/.vitepress/cache
+spool
+twine
+lab
+unravel
+.git

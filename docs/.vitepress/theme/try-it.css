@@ -1,0 +1,21 @@
+/* "Open in playground" link the compile-helix plugin appends under each
+   `ts compile` example. Sits between the source and its compiled output. */
+.try-it {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: -8px 0 4px;
+  padding: 3px 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border-radius: 6px;
+  color: var(--vp-c-brand-1);
+  border: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg-soft);
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+.try-it:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+}

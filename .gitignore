@@ -1,0 +1,19 @@
+# Root ignore. Each package also has its own .gitignore (dist, node_modules,
+# package-lock.json, helix's src/versions/data, etc.) which still applies within
+# its directory. These are catch-alls for anything not covered per-package.
+**/node_modules/
+**/dist/
+**/out/
+node_modules/
+
+# External projects — their own git repos, not part of this monorepo.
+lab/
+unravel/
+
+# Local Claude Code state
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# OS / editor
+.DS_Store
+*.log

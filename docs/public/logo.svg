@@ -1,0 +1,21 @@
+<svg viewBox="0 0 32 34" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Helix Compiler">
+  <defs>
+    <linearGradient id="helix" x1="4" y1="2" x2="28" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <!-- rungs: base pairs, drawn under the strands where they are widest -->
+  <g stroke="url(#helix)" stroke-width="1.4" stroke-linecap="round" opacity="0.45">
+    <path d="M8 2H24"/>
+    <path d="M8 8H24"/>
+    <path d="M8 14H24"/>
+    <path d="M8 20H24"/>
+    <path d="M8 26H24"/>
+  </g>
+  <!-- two weaving strands -->
+  <g stroke="url(#helix)" stroke-width="2.4" stroke-linecap="round">
+    <path d="M24 2C24 5 8 5 8 8C8 11 24 11 24 14C24 17 8 17 8 20C8 23 24 23 24 26C24 29 8 29 8 32"/>
+    <path d="M8 2C8 5 24 5 24 8C24 11 8 11 8 14C8 17 24 17 24 20C24 23 8 23 8 26C8 29 24 29 24 32"/>
+  </g>
+</svg>

@@ -1,0 +1,41 @@
+{
+  "name": "spool",
+  "version": "1.0.0",
+  "description": "Composed AST-building conveniences as an opt-in plugin system (holding, clip, entity_set, native, player_motion) layered on helix - the middle ground between the core compiler and twine",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./plugins/*": {
+      "types": "./dist/plugins/*/index.d.ts",
+      "default": "./dist/plugins/*/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "watch": "tsc -w",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "docs": "typedoc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "helix": "file:../helix"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.1",
+    "typedoc": "^0.28.0",
+    "typedoc-plugin-markdown": "^4.3.0",
+    "typedoc-vitepress-theme": "^1.1.3",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.9"
+  }
+}

@@ -1,0 +1,208 @@
+@startuml Emit_Pattern_Classes
+
+
+title Emit Pattern - Core Classes
+
+package "ir/" {
+
+  class CodegenContext {
+    + lines: string[]
+    + datapack: Datapack
+    + dispatcher: Dispatcher
+    --
+    + emit(line: string): void
+  }
+
+  class Dispatcher {
+    - handlers: Map<type, CommandHandler>
+    --
+    + dispatch(node: ASTNode, ctx: CodegenContext): void
+  }
+
+  abstract class CommandHandler {
+    {abstract} + type: string
+    {abstract} + generate(node, ctx: CodegenContext): void
+  }
+
+  class IfHandler {
+    + type = "if_else"
+    + generate(node, ctx): void
+    - exec(cond, call): string
+  }
+
+  class ExecuteStoreHandler {
+    + type = "execute_store"
+    + generate(node, ctx): void
+  }
+
+  class TellrawCommand {
+    + type = "tellraw"
+    + generate(node, ctx): void
+    - generateClick(event, ctx): any
+  }
+
+}
+
+note right of CodegenContext
+  A fresh CodegenContext can be created
+  anywhere - it carries the dispatcher
+  so any handler can recursively dispatch
+  without importing other handlers directly
+end note
+
+note right of Dispatcher
+  Owns the handler map.
+  Handlers never import each other -
+  they only import Dispatcher.
+  This breaks all circular deps.
+end note
+
+CommandHandler <|-- IfHandler
+CommandHandler <|-- ExecuteStoreHandler
+CommandHandler <|-- TellrawCommand
+
+Dispatcher o-- CommandHandler : handlers map
+CodegenContext o-- Dispatcher : carries
+
+IfHandler ..> CodegenContext : creates scratch ctx
+ExecuteStoreHandler ..> CodegenContext : creates scratch ctx
+TellrawCommand ..> CodegenContext : creates scratch ctx
+
+@enduml
+
+
+@startuml Emit_Pattern_Scratch_Context
+
+
+title Scratch Context Pattern - How Handlers Resolve Child Nodes
+
+participant "IfHandler" as if
+participant "ctx (main)" as ctx
+participant "generateFunction()" as genfn
+participant "scratchCtx" as scratch
+participant "Dispatcher" as disp
+participant "SayHandler" as say
+participant "dp.files" as files
+
+note over if
+  Problem: IfHandler needs to compile
+  its child FunctionNode to get the
+  function call string - but it can't
+  import other handlers directly
+end note
+
+if -> genfn : generateFunction(thenBody, dp, dispatcher)
+
+group "inside generateFunction()"
+  genfn -> scratch : new CodegenContext(dp, dispatcher)
+  note right of scratch
+    scratch carries the same
+    dispatcher - so it can
+    dispatch any node type
+  end note
+
+  genfn -> disp : dispatcher.dispatch(SayNode, scratchCtx)
+  disp -> say : SayHandler.generate(node, scratchCtx)
+  say -> scratch : scratchCtx.emit("say High")
+  genfn <-- say : done
+
+  genfn -> files : dp.files.set("__internal_main_if_0", "say High")
+  genfn --> if : return "function ns:__internal_main_if_0"
+end
+
+if -> ctx : ctx.emit("execute if score … run function ns:__internal_main_if_0")
+
+note over ctx
+  main ctx now has the fully
+  resolved execute if line
+  without IfHandler ever knowing
+  about SayHandler directly
+end note
+
+@enduml
+
+
+@startuml Emit_Pattern_Click_Resolution
+
+
+title Scratch Context Pattern - Click Event ASTNode Resolution
+
+participant "TellrawCommand" as tc
+participant "generateClick()" as gc
+participant "scratchCtx" as scratch
+participant "Dispatcher" as disp
+participant "SayHandler" as say
+
+note over tc
+  ClickEvent.value is a SayNode -
+  needs to become "say hi" string
+  before it can go into JSON
+end note
+
+tc -> gc : generateClick(clickEvent, ctx)
+
+group "resolve ASTNode value"
+  gc -> scratch : new CodegenContext(ctx.datapack, ctx.dispatcher)
+  gc -> disp : ctx.dispatcher.dispatch(SayNode, scratchCtx)
+  disp -> say : SayHandler.generate(node, scratchCtx)
+  say -> scratch : scratchCtx.emit("say hi")
+  gc <-- say : done
+  gc -> gc : command = scratchCtx.lines[0]\n→ "say hi"
+end
+
+tc <-- gc : { action: "run_command", command: "say hi" }
+
+note over tc
+  TellrawCommand never imported SayHandler.
+  The dispatcher resolved it at runtime
+  through the shared handler map.
+end note
+
+@enduml
+
+
+@startuml
+title Why the Emit Pattern Breaks Circular Dependencies
+title Without the Pattern (BROKEN)
+
+  [IfHandler] --> [generateFunction()] : calls directly
+  [generateFunction()] --> [SayHandler] : imports
+  [generateFunction()] --> [TellrawCommand] : imports
+  [generateFunction()] --> [IfHandler] : imports <- CIRCULAR
+
+
+note bottom of [IfHandler]
+  IfHandler -. generateFunction()
+  -> imports IfHandler to handle
+    nested IfElseNodes
+  -> circular import
+end note
+
+@enduml
+
+@startuml
+title With the Pattern (FIXED)
+
+  [IfHandler]
+  [Dispatcher]
+  [CodegenContext]
+  [SayHandler]
+  [TellrawCommand]
+
+  [IfHandler] --> [Dispatcher] : dispatch(node, ctx)
+  [IfHandler] --> [CodegenContext] : new context for nested nodes \n(with ref to dispatcher)
+  [CodegenContext] ..> [Dispatcher] : "Can call dispatcher again"
+  [Dispatcher] --> [SayHandler] : looks up handler
+  [Dispatcher] --> [TellrawCommand] : looks up handler
+  [Dispatcher] --> [IfHandler] : looks up handler (no import!)
+
+
+note bottom of [Dispatcher]
+  Dispatcher owns the map.
+  IfHandler only imports Dispatcher -
+  never the other handlers.
+  Nested IfElseNodes resolve
+  at runtime via the map.
+end note
+
+@enduml
