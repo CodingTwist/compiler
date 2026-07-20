@@ -1,4 +1,4 @@
-import { Datapack, serializeItemDef } from "../ir/datapack";
+import { Datapack, serializeItemDef, splitDefName } from "../ir/datapack";
 import { ASTNode } from "../ir/node";
 import {
   CommandHandler,
@@ -79,6 +79,17 @@ export function buildDatapack(dp: Datapack): Map<string, string> {
     files.set(
       `data/${dp.name}/${dp.version.paths.recipe}/${name}.json`,
       JSON.stringify(recipe.toJson(dp.version), null, 2),
+    );
+  }
+
+  // Emit registered biomes. `worldgen/biome` never pluralized, so the folder is
+  // fixed; the *namespace* is not - a namespaced name overrides another pack's
+  // (usually vanilla's) biome.
+  for (const [name, biome] of dp.biomeDefs) {
+    const { namespace, path } = splitDefName(dp, name);
+    files.set(
+      `data/${namespace}/${dp.version.paths.worldgen}/biome/${path}.json`,
+      JSON.stringify(biome.toJson(dp.version), null, 2),
     );
   }
 

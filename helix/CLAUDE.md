@@ -86,6 +86,16 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
   emits the `assets/` tree (item `Model`s → `models/item` + `items/` definitions, block `Model`s →
   `models/block`, `BlockState`s → `blockstates/`, `resourceFile` JSON) with a *resource-format*
   `pack.mcmeta` (`profile.resourcePack`, distinct from the datapack `pack_format`).
+- **Data resources.** Each typed builder in `values/` registers on the `Datapack` and is
+  serialized by a loop in `codegen.ts` into its version-aware folder (`paths.lootTable`, …).
+  `values/biome.ts` (`BiomeDef`) is the one that carries real format drift - `carvers` became a
+  flat list in 1.21.2 (4058), `music` a weighted list in 1.21.4 (4174), `dry_foliage_color`
+  arrived in 1.21.5 (4316), and in 1.21.11 / 25w42a (4654) the ambience fields left `effects`
+  for the **environment-attribute map** (`attributes`, keyed `minecraft:visual/fog_color`,
+  `minecraft:audio/ambient_sounds`, …). The author-facing setters are version-agnostic;
+  `toJson` decides the half. Biomes are also the one registry whose registered name is
+  **namespace-aware** (`dp.biome("minecraft:plains", …)` overrides vanilla) - see
+  `splitDefName` in `ir/datapack.ts`.
 - **`src/core/codegen/write.ts`** - the **disk** half, and the *only* codegen module that imports
   `fs`/`path` (and, via `structure.ts`, `zlib`): `writeDatapack`/`writeResourcePack` (build then write,
   clear stale generated trees, copy `addStructures`/`addAssets` files verbatim). `dp.writeDatapack()`

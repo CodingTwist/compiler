@@ -26,3 +26,5 @@ export * from "./loot-function";
 export * from "./loot-table";
 export * from "./item-modifier";
 export * from "./recipe";
+export * from "./sound";
+export * from "./biome";

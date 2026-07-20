@@ -113,6 +113,58 @@ body - instead of inlining. That's the AST → IR lowering doing its job. For ru
 beyond integers, [`Fixed`](/api/helix/classes/Fixed) (scale-tracked fixed-point) and
 [`ScoreVec3`](/api/helix/classes/ScoreVec3) build on the same `Score` primitive.
 
+## Data resources
+
+A pack is more than functions. Loot tables, recipes, item modifiers, predicates,
+advancements and biomes each have a typed builder that registers on the `Datapack` and
+returns a reference you can use elsewhere - so a resource is defined once and named,
+never re-encoded as a string.
+
+Biomes are the clearest case for building the JSON rather than hand-writing it, because
+the format has moved three times across the versions helix supports: `carvers` became a
+flat list in 1.21.2, `music` became a weighted list in 1.21.4, and in 1.21.11 nearly all
+of a biome's *ambience* left `effects` for the environment-attribute map. You write the
+same source either way and
+[`BiomeDef`](/api/helix/classes/BiomeDef) places it in the shape the target version
+wants.
+
+```ts compile
+import {
+  Datapack, v26_2, BiomeDef, DecorationStep, SoundEvent, SpawnCategory, EntityType,
+} from "helix";
+
+const dp = new Datapack("mypack", v26_2);
+
+// A namespaced name writes into that namespace - here, overriding vanilla's
+// plains, which is how a biome takes effect without a custom dimension.
+dp.biome(
+  "minecraft:plains",
+  new BiomeDef()
+    .temperature(0.8)
+    .downfall(0.4)
+    .precipitation(true)
+    .effects((e) =>
+      e
+        .skyColor("#78a7ff")
+        .fogColor("#c0d8ff")
+        .waterColor("#3f76e4")
+        .ambientSound(SoundEvent.AMBIENT_CAVE),
+    )
+    .spawn(SpawnCategory.CREATURE, EntityType.SHEEP, { weight: 12, min: 4, max: 4 })
+    .feature(DecorationStep.VEGETAL_DECORATION, "minecraft:patch_grass_plain"),
+);
+```
+
+On `v26_2` the sky/fog colours and the ambient sound land in `attributes` under
+`minecraft:visual/sky_color` and `minecraft:audio/ambient_sounds`; on `v1_21_4` the same
+source puts them in `effects`. Generation steps are named
+([`DecorationStep`](/api/helix/variables/DecorationStep)), not array indices, and sounds
+are typed ids ([`SoundEvent`](/api/helix/variables/SoundEvent)), not strings.
+
+For a registry with no builder yet - custom dimensions, configured features, chat types -
+`dp.registryFile(folder, name, json)` writes raw JSON at the right path, and
+`validateDatapack` checks it against the vanilla schema.
+
 ## Version profiles
 
 A version profile carries everything version-specific: pack format, folder conventions,

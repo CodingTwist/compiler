@@ -19,7 +19,8 @@ import { ScoreboardTiming } from "../timing/scoreboard-timing";
 import { privateName } from "../private-fn";
 import { Predicate, PredicateRef } from "../values/predicate";
 import { AdvancementDef } from "../values/advancement";
-import { Advancement } from "../values/resource.generated";
+import { Advancement, Biome } from "../values/resource.generated";
+import { BiomeDef } from "../values/biome";
 import { LootTableDef, LootTableRef } from "../values/loot-table";
 import { ItemModifier, ItemModifierRef } from "../values/item-modifier";
 import { RecipeDef, RecipeRef } from "../values/recipe";
@@ -40,6 +41,19 @@ export interface RegistryTag {
 }
 
 export type FunctionTag = "load" | "tick";
+
+/**
+ * Split a registered definition's name into the namespace its file lands in and
+ * the path within that namespace. A bare name belongs to the pack; a namespaced
+ * one (`"minecraft:plains"`) writes into that namespace instead, which is how a
+ * pack overrides a vanilla resource. Used by {@link Datapack.biome} and the
+ * codegen loop that emits it.
+ */
+export function splitDefName(dp: Datapack, name: string): { namespace: string; path: string } {
+  const colon = name.indexOf(":");
+  if (colon === -1) return { namespace: dp.name, path: name };
+  return { namespace: name.slice(0, colon), path: name.slice(colon + 1) };
+}
 
 /** A registered item definition (`assets/<ns>/items/<name>.json`). */
 export interface ItemDefinition {
@@ -78,6 +92,9 @@ export class Datapack {
   private lootTables = new Map<string, LootTableDef>();
   private itemModifiers = new Map<string, ItemModifier>();
   private recipes = new Map<string, RecipeDef>();
+  // Biome definitions. Keyed by the name AS AUTHORED, which may carry a
+  // namespace (`minecraft:plains` to override a vanilla biome) - see splitDefName.
+  private biomes = new Map<string, BiomeDef>();
   // Registry (block/item/fluid/…) tags, keyed `<registry>/<name>`; distinct from
   // the function `tags` map above (load/tick), which codegen emits separately.
   private registryTags = new Map<string, RegistryTag>();
@@ -346,6 +363,30 @@ export class Datapack {
   /** Registered recipes (name → definition), for codegen. */
   get recipeDefs(): ReadonlyMap<string, RecipeDef> {
     return this.recipes;
+  }
+
+  /**
+   * Register a {@link BiomeDef} as `data/<ns>/worldgen/biome/<name>.json` and
+   * return the {@link Biome} id to reference it from `/fillbiome`, a dimension's
+   * biome source, or another pack.
+   *
+   * Unlike the other registries this one is **namespace-aware**: pass a
+   * namespaced `name` to write outside this pack's namespace, which is how a
+   * datapack replaces a vanilla biome (the only way a biome takes effect in the
+   * overworld without a custom dimension):
+   *
+   *   dp.biome("sky/void", def)         -> data/mypack/worldgen/biome/sky/void.json
+   *   dp.biome("minecraft:plains", def) -> data/minecraft/worldgen/biome/plains.json
+   */
+  biome(name: string, def: BiomeDef): Biome {
+    this.registerDef(this.biomes, "Biome", name, def);
+    const { namespace, path } = splitDefName(this, name);
+    return Biome(`${namespace}:${path}`);
+  }
+
+  /** Registered biomes (name as authored → definition), for codegen. */
+  get biomeDefs(): ReadonlyMap<string, BiomeDef> {
+    return this.biomes;
   }
 
   /**

@@ -22,6 +22,7 @@ export const CONCEPT_REGISTRIES = [
   "minecraft:damage_type",
   "minecraft:dimension",
   "minecraft:point_of_interest_type",
+  "minecraft:sound_event",
   "minecraft:worldgen/biome",
   "minecraft:worldgen/structure",
 ];

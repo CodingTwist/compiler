@@ -9,6 +9,7 @@ export * from "./public-api";
 export { v1_20_1 } from "./versions/1_20_1";
 export { v1_20_4 } from "./versions/1_20_4";
 export { v1_21_4 } from "./versions/1_21_4";
+export { v26_1_2 } from "./versions/26_1_2";
 export { v26_2 } from "./versions/26_2";
 
 // Opt-in build-time validation of emitted JSON resources against the vanilla
