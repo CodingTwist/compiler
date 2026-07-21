@@ -150,6 +150,118 @@ describe("triggers", () => {
     expect(tick).toContain("function test:scored/activate");
   });
 
+  it("activates a score area across a band of values, not just one", () => {
+    @Module({
+      name: "stage",
+      area: true,
+      trigger: {
+        kind: "score",
+        objective: "Tunnel",
+        target: "CurrentLevel",
+        matches: { min: 110, max: 161 },
+      },
+    })
+    class Stage {}
+    @Module({ name: "root", imports: [Stage] })
+    class Root {}
+
+    const { tick } = compileRoot(Root);
+
+    expect(tick).toContain("if score CurrentLevel Tunnel matches 110..161");
+    expect(tick).toContain("function test:stage/activate");
+  });
+
+  it("latches a score area by default (no deactivate side)", () => {
+    @Module({
+      name: "latched",
+      area: true,
+      trigger: { kind: "score", objective: "phase", target: "#game", equals: 2 },
+    })
+    class Latched {}
+    @Module({ name: "root", imports: [Latched] })
+    class Root {}
+
+    const { tick } = compileRoot(Root);
+
+    expect(tick).not.toContain("test:latched/deactivate");
+  });
+
+  it("latch: false tracks a score area both ways", () => {
+    @Module({
+      name: "tracked",
+      area: true,
+      trigger: {
+        kind: "score",
+        objective: "Tunnel",
+        target: "CurrentLevel",
+        matches: { min: 210, max: 261 },
+        latch: false,
+      },
+    })
+    class Tracked {}
+    @Module({ name: "root", imports: [Tracked] })
+    class Root {}
+
+    const { tick } = compileRoot(Root);
+
+    expect(tick).toContain("unless score CurrentLevel Tunnel matches 210..261");
+    expect(tick).toContain("function test:tracked/deactivate");
+  });
+
+  it("a players area tracks set membership both ways by default", () => {
+    @Module({
+      name: "occupied",
+      area: true,
+      trigger: {
+        kind: "players",
+        selector: Selector.allPlayers().tag("Inside"),
+      },
+    })
+    class Occupied {}
+    @Module({ name: "root", imports: [Occupied] })
+    class Root {}
+
+    const { tick } = compileRoot(Root);
+
+    // Armed only while inactive, disarmed once the set empties.
+    expect(tick).toContain("if score #occupied active matches 0");
+    expect(tick).toContain("if entity @a[tag=Inside] run function test:occupied/activate");
+    expect(tick).toContain("unless entity @a[tag=Inside] run function test:occupied/deactivate");
+  });
+
+  it("latch: true holds a players area on once armed", () => {
+    @Module({
+      name: "sticky",
+      area: true,
+      trigger: {
+        kind: "players",
+        selector: Selector.allPlayers().tag("Inside"),
+        latch: true,
+      },
+    })
+    class Sticky {}
+    @Module({ name: "root", imports: [Sticky] })
+    class Root {}
+
+    const { tick } = compileRoot(Root);
+
+    expect(tick).toContain("function test:sticky/activate");
+    expect(tick).not.toContain("test:sticky/deactivate");
+  });
+
+  it("rejects a score trigger with neither equals nor matches", () => {
+    @Module({
+      name: "bad",
+      area: true,
+      trigger: { kind: "score", objective: "o", target: "#t" },
+    })
+    class Bad {}
+    @Module({ name: "root", imports: [Bad] })
+    class Root {}
+
+    expect(() => compileRoot(Root)).toThrow(/needs either/);
+  });
+
   it("tracks a region area in and out (presence flips it back off when empty)", () => {
     @Module({
       name: "vaultlike",

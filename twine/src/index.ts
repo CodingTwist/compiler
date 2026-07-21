@@ -19,4 +19,4 @@ export type {
   ModuleMetadata,
   ModuleRef,
 } from "./module.interface";
-export type { AreaTrigger, Vec3, Zone } from "./area";
+export type { AreaTrigger, PlayersTrigger, ScoreTrigger, Vec3, Zone } from "./area";

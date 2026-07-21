@@ -9,6 +9,7 @@ import { PredicateRef } from "../../values/predicate";
 import { Id } from "../../values/id";
 import { Gamemode, Sort } from "../../values/enums";
 import { VersionProfile } from "../../../versions/profile";
+import type { EntityType } from "../../values/resource.generated";
 
 export type SelectorBase = "@a" | "@e" | "@p" | "@r" | "@s" | string;
 
@@ -47,6 +48,8 @@ export class Selector {
   private xRotationRange?: Range;
   private yRotationRange?: Range;
   private gamemodeValue?: string;
+  private entityTypeValue?: string;
+  private yBandValue?: { y: number; dy: number };
 
   constructor(private base: SelectorBase | string) {}
 
@@ -126,6 +129,18 @@ export class Selector {
     return this;
   }
 
+  /**
+   * A raw vertical position band (`y=<y>,dy=<dy>`) - the partial form of
+   * {@link volume} with no x/z restriction. `dy` is a signed offset from `y`
+   * (negative extends downward), matching vanilla's own field, not a min/max
+   * pair - use this only when you genuinely mean "however far above/below one
+   * point", not a min/max span (for that, prefer a location predicate).
+   */
+  yBand(y: number, dy: number): this {
+    this.yBandValue = { y, dy };
+    return this;
+  }
+
   /** Restrict by vertical look angle (`x_rotation=<range>`). */
   xRotation(range: Range): this {
     this.xRotationRange = range;
@@ -141,6 +156,18 @@ export class Selector {
   /** Restrict to a game mode (`gamemode=survival|creative|adventure|spectator`). Prefer the typed `Gamemode.SURVIVAL` over a bare string. */
   gamemode(mode: Gamemode): this {
     this.gamemodeValue = mode;
+    return this;
+  }
+
+  /**
+   * Restrict to one entity type (`type=<id>`). Accepts a typed `EntityType`
+   * (`EntityType.ENDERMAN`) or a raw id string - a leading `#` is a registry
+   * tag reference (`type=#tunnel:removable`), passed through as-is rather than
+   * routed through `EntityType(...)`'s id validation (which expects a bare
+   * `minecraft:entity_type` id, not a tag).
+   */
+  type(entityType: EntityType | string): this {
+    this.entityTypeValue = typeof entityType === "string" ? entityType : entityType.render();
     return this;
   }
 
@@ -183,6 +210,8 @@ export class Selector {
       this.xRotationRange,
       this.yRotationRange,
       this.gamemodeValue,
+      this.entityTypeValue,
+      this.yBandValue,
     );
   }
 

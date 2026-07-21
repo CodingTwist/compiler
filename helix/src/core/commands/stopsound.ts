@@ -12,6 +12,13 @@ export class StopsoundNode extends CommandNodeBase {
 }
 
 export class StopsoundBuilder extends CommandBuilder<StopsoundNode> {
+  /** `stopsound <targets> * [sound]` - every category at once (the source-argument wildcard, hand-added: the generator's endpoint walk doesn't produce a method for a bare `*` literal branch). */
+  any(targets: Selector, sound?: Id): this {
+    this.$set(litPart("stopsound"), argPart(targets), litPart("*"));
+    if (sound !== undefined) this.$append(argPart(sound));
+    return this;
+  }
+
   ambient(targets: Selector, sound?: Id): this {
     this.$set(litPart("stopsound"), argPart(targets), litPart("ambient"));
     if (sound !== undefined) this.$append(argPart(sound));

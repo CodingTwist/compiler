@@ -23,6 +23,15 @@ export class Score extends TellrawPart implements ExpressionNode {
     if (value !== undefined) this.value = value;
   }
 
+  /**
+   * `matches <range>` - the general two-bounded form the other comparisons are
+   * special cases of (`equal(n)` is `n..n`, `greaterThan(n)` is `n..`). Use it
+   * when a condition spans a band of values rather than one edge.
+   */
+  matches(range: Range): ExpressionNode {
+    return new ScoreRangeNode(this.target, this.objective, range);
+  }
+
   equal(input: number | Score): ExpressionNode {
     if (input instanceof Score)
       throw new Error("Score-to-Score comparison not implemented.");
@@ -68,6 +77,12 @@ export class Score extends TellrawPart implements ExpressionNode {
   remove(value: number, ctx?: FunctionContext): this {
     this.value = value;
     if (ctx) ctx.scoreRemove(this);
+    return this;
+  }
+
+  /** `scoreboard players reset <this>` - un-set this holder's score entirely. */
+  reset(ctx: FunctionContext): this {
+    ctx.scoreReset(this);
     return this;
   }
 

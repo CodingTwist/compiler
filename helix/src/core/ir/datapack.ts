@@ -18,8 +18,10 @@ import {
 import { ScoreboardTiming } from "../timing/scoreboard-timing";
 import { privateName } from "../private-fn";
 import { Predicate, PredicateRef } from "../values/predicate";
-import { AdvancementDef } from "../values/advancement";
-import { Advancement, Biome } from "../values/resource.generated";
+import { AdvancementDef, Trigger } from "../values/advancement";
+import { Selector } from "../frontend/nodes/selector";
+import { Advancement, Biome, FunctionId } from "../values/resource.generated";
+import { FunctionTagRef } from "../values/function-tag";
 import { BiomeDef } from "../values/biome";
 import { LootTableDef, LootTableRef } from "../values/loot-table";
 import { ItemModifier, ItemModifierRef } from "../values/item-modifier";
@@ -309,6 +311,40 @@ export class Datapack {
   }
 
   /**
+   * A **repeatable event handler**: `body` runs, as the triggering player, every
+   * time `trigger` fires.
+   *
+   * Vanilla has no event hook, so the idiom is an advancement whose reward
+   * function re-arms it - and the re-arm is the part that gets forgotten, leaving
+   * a handler that silently fires exactly once per player, forever. This emits
+   * both halves under `name` and appends the
+   * `advancement revoke @s only <this>` tail itself, so the pair can't drift:
+   *
+   *   dp.event("exit/eat_chorus", Trigger.consumeItem(Item.CHORUS_FRUIT),
+   *     (ctx) => { ... });
+   *
+   * Note this is genuinely *event*-shaped work. A condition you could just as
+   * well test on a tick (a player standing in a box, a block having a given
+   * state) belongs in a {@link Predicate} checked from a tick function, not here.
+   */
+  event(
+    name: string,
+    trigger: Trigger,
+    body: (ctx: FunctionContext) => void,
+  ): { advancement: Advancement; fn: FunctionRef } {
+    const fn = this.createFunction(name);
+    const advancement = this.advancement(
+      name,
+      new AdvancementDef().criterion("trigger", trigger).reward(`${this.name}:${name}`),
+    );
+    fn.build((ctx) => {
+      body(ctx);
+      ctx.advancement().revokeOnly(Selector.self(), advancement);
+    });
+    return { advancement, fn };
+  }
+
+  /**
    * Register a definition under `name`, deduplicating by reference so the same
    * module imported by several parents declares once without ordering hazards;
    * re-registering `name` with a *different* object throws. Shared by the
@@ -418,6 +454,36 @@ export class Datapack {
   /** Registered registry tags (`<registry>/<name>` → body), for codegen. */
   get registryTagDefs(): ReadonlyMap<string, RegistryTag> {
     return this.registryTags;
+  }
+
+  /**
+   * Declare a **function tag** in this pack's namespace and return a typed
+   * reference to it, for `ctx.callTag(...)` / `schedule`.
+   *
+   * This is the `load`/`tick` mechanism generalised: those two are vanilla's own
+   * tags and get auto-membership from {@link createFunction}, while these are
+   * pack-defined fan-out hooks whose members you list. Members are given as
+   * {@link FunctionRef}s, so a tag can't name a function that doesn't exist.
+   * Calling again with the same `name` appends members.
+   */
+  functionTag(
+    name: string,
+    spec: { values: FunctionRef[]; replace?: boolean } = { values: [] },
+  ): FunctionTagRef {
+    this.tag("function", name, {
+      values: spec.values.map((ref) => this.idOf(ref).render()),
+      replace: spec.replace,
+    });
+    return FunctionTagRef(this.name, name);
+  }
+
+  /**
+   * The namespaced id of a function in this pack (`<ns>:<name>`), as the typed
+   * {@link FunctionId} that `schedule` and friends take - so a call site never
+   * hand-writes the id of a function it already holds a reference to.
+   */
+  idOf(ref: FunctionRef): FunctionId {
+    return FunctionId(`${this.name}:${ref.getName()}`);
   }
 
   /**

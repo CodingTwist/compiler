@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { Predicate, PredicateRef } from "./predicate";
+import { Predicate, PredicateRef, SLOTS } from "./predicate";
 import { Nbt, Short } from "./nbt";
 import { Item } from "./item";
 import { Datapack } from "../ir/datapack";
+import { v26_1_2 } from "../../versions/26_1_2";
 import { buildDatapack } from "../codegen/codegen";
 import { Selector } from "../frontend/nodes/selector";
 import { Dispatcher, CodegenContext } from "../ir/commandhandler";
@@ -149,5 +150,49 @@ describe("predicateCheck in ctx.if", () => {
 
     dispatcher.dispatch(new IfElseNode(predicateCheck(ref), thenBody), ctx);
     expect(ctx.lines[0]).toContain("execute if predicate mypack:hider run");
+  });
+});
+
+describe("inventory slot matches", () => {
+  it("Predicate.carrying matches an item anywhere in the inventory", () => {
+    const dp = new Datapack("p", v26_1_2);
+    const ref = dp.predicate("has_disc", Predicate.carrying(Item.MUSIC_DISC_11));
+    const json = JSON.parse(
+      buildDatapack(dp).get("data/p/predicate/has_disc.json")!,
+    );
+    expect(ref.id).toBe("p:has_disc");
+    expect(json).toEqual({
+      condition: "minecraft:entity_properties",
+      entity: "this",
+      predicate: {
+        slots: {
+          "container.*": { items: "minecraft:music_disc_11" },
+        },
+      },
+    });
+  });
+
+  it("carries the item's components into the slot match", () => {
+    const dp = new Datapack("p", v26_1_2);
+    dp.predicate(
+      "has_door",
+      Predicate.carrying(Item.SPRUCE_DOOR.named("Anachronistic Door")),
+    );
+    const json = JSON.parse(
+      buildDatapack(dp).get("data/p/predicate/has_door.json")!,
+    );
+    const slot = json.predicate.slots["container.*"];
+    expect(slot.items).toBe("minecraft:spruce_door");
+    expect(slot.components).toBeDefined();
+  });
+
+  it("a named slot range narrows the match", () => {
+    const dp = new Datapack("p", v26_1_2);
+    dp.predicate(
+      "head",
+      Predicate.entity({ slots: { [SLOTS.HEAD]: Item.PLAYER_HEAD } }),
+    );
+    const json = JSON.parse(buildDatapack(dp).get("data/p/predicate/head.json")!);
+    expect(Object.keys(json.predicate.slots)).toEqual(["armor.head"]);
   });
 });

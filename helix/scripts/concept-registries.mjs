@@ -31,7 +31,7 @@ export const CONCEPT_REGISTRIES = [
 // `Block.tag(BLOCK_TAGS.AIR)` instead of the `"#minecraft:air"` string - same
 // autocomplete + typo-safety as the id members, for tags. mcmeta already carries
 // these under `tag/<registry>` in the registries summary (no extra fetch).
-export const CONCEPT_TAG_REGISTRIES = ["tag/block"];
+export const CONCEPT_TAG_REGISTRIES = ["tag/block", "tag/item", "tag/entity_type"];
 
 /** "minecraft:entity_type" -> "ENTITY_TYPE_IDS"; "minecraft:worldgen/biome" -> "WORLDGEN_BIOME_IDS". */
 export const idsConstName = (registry) =>

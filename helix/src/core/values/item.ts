@@ -5,6 +5,13 @@ import { ITEM_IDS } from "../../versions/data/ids";
 import { VersionProfile } from "../../versions/profile";
 import { ModelRef } from "./model";
 
+/**
+ * The vanilla item *tags* (`ITEM_TAGS.PLANKS = "minecraft:planks"`), the
+ * newest-version superset - typed, autocompleted ids for tag slots (`clear`, item
+ * predicates) so authors never hand-write `"#minecraft:planks"`.
+ */
+export { ITEM_TAGS } from "../../versions/data/ids";
+
 /** Data version of 1.20.5, where item NBT was replaced by data components. */
 const COMPONENTS_DATA_VERSION = 3837;
 

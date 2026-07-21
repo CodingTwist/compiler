@@ -4,6 +4,8 @@
  * from the module lifecycle contract in {@link ./module.interface}.
  */
 
+import type { Selector } from "helix";
+
 /** A world position / corner: `[x, y, z]`. */
 export type Vec3 = [number, number, number];
 
@@ -31,8 +33,15 @@ export type Zone =
  * - `zones` - a **union** of any number of spheres/boxes; a player anywhere
  *   inside the union counts. Use this to fence off an irregular area out of
  *   several boxes, or to cover several rooms with one flag.
- * - `score` - activate when `#<target> <objective>` equals `equals`
- *   (drive levels/quests from your own scoreboard state).
+ * - `score` - activate while `#<target> <objective>` matches a value (`equals`)
+ *   or a band of values (`matches`), driving areas from your own scoreboard
+ *   state rather than from geometry. Two areas can share coordinates and still
+ *   be mutually exclusive, because what separates them is the score, not space.
+ * - `players` - activate while **any** player matches a {@link Selector}. The
+ *   membership form of a presence trigger: where `zones` asks "is anyone in this
+ *   space", this asks "is anyone in this *set*" - tagged, scored, holding
+ *   something, in a given gamemode. Use it when what defines the area is a
+ *   condition the pack maintains per player rather than the player's position.
  *
  * Areas with no trigger are activated manually (`/function <ns>:<name>/activate`)
  * or by another module.
@@ -41,4 +50,41 @@ export type AreaTrigger =
   | { kind: "region"; center: Vec3; radius: number }
   | { kind: "cuboid"; from: Vec3; to: Vec3 }
   | { kind: "zones"; zones: Zone[] }
-  | { kind: "score"; objective: string; target: string; equals: number };
+  | PlayersTrigger
+  | ScoreTrigger;
+
+/**
+ * Activate an area while any player matches {@link selector}.
+ *
+ * Tracks both ways by default, like the geometric presence triggers: the area
+ * switches on as the set becomes non-empty and off again once it empties. Set
+ * `latch: true` for the score-trigger behaviour instead - on once, then held
+ * until something calls `<name>/deactivate`.
+ */
+export interface PlayersTrigger {
+  kind: "players";
+  selector: Selector;
+  /** Default `false` (track both ways). `true` holds the area on once armed. */
+  latch?: boolean;
+}
+
+/**
+ * Activate an area from a scoreboard value. Give exactly one of {@link equals}
+ * (a single value) or {@link matches} (an inclusive band, either bound open).
+ *
+ * By default a score trigger **latches**: it switches the area on and leaves it
+ * on until something calls `<name>/deactivate`. Set `latch: false` to have it
+ * track the score both ways, deactivating as soon as the score stops matching -
+ * the score-space equivalent of a player leaving a presence region.
+ */
+export interface ScoreTrigger {
+  kind: "score";
+  objective: string;
+  target: string;
+  /** Activate while the score is exactly this. Mutually exclusive with {@link matches}. */
+  equals?: number;
+  /** Activate while the score is within this inclusive band; omit a bound to leave it open. */
+  matches?: { min?: number; max?: number };
+  /** Default `true`. `false` deactivates the area once the score stops matching. */
+  latch?: boolean;
+}

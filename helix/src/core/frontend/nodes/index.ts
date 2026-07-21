@@ -1,6 +1,7 @@
 export * from "./text";
 export * from "./tellraw_text";
 export * from "./tellraw_part";
+export * from "./selector_text";
 export * from "./target";
 export * from "./player";
 export * from "./score";

@@ -10,6 +10,7 @@ import { HoverEvent } from "../frontend/nodes/hover";
 import { Text } from "../frontend/nodes/text";
 import { Score } from "../frontend/nodes/score";
 import { NbtRef } from "../frontend/nodes/nbt_ref";
+import { SelectorText } from "../frontend/nodes/selector_text";
 import { TellrawPart } from "../frontend/nodes/tellraw_part";
 import { Selector } from "../frontend/nodes/selector";
 import { generateSingleNode } from "../ir/generate";
@@ -93,6 +94,12 @@ export class TellrawCommand extends CommandHandler<TellrawNode> {
             : (target as { render(v: typeof ctx.version): string }).render(ctx.version),
         objective: part.objective.objective,
       };
+    } else if (part instanceof SelectorText) {
+      json.selector = generateSingleNode(
+        part.selector.build(),
+        ctx.datapack,
+        ctx.dispatcher,
+      );
     } else if (part instanceof NbtRef) {
       if (!part.path) {
         throw new Error("Cannot display an NBT holder in tellraw without a path");

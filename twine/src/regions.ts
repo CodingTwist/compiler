@@ -3,9 +3,9 @@ import { Pos, Selector } from "helix";
 import type { AreaTrigger, Vec3, Zone } from "./area";
 
 /**
- * Flatten a presence-style trigger to the list of zones a player can be inside.
- * `score` triggers aren't presence-based, so they yield no zones (the factory
- * handles them separately as a latch).
+ * Flatten a *geometric* presence trigger to the list of zones a player can be
+ * inside. `score` and `players` triggers aren't defined over space, so they
+ * yield no zones (the tick wiring handles each separately).
  */
 export function triggerZones(trigger: AreaTrigger): Zone[] {
   switch (trigger.kind) {
@@ -16,6 +16,7 @@ export function triggerZones(trigger: AreaTrigger): Zone[] {
     case "zones":
       return trigger.zones;
     case "score":
+    case "players":
       return [];
   }
 }

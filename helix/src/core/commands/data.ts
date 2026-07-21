@@ -20,6 +20,8 @@ export type DataArgs =
   | { sub: "removeStorage"; target: Id; path: NbtPath }
   | { sub: "modifyStorageMergeFromEntity"; target: Id; targetPath: NbtPath; source: Selector; sourcePath?: NbtPath }
   | { sub: "modifyEntitySetFromEntity"; target: Selector; targetPath: NbtPath; source: Selector; sourcePath?: NbtPath }
+  | { sub: "modifyEntitySetFromBlock"; target: Selector; targetPath: NbtPath; source: Pos; sourcePath?: NbtPath }
+  | { sub: "modifyBlockSetFromEntity"; targetPos: Pos; targetPath: NbtPath; source: Selector; sourcePath?: NbtPath }
   | { sub: "modifyBlockSetValue"; targetPos: Pos; targetPath: NbtPath; value: Nbt }
   | { sub: "mergeEntity"; target: Selector; value: Nbt }
   | { sub: "mergeBlock"; targetPos: Pos; value: Nbt }
@@ -100,10 +102,16 @@ export class DataModifyBuilder extends CommandBuilder<DataNode> {
   ): void {
     this.node.args = { sub: "modifyEntitySetFromEntity", target, targetPath, source, sourcePath };
   }
+  entitySetFromBlock(target: Selector, targetPath: NbtPath, source: Pos, sourcePath?: NbtPath): void {
+    this.node.args = { sub: "modifyEntitySetFromBlock", target, targetPath, source, sourcePath };
+  }
+  blockSetFromEntity(targetPos: Pos, targetPath: NbtPath, source: Selector, sourcePath?: NbtPath): void {
+    this.node.args = { sub: "modifyBlockSetFromEntity", targetPos, targetPath, source, sourcePath };
+  }
   blockSetValue(targetPos: Pos, targetPath: NbtPath, value: Nbt): void {
     this.node.args = { sub: "modifyBlockSetValue", targetPos, targetPath, value };
   }
-  // ...generator emits the remaining ~95 modify leaves
+  // ...generator emits the remaining ~93 modify leaves
 }
 
 // --- Handler: render the chosen leaf's tokens in tree order -----------------
@@ -140,6 +148,12 @@ export class DataHandler extends CommandHandler<DataNode> {
         break;
       case "modifyEntitySetFromEntity":
         tokens = [lit("data"), lit("modify"), lit("entity"), A(a.target), A(a.targetPath), lit("set"), lit("from"), lit("entity"), A(a.source), ...opt(a.sourcePath)];
+        break;
+      case "modifyEntitySetFromBlock":
+        tokens = [lit("data"), lit("modify"), lit("entity"), A(a.target), A(a.targetPath), lit("set"), lit("from"), lit("block"), A(a.source), ...opt(a.sourcePath)];
+        break;
+      case "modifyBlockSetFromEntity":
+        tokens = [lit("data"), lit("modify"), lit("block"), A(a.targetPos), A(a.targetPath), lit("set"), lit("from"), lit("entity"), A(a.source), ...opt(a.sourcePath)];
         break;
       case "modifyBlockSetValue":
         tokens = [lit("data"), lit("modify"), lit("block"), A(a.targetPos), A(a.targetPath), lit("set"), lit("value"), A(a.value)];

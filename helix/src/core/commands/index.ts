@@ -87,6 +87,7 @@ import { ScoreInitCommand } from "./objective_init";
 import { ScoreSetCommand } from "./score_set";
 import { ScoreAddCommand } from "./score_add";
 import { ScoreRemoveCommand } from "./score_remove";
+import { ScoreResetCommand } from "./score_reset";
 import { ScoreSetScoreCommand } from "./score_set_score";
 import { ScoreOpCommand } from "./score_op";
 import { ScoreGetCommand } from "./score_get";
@@ -96,6 +97,7 @@ import { PlayerGiveCommand } from "./give";
 import { TriggerCommand } from "./trigger";
 import { RandomCommand } from "./random";
 import { FunctionCommand } from "./function";
+import { FunctionTagCallCommand } from "./function";
 import { SelectorCommand } from "./selector";
 import { DataOpCommand } from "./data_op";
 import { IfHandler } from "./if";
@@ -198,6 +200,7 @@ export * from "./objective_init";
 export * from "./score_set";
 export * from "./score_add";
 export * from "./score_remove";
+export * from "./score_reset";
 export * from "./score_set_score";
 export * from "./score_op";
 export * from "./score_get";
@@ -206,6 +209,7 @@ export * from "./tellraw";
 export * from "./give";
 export * from "./trigger";
 export * from "./random";
+export * from "./function";
 export * from "./function";
 export * from "./selector";
 export * from "./data_op";
@@ -312,6 +316,7 @@ export function createCommandHandlers(): CommandHandler[] {
     new ScoreSetCommand(),
     new ScoreAddCommand(),
     new ScoreRemoveCommand(),
+    new ScoreResetCommand(),
     new ScoreSetScoreCommand(),
     new ScoreOpCommand(),
     new ScoreGetCommand(),
@@ -321,6 +326,7 @@ export function createCommandHandlers(): CommandHandler[] {
     new TriggerCommand(),
     new RandomCommand(),
     new FunctionCommand(),
+    new FunctionTagCallCommand(),
     new SelectorCommand(),
     new DataOpCommand(),
     new IfHandler(),

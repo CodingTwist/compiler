@@ -44,7 +44,7 @@ const HAND_WRITTEN_ELSEWHERE = new Set([
 
 // Commands whose src/core/commands/<c>.ts is hand-refined: keep the file as-is
 // (don't overwrite) but still import/register it in the barrel.
-const HAND_REFINED = new Set(["setblock", "data"]);
+const HAND_REFINED = new Set(["setblock", "data", "stopsound"]);
 
 // Hand-written sugar/semantic handlers that live in src/core/commands but are
 // NOT generated from the command tree (their nodes are emitted by the frontend,
@@ -56,6 +56,7 @@ const EXTRA_HANDLERS = [
   { module: "score_set", cls: "ScoreSetCommand" },
   { module: "score_add", cls: "ScoreAddCommand" },
   { module: "score_remove", cls: "ScoreRemoveCommand" },
+  { module: "score_reset", cls: "ScoreResetCommand" },
   { module: "score_set_score", cls: "ScoreSetScoreCommand" },
   { module: "score_op", cls: "ScoreOpCommand" },
   { module: "score_get", cls: "ScoreGetCommand" },
@@ -65,6 +66,7 @@ const EXTRA_HANDLERS = [
   { module: "trigger", cls: "TriggerCommand" },
   { module: "random", cls: "RandomCommand" },
   { module: "function", cls: "FunctionCommand" },
+  { module: "function", cls: "FunctionTagCallCommand" },
   { module: "selector", cls: "SelectorCommand" },
   { module: "data_op", cls: "DataOpCommand" },
   { module: "if", cls: "IfHandler" },

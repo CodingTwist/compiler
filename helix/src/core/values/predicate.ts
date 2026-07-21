@@ -74,6 +74,18 @@ export interface EntityPredicateSpec {
   flags?: EntityFlags;
   /** Item match per equipment slot - each built from the same {@link ItemValue} you'd `give`. */
   equipment?: EquipmentSpec;
+  /**
+   * Item match per **inventory slot range** - the engine-evaluated replacement for
+   * an inline `nbt={Inventory:[{...}]}` scan, which stopped working when data
+   * components replaced item NBT.
+   *
+   * Keys are vanilla slot names or wildcard ranges (`"container.*"`,
+   * `"hotbar.*"`, `"player.cursor"`); the predicate passes if **any** slot in the
+   * range matches. Use {@link SLOTS} rather than writing the strings by hand -
+   * the engine rejects the whole file for an unknown slot name, and there is no
+   * `a-b` range syntax.
+   */
+  slots?: Partial<Record<SlotRange, ItemValue>>;
   /** Where the entity is. */
   location?: LocationSpec;
   /** What the entity is riding (a nested entity predicate). */
@@ -81,6 +93,53 @@ export interface EntityPredicateSpec {
   /** What is riding the entity (a nested entity predicate). */
   passenger?: EntityPredicateSpec;
 }
+
+/**
+ * Every slot name the engine accepts as a {@link EntityPredicateSpec.slots} key.
+ *
+ * Typed as a closed union rather than `string` on purpose: an unrecognised name
+ * doesn't degrade, it makes Minecraft **reject the whole predicate file** at load
+ * ("Unknown element name") - and the failure only shows up in the server log, so
+ * a typo reads in-game as a puzzle that silently never triggers. The set is
+ * vanilla's `SlotRanges`; the numeric ceilings are its, not ours.
+ *
+ * Slot names that came and went across versions (`horse.armor`/`armor.body`,
+ * `horse.saddle`/`saddle`, `villager.n`/`mob.inventory.n`) are all included -
+ * this is authoring ergonomics, and per-version membership is the engine's call,
+ * the same split as `Blocks.*` vs runtime registry validation.
+ */
+export type SlotRange =
+  | `container.${number}`
+  | `enderchest.${number}`
+  | `horse.${number}`
+  | `hotbar.${number}`
+  | `inventory.${number}`
+  | `villager.${number}`
+  | `mob.inventory.${number}`
+  | `player.crafting.${number}`
+  | "armor.head" | "armor.chest" | "armor.legs" | "armor.feet" | "armor.body"
+  | "horse.chest" | "horse.armor" | "horse.saddle" | "saddle"
+  | "weapon" | "weapon.mainhand" | "weapon.offhand"
+  | "contents" | "player.cursor"
+  | "armor.*" | "container.*" | "enderchest.*" | "horse.*" | "hotbar.*"
+  | "inventory.*" | "player.crafting.*" | "weapon.*" | "mob.inventory.*";
+
+/**
+ * The common slot ranges, named so a call site reads as intent rather than as a
+ * vanilla spelling. Any other {@link SlotRange} is still accepted directly.
+ */
+export const SLOTS = {
+  /** Every slot of a player's inventory, hotbar included. */
+  INVENTORY: "container.*",
+  /** The nine hotbar slots. */
+  HOTBAR: "hotbar.*",
+  /** The 27 slots of the main inventory grid. */
+  MAIN: "inventory.*",
+  /** The offhand. */
+  OFFHAND: "weapon.offhand",
+  /** The helmet slot - what a worn player head occupies. */
+  HEAD: "armor.head",
+} as const;
 
 /** JSON object Minecraft reads as one predicate condition. */
 export type PredicateJson = Record<string, unknown>;
@@ -132,6 +191,13 @@ function renderEntitySpec(spec: EntityPredicateSpec, version: VersionProfile): P
       if (item) eq[slot] = item.toPredicate(version);
     }
     if (Object.keys(eq).length) out.equipment = eq;
+  }
+  if (spec.slots) {
+    const slots: PredicateJson = {};
+    for (const [range, item] of Object.entries(spec.slots)) {
+      if (item) slots[range] = item.toPredicate(version);
+    }
+    if (Object.keys(slots).length) out.slots = slots;
   }
   if (spec.location) out.location = renderLocation(spec.location, version);
   if (spec.vehicle) out.vehicle = renderEntitySpec(spec.vehicle, version);
@@ -229,6 +295,19 @@ export class Predicate {
     who: EntityTarget = "this",
   ): Predicate {
     return Predicate.entity({ equipment: { [slot]: item } }, who);
+  }
+
+  /**
+   * `entity_properties` matching an entity **carrying** `item` anywhere in the
+   * given slot range (default the whole inventory). The referenceable replacement
+   * for `nbt={Inventory:[{id:...}]}`, which components made unusable.
+   */
+  static carrying(
+    item: ItemValue,
+    range: SlotRange = SLOTS.INVENTORY,
+    who: EntityTarget = "this",
+  ): Predicate {
+    return Predicate.entity({ slots: { [range]: item } }, who);
   }
 
   /** `weather_check`. */

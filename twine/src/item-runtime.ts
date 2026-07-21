@@ -1,5 +1,4 @@
 import {
-  AdvancementDef,
   Objective,
   Range,
   Selector,
@@ -140,19 +139,12 @@ export class ItemModule implements DatapackModule {
   }
 
   /**
-   * Wire one event behaviour: a self-revoking advancement. The reward function
-   * runs the user body, then `advancement revoke @s only <this>` so the
-   * advancement re-arms and fires again on the next occurrence.
+   * Wire one event behaviour. `dp.event` owns the shape - a self-revoking
+   * advancement whose reward function runs the body and then re-arms itself -
+   * so an item's "on use" hook and a pack's hand-written event handlers are the
+   * same construct rather than two copies of the same idiom.
    */
   private event(dp: Datapack, name: string, trigger: Trigger, body: ItemBehaviour): void {
-    const reward = dp.createFunction(name);
-    const advId = dp.advancement(
-      name,
-      new AdvancementDef().criterion("trigger", trigger).reward(`${dp.name}:${name}`),
-    );
-    reward.build((ctx) => {
-      body(ctx);
-      ctx.advancement().revokeOnly(Selector.self(), advId);
-    });
+    dp.event(name, trigger, (ctx) => body(ctx));
   }
 }

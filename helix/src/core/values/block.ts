@@ -1,5 +1,7 @@
 import { normalizeId } from "../../versions/registry";
 import { CommandValue } from "./value";
+import { NbtValue } from "./nbt";
+import type { VersionProfile } from "../../versions/profile";
 import { withMembers } from "./members";
 import { BLOCK_IDS } from "../../versions/data/ids";
 
@@ -25,7 +27,7 @@ export type BlockStates = Record<string, string | number | boolean>;
 
 export class BlockValue implements CommandValue {
   private states: BlockStates = {};
-  private nbt?: string;
+  private nbt?: string | NbtValue;
 
   constructor(
     private readonly id: string,
@@ -39,18 +41,28 @@ export class BlockValue implements CommandValue {
     return this;
   }
 
-  data(nbt: string): this {
+  /**
+   * Block-entity NBT. Takes an {@link Nbt} value so the compound can be built
+   * structurally (and embedded version-aware values render correctly); a raw
+   * SNBT string is still accepted for pasted-in data.
+   */
+  data(nbt: string | NbtValue): this {
     this.nbt = nbt;
     return this;
   }
 
-  render(): string {
+  render(version?: VersionProfile): string {
     let out = normalizeBlockId(this.id);
     const entries = Object.entries(this.states);
     if (entries.length > 0) {
       out += `[${entries.map(([k, v]) => `${k}=${v}`).join(",")}]`;
     }
-    if (this.nbt !== undefined) out += this.nbt;
+    if (this.nbt !== undefined) {
+      out +=
+        typeof this.nbt === "string"
+          ? this.nbt
+          : this.nbt.render(version as VersionProfile);
+    }
     return out;
   }
 

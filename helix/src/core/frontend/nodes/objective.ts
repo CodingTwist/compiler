@@ -10,7 +10,29 @@ import type { ItemValue } from "../../values/item";
  * Build statistic criteria with the typed helpers ({@link usedStatCriteria}) so
  * the criterion string isn't hand-assembled at the call site.
  */
-export type ObjectiveKind = "dummy" | "trigger" | `minecraft.${string}`;
+export type ObjectiveKind =
+  | "dummy"
+  | "trigger"
+  | VanillaCriterion
+  | `minecraft.${string}`
+  | `killedByTeam.${string}`
+  | `teamkill.${string}`;
+
+/**
+ * The bare (un-namespaced) vanilla objective criteria. These aren't statistics -
+ * the server mirrors a live player property into the score every tick, which is
+ * how a pack reads hunger or health without an `execute store`.
+ */
+export type VanillaCriterion =
+  | "deathCount"
+  | "playerKillCount"
+  | "totalKillCount"
+  | "health"
+  | "food"
+  | "air"
+  | "armor"
+  | "xp"
+  | "level";
 
 /**
  * The `minecraft.used:<item>` statistic criterion for `item` - an objective with
