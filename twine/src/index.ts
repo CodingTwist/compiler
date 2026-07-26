@@ -33,3 +33,5 @@ export type {
   ModuleRef,
 } from "./module.interface";
 export type { AreaTrigger, PlayersTrigger, ScoreTrigger, Vec3, Zone } from "./area";
+export { Logger } from "./logger";
+export type { LogLevel, NamespaceLogger } from "./logger";
