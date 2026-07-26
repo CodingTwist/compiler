@@ -48,8 +48,31 @@ export const Long = (n: number): NbtNum => new NbtNum(n, "l");
 
 const BARE_KEY = /^[A-Za-z0-9_.+-]+$/;
 
+/**
+ * Control characters with their own short SNBT escape, per vanilla's own
+ * `SnbtGrammar.escapeControlCharacters` (26.1.2) - anything else below 0x20
+ * falls back to a `\xHH` hex escape there, and the same fallback is used
+ * below.
+ */
+const CONTROL_ESCAPE: Readonly<Record<number, string>> = {
+  8: "b", 9: "t", 10: "n", 12: "f", 13: "r",
+};
+
+/**
+ * A literal control character (a raw `\n` from {@link pageLines}, say)
+ * cannot survive unescaped: SNBT source is read one physical line at a time,
+ * so an un-escaped newline would split a single command's SNBT across two
+ * lines and fail to parse, not just render oddly. Escaping every control
+ * character the way vanilla's own SNBT writer does (`StringTag.quoteAndEscape`)
+ * keeps the source on one line while decoding back to the real character.
+ */
 function quote(s: string): string {
-  return `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  return `"${s.replace(/[\\"\x00-\x1f]/g, (ch) => {
+    if (ch === "\\" || ch === '"') return "\\" + ch;
+    const code = ch.charCodeAt(0);
+    const named = CONTROL_ESCAPE[code];
+    return named !== undefined ? `\\${named}` : `\\x${code.toString(16).padStart(2, "0")}`;
+  })}"`;
 }
 
 function isCommandValue(x: unknown): x is CommandValue {

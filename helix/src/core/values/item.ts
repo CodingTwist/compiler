@@ -4,6 +4,9 @@ import { withMembers } from "./members";
 import { ITEM_IDS } from "../../versions/data/ids";
 import { VersionProfile } from "../../versions/profile";
 import { ModelRef } from "./model";
+import { toSnbt, NbtInput } from "./nbt";
+import { textJson as tellrawJson } from "./text-json";
+import { TellrawPart } from "../frontend/nodes/tellraw_part";
 
 /**
  * The vanilla item *tags* (`ITEM_TAGS.PLANKS = "minecraft:planks"`), the
@@ -159,6 +162,7 @@ export class ItemValue implements CommandValue {
   private enchantmentsValue: [string | CommandValue, number][] = [];
   private loreValue: TextComponent[] = [];
   private canPlaceOnValue: string[] = [];
+  private writtenBookValue?: { title: string; author: string; pages: (TellrawPart | string | TellrawPart[])[] };
   private extraComponents: { stack: string; key?: string; json?: unknown }[] = [];
 
   constructor(private readonly id: string) {}
@@ -233,6 +237,32 @@ export class ItemValue implements CommandValue {
   }
 
   /**
+   * `minecraft:written_book_content` - a resolved written book's title,
+   * author and pages. Each page is a plain string, a single styled
+   * `text(...)` span, or an array of spans sharing one line (see
+   * {@link pageLines}/{@link rightAlign} for building those) - the array form
+   * lowers to one base component carrying those spans as `extra` siblings.
+   *
+   * Each page is `Filterable<Component>` per the component's own codec - a
+   * real text component stored as NBT structure, *not* a JSON string - so
+   * this renders each page through the shared {@link toSnbt} serializer
+   * directly, the same as any other structured component value. (Earlier
+   * revisions of this builder JSON-stringified each page into a quoted SNBT
+   * string, matching `writable_book_content`'s plain-string pages rather than
+   * this component's actual schema; that produced a book whose pages
+   * displayed their own JSON source as literal text - {@link pageJson} is
+   * typed `Record<string, NbtInput>`, not `NbtInput`, specifically so a page
+   * can't be a bare string and that mistake can't compile again.)
+   *
+   * Components only - a target predating 1.20.5 throws rather than silently
+   * dropping the book's content.
+   */
+  writtenBook(title: string, author: string, pages: (TellrawPart | string | TellrawPart[])[]): this {
+    this.writtenBookValue = { title, author, pages };
+    return this;
+  }
+
+  /**
    * A raw data component for things the typed builders don't model yet, e.g.
    * `.component("unbreakable", "{}")`. `key`/`json` are optional predicate
    * counterparts so it can still participate in `match_tool` matching.
@@ -267,8 +297,26 @@ export class ItemValue implements CommandValue {
       this.enchantmentsValue.length > 0 ||
       this.loreValue.length > 0 ||
       this.canPlaceOnValue.length > 0 ||
+      this.writtenBookValue !== undefined ||
       this.extraComponents.length > 0
     );
+  }
+
+  /**
+   * A book page's text-component form (see {@link writtenBook}) - always a
+   * compound (`{text:...}`, or `{text:"",extra:[...]}` for the array form),
+   * never a bare string. Typed `Record<string, NbtInput>` rather than the
+   * broader `NbtInput` on purpose: a plain `string` (what a stray
+   * `JSON.stringify` would produce) is itself a valid `NbtInput`, so that
+   * type wouldn't stop pages from being silently double-encoded again -
+   * `Record<string, NbtInput>` does, the same convention `display.ts` uses
+   * for values that must be a compound.
+   */
+  private static pageJson(page: TellrawPart | string | TellrawPart[]): Record<string, NbtInput> {
+    if (Array.isArray(page)) {
+      return { text: "", extra: page.map((part) => tellrawJson(part)) };
+    }
+    return typeof page === "string" ? { text: page } : tellrawJson(page);
   }
 
   private modernComponents(version: VersionProfile): ComponentLowering[] {
@@ -328,12 +376,23 @@ export class ItemValue implements CommandValue {
         json: { blocks: blocks.length === 1 ? blocks[0] : blocks },
       });
     }
+    if (this.writtenBookValue !== undefined) {
+      const { title, author, pages } = this.writtenBookValue;
+      const pagesNbt: Record<string, NbtInput>[] = pages.map((page) => ItemValue.pageJson(page));
+      const value: NbtInput = { title, author, resolved: true, pages: pagesNbt };
+      out.push({ stack: `written_book_content=${toSnbt(value, version)}` });
+    }
     out.push(...this.extraComponents);
     return out;
   }
 
   /** Pre-1.20.5 NBT fragments (between the `{}`). */
   private legacyNbt(version: VersionProfile): string {
+    if (this.writtenBookValue !== undefined) {
+      throw new Error(
+        `Item.writtenBook() needs data components (1.20.5+); target version ${version.id} predates them.`,
+      );
+    }
     const nbt: string[] = [];
     const display: string[] = [];
     if (this.customNameValue !== undefined) {
