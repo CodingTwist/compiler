@@ -28,6 +28,18 @@ export class ContextBase {
     this.fn.push(node);
   }
 
+  /**
+   * Drop `node` if it is still the last thing emitted - for a builder that
+   * emitted its node up front and then found it had nothing to say (an `execute`
+   * chain composed from zero clauses, say). A no-op if anything was emitted
+   * after it, so it can never unpick someone else's work.
+   */
+  retract(node: ASTNode): boolean {
+    if (this.fn.nodes[this.fn.nodes.length - 1] !== node) return false;
+    this.fn.nodes.pop();
+    return true;
+  }
+
   call(node: FunctionRef) {
     this.fn.push(node.node);
   }

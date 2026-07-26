@@ -16,6 +16,7 @@ import { Selector } from "../frontend/nodes/selector";
 import { generateSingleNode } from "../ir/generate";
 import { buildCommand } from "../ir/command-builder";
 import { FunctionContext } from "../frontend/context";
+import { textJson } from "../values/text-json";
 
 export class TellrawNode extends ASTNode {
   type = "tellraw";
@@ -79,64 +80,6 @@ export class TellrawCommand extends CommandHandler<TellrawNode> {
   }
 
   private generatePart(part: TellrawPart, ctx: CodegenContext): any {
-    const json: any = {};
-
-    if (part instanceof Text) {
-      json.text = part.text;
-    } else if (part instanceof Score) {
-      // `target` is a ScoreTarget (selector or fake-player name) that must render to a
-      // string; tolerate a bare string too (some direct constructions pass one).
-      const target = part.target as unknown;
-      json.score = {
-        name:
-          typeof target === "string"
-            ? target
-            : (target as { render(v: typeof ctx.version): string }).render(ctx.version),
-        objective: part.objective.objective,
-      };
-    } else if (part instanceof SelectorText) {
-      json.selector = generateSingleNode(
-        part.selector.build(),
-        ctx.datapack,
-        ctx.dispatcher,
-      );
-    } else if (part instanceof NbtRef) {
-      if (!part.path) {
-        throw new Error("Cannot display an NBT holder in tellraw without a path");
-      }
-      json.nbt = part.path.render(ctx.version);
-      json[part.target.kind] = part.target.locator.render(ctx.version);
-    } else {
-      throw new Error(`Unknown TellrawPart type: ${part.constructor.name}`);
-    }
-
-    // Style keys map 1:1 to text-component fields - spread them straight on.
-    Object.assign(json, part.style);
-    if (part.clickEvent)
-      json.click_event = this.generateClick(part.clickEvent, ctx);
-    if (part.hoverEvent)
-      json.hover_event = this.generateHover(part.hoverEvent, ctx);
-
-    return json;
-  }
-
-  private generateClick(event: ClickEvent, ctx: CodegenContext): any {
-    let command: string;
-
-    if (typeof event.value === "string") {
-      command = event.value;
-    } else {
-      command = generateSingleNode(event.value, ctx.datapack, ctx.dispatcher);
-    }
-
-    return { action: event.action, command };
-  }
-
-  private generateHover(event: HoverEvent, ctx: CodegenContext): any {
-    const parts = event.parts.map((p) => this.generatePart(p, ctx));
-    return {
-      action: "show_text",
-      value: parts,
-    };
+    return textJson(part, ctx);
   }
 }

@@ -77,6 +77,11 @@ function renderEnchId(ench: string | CommandValue, version: VersionProfile): str
   return typeof ench === "string" ? normalizeId(ench) : ench.render(version);
 }
 
+/** A block id or `#tag`, normalized to its namespaced form (`#minecraft:stone_bricks`). */
+function normalizeBlockRef(ref: string): string {
+  return ref.startsWith("#") ? "#" + normalizeId(ref.slice(1)) : normalizeId(ref);
+}
+
 /** The `<ns>:name` id a model handle points at (for the `item_model` component). */
 function resolveModelId(handle: ModelRef | string): string {
   return handle instanceof ModelRef ? handle.render() : normalizeId(handle);
@@ -153,6 +158,7 @@ export class ItemValue implements CommandValue {
   private itemModelValue?: ModelRef | string;
   private enchantmentsValue: [string | CommandValue, number][] = [];
   private loreValue: TextComponent[] = [];
+  private canPlaceOnValue: string[] = [];
   private extraComponents: { stack: string; key?: string; json?: unknown }[] = [];
 
   constructor(private readonly id: string) {}
@@ -210,6 +216,23 @@ export class ItemValue implements CommandValue {
   }
 
   /**
+   * Restrict where this item may be placed in adventure mode (`can_place_on`).
+   * Each argument is a block id or `#tag` (`"minecraft:stone"`, `"#minecraft:stone_bricks"`).
+   *
+   * The shape is an `AdventureModePredicate`, which does *not* survive a naive
+   * hand-encoding: on 1.20.5+ it lowers to the structured `can_place_on` component
+   * (a `{blocks:…}` block predicate - the codec is `compactListCodec(BlockPredicate)`,
+   * so there is no `predicates:` wrapper), while before components it is
+   * the flat NBT `CanPlaceOn:[…]` string list - the same reason the pack never
+   * hand-writes item NBT. Whether the restriction shows in the tooltip is a
+   * separate concern (`tooltip_display` on modern, `HideFlags` before).
+   */
+  canPlaceOn(...blocks: string[]): this {
+    this.canPlaceOnValue.push(...blocks.map(normalizeBlockRef));
+    return this;
+  }
+
+  /**
    * A raw data component for things the typed builders don't model yet, e.g.
    * `.component("unbreakable", "{}")`. `key`/`json` are optional predicate
    * counterparts so it can still participate in `match_tool` matching.
@@ -243,6 +266,7 @@ export class ItemValue implements CommandValue {
       this.itemModelValue !== undefined ||
       this.enchantmentsValue.length > 0 ||
       this.loreValue.length > 0 ||
+      this.canPlaceOnValue.length > 0 ||
       this.extraComponents.length > 0
     );
   }
@@ -290,6 +314,20 @@ export class ItemValue implements CommandValue {
         json: this.loreValue.map(textJson),
       });
     }
+    if (this.canPlaceOnValue.length > 0) {
+      // `can_place_on` is an AdventureModePredicate, whose codec is
+      // `compactListCodec(BlockPredicate)`: the value is a single block
+      // predicate, or a list of them - there is no `predicates:` wrapper. A
+      // block predicate matches with `{blocks:<id|#tag|list>}`, where `blocks`
+      // is a HolderSet (a bare id/#tag for one block, a list for several).
+      const blocks = this.canPlaceOnValue;
+      const snbt = blocks.length === 1 ? `"${blocks[0]}"` : `[${blocks.map((b) => `"${b}"`).join(",")}]`;
+      out.push({
+        stack: `can_place_on={blocks:${snbt}}`,
+        key: "minecraft:can_place_on",
+        json: { blocks: blocks.length === 1 ? blocks[0] : blocks },
+      });
+    }
     out.push(...this.extraComponents);
     return out;
   }
@@ -316,6 +354,9 @@ export class ItemValue implements CommandValue {
         .map(([e, l]) => `{id:"${renderEnchId(e, version)}",lvl:${l}}`)
         .join(",");
       nbt.push(`Enchantments:[${entries}]`);
+    }
+    if (this.canPlaceOnValue.length > 0) {
+      nbt.push(`CanPlaceOn:[${this.canPlaceOnValue.map((b) => `"${b}"`).join(",")}]`);
     }
     return nbt.join(",");
   }
@@ -380,6 +421,57 @@ export class ItemValue implements CommandValue {
       if (c.key !== undefined && c.json !== undefined) out[c.key] = c.json;
     }
     return out;
+  }
+
+  /**
+   * This item as an **item-stack NBT compound** - the shape an entity or block
+   * entity stores a stack in (an item frame's `Item`, a container's `Items`
+   * entry, a dropped item's `Item`), as opposed to the command-line stack string
+   * {@link render} produces or the predicate JSON {@link toPredicate} produces.
+   *
+   * Same definitions, third rendering, so a named item summoned inside a frame is
+   * the same value that `give`s and that a `match_tool` predicate matches. Version
+   * aware in two places at once: `count`/`components` on 1.20.5+, `Count:1b`/`tag`
+   * before it.
+   *
+   * A raw `.data(...)` escape hatch can't be lowered into this form (the string is
+   * stack syntax, not NBT), so an item defined that way throws rather than
+   * silently emitting a stack missing its data.
+   */
+  toStackNbt(version: VersionProfile): string {
+    const modern = version.dataVersion >= COMPONENTS_DATA_VERSION;
+    const count = this.countValue ?? 1;
+    const parts = [`id:"${this.baseId()}"`, modern ? `count:${count}` : `Count:${count}b`];
+
+    if (this.hasStructuredData()) {
+      if (modern) {
+        // `stack` is `name=<snbt value>`; the compound wants the same value under
+        // the component's full id, which is exactly what `key` carries.
+        const entries = this.modernComponents(version).map((c) => {
+          const eq = c.stack.indexOf("=");
+          return `"${c.key ?? normalizeId(c.stack.slice(0, eq))}":${c.stack.slice(eq + 1)}`;
+        });
+        if (entries.length) parts.push(`components:{${entries.join(",")}}`);
+      } else {
+        const nbt = this.legacyNbt(version);
+        if (nbt) parts.push(`tag:{${nbt}}`);
+      }
+    } else if (this.dataStr !== undefined) {
+      throw new Error(
+        `Item "${this.baseId()}" was defined with a raw .data(...) string, which has no ` +
+          `item-stack NBT form. Build it from typed components (.named/.lore/.component) instead.`,
+      );
+    }
+
+    return `{${parts.join(",")}}`;
+  }
+
+  /**
+   * {@link toStackNbt} deferred, so the stack can be dropped straight into an
+   * `Nbt({ Item: … })` compound and rendered with everything around it.
+   */
+  stackNbt(): CommandValue {
+    return { render: (version: VersionProfile) => this.toStackNbt(version) };
   }
 }
 

@@ -30,3 +30,4 @@ export * from "./item-modifier";
 export * from "./recipe";
 export * from "./sound";
 export * from "./biome";
+export * from "./text-json";

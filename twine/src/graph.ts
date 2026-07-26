@@ -1,4 +1,6 @@
+import type { Id } from "helix";
 import { getModuleMetadata, isConfiguredModule } from "./module.decorator";
+import { getEventHandlers } from "./events";
 import type {
   DatapackModule,
   ModuleMetadata,
@@ -55,10 +57,32 @@ export function buildGraph(root: ModuleRef, env: BuildEnv): Graph {
 }
 
 /**
+ * Each area's *effective* dimension: its own `dimension`, or the nearest
+ * ancestor that names one (an area inherits the dimension of the area it sits
+ * inside). Resolved root-down so a child sees the value already computed for its
+ * parent; where a ref is reached through several parents the first walk wins,
+ * matching the identity de-duplication in {@link buildGraph}. Returns the map
+ * for every reachable node - `undefined` for anything with no dimension in its
+ * ancestry, which is left running wherever its caller runs, exactly as before.
+ */
+export function resolveDimensions(graph: Graph): Map<ModuleRef, Id | undefined> {
+  const dims = new Map<ModuleRef, Id | undefined>();
+  const walk = (ref: ModuleRef, inherited: Id | undefined): void => {
+    if (dims.has(ref)) return;
+    const node = graph.nodes.get(ref)!;
+    const own = node.meta.dimension ?? inherited;
+    dims.set(ref, own);
+    for (const child of node.children) walk(child, own);
+  };
+  walk(graph.root, undefined);
+  return dims;
+}
+
+/**
  * Memoized: does `ref` need any per-tick work emitted? True if it has an
- * `onTick`, if it's a **triggered area** (its detector must run), or if any
- * included descendant needs ticking. Lets a whole subtree with nothing to do be
- * skipped - no empty guard lines.
+ * `onTick`, any `@On` handler (each is a poll), if it's a **triggered area**
+ * (its detector must run), or if any included descendant needs ticking. Lets a
+ * whole subtree with nothing to do be skipped - no empty guard lines.
  */
 export function needsTickMemo(graph: Graph): (ref: ModuleRef) => boolean {
   const cache = new Map<ModuleRef, boolean>();
@@ -68,6 +92,7 @@ export function needsTickMemo(graph: Graph): (ref: ModuleRef) => boolean {
     const node = graph.nodes.get(ref)!;
     const result =
       Boolean(node.instance.onTick) ||
+      getEventHandlers(node.instance).length > 0 ||
       Boolean(node.meta.area && node.meta.trigger) ||
       node.children.some((c) => has(c));
     cache.set(ref, result);

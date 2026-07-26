@@ -61,10 +61,24 @@ function isCommandValue(x: unknown): x is CommandValue {
   );
 }
 
+/**
+ * An embedded value's rendering, quoted if SNBT wouldn't accept it bare.
+ *
+ * A `CommandValue` renders to *command-line* syntax, where an id is written
+ * bare - but SNBT only allows `[A-Za-z0-9_.+-]` unquoted, so an inlined
+ * `EntityType.ENDERMAN` would emit `id:minecraft:enderman` and fail to parse on
+ * the colon. Compounds and lists (an item stack, a position) are already
+ * structure rather than a string, and are left exactly as rendered.
+ */
+function embed(rendered: string): string {
+  if (rendered.startsWith("{") || rendered.startsWith("[")) return rendered;
+  return BARE_KEY.test(rendered) ? rendered : quote(rendered);
+}
+
 /** Serialize a JS value to SNBT, rendering any embedded `CommandValue`. */
 export function toSnbt(value: NbtInput, version: VersionProfile): string {
   if (value instanceof NbtNum) return value.render();
-  if (isCommandValue(value)) return value.render(version);
+  if (isCommandValue(value)) return embed(value.render(version));
   if (typeof value === "string") return quote(value);
   if (typeof value === "boolean") return value ? "true" : "false";
   if (typeof value === "number") return String(value);

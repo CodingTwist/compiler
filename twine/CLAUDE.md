@@ -34,6 +34,8 @@ constructed and emits nothing** - that is the compile-time disable.
   [src/state-machine.ts](src/state-machine.ts) / [src/tick-wiring.ts](src/tick-wiring.ts) /
   [src/flags.ts](src/flags.ts) - module-graph resolution, area/zone geometry, the
   `StateMachine` helper, shared tick/load wiring, and the active-flag objective.
+- [src/events.ts](src/events.ts) - the `@On` / `@Every` method decorators, the
+  per-handler latch objective (`EventLatches`), and `rearmEvents`.
 - [src/item.ts](src/item.ts) - `defineItem` / `ItemBuilder`: custom behavioural items.
 - [src/index.ts](src/index.ts) - the public barrel.
 
@@ -48,9 +50,37 @@ A `DatapackModule` may implement any of:
   for free when dormant. Put per-tick work here.
 - `onActivate(ctx)` / `onDeactivate(ctx)` - edge functions for an `area` module
   (`<name>/activate` / `<name>/deactivate`), e.g. summon / despawn a level's entities.
+- `defineFunction(dp, name, body)` - optional: how an `@On({ name })` body becomes a
+  function, so a pack can apply its own conventions (trace line, tag, naming). Defaults
+  to a plain `dp.createFunction`.
 
 `@Module({ name, area?, activeByDefault?, imports?, env? })` declares the module; an
 `area: true` module gates its subtree's tick cost behind a presence/region check.
+
+### Event handlers: `@On` / `@Every` ([src/events.ts](src/events.ts))
+
+`@On(detector, opts?)` marks a method as the body that runs when a condition holds.
+Vanilla has no change hook, so this compiles to **poll + latch**: one `execute` per
+handler, emitted into the module's tick tree (so an inactive ancestor area skips it
+for free), with an `unless score #<module>.<method> events matches 1` clause first and
+the flag set before the body. `@Every(ticks)` is the same thing with no condition and
+no latch - the degenerate case that used to need a module of its own just to carry a
+`tickEvery`.
+
+Two things are deliberately the *author's* choice, not the framework's, because both
+are where per-tick cost comes from:
+
+- **The detector.** A `Detector` is helix's (`Detect.block/entity/score/predicate`,
+  composed with `Detect.all/in/at/near`, or a closure you write). It appends clauses to
+  the caller's chain rather than emitting its own, so composing is free - `Detect.all`
+  of four things is still one `execute`, and the latch clause merges into it, meaning a
+  spent handler costs a score read and never the condition it guards.
+- **The cadence.** `opts.every` (default: the module's `tickEvery`) and `opts.phase`.
+  Handlers sharing a period share one throttle gate.
+
+`opts.once: false` drops the latch for a body meant to repeat; `opts.name` puts the body
+in its own function (via `defineFunction`). `rearmEvents(ctx, dp, moduleName, instance,
+methods?)` clears latches - nothing re-arms itself.
 
 ### One `minecraft:tick` entry (the framework owns the tick tag)
 

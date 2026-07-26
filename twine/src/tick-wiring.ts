@@ -1,19 +1,26 @@
 import { Datapack, Range, ScoreTarget } from "helix";
-import type { FunctionContext, FunctionRef } from "helix";
-import type { ModuleRef } from "./module.interface";
+import type { FunctionContext, FunctionRef, Id } from "helix";
+import type { DatapackModule, ModuleMetadata, ModuleRef } from "./module.interface";
 import type { ScoreTrigger } from "./area";
 import type { Graph, Node } from "./graph";
 import { ActiveFlags } from "./flags";
+import { EventLatches, emitHandler, getEventHandlers, type EventHandler } from "./events";
 import { triggerZones, whenPlayerInZones } from "./regions";
+
+/** One thing a module contributes to a tick, already bound to its instance. */
+type Emit = (ctx: FunctionContext) => void;
 
 /** Everything the tick-tree walk needs threaded through it. */
 export interface Wiring {
   graph: Graph;
   flags: ActiveFlags;
+  latches: EventLatches;
   dp: Datapack;
   needsTick: (ref: ModuleRef) => boolean;
   activateOf: Map<ModuleRef, FunctionRef>;
   deactivateOf: Map<ModuleRef, FunctionRef>;
+  /** Each area's effective dimension (own or inherited); `undefined` if none. */
+  dims: Map<ModuleRef, Id | undefined>;
   /** Resolve a throttled module's fire phase within its `tickEvery` period. */
   phaseOf: (node: Node) => number;
 }
@@ -25,15 +32,85 @@ export interface Wiring {
  * area gating rather than escaping it.
  */
 function emitTick(w: Wiring, node: Node, ctx: FunctionContext): void {
+  // Everything this module contributes per tick, bucketed by how often it runs:
+  // `onTick` at the module's own cadence, and each `@On` handler at its own
+  // (defaulting to the module's). Buckets share one throttle gate, so declaring a
+  // per-handler `every` costs a gate per distinct period, not per handler.
+  const modulePeriod = node.meta.tickEvery ?? 1;
+  const modulePhase = w.phaseOf(node);
+  const buckets = new Map<string, { period: number; phase: number; bodies: Emit[] }>();
+  const bucket = (period: number, phase: number, body: Emit): void => {
+    const key = `${period}:${phase}`;
+    const found = buckets.get(key) ?? { period, phase, bodies: [] };
+    found.bodies.push(body);
+    buckets.set(key, found);
+  };
+
   const onTick = node.instance.onTick;
-  if (!onTick) return;
-  const period = node.meta.tickEvery;
-  if (period && period > 1) {
-    const gate = w.dp.timing.phaseGate(w.dp, period, w.phaseOf(node));
-    ctx.if(gate, (inner) => onTick.call(node.instance, inner));
-  } else {
-    onTick.call(node.instance, ctx);
+  if (onTick) {
+    bucket(modulePeriod, modulePhase, (c) => onTick.call(node.instance, c));
   }
+  for (const handler of getEventHandlers(node.instance)) {
+    const period = handler.opts.every ?? modulePeriod;
+    bucket(period, handler.opts.phase ?? modulePhase % period, (c) =>
+      emitHandlerOf(w, node, handler, c),
+    );
+  }
+
+  for (const { period, phase, bodies } of buckets.values()) {
+    if (period > 1) {
+      const gate = w.dp.timing.phaseGate(w.dp, period, phase);
+      ctx.if(gate, (inner) => bodies.forEach((b) => b(inner)));
+    } else {
+      bodies.forEach((b) => b(ctx));
+    }
+  }
+}
+
+/** `dp.createFunction` + build, when a module has no `defineFunction` of its own. */
+function defaultDefine(
+  dp: Datapack,
+  name: string,
+  build: (ctx: FunctionContext) => void,
+): FunctionRef {
+  const fn = dp.createFunction(name);
+  fn.build(build);
+  return fn;
+}
+
+/** Emit one `@On` handler, resolving its latch and where its body lands. */
+function emitHandlerOf(w: Wiring, node: Node, handler: EventHandler, ctx: FunctionContext): void {
+  const { instance, meta } = node;
+  // Imperative handlers (addEventHandler) carry their body directly; decorator
+  // ones name a method on the instance.
+  const body0 = handler.fn ?? resolveMethodBody(instance, meta, handler);
+  const latch =
+    handler.opts.once === false ? undefined : w.latches.score(meta.name, handler.method);
+  // A named body commits to its own function once, up front, so the guard calls
+  // it rather than re-emitting the body at each site.
+  let named: FunctionRef | undefined;
+  if (handler.opts.name) {
+    named = instance.defineFunction
+      ? instance.defineFunction(w.dp, handler.opts.name, body0)
+      : defaultDefine(w.dp, handler.opts.name, body0);
+  }
+  const body = named ? (c: FunctionContext) => c.call(named) : body0;
+  emitHandler(ctx, handler, latch, body);
+}
+
+/** The body of a decorator handler: its named method, bound to the instance. */
+function resolveMethodBody(
+  instance: DatapackModule,
+  meta: ModuleMetadata,
+  handler: EventHandler,
+): (c: FunctionContext) => void {
+  const method = (instance as unknown as Record<string, (c: FunctionContext) => void>)[
+    handler.method
+  ];
+  if (typeof method !== "function") {
+    throw new Error(`@On marked ${meta.name}.${handler.method}, which is not a method`);
+  }
+  return (c) => method.call(instance, c);
 }
 
 /**
@@ -45,21 +122,34 @@ function emitTick(w: Wiring, node: Node, ctx: FunctionContext): void {
  * Because this is emitted within the parent's `active` scope, none of it runs
  * while the parent is dormant.
  */
-export function wireTick(w: Wiring, ref: ModuleRef, ctx: FunctionContext): void {
+export function wireTick(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: Id): void {
   const node = w.graph.nodes.get(ref)!;
   emitTick(w, node, ctx);
   for (const childRef of node.children) {
     if (!w.needsTick(childRef)) continue; // nothing to run below → emit nothing
     const child = w.graph.nodes.get(childRef)!;
     if (!child.meta.area) {
-      wireTick(w, childRef, ctx); // inline, gated by ancestors
+      wireTick(w, childRef, ctx, dim); // inline, gated by (and in the dimension of) ancestors
       continue;
     }
-    if (child.meta.trigger) emitArm(w, childRef, ctx); // only fires while inactive
-    ctx.if(w.flags.score(child.meta.name).equal(1), (inner) => {
-      wireTick(w, childRef, inner);
-      if (child.meta.trigger) emitPresence(w, childRef, inner);
-    });
+    // An area with its own dimension (differing from the one already in effect)
+    // runs its detectors and whole subtree wrapped in it; a child that inherits
+    // its parent's dimension is already inside that `execute in …`, so it needs
+    // no wrap of its own. Positional triggers and block reads below then resolve
+    // against the area's dimension, not wherever the tick loop runs.
+    const childDim = w.dims.get(childRef) ?? dim;
+    // Only wrap when the area's dimension isn't already the one in effect - a
+    // child inheriting its parent's dimension is inside that `execute in …`
+    // already, so re-wrapping would just emit a redundant line.
+    const body = (host: FunctionContext) => {
+      if (child.meta.trigger) emitArm(w, childRef, host); // only fires while inactive
+      host.if(w.flags.score(child.meta.name).equal(1), (inner) => {
+        wireTick(w, childRef, inner, childDim);
+        if (child.meta.trigger) emitPresence(w, childRef, inner);
+      });
+    };
+    if (childDim && childDim !== dim) ctx.execute().in(childDim).run(body);
+    else body(ctx);
   }
 }
 

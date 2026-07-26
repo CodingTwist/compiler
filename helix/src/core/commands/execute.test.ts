@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Datapack, Objective, ScoreTarget, Selector, Id, NbtPath, Pos, Range, Block } from "../../index";
+import { Datapack, Objective, ScoreTarget, Selector, Id, NbtPath, Pos, Range, Block, Nbt, Item } from "../../index";
 import { v26_2 } from "../../versions/26_2";
 import { buildDatapack } from "../codegen/codegen";
 
@@ -14,6 +14,24 @@ const dummy = new Objective("d");
 const D = (n: string) => dummy.score(ScoreTarget(n));
 
 describe("ctx.execute() chain builder", () => {
+  it("renders an if-block predicate's block-entity NBT version-aware", () => {
+    // The block's data compound can embed a version-dependent value (an item
+    // stack, whose spelling changed in 1.20.5), so the clause has to render with
+    // the profile rather than without one - which used to throw.
+    const [line] = render((ctx) =>
+      ctx
+        .execute()
+        .ifBlock(
+          Pos(1, 2, 3),
+          Block.JUKEBOX.data(Nbt({ RecordItem: Item.MUSIC_DISC_11.count(1).stackNbt() })),
+        )
+        .run((b: any) => b.say("x")),
+    );
+    expect(line).toContain(
+      'if block 1 2 3 minecraft:jukebox{RecordItem:{id:"minecraft:music_disc_11",count:1}}',
+    );
+  });
+
   it("composes store + if + run in author order", () => {
     const [line] = render((ctx) =>
       ctx

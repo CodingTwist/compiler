@@ -1,4 +1,4 @@
-import type { Datapack } from "helix";
+import type { Datapack, FunctionRef, Id } from "helix";
 import type { FunctionContext } from "helix";
 import type { AreaTrigger } from "./area";
 
@@ -39,6 +39,21 @@ export interface DatapackModule {
    * into its generated `<name>/activate` function.
    */
   onActivate?(ctx: FunctionContext): void;
+
+  /**
+   * How an `@On({ name })` handler body becomes a function - override to apply
+   * whatever conventions this pack puts on every function it creates (a trace
+   * line, a tag, a naming scheme). Defaults to a plain `dp.createFunction`.
+   *
+   * The same reasoning as a handler's detector being an argument: the framework
+   * decides that a named body *gets* a function, not what one of this pack's
+   * functions looks like.
+   */
+  defineFunction?(
+    dp: Datapack,
+    name: string,
+    body: (ctx: FunctionContext) => void,
+  ): FunctionRef;
 
   /**
    * Runs once when this module's `area` becomes inactive - e.g. despawn the
@@ -114,6 +129,20 @@ export interface ModuleMetadata {
    * activate it manually via the generated `<name>/activate` function.
    */
   trigger?: AreaTrigger;
+
+  /**
+   * The dimension this `area` lives in. When set, twine runs the area's whole
+   * lifecycle *in* it: `onActivate`/`onDeactivate`, the throttled `onTick`/`@On`
+   * subtree, and the arm/presence detectors are each wrapped in
+   * `execute in <dimension> run …`. A feature states "I live in the End" once,
+   * instead of every handler re-adding `.in(...)` and one silently forgetting -
+   * a positional trigger, or a block/`from block` read inside a handler, then
+   * resolves against the area's dimension rather than against wherever the tick
+   * loop happens to run (the overworld). Child areas inherit it, so a nested
+   * area need only name a dimension when it differs from its parent's. Only
+   * meaningful on an `area` module.
+   */
+  dimension?: Id;
 
   /**
    * Restrict the module to specific build environments. When set, the module

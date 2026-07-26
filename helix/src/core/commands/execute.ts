@@ -87,6 +87,15 @@ export class ExecuteBuilder {
     private readonly node: ExecuteNode,
   ) {}
 
+  /**
+   * How many clauses have been appended so far. Lets a caller that *composes*
+   * chains (see `Detect`) tell "no conditions at all" from "some", and skip
+   * emitting a bare `execute run <cmd>` in the former case.
+   */
+  get clauseCount(): number {
+    return this.node.clauses.length;
+  }
+
   as(sel: Selector): this {
     this.node.clauses.push({ k: "as", sel });
     return this;
@@ -185,6 +194,17 @@ export class ExecuteBuilder {
   }
 
   /**
+   * Terminate the chain with **no** `run` - the conditions themselves are the
+   * command. `execute store result score <s> if entity <sel>` stores how many
+   * entities matched; there is nothing to run, and adding a `run` would change
+   * what is counted.
+   *
+   * Purely declarative (the node is already emitted), but stating it is what
+   * separates "this chain is finished" from a chain whose `run` was forgotten.
+   */
+  done(): void {}
+
+  /**
    * Terminate the chain with `run <body>`. The body is captured into a child
    * function; a single-command body inlines into the `run` clause (no file), a
    * multi-command one commits to its own function - exactly like `if`/`atEntity`.
@@ -193,6 +213,20 @@ export class ExecuteBuilder {
     const body = this.ctx.createChildFunction("exec");
     runInContext(new FunctionContext(body, this.ctx.version), build);
     this.node.runBody = body;
+  }
+
+  /**
+   * {@link run}, unless no clauses were ever appended - in which case the chain
+   * withdraws itself and `build` is emitted where it would have been.
+   *
+   * For chains assembled from *composed* conditions (see `Detect`), where "no
+   * condition at all" is a legitimate composition and `execute run <cmd>` would
+   * be a vacuous wrapper around it.
+   */
+  runOrInline(build: (ctx: FunctionContext) => void): void {
+    if (this.clauseCount > 0) return this.run(build);
+    this.ctx.retract(this.node);
+    build(this.ctx);
   }
 }
 
@@ -240,7 +274,7 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
       case "entity":
         return `${c.mode} entity ${toCommandValue(c.sel).render(v)}`;
       case "block":
-        return `${c.mode} block ${toCommandValue(c.pos).render(v)} ${c.block.render()}`;
+        return `${c.mode} block ${toCommandValue(c.pos).render(v)} ${c.block.render(v)}`;
       case "predicate":
         return `${c.mode} predicate ${c.id}`;
       case "storeScore":

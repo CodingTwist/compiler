@@ -7,6 +7,19 @@ export {
 export { DatapackFactory, consolidateTick } from "./factory";
 export type { FactoryOptions } from "./factory";
 export { ActiveFlags, ACTIVE_OBJECTIVE } from "./flags";
+export {
+  On,
+  Every,
+  on,
+  every,
+  addEventHandler,
+  getEventHandlers,
+  rearmEvents,
+  HandlerGroup,
+  EventLatches,
+  EVENT_OBJECTIVE,
+} from "./events";
+export type { OnOptions, EventHandler } from "./events";
 export { defineItem, ItemBuilder } from "./item";
 export type { ItemBehaviour } from "./item";
 export { StateMachine } from "./state-machine";

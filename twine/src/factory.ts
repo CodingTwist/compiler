@@ -1,9 +1,10 @@
 import "reflect-metadata";
 import { Datapack, v1_20_4 } from "helix";
-import type { VersionProfile, FunctionRef, RuntimeTarget } from "helix";
+import type { FunctionContext, VersionProfile, FunctionRef, RuntimeTarget } from "helix";
 import type { BuildEnv, ModuleClass, ModuleRef } from "./module.interface";
 import { ActiveFlags } from "./flags";
-import { buildGraph, needsTickMemo, type Node } from "./graph";
+import { EventLatches } from "./events";
+import { buildGraph, needsTickMemo, resolveDimensions, type Node } from "./graph";
 import { wireTick, type Wiring } from "./tick-wiring";
 
 /**
@@ -58,6 +59,7 @@ export class DatapackFactory {
   static create(root: ModuleClass, opts: FactoryOptions): Datapack {
     const dp = new Datapack(opts.name, opts.version ?? v1_20_4, opts.target);
     const flags = new ActiveFlags(dp);
+    const latches = new EventLatches(dp);
     const env = opts.env ?? "dev";
 
     const graph = buildGraph(root, env);
@@ -78,20 +80,32 @@ export class DatapackFactory {
       });
     }
 
-    // activate / deactivate functions per area (flag flip + lifecycle).
+    // Each area's effective dimension, so its lifecycle and tick subtree run
+    // where the area actually is rather than wherever they're called from.
+    const dims = resolveDimensions(graph);
+
+    // activate / deactivate functions per area (flag flip + lifecycle). The flag
+    // is a scoreboard write, so it stays outside any dimension wrap; only the
+    // user's lifecycle body - which may read blocks or summon at world
+    // coordinates - is run in the area's dimension.
     const activateOf = new Map<ModuleRef, FunctionRef>();
     const deactivateOf = new Map<ModuleRef, FunctionRef>();
+    const inDimension = (ref: ModuleRef, ctx: FunctionContext, body: (c: FunctionContext) => void) => {
+      const dim = dims.get(ref);
+      if (dim) ctx.execute().in(dim).run(body);
+      else body(ctx);
+    };
     for (const ref of areas) {
       const { instance, meta } = graph.nodes.get(ref)!;
       const activate = dp.createFunction(`${meta.name}/activate`);
       activate.build((ctx) => {
         flags.score(meta.name).set(1, ctx);
-        instance.onActivate?.(ctx);
+        if (instance.onActivate) inDimension(ref, ctx, (c) => instance.onActivate!(c));
       });
       activateOf.set(ref, activate);
       const deactivate = dp.createFunction(`${meta.name}/deactivate`);
       deactivate.build((ctx) => {
-        instance.onDeactivate?.(ctx);
+        if (instance.onDeactivate) inDimension(ref, ctx, (c) => instance.onDeactivate!(c));
         flags.score(meta.name).set(0, ctx);
       });
       deactivateOf.set(ref, deactivate);
@@ -106,10 +120,12 @@ export class DatapackFactory {
     const w: Wiring = {
       graph,
       flags,
+      latches,
       dp,
       needsTick: needsTickMemo(graph),
       activateOf,
       deactivateOf,
+      dims,
       phaseOf: makePhaseAllocator(),
     };
     if (w.needsTick(graph.root)) {
