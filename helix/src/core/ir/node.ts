@@ -40,6 +40,27 @@ export class Range extends ASTNode {
     super();
   }
 
+  // Named constructors, so a call site reads as what the range *means* rather
+  // than as its punctuation. The same four {@link NumRange} already offers for
+  // the numeric-range value; these are their score-range counterparts.
+
+  /** `n` - exactly. */
+  static exactly(n: number) {
+    return new Range(n, n);
+  }
+  /** `n..` - at least `n`. */
+  static atLeast(n: number) {
+    return new Range(n, undefined);
+  }
+  /** `..n` - at most `n`. */
+  static atMost(n: number) {
+    return new Range(undefined, n);
+  }
+  /** `a..b` - inclusive band. */
+  static between(a: number, b: number) {
+    return new Range(a, b);
+  }
+
   toString() {
     if (this.min !== undefined && this.max !== undefined)
       // An exact value is written bare (`matches 0`), not as a `0..0` range.

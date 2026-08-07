@@ -20,7 +20,9 @@ export {
   EVENT_OBJECTIVE,
 } from "./events";
 export type { OnOptions, EventHandler } from "./events";
+export { buildEnv, currentEnv, isDev, setBuildEnv } from "./env";
 export { defineItem, ItemBuilder } from "./item";
+export { registerItem, registerItemGiveCommands } from "./item-registry";
 export type { ItemBehaviour } from "./item";
 export { StateMachine } from "./state-machine";
 export type { StateBody, StateConfig } from "./state-machine";

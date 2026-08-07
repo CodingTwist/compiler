@@ -146,10 +146,10 @@ export class Datapack {
    * that's what lets the compiler run in a browser. Consequently this is async;
    * `await` it if you need the files on disk before continuing.
    */
-  async writeDatapack(outputPath: string) {
+  async writeDatapack(outputPath: string, opts?: { zip?: boolean }) {
     this.prepareForCodegen();
     const { writeDatapack } = await import("../codegen/write.js");
-    writeDatapack(this, outputPath); //call back codegen
+    writeDatapack(this, outputPath, opts); //call back codegen
   }
 
   /**

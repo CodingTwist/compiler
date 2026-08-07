@@ -37,6 +37,14 @@ constructed and emits nothing** - that is the compile-time disable.
 - [src/events.ts](src/events.ts) - the `@On` / `@Every` method decorators, the
   per-handler latch objective (`EventLatches`), and `rearmEvents`.
 - [src/item.ts](src/item.ts) - `defineItem` / `ItemBuilder`: custom behavioural items.
+- [src/item-registry.ts](src/item-registry.ts) - `registerItem(name, item)` /
+  `registerItemGiveCommands(dp)`: dev-only `debug/give/<name>` functions for plain
+  (non-behavioural) `ItemValue`s a pack declares.
+- [src/env.ts](src/env.ts) - the build's **one** resolved `BuildEnv`. `currentEnv()`
+  reads `TWINE_ENV`, `DatapackFactory.create` publishes what it actually pruned by
+  (`setBuildEnv`), and module bodies gate emission on `isDev()` - so "which modules
+  survive" and "which commands they emit" can never disagree. Never re-read
+  `process.env.TWINE_ENV` in a pack; call `isDev()`.
 - [src/index.ts](src/index.ts) - the public barrel.
 
 ## The module lifecycle (the contract authors implement)

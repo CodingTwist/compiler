@@ -12,6 +12,11 @@ export { v1_21_4 } from "./versions/1_21_4";
 export { v26_1_2 } from "./versions/26_1_2";
 export { v26_2 } from "./versions/26_2";
 
+// The structure template names a build will ship, read off the dirs registered
+// with `addStructures` - for consumers validating their own template references
+// against what actually gets copied. Reads from disk, so Node-only.
+export { shippedStructureNames } from "./core/codegen/write";
+
 // Opt-in build-time validation of emitted JSON resources against the vanilla
 // schema for the target version (via Spyglass's mcdoc runtime). The Spyglass
 // packages are optional deps, loaded lazily - importing these symbols does not

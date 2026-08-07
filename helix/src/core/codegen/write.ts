@@ -9,8 +9,16 @@ import path from "path";
 import { Datapack } from "../ir/datapack";
 import { buildDatapack, buildResourcePack, buildPackMcmeta } from "./codegen";
 import { deriveClearStructure } from "./structure";
+import { buildZip } from "./zip";
 
-export function writeDatapack(dp: Datapack, outDir: string) {
+export function writeDatapack(dp: Datapack, outDir: string, opts?: { zip?: boolean }) {
+  if (opts?.zip) {
+    const files = collectDatapackFiles(dp);
+    fs.mkdirSync(path.dirname(outDir), { recursive: true });
+    fs.writeFileSync(outDir, buildZip(files));
+    return;
+  }
+
   const files = buildDatapack(dp);
 
   // Clear this pack's own namespace folder first so a rebuild never leaves
@@ -39,6 +47,44 @@ export function writeDatapack(dp: Datapack, outDir: string) {
     path.join(outDir, "pack.mcmeta"),
     JSON.stringify(buildPackMcmeta(dp), null, 2),
   );
+}
+
+/**
+ * Everything a loose-file `writeDatapack` would put on disk (generated JSON,
+ * copied `.nbt` structures incl. derived `_clear` variants, `pack.mcmeta`),
+ * collected in memory instead - shared by the zip branch above.
+ */
+function collectDatapackFiles(dp: Datapack): Map<string, Buffer> {
+  const files = new Map<string, Buffer>();
+
+  for (const [filePath, content] of buildDatapack(dp)) {
+    files.set(filePath, Buffer.from(content, "utf-8"));
+  }
+
+  const folder = dp.version.paths.structure;
+  const clearVariants = dp.clearStructureVariants;
+  for (const dir of dp.structureSources) {
+    if (!fs.existsSync(dir)) {
+      throw new Error(`addStructures: directory does not exist: ${dir}`);
+    }
+    for (const rel of walkNbt(dir)) {
+      const src = path.join(dir, rel);
+      const dest = path.join("data", dp.name, folder, rel);
+      const content = fs.readFileSync(src);
+      files.set(dest, content);
+
+      const key = rel.replace(/\.nbt$/, "").split(path.sep).join("/");
+      const fill = clearVariants.get(key);
+      if (fill) {
+        const clearDest = dest.replace(/\.nbt$/, "_clear.nbt");
+        files.set(clearDest, deriveClearStructure(content, fill));
+      }
+    }
+  }
+
+  files.set("pack.mcmeta", Buffer.from(JSON.stringify(buildPackMcmeta(dp), null, 2), "utf-8"));
+
+  return files;
 }
 
 export function writeResourcePack(dp: Datapack, outDir: string) {
@@ -133,6 +179,27 @@ function copyStructures(dp: Datapack, outDir: string) {
 }
 
 /** Relative paths of every `.nbt` file under `root`, recursing into subfolders. */
+/**
+ * The `/place template` names this pack will actually ship - every `.nbt` under
+ * every directory registered with {@link Datapack.addStructures}, relative and
+ * extension-stripped, exactly as {@link copyStructures} will emit them (`cog.nbt`
+ * in a source dir -> `cog`, so the id is `<ns>:cog`).
+ *
+ * Reading the set back off the datapack rather than off a path constant lets a
+ * consumer validate its own references against the same set the build copies - a
+ * level naming a template that was never staged can fail the build instead of
+ * failing silently in-game as an empty room.
+ */
+export function shippedStructureNames(dp: Datapack): Set<string> {
+  const names = new Set<string>();
+  for (const dir of dp.structureSources) {
+    for (const rel of walkNbt(dir)) {
+      names.add(rel.replace(/\.nbt$/, "").split(path.sep).join("/"));
+    }
+  }
+  return names;
+}
+
 function walkNbt(root: string, prefix = ""): string[] {
   const out: string[] = [];
   for (const entry of fs.readdirSync(path.join(root, prefix), {

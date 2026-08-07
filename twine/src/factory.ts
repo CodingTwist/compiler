@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { Datapack, v1_20_4 } from "helix";
 import type { FunctionContext, VersionProfile, FunctionRef, RuntimeTarget } from "helix";
 import type { BuildEnv, ModuleClass, ModuleRef } from "./module.interface";
+import { currentEnv, setBuildEnv } from "./env";
 import { ActiveFlags } from "./flags";
 import { EventLatches } from "./events";
 import { buildGraph, needsTickMemo, resolveDimensions, type Node } from "./graph";
@@ -34,7 +35,11 @@ export interface FactoryOptions {
   name: string;
   /** Target version profile. Default {@link v1_20_4}. */
   version?: VersionProfile;
-  /** Build target. Modules `env`-gated to other envs are pruned. Default `"dev"`. */
+  /**
+   * Build target. Modules `env`-gated to other envs are pruned, and the value is
+   * published for {@link isDev} so module bodies gate what they emit on the same
+   * answer. Default: {@link currentEnv} (`TWINE_ENV`, else `"dev"`).
+   */
   env?: BuildEnv;
   /**
    * Runtime this build targets (`"vanilla"` | `"paper"`). Drives `ctx.native(...)`
@@ -60,7 +65,10 @@ export class DatapackFactory {
     const dp = new Datapack(opts.name, opts.version ?? v1_20_4, opts.target);
     const flags = new ActiveFlags(dp);
     const latches = new EventLatches(dp);
-    const env = opts.env ?? "dev";
+    // Resolved once and published, so `isDev()` inside a module body can't
+    // disagree with what the graph was pruned by - see ./env.ts.
+    const env = opts.env ?? currentEnv();
+    setBuildEnv(env);
 
     const graph = buildGraph(root, env);
 

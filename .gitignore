@@ -6,7 +6,7 @@
 **/out/
 node_modules/
 
-# External projects — their own git repos, not part of this monorepo.
+# External projects - their own git repos, not part of this monorepo.
 lab/
 unravel/
 

@@ -1,7 +1,7 @@
 # compiler
 
 A TypeScript compiler for Minecraft datapacks, and the layers built on top of it. Write
-your pack in TypeScript — typed selectors, scores, items, blocks, NBT and commands — and
+your pack in TypeScript - typed selectors, scores, items, blocks, NBT and commands - and
 compile it straight to `.mcfunction` and JSON, version-profile aware.
 
 ```ts
@@ -22,7 +22,7 @@ Full guide, curated examples and API reference: see [`docs/`](docs/index.md).
 
 ## Packages
 
-Three sibling packages under this repo, forming a layered stack — each builds **only on
+Three sibling packages under this repo, forming a layered stack - each builds **only on
 the public API of the one below**:
 
 | Package | Layer | One line |
@@ -39,7 +39,7 @@ primitive, it belongs in spool or twine, not helix. See
 ## Getting started
 
 Each package depends on the ones below it via `file:../<pkg>`, consuming the **built
-`dist/`** — not the source. Build downward-up:
+`dist/`** - not the source. Build downward-up:
 
 ```sh
 npm --prefix helix install && npm --prefix helix run build
@@ -48,14 +48,14 @@ npm --prefix twine install && npm --prefix twine run build
 ```
 
 After changing a package's source, rebuild it before consumers see the new
-types/behaviour — a stale `dist/` silently hides breaking changes.
+types/behaviour - a stale `dist/` silently hides breaking changes.
 
 See each package's own `CLAUDE.md` for its commands, architecture and landmines:
 [helix](helix/CLAUDE.md), [spool](spool/CLAUDE.md), [twine](twine/CLAUDE.md).
 
 ## Docs site
 
-`docs/` is a VitePress site — guide, curated examples, a TypeDoc API reference, and a
+`docs/` is a VitePress site - guide, curated examples, a TypeDoc API reference, and a
 live in-browser playground.
 
 ```sh

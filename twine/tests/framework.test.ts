@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { buildDatapack, Selector, Datapack, v1_20_4 } from "helix";
 import { Module, defineModule } from "../src/module.decorator";
 import { DatapackFactory, consolidateTick } from "../src/factory";
+import { isDev, setBuildEnv } from "../src/env";
 
 /** Render a function node's body to joined command text. */
 function bodyOf(dp: Datapack, name: string): string {
@@ -446,6 +447,34 @@ describe("env gating (dev/prod builds)", () => {
     expect(all).not.toContain("debug_marker");
     // The non-gated area module still compiles in prod.
     expect(all).toContain("#keep active");
+  });
+
+  it("takes the env from TWINE_ENV when the factory is given none", () => {
+    const saved = process.env.TWINE_ENV;
+    try {
+      process.env.TWINE_ENV = "prod";
+      const dp = DatapackFactory.create(Root as never, { name: "test" });
+      expect([...buildDatapack(dp).values()].join("\n")).not.toContain("debug_marker");
+      // ...and the same value is what a module body's `isDev()` sees.
+      expect(isDev()).toBe(false);
+    } finally {
+      if (saved === undefined) delete process.env.TWINE_ENV;
+      else process.env.TWINE_ENV = saved;
+      setBuildEnv("dev");
+    }
+  });
+
+  it("lets an explicit env override TWINE_ENV for isDev too", () => {
+    const saved = process.env.TWINE_ENV;
+    try {
+      process.env.TWINE_ENV = "dev";
+      DatapackFactory.create(Root as never, { name: "test", env: "prod" });
+      expect(isDev()).toBe(false);
+    } finally {
+      if (saved === undefined) delete process.env.TWINE_ENV;
+      else process.env.TWINE_ENV = saved;
+      setBuildEnv("dev");
+    }
   });
 });
 
