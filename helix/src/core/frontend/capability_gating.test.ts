@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { FunctionContext } from "./context";
 import "../commands"; // install the ctx.<command>() prototype augmentations
 import { FunctionNode } from "../ir/node";
-import { v1_20_1 } from "../../versions/1_20_1";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_20_1 } from "../../versions/profiles";
+import { v1_21_4 } from "../../versions/profiles";
 
 // `random` was added in 1.20.3. The frontend gates on the target version, so
 // authoring `ctx.random(...)` against an older target throws at the call site -

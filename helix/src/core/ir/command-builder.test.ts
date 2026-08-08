@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { arg, buildCommand, buildTokens, lit, raw } from "./command-builder";
-import { v1_21_4 } from "../../versions/1_21_4";
-import { v1_20_1 } from "../../versions/1_20_1";
+import { v1_21_4 } from "../../versions/profiles";
+import { v1_20_1 } from "../../versions/profiles";
 
 describe("buildCommand (named args, order from the tree)", () => {
   it("emits arguments in the tree's order, not the caller's key order", () => {

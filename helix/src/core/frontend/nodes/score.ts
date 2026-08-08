@@ -1,11 +1,9 @@
 import { TellrawPart } from "./tellraw_part";
 
-import { ExpressionNode, Range, ASTNode } from "../../ir/node";
+import { ExpressionNode, Range } from "../../ir/node";
 import { ScoreRangeNode } from "../../commands/if";
-import { ExecuteStoreNode, StoreScoreNode } from "../../commands/execute_store";
-import { ScoreOpNode, ScoreOperator } from "../../commands/score_op";
+import { scoreOpNode, ScoreOperator } from "../../commands/scoreboard";
 import { currentContext } from "../context/ambient";
-import { Condition } from "../interfaces/condition";
 import { Objective } from "./objective";
 import { FunctionContext } from "../context";
 import { ScoreTarget } from "../../values/score_target";
@@ -106,7 +104,7 @@ export class Score extends TellrawPart implements ExpressionNode {
       throw new Error(
         "Score arithmetic has no active context: call it inside a build()/run()/if() callback, or pass ctx explicitly.",
       );
-    target.emit(new ScoreOpNode(this, op, other));
+    target.emit(scoreOpNode(this, op, other));
     return this;
   }
 
@@ -152,24 +150,6 @@ export class Score extends TellrawPart implements ExpressionNode {
       throw new Error("Score value not set. Use set(value) first.");
     ctx.scoreSet(this);
     return this;
-  }
-
-  storeResult(ctx: FunctionContext, command: ASTNode) {
-    ctx.emit(
-      new ExecuteStoreNode(
-        "result",
-        new StoreScoreNode(this.target, this.objective),
-        command,
-      ),
-    );
-  }
-
-  toExecuteIf(): string {
-    throw new Error("Method not implemented.");
-  }
-
-  invert(): Condition {
-    throw new Error("Method not implemented.");
   }
 
   // toJson(): TextJson {

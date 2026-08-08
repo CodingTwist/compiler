@@ -2,12 +2,9 @@ import { Selector, Attribute } from "helix";
 import type { FunctionContext } from "helix";
 import { ZERO_GRAVITY, GRAVITY_MODIFIER_ID } from "./tuning";
 import { releaseKick } from "./physics";
-import { swingScratch } from "./scratch";
-import type { Scratch } from "./scratch";
-import type { StateRepository } from "./state.repository";
-import type { Constants } from "./constants";
-import type { GrappleSelectors } from "./selectors";
 import type { PlayerMotion } from "../player_motion";
+import { swingScratch } from "./state";
+import type { Constants, GrappleSelectors, Scratch, StateRepository } from "./state";
 
 interface ReleaseDeps {
   repo: StateRepository;

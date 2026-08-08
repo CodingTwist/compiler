@@ -99,3 +99,15 @@ export abstract class CommandNodeBase extends ASTNode {
   abstract type: string;
   parts: CommandPart[] = [];
 }
+
+/**
+ * The node every *mechanical* command uses: it is nothing but its command name
+ * plus the literal/arg parts its builder accumulated, so one class covers all of
+ * them (and one shared `TreeCommandHandler` renders them - see ir/generate).
+ * Commands whose lowering is version-dependent keep their own node + handler.
+ */
+export class TreeCommandNode extends CommandNodeBase {
+  constructor(readonly type: string) {
+    super();
+  }
+}

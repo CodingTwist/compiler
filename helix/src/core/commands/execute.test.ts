@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Datapack, Objective, ScoreTarget, Selector, Id, NbtPath, Pos, Range, Block, Nbt, Item } from "../../index";
-import { v26_2 } from "../../versions/26_2";
+import { v26_2 } from "../../versions/profiles";
 import { buildDatapack } from "../codegen/codegen";
 
 function render(build: (ctx: any) => void): string[] {

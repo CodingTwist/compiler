@@ -3,7 +3,7 @@ import { Datapack } from "../ir/datapack";
 import { buildDatapack } from "../codegen/codegen";
 import { FunctionContext } from "../frontend";
 import { Pos, Block } from "../values";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 
 function render(build: (ctx: FunctionContext) => void): string {
   const dp = new Datapack("testpack", v1_21_4);

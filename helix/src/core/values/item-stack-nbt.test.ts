@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { Item } from "./item";
 import { Nbt } from "./nbt";
 import { EntityType } from "./resource.generated";
-import { v26_1_2 } from "../../versions/26_1_2";
-import { v1_20_1 } from "../../versions/1_20_1";
+import { v26_1_2 } from "../../versions/profiles";
+import { v1_20_1 } from "../../versions/profiles";
 
 describe("ItemValue.toStackNbt", () => {
   it("renders the modern count/components stack compound", () => {

@@ -4,7 +4,6 @@ import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { generateRunTarget, generateSingleNode } from "../ir/generate";
 import { arg, buildTokens, lit, raw, Token } from "../ir/command-builder";
 import { VersionProfile } from "../../versions/profile";
-import { IfBuilder } from "../frontend/interfaces/if_builder";
 import { FunctionContext } from "../frontend/context";
 import { runInContext } from "../frontend/context/ambient";
 import { ScoreTarget } from "../values/score_target";
@@ -15,6 +14,12 @@ import { Selector } from "../frontend/nodes/selector";
 import { Pos } from "../values";
 import { Id } from "../values/id";
 import { PredicateRef } from "../values/predicate";
+
+/** The `elif`/`else` continuation returned by `ctx.if(...)`. */
+export interface IfBuilder {
+  elif(condition: ExpressionNode, fn: (ctx: FunctionContext) => void): IfBuilder;
+  else(fn: (ctx: FunctionContext) => void): void;
+}
 
 // The score *expression* sublanguage (conditions for `if` / selector scoring).
 // Not commands and have no handler of their own; the `if` handler reads them.

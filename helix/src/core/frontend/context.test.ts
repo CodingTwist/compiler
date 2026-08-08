@@ -6,8 +6,7 @@ import { Player } from "./nodes/player";
 import { ExpressionNode, FunctionNode } from "../ir/node";
 import { IfElseNode } from "../commands/if";
 import { SayNode } from "../commands/saycommand";
-import { ScoreInitNode } from "../commands/objective_init";
-import { ScoreSetNode } from "../commands/score_set";
+import { ScoreboardNode } from "../commands/scoreboard";
 import { TellrawNode } from "../commands/tellraw";
 import { PlayerGiveNode } from "../commands/give";
 import { Text } from "./nodes/text";
@@ -15,7 +14,7 @@ import { Score } from "./nodes/score";
 import { TellrawText } from "./nodes/tellraw_text";
 import { Selector } from "./nodes/selector";
 import { Item, ItemValue } from "../values/item";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 
 describe("FunctionContext", () => {
   it("say() pushes a SayNode", () => {
@@ -29,18 +28,19 @@ describe("FunctionContext", () => {
     expect((fn.nodes[0] as SayNode).value).toBe("hello");
   });
 
-  it("scoreInit() pushes a ScoreInitNode", () => {
+  it("scoreInit() pushes the objectives-add command", () => {
     const fn = new FunctionNode("main");
     const ctx = new FunctionContext(fn, v1_21_4);
     const obj = new Objective("kills");
 
     ctx.scoreInit(obj);
 
-    expect(fn.nodes[0]).toBeInstanceOf(ScoreInitNode);
-    expect((fn.nodes[0] as ScoreInitNode).objective).toBe(obj);
+    const node = fn.nodes[0] as ScoreboardNode;
+    expect(node.spine).toEqual(["objectives", "add"]);
+    expect(node.args).toEqual({ objective: "kills", criteria: "dummy" });
   });
 
-  it("scoreSet() pushes a ScoreSetNode", () => {
+  it("scoreSet() pushes the players-set command", () => {
     const fn = new FunctionNode("main");
     const ctx = new FunctionContext(fn, v1_21_4);
     const obj = new Objective("kills");
@@ -48,11 +48,9 @@ describe("FunctionContext", () => {
     const score = new Score(obj, "player", 5);
     ctx.scoreSet(score);
 
-    expect(fn.nodes[0]).toBeInstanceOf(ScoreSetNode);
-    const node = fn.nodes[0] as ScoreSetNode;
-    expect(node.target).toBe("player");
-    expect(node.objective).toBe(obj);
-    expect(node.value).toBe(5);
+    const node = fn.nodes[0] as ScoreboardNode;
+    expect(node.spine).toEqual(["players", "set"]);
+    expect(node.args).toEqual({ targets: "player", objective: "kills", score: 5 });
   });
 
   it("tellraw() pushes a TellrawNode", () => {

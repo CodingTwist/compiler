@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { Datapack } from "../ir/datapack";
 import { buildResourcePack, buildPackMcmeta } from "../codegen/codegen";
-import { v26_2 } from "../../versions/26_2";
-import { v1_21_4 } from "../../versions/1_21_4";
-import { v1_20_4 } from "../../versions/1_20_4";
+import { v26_2 } from "../../versions/profiles";
+import { v1_21_4 } from "../../versions/profiles";
+import { v1_20_4 } from "../../versions/profiles";
 import { Item } from "./item";
 import { Model, ModelRef } from "./model";
 import { BlockState } from "./block-state";

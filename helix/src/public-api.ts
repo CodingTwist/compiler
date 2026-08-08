@@ -21,7 +21,7 @@ export { Objective, usedStatCriteria, type ObjectiveKind } from "./core/frontend
 // not the core: they're composed AST-building conveniences over this public API, not
 // part of the AST→IR→codegen engine. The core only exposes the timing *contract* they
 // share with the IR scheduler (`dp.timing`).
-export { FOREVER, TICKS_PER_SECOND, type Countdown } from "./core/timing/strategy";
+export { FOREVER, TICKS_PER_SECOND, type Countdown } from "./core/timing/scoreboard-timing";
 export type { FunctionRef } from "./core/function_ref";
 // Codegen entry: turn a built `Datapack` into a path→contents map (consumers usually
 // call `dp.writeDatapack(dir)`; this is the in-memory form for tests/inspection).

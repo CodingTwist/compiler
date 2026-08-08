@@ -1,15 +1,11 @@
 import type { FunctionContext } from "helix";
 import { DEBUG, LOG } from "./tuning";
 import { senseSwingState, solveConstraint } from "./physics";
-import { swingScratch } from "./scratch";
-import type { Scratch } from "./scratch";
-import type { StateRepository } from "./state.repository";
-import type { Constants } from "./constants";
-import type { GrappleSelectors } from "./selectors";
-import type { GrappleFunctions } from "./functions";
 import type { PlayerMotion } from "../player_motion";
 import type { DebugService } from "./debug.service";
 import type { RopeService } from "./rope.service";
+import { swingScratch } from "./state";
+import type { Constants, GrappleFunctions, GrappleSelectors, Scratch, StateRepository } from "./state";
 
 interface SwingDeps {
   repo: StateRepository;

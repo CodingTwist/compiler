@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Datapack } from "../ir/datapack";
 import { buildDatapack } from "../codegen/codegen";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 
 describe("ScoreboardTiming.everyTicks phase staggering", () => {
   it("gives different-phase hooks distinct functions and a shared counter", () => {

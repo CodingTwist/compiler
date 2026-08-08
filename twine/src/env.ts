@@ -11,27 +11,20 @@ import type { BuildEnv } from "./module.interface";
  * passed for the first, and ship debug commands in a prod build.
  *
  * So the factory publishes the env it resolved ({@link setBuildEnv}) and
- * everything else reads it back ({@link buildEnv}) - the same attach/current
- * shape as {@link Logger}. Before the factory runs, and for consumers not using
- * it, {@link currentEnv} is the fallback.
+ * everything else reads it back ({@link buildEnv}). Before the factory runs,
+ * and for consumers not using it, `TWINE_ENV` is the fallback.
  */
 
-/** `TWINE_ENV=prod ...`; anything else (including unset) is `"dev"`. */
-export function currentEnv(): BuildEnv {
-  return process.env.TWINE_ENV === "prod" ? "prod" : "dev";
+/** The env the factory resolved, or `TWINE_ENV=prod` (anything else is `"dev"`). */
+export function buildEnv(): BuildEnv {
+  return resolved ?? (process.env.TWINE_ENV === "prod" ? "prod" : "dev");
 }
 
-/** The env the factory resolved, once it has. */
 let resolved: BuildEnv | undefined;
 
 /** Publish the resolved env. Called by `DatapackFactory.create`; rarely by hand. */
 export function setBuildEnv(env: BuildEnv): void {
   resolved = env;
-}
-
-/** The env this build is targeting - the factory's, or {@link currentEnv} if none ran. */
-export function buildEnv(): BuildEnv {
-  return resolved ?? currentEnv();
 }
 
 /** Whether debug/admin commands should be built. Prod packs ship without them. */

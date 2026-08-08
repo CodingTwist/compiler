@@ -4,7 +4,7 @@ import { createHandlerMap } from "../codegen/codegen";
 import { Datapack } from "../ir/datapack";
 import { describe, it, expect } from "vitest";
 import { SayCommand } from "./saycommand";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 
 function createCommandTestEnv() {
   const dp = new Datapack("testpack", v1_21_4);

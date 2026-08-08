@@ -40,12 +40,6 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
 
 - `npm run build` - `node scripts/versions.mjs sync && rm -rf dist && tsc && node scripts/copy-data.mjs`
 - `npm test` / `npx vitest run` - vitest (`pretest` runs `versions.mjs sync` first)
-- `npm run example` - sync data + run an example from source via `tsx`
-  (`src/example/randomtests/example.ts`). The examples read sibling `structures/*.nbt` assets by
-  `__dirname`, which `tsc` does not copy into `dist`, so they are run from source, not from a
-  `dist` build. **`src/example/` is excluded from `tsc`** (see `tsconfig.json`) - it's tsx-run dev
-  scratch.
-- `npx tsx src/example/randomtests/example.ts` - run an example directly (same thing, no data sync)
 - `npm run gen:commands` - regenerate `src/core/commands/*` + `values/resource.generated.ts` from
   version data (see landmines below)
 
@@ -66,18 +60,22 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
   - `values/` lives under `src/core/values/` - domain value types (`Pos`, `Block`, `Nbt`, `Item`,
     `Id`, `Path`) that render version-aware at codegen.
 - **`src/core/ir/`** - codegen infrastructure: `commandhandler.ts` (`CommandHandler` base,
-  `CodegenContext`, `Dispatcher`), `command-builder.ts`, `command-validator.ts`, `tree-command.ts`
-  (base for generated handlers), `generate.ts` (`generateFunction`/`generateSingleNode` - leaf, no
-  barrel import), `variation.ts`, `datapack.ts`.
+  `CodegenContext`, `Dispatcher`, and the shared `TreeCommandHandler` every mechanical command
+  renders through), `command-builder.ts`, `command-validator.ts`, `generate.ts`
+  (`generateFunction`/`generateSingleNode` - leaf, no barrel import), `datapack.ts`.
 - **`src/core/commands/`** - **the single home for every command's node + builder + handler.** All
   registered through the generated `createCommandHandlers()` in `index.ts`:
-  1. **Generated** (~78 files): the 1:1 vanilla-command mirror, produced by `scripts/gen-commands.mjs`
-     from the Brigadier command tree. `<Cmd>Node` + `<Cmd>Builder` + `<Cmd>Handler` (extends
-     `TreeCommandHandler`) + a `FunctionContext.prototype` augmentation per file.
-  2. **Sugar / semantic** (16 hand-written): `say`, `tellraw`, `give`, `trigger`, `random`,
-     `function`, the five `score_*`, `if`, `execute_as`, `execute_store`, `selector`, `data_op`.
-     These are NOT 1:1 vanilla commands - their nodes are emitted by the frontend mixins. Registered
-     via the generator's `EXTRA_HANDLERS` list, never regenerated.
+  1. **Generated** (~51 files): the 1:1 vanilla-command mirror, produced by `scripts/gen-commands.mjs`
+     from the Brigadier command tree. Each file is just a `<Cmd>Builder` + a
+     `FunctionContext.prototype` augmentation - there is **no node or handler class per command**:
+     they all emit a plain `TreeCommandNode(<cmd>)`, which the dispatcher renders with the one
+     shared `TreeCommandHandler`. Server-console commands (ban/op/kick/save/publish/profiling/chat)
+     are skipped entirely - see `CONSOLE_ONLY` in the generator.
+  2. **Sugar / semantic** (hand-written): `say`, `tellraw`, `give`, `trigger`, `random`,
+     `function`, `scoreboard` (the whole score family in one file), `if`, `execute` (the general
+     chain, plus the `atEntity`/`whenItems` sugar), `execute_as`, `entity_guard`, `near_guard`,
+     `selector`, `data_op`, `native`. These are NOT 1:1 vanilla commands - their nodes are emitted
+     by the frontend mixins. Registered via the generator's `EXTRA_HANDLERS` list, never regenerated.
 - **`src/core/codegen/codegen.ts`** - the **pure** build half: `buildDatapack`/`buildResourcePack`
   (→ in-memory `Map<path, contents>`), `buildPackMcmeta`, `createHandlerMap()` (just
   `createCommandHandlers()` → Map by node `type`); re-exports `generate*` from `ir/generate`. It (and
@@ -149,8 +147,9 @@ augmentation). That's why `generate*` lives in leaf `ir/generate.ts`, `NbtRef` i
 `frontend/nodes/nbt_ref.ts`, and `commandhandler.ts` imports `Datapack` as `import type`. Importing a
 node would otherwise pull a `FunctionContext` augmentation before `FunctionContext` is defined.
 - **`src/versions/`** - `profile.ts` (`VersionProfile`: id, dataVersion, pack spec, paths,
-  registries, command tree), `load.ts`, `registry.ts` (runtime id validation), and one `<ver>.ts`
-  per supported version (`loadProfile("<ver>.json")`).
+  registries, command tree), `load.ts`, `registry.ts` (runtime id validation), and the generated
+  `profiles.ts` - one `loadProfile("<ver>.json")` const per supported version, rewritten by
+  `scripts/versions.mjs sync` from `scripts/supported-versions.json`.
 
 ### Core invariant
 
@@ -182,7 +181,11 @@ rebuild the handler map per version.
   not overwrite. If you hand-write a command file, add it here or the next run destroys it.
 - **`HAND_WRITTEN_ELSEWHERE`** = vanilla command names whose frontend is the sugar layer; not
   generated.
-- **`EXTRA_HANDLERS`** = the 16 sugar handler modules the barrel imports + registers.
+- **`EXTRA_HANDLERS`** = the sugar handler modules the barrel imports + registers.
+- **`CONSOLE_ONLY`** = vanilla commands that are legal in a function but useless to a datapack
+  (moderation, save/publish, profiling, chat); not generated.
+- **`AUGMENT_ONLY`** = hand-written modules the barrel re-exports for their `ctx.<method>`
+  augmentation but that register no handler.
 - `commandHandlers` is built **lazily** via `createCommandHandlers()` (a function, not a top-level
   array) on purpose: sugar handlers import `codegen.ts`, which imports this barrel - eager
   construction would hit the import cycle before those classes initialise.
@@ -195,7 +198,7 @@ rebuild the handler map per version.
   never string-interpolated (`@a[distance=..6]`, `0 64 0`, `{Health:20f}`, …). If a handler needs a
   concept the typed API can't yet express, **add it to that API first** (e.g. `Selector.distance()`
   was added so `near_guard` didn't hand-build `@a[distance=..r]`), then compose it. The only allowed
-  `raw(...)` is execute grammar the token validator can't follow past a redirect (see `at_entity.ts`
+  `raw(...)` is execute grammar the token validator can't follow past a redirect (see `execute.ts`
   / `near_guard.ts`) - and even then the embedded selectors/values are still rendered through their
   typed classes, only the `as`/`if entity`/`run` keywords are raw.
 - Tests are colocated `*.test.ts` (vitest), excluded from `tsc` build. Pattern: build a `Datapack`
@@ -203,8 +206,6 @@ rebuild the handler map per version.
   `ctx.lines`.
 - `tsconfig`: NodeNext ESM, strict, no `resolveJsonModule` (version data is loaded at runtime, not
   imported as JSON). Generate `.ts`, not JSON modules.
-- When changing handler behaviour, verify the example output is unchanged unless intended:
-  `npx tsx src/example/randomtests/example.ts`.
 
 ## Workflow notes
 

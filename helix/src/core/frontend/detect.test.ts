@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Block, Datapack, Detect, Id, Pos, Selector, detect } from "../../index";
-import { v26_2 } from "../../versions/26_2";
+import { v26_2 } from "../../versions/profiles";
 import { buildDatapack } from "../codegen/codegen";
 import type { Detector } from "./detect";
 

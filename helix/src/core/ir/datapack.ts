@@ -7,15 +7,11 @@ import {
 import type { ClearFill } from "../codegen/structure";
 import { Objective, ObjectiveKind } from "../frontend";
 import { FunctionNode } from "./node";
-import { ScoreInitNode } from "../commands/objective_init";
+import { scoreInitNode } from "../commands/scoreboard";
 import { FunctionRef } from "../function_ref";
 import { VersionProfile } from "../../versions/profile";
 import type { FunctionContext } from "../frontend/context";
-import {
-  TICKS_PER_SECOND,
-  TimingStrategy,
-} from "../timing/strategy";
-import { ScoreboardTiming } from "../timing/scoreboard-timing";
+import { TICKS_PER_SECOND, ScoreboardTiming } from "../timing/scoreboard-timing";
 import { privateName } from "../private-fn";
 import { Predicate, PredicateRef } from "../values/predicate";
 import { AdvancementDef, Trigger } from "../values/advancement";
@@ -118,8 +114,8 @@ export class Datapack {
   public files = new Map<string, string>();
   public tags = new Map<FunctionTag, Set<string>>();
 
-  /** How run-for-a-duration / periodic timing compiles. Swap via {@link useTiming}. */
-  timing: TimingStrategy = new ScoreboardTiming();
+  /** How run-for-a-duration / periodic timing compiles. */
+  readonly timing = new ScoreboardTiming();
   private finalizers: (() => void)[] = [];
   private finalizersRun = false;
   private structureDirs: string[] = [];
@@ -223,12 +219,6 @@ export class Datapack {
   /** Requested `_clear` variants (path → fill block), for codegen. */
   get clearStructureVariants(): ReadonlyMap<string, ClearFill> {
     return this.clearVariants;
-  }
-
-  /** Replace the timing backend (default: scoreboard). See {@link TimingStrategy}. */
-  useTiming(strategy: TimingStrategy): this {
-    this.timing = strategy;
-    return this;
   }
 
   /** Set the runtime this build targets (default: `"vanilla"`). See {@link RuntimeTarget}. */
@@ -761,7 +751,7 @@ export class Datapack {
     // those late objectives from init. Clearing in place is cheap.
     initFn.nodes.length = 0;
     for (const obj of this.objectives.values()) {
-      initFn.nodes.push(new ScoreInitNode(obj));
+      initFn.nodes.push(scoreInitNode(obj));
     }
 
     // Inject call at start of load function

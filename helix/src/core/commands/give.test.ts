@@ -6,8 +6,8 @@ import { Datapack } from "../ir/datapack";
 import { createHandlerMap } from "../codegen/codegen";
 import { Selector } from "../frontend/nodes/selector";
 import { VersionProfile } from "../../versions/profile";
-import { v1_21_4 } from "../../versions/1_21_4";
-import { v1_20_1 } from "../../versions/1_20_1";
+import { v1_21_4 } from "../../versions/profiles";
+import { v1_20_1 } from "../../versions/profiles";
 
 function ctxFor(version: VersionProfile): CodegenContext {
   const dp = new Datapack("testpack", version);

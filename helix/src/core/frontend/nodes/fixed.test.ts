@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Datapack } from "../../ir/datapack";
-import { v1_21_4 } from "../../../versions/1_21_4";
+import { v1_21_4 } from "../../../versions/profiles";
 import { Objective } from "./objective";
 import { Fixed } from "./fixed";
 import { ScoreTarget } from "../../values/score_target";

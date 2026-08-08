@@ -6,9 +6,9 @@ import { RandomValueNode } from "../commands/random";
 import { Selector } from "../frontend/nodes/selector";
 import { buildDatapack } from "./codegen";
 import { VersionProfile } from "../../versions/profile";
-import { v1_21_4 } from "../../versions/1_21_4";
-import { v1_20_4 } from "../../versions/1_20_4";
-import { v1_20_1 } from "../../versions/1_20_1";
+import { v1_21_4 } from "../../versions/profiles";
+import { v1_20_4 } from "../../versions/profiles";
+import { v1_20_1 } from "../../versions/profiles";
 
 // Author one function, then compile it against a chosen version.
 function buildAgainst(version: VersionProfile, nodes: ASTNode[]) {

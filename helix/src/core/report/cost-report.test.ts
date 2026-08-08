@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Datapack } from "../ir/datapack";
 import { Selector } from "../frontend/nodes/selector";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 
 describe("cost report", () => {
   it("counts worst-case commands reachable from tick across called functions", () => {

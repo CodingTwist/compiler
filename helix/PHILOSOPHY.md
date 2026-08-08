@@ -126,7 +126,7 @@ this list - new code must comply.**
       `storage`/`entity`/`block` sugar (the frontend twin of `commands/data.ts`) had
       `| string` on every verb (`NbtPath | string`, `Selector | string`, `Pos | string`,
       `Id | string`, `Nbt | string`); all tightened to the concept type.
-- [x] [src/core/commands/at_entity.ts](src/core/commands/at_entity.ts) and
+- [x] `atEntity` (now a clause on [src/core/commands/execute.ts](src/core/commands/execute.ts)) and
       [src/core/commands/near_guard.ts](src/core/commands/near_guard.ts) - the
       `atEntity`/`whenPlayerNear` sugar took raw selector/position strings; now
       `Selector` and `Pos`. (Handlers render via `toCommandValue(x).render(version)`.)

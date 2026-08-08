@@ -8,7 +8,7 @@ import { FunctionContext } from "../frontend/context";
 import { Id, Pos } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 import { RuntimeTarget } from "../ir/target";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 
 // Author a function that makes one native op (optionally with a fallback) and
 // run codegen, returning the rendered `.mcfunction` text - or throwing if the

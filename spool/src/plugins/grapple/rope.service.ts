@@ -1,10 +1,6 @@
 import { Range, Pos, Particle, Selector, EntityAnchor } from "helix";
 import type { FunctionContext } from "helix";
-import type { Scratch } from "./scratch";
-import type { GrappleSelectors } from "./selectors";
-import type { StateRepository } from "./state.repository";
-import type { GrappleConfig } from "./config";
-import type { GrappleFunctions } from "./functions";
+import type { GrappleConfig, GrappleFunctions, GrappleSelectors, Scratch, StateRepository } from "./state";
 
 /**
  * Particle the rope is drawn from. We redraw the whole line every tick, so the particle

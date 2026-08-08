@@ -4,8 +4,8 @@ import { FunctionNode } from "../ir/node";
 import { SayNode } from "../commands/saycommand";
 import { buildDatapack, buildPackMcmeta } from "./codegen";
 import { VersionProfile } from "../../versions/profile";
-import { v1_21_4 } from "../../versions/1_21_4";
-import { v1_20_4 } from "../../versions/1_20_4";
+import { v1_21_4 } from "../../versions/profiles";
+import { v1_20_4 } from "../../versions/profiles";
 
 // A synthetic newer profile that uses the range pack-format form (no released
 // version at/below pack format 61 emits the range, so this stays hand-built).

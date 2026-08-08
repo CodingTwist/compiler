@@ -1,6 +1,6 @@
 import { BrigadierNode } from "../core/commandtree/tree";
 import { VersionProfile } from "./profile";
-import { v1_21_4 } from "./1_21_4";
+import { v1_21_4 } from "./profiles";
 
 // ---------------------------------------------------------------------------
 // Experimental / synthetic version profiles.

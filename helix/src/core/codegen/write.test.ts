@@ -5,7 +5,7 @@ import os from "os";
 import path from "path";
 import { Datapack } from "../ir/datapack";
 import { AdvancementDef, Trigger } from "../values/advancement";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 
 describe("writeDatapack", () => {
   let outDir: string | undefined;
@@ -15,26 +15,26 @@ describe("writeDatapack", () => {
   });
 
   it("removes a renamed advancement's old file instead of leaving it behind", async () => {
-    outDir = fs.mkdtempSync(path.join(os.tmpdir(), "helix-write-test-"));
+    const dir = (outDir = fs.mkdtempSync(path.join(os.tmpdir(), "helix-write-test-")));
 
     const first = new Datapack("t", v1_21_4);
     first.advancement("hidden/blindleap", new AdvancementDef().criterion("t", Trigger.impossible()));
-    await first.writeDatapack(outDir);
-    expect(fs.existsSync(path.join(outDir, "data/t/advancement/hidden/blindleap.json"))).toBe(true);
+    await first.writeDatapack(dir);
+    expect(fs.existsSync(path.join(dir, "data/t/advancement/hidden/blindleap.json"))).toBe(true);
 
     // Rebuild under the new name only - the old file must not survive.
     const second = new Datapack("t", v1_21_4);
     second.advancement("enter/blindleap", new AdvancementDef().criterion("t", Trigger.impossible()));
-    await second.writeDatapack(outDir);
+    await second.writeDatapack(dir);
 
-    expect(fs.existsSync(path.join(outDir, "data/t/advancement/hidden/blindleap.json"))).toBe(false);
-    expect(fs.existsSync(path.join(outDir, "data/t/advancement/enter/blindleap.json"))).toBe(true);
+    expect(fs.existsSync(path.join(dir, "data/t/advancement/hidden/blindleap.json"))).toBe(false);
+    expect(fs.existsSync(path.join(dir, "data/t/advancement/enter/blindleap.json"))).toBe(true);
   });
 
   it("{ zip: true } writes a .zip with the same entries as the loose-file output", async () => {
-    outDir = fs.mkdtempSync(path.join(os.tmpdir(), "helix-write-zip-test-"));
-    const looseDir = path.join(outDir, "loose");
-    const zipPath = path.join(outDir, "pack.zip");
+    const dir = (outDir = fs.mkdtempSync(path.join(os.tmpdir(), "helix-write-zip-test-")));
+    const looseDir = path.join(dir, "loose");
+    const zipPath = path.join(dir, "pack.zip");
 
     const dp = new Datapack("t", v1_21_4);
     dp.advancement("hidden/blindleap", new AdvancementDef().criterion("t", Trigger.impossible()));

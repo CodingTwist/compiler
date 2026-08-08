@@ -4,7 +4,7 @@ import { buildDatapack } from "../codegen/codegen";
 import { FunctionContext } from "../frontend";
 import { Nbt } from "../values";
 import { Selector } from "../frontend/nodes/selector";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 
 function render(build: (ctx: FunctionContext) => void): string[] {
   const dp = new Datapack("p", v1_21_4);

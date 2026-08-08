@@ -4,94 +4,8 @@
 // the handler list below is regenerated, so add hand-written commands to
 // HAND_REFINED in the script rather than editing this file.)
 import { CommandHandler } from "../ir/commandhandler";
-import { AdvancementHandler } from "./advancement";
-import { AttributeHandler } from "./attribute";
-import { BanHandler } from "./ban";
-import { BanIpHandler } from "./ban-ip";
-import { BanlistHandler } from "./banlist";
-import { BossbarHandler } from "./bossbar";
-import { ClearHandler } from "./clear";
-import { CloneHandler } from "./clone";
-import { DamageHandler } from "./damage";
-import { DataHandler } from "./data";
-import { DatapackHandler } from "./datapack";
-import { DebugHandler } from "./debug";
-import { DefaultgamemodeHandler } from "./defaultgamemode";
-import { DeopHandler } from "./deop";
-import { DialogHandler } from "./dialog";
-import { DifficultyHandler } from "./difficulty";
-import { EffectHandler } from "./effect";
-import { EnchantHandler } from "./enchant";
-import { ExperienceHandler } from "./experience";
-import { FetchprofileHandler } from "./fetchprofile";
-import { FillHandler } from "./fill";
-import { FillbiomeHandler } from "./fillbiome";
-import { ForceloadHandler } from "./forceload";
-import { GamemodeHandler } from "./gamemode";
-import { GameruleHandler } from "./gamerule";
-import { HelpHandler } from "./help";
-import { ItemHandler } from "./item";
-import { JfrHandler } from "./jfr";
-import { KickHandler } from "./kick";
-import { KillHandler } from "./kill";
-import { ListHandler } from "./list";
-import { LocateHandler } from "./locate";
-import { LootHandler } from "./loot";
-import { MeHandler } from "./me";
-import { MsgHandler } from "./msg";
-import { OpHandler } from "./op";
-import { PardonHandler } from "./pardon";
-import { PardonIpHandler } from "./pardon-ip";
-import { ParticleHandler } from "./particle";
-import { PerfHandler } from "./perf";
-import { PlaceHandler } from "./place";
-import { PlaysoundHandler } from "./playsound";
-import { PublishHandler } from "./publish";
-import { RecipeHandler } from "./recipe";
-import { ReloadHandler } from "./reload";
-import { ReturnHandler } from "./return";
-import { RideHandler } from "./ride";
-import { RotateHandler } from "./rotate";
-import { SaveAllHandler } from "./save-all";
-import { SaveOffHandler } from "./save-off";
-import { SaveOnHandler } from "./save-on";
-import { ScheduleHandler } from "./schedule";
-import { SeedHandler } from "./seed";
-import { SetblockHandler } from "./setblock";
-import { SetidletimeoutHandler } from "./setidletimeout";
-import { SetworldspawnHandler } from "./setworldspawn";
-import { SpawnpointHandler } from "./spawnpoint";
-import { SpectateHandler } from "./spectate";
-import { SpreadplayersHandler } from "./spreadplayers";
-import { StopHandler } from "./stop";
-import { StopsoundHandler } from "./stopsound";
-import { StopwatchHandler } from "./stopwatch";
-import { SummonHandler } from "./summon";
-import { SwingHandler } from "./swing";
-import { TagHandler } from "./tag";
-import { TeamHandler } from "./team";
-import { TeammsgHandler } from "./teammsg";
-import { TeleportHandler } from "./teleport";
-import { TestHandler } from "./test";
-import { TickHandler } from "./tick";
-import { TimeHandler } from "./time";
-import { TitleHandler } from "./title";
-import { TransferHandler } from "./transfer";
-import { UnpublishHandler } from "./unpublish";
-import { WaypointHandler } from "./waypoint";
-import { WeatherHandler } from "./weather";
-import { WhitelistHandler } from "./whitelist";
-import { WorldborderHandler } from "./worldborder";
 import { SayCommand } from "./saycommand";
-import { ScoreInitCommand } from "./objective_init";
-import { ScoreSetCommand } from "./score_set";
-import { ScoreAddCommand } from "./score_add";
-import { ScoreRemoveCommand } from "./score_remove";
-import { ScoreResetCommand } from "./score_reset";
-import { ScoreSetScoreCommand } from "./score_set_score";
-import { ScoreOpCommand } from "./score_op";
-import { ScoreGetCommand } from "./score_get";
-import { ScoreEnableCommand } from "./score_enable";
+import { ScoreboardCommand } from "./scoreboard";
 import { TellrawCommand } from "./tellraw";
 import { PlayerGiveCommand } from "./give";
 import { TriggerCommand } from "./trigger";
@@ -104,27 +18,21 @@ import { IfHandler } from "./if";
 import { ExecuteAsHandler } from "./execute_as";
 import { ExecuteHandler } from "./execute";
 import { ReturnRunHandler } from "./execute";
-import { ExecuteStoreHandler } from "./execute_store";
 import { EntityGuardHandler } from "./entity_guard";
-import { AtEntityHandler } from "./at_entity";
-import { ItemsGuardHandler } from "./items_guard";
 import { NearGuardHandler } from "./near_guard";
 import { NativeCallHandler } from "./native";
+import { DataHandler } from "./data";
+import { SetblockHandler } from "./setblock";
 
 export * from "./advancement";
 export * from "./attribute";
-export * from "./ban";
-export * from "./ban-ip";
-export * from "./banlist";
 export * from "./bossbar";
 export * from "./clear";
 export * from "./clone";
 export * from "./damage";
 export * from "./data";
 export * from "./datapack";
-export * from "./debug";
 export * from "./defaultgamemode";
-export * from "./deop";
 export * from "./dialog";
 export * from "./difficulty";
 export * from "./effect";
@@ -136,58 +44,36 @@ export * from "./fillbiome";
 export * from "./forceload";
 export * from "./gamemode";
 export * from "./gamerule";
-export * from "./help";
 export * from "./item";
-export * from "./jfr";
-export * from "./kick";
 export * from "./kill";
-export * from "./list";
 export * from "./locate";
 export * from "./loot";
-export * from "./me";
-export * from "./msg";
-export * from "./op";
-export * from "./pardon";
-export * from "./pardon-ip";
 export * from "./particle";
-export * from "./perf";
 export * from "./place";
 export * from "./playsound";
-export * from "./publish";
 export * from "./recipe";
 export * from "./reload";
 export * from "./return";
 export * from "./ride";
 export * from "./rotate";
-export * from "./save-all";
-export * from "./save-off";
-export * from "./save-on";
 export * from "./schedule";
-export * from "./seed";
 export * from "./setblock";
-export * from "./setidletimeout";
 export * from "./setworldspawn";
 export * from "./spawnpoint";
-export * from "./spectate";
 export * from "./spreadplayers";
-export * from "./stop";
 export * from "./stopsound";
 export * from "./stopwatch";
 export * from "./summon";
 export * from "./swing";
 export * from "./tag";
 export * from "./team";
-export * from "./teammsg";
 export * from "./teleport";
 export * from "./test";
 export * from "./tick";
 export * from "./time";
 export * from "./title";
-export * from "./transfer";
-export * from "./unpublish";
 export * from "./waypoint";
 export * from "./weather";
-export * from "./whitelist";
 export * from "./worldborder";
 // Re-export the sugar/semantic command modules too. The value imports above are
 // elided from the emitted .d.ts (they're only used to `new` the handlers), which
@@ -196,131 +82,34 @@ export * from "./worldborder";
 // …) - from the published types, so cross-package consumers wouldn't see them.
 // export * keeps the files referenced so the augmentations reach consumers.
 export * from "./saycommand";
-export * from "./objective_init";
-export * from "./score_set";
-export * from "./score_add";
-export * from "./score_remove";
-export * from "./score_reset";
-export * from "./score_set_score";
-export * from "./score_op";
-export * from "./score_get";
-export * from "./score_enable";
+export * from "./scoreboard";
 export * from "./tellraw";
 export * from "./give";
 export * from "./trigger";
 export * from "./random";
-export * from "./function";
 export * from "./function";
 export * from "./selector";
 export * from "./data_op";
 export * from "./if";
 export * from "./execute_as";
 export * from "./execute";
-export * from "./execute";
-export * from "./execute_store";
 export * from "./entity_guard";
-export * from "./at_entity";
-export * from "./items_guard";
 export * from "./near_guard";
 export * from "./native";
 
 /**
- * One handler instance per command, for the codegen handler map. Built lazily
- * (a function, not a top-level array) because some sugar handlers import codegen,
- * which imports this barrel -- constructing them at load time would hit the cycle
- * before those classes are initialised.
+ * Handlers for the nodes that need bespoke lowering. Every *generated* command
+ * emits a plain `TreeCommandNode`, which the dispatcher renders with the shared
+ * `TreeCommandHandler` - so there is no per-command handler here.
+ *
+ * Built lazily (a function, not a top-level array) because some sugar handlers
+ * import codegen, which imports this barrel -- constructing them at load time
+ * would hit the cycle before those classes are initialised.
  */
 export function createCommandHandlers(): CommandHandler[] {
   return [
-    new AdvancementHandler(),
-    new AttributeHandler(),
-    new BanHandler(),
-    new BanIpHandler(),
-    new BanlistHandler(),
-    new BossbarHandler(),
-    new ClearHandler(),
-    new CloneHandler(),
-    new DamageHandler(),
-    new DataHandler(),
-    new DatapackHandler(),
-    new DebugHandler(),
-    new DefaultgamemodeHandler(),
-    new DeopHandler(),
-    new DialogHandler(),
-    new DifficultyHandler(),
-    new EffectHandler(),
-    new EnchantHandler(),
-    new ExperienceHandler(),
-    new FetchprofileHandler(),
-    new FillHandler(),
-    new FillbiomeHandler(),
-    new ForceloadHandler(),
-    new GamemodeHandler(),
-    new GameruleHandler(),
-    new HelpHandler(),
-    new ItemHandler(),
-    new JfrHandler(),
-    new KickHandler(),
-    new KillHandler(),
-    new ListHandler(),
-    new LocateHandler(),
-    new LootHandler(),
-    new MeHandler(),
-    new MsgHandler(),
-    new OpHandler(),
-    new PardonHandler(),
-    new PardonIpHandler(),
-    new ParticleHandler(),
-    new PerfHandler(),
-    new PlaceHandler(),
-    new PlaysoundHandler(),
-    new PublishHandler(),
-    new RecipeHandler(),
-    new ReloadHandler(),
-    new ReturnHandler(),
-    new RideHandler(),
-    new RotateHandler(),
-    new SaveAllHandler(),
-    new SaveOffHandler(),
-    new SaveOnHandler(),
-    new ScheduleHandler(),
-    new SeedHandler(),
-    new SetblockHandler(),
-    new SetidletimeoutHandler(),
-    new SetworldspawnHandler(),
-    new SpawnpointHandler(),
-    new SpectateHandler(),
-    new SpreadplayersHandler(),
-    new StopHandler(),
-    new StopsoundHandler(),
-    new StopwatchHandler(),
-    new SummonHandler(),
-    new SwingHandler(),
-    new TagHandler(),
-    new TeamHandler(),
-    new TeammsgHandler(),
-    new TeleportHandler(),
-    new TestHandler(),
-    new TickHandler(),
-    new TimeHandler(),
-    new TitleHandler(),
-    new TransferHandler(),
-    new UnpublishHandler(),
-    new WaypointHandler(),
-    new WeatherHandler(),
-    new WhitelistHandler(),
-    new WorldborderHandler(),
-    // Hand-written sugar/semantic handlers (see EXTRA_HANDLERS in gen-commands.mjs).
     new SayCommand(),
-    new ScoreInitCommand(),
-    new ScoreSetCommand(),
-    new ScoreAddCommand(),
-    new ScoreRemoveCommand(),
-    new ScoreResetCommand(),
-    new ScoreSetScoreCommand(),
-    new ScoreOpCommand(),
-    new ScoreGetCommand(),
-    new ScoreEnableCommand(),
+    new ScoreboardCommand(),
     new TellrawCommand(),
     new PlayerGiveCommand(),
     new TriggerCommand(),
@@ -333,11 +122,10 @@ export function createCommandHandlers(): CommandHandler[] {
     new ExecuteAsHandler(),
     new ExecuteHandler(),
     new ReturnRunHandler(),
-    new ExecuteStoreHandler(),
     new EntityGuardHandler(),
-    new AtEntityHandler(),
-    new ItemsGuardHandler(),
     new NearGuardHandler(),
     new NativeCallHandler(),
+    new DataHandler(),
+    new SetblockHandler(),
   ];
 }

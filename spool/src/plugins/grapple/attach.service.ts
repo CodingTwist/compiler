@@ -1,12 +1,9 @@
 import { Selector, Attribute } from "helix";
 import type { FunctionContext } from "helix";
 import { DEBUG, ZERO_GRAVITY, GRAVITY_MODIFIER_ID } from "./tuning";
-import type { StateRepository } from "./state.repository";
-import type { Constants } from "./constants";
-import type { GrappleSelectors } from "./selectors";
-import type { Scratch } from "./scratch";
-import { swingScratch } from "./scratch";
 import { fixRopeLength } from "./physics";
+import { swingScratch } from "./state";
+import type { Constants, GrappleSelectors, Scratch, StateRepository } from "./state";
 
 interface AttachDeps {
   repo: StateRepository;

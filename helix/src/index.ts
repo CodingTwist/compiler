@@ -6,11 +6,7 @@ export * from "./public-api";
 
 // Eager, disk-backed version profiles (`loadProfile` reads `data/<ver>.json` at
 // import time). Node-only - the browser builds profiles via `profileFromRaw`.
-export { v1_20_1 } from "./versions/1_20_1";
-export { v1_20_4 } from "./versions/1_20_4";
-export { v1_21_4 } from "./versions/1_21_4";
-export { v26_1_2 } from "./versions/26_1_2";
-export { v26_2 } from "./versions/26_2";
+export { v1_20_1, v1_20_4, v1_21_4, v26_1_2, v26_2 } from "./versions/profiles";
 
 // The structure template names a build will ship, read off the dirs registered
 // with `addStructures` - for consumers validating their own template references

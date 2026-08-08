@@ -23,7 +23,8 @@ import { FunctionContext } from "../frontend/context";
 import { runInContext } from "../frontend/context/ambient";
 import { Score } from "../frontend/nodes/score";
 import { Selector } from "../frontend/nodes/selector";
-import { Block, EntityAnchor, Id, NbtPath, Pos } from "../values";
+import { Block, EntityAnchor, Id, ItemSlot, NbtPath, Pos, Swizzle } from "../values";
+import { ItemValue } from "../values/item";
 import { toCommandValue } from "../values/value";
 import { PredicateRef } from "../values/predicate";
 
@@ -47,9 +48,11 @@ type Clause =
   | { k: "facing"; pos: Pos }
   | { k: "facingEntity"; sel: Selector; anchor: EntityAnchor }
   | { k: "anchored"; anchor: EntityAnchor }
+  | { k: "align"; axes: Swizzle }
   | { k: "scoreMatches"; mode: Cond; score: Score; range: Range }
   | { k: "scoreCompare"; mode: Cond; a: Score; op: "<" | "<=" | "=" | ">=" | ">"; b: Score }
   | { k: "entity"; mode: Cond; sel: Selector }
+  | { k: "items"; mode: Cond; sel: Selector; slot: ItemSlot; item: ItemValue }
   | { k: "block"; mode: Cond; pos: Pos; block: Block }
   | { k: "predicate"; mode: Cond; id: string }
   | { k: "storeScore"; mode: StoreMode; score: Score }
@@ -157,6 +160,26 @@ export class ExecuteBuilder {
   }
   unlessEntity(sel: Selector): this {
     this.node.clauses.push({ k: "entity", mode: "unless", sel });
+    return this;
+  }
+  /** `align <axes>` - snap the position to the block grid on those axes (e.g. "xyz"). */
+  align(axes: Swizzle): this {
+    this.node.clauses.push({ k: "align", axes });
+    return this;
+  }
+  /**
+   * `if items entity <sel> <slot> <item_predicate>` - the only vanilla way to
+   * test one *specific* inventory slot's contents (equipment predicates cover
+   * just the 6 worn slots). `item` is matched as an item predicate built from
+   * the same {@link ItemValue} you'd `give`, so the check sees the exact
+   * components (name/lore/model) the item was granted with.
+   */
+  ifItems(sel: Selector, slot: ItemSlot, item: ItemValue): this {
+    this.node.clauses.push({ k: "items", mode: "if", sel, slot, item });
+    return this;
+  }
+  unlessItems(sel: Selector, slot: ItemSlot, item: ItemValue): this {
+    this.node.clauses.push({ k: "items", mode: "unless", sel, slot, item });
     return this;
   }
   /** `if block <pos> <block>` - true when the block at `pos` matches (id, state, or `#tag`). */
@@ -267,12 +290,16 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
         return `facing entity ${toCommandValue(c.sel).render(v)} ${c.anchor}`;
       case "anchored":
         return `anchored ${c.anchor}`;
+      case "align":
+        return `align ${c.axes}`;
       case "scoreMatches":
         return `${c.mode} score ${this.score(c.score, v)} matches ${c.range}`;
       case "scoreCompare":
         return `${c.mode} score ${this.score(c.a, v)} ${c.op} ${this.score(c.b, v)}`;
       case "entity":
         return `${c.mode} entity ${toCommandValue(c.sel).render(v)}`;
+      case "items":
+        return `${c.mode} items entity ${toCommandValue(c.sel).render(v)} ${c.slot} ${c.item.render(v)}`;
       case "block":
         return `${c.mode} block ${toCommandValue(c.pos).render(v)} ${c.block.render(v)}`;
       case "predicate":
@@ -311,6 +338,33 @@ declare module "../frontend/context" {
   interface FunctionContext {
     /** A general `execute … run …` chain. See {@link ExecuteBuilder}. */
     execute(): ExecuteBuilder;
+    /**
+     * Run the commands emitted in `build` anchored at `selector`'s position with
+     * one `execute at <selector> [align <axes>] run …`. A single command inlines
+     * into the `run` clause; multiple commands commit to one child function and
+     * the wrapper runs `… run function <child>` - so the selector is evaluated
+     * **once**, not re-scanned per command (important when it's an expensive
+     * `@a[…,nbt={…}]` filter). Pass `align` (e.g. "xyz") to snap the anchor to the
+     * block grid first - needed when block ops (fill/place) ride an entity at a
+     * fractional position.
+     */
+    atEntity(
+      selector: Selector,
+      build: (ctx: FunctionContext) => void,
+      align?: Swizzle,
+    ): void;
+    /**
+     * Run the commands emitted in `build` only when `target`'s `slot` holds an
+     * item matching `item` (`mode` defaults to `"if"`). See
+     * {@link ExecuteBuilder.ifItems}.
+     */
+    whenItems(
+      target: Selector,
+      slot: ItemSlot,
+      item: ItemValue,
+      build: (ctx: FunctionContext) => void,
+      mode?: Cond,
+    ): void;
     /** `return run <command>` - return the result of running `build`'s command. */
     returnRun(build: (ctx: FunctionContext) => void): void;
   }
@@ -331,4 +385,28 @@ FunctionContext.prototype.returnRun = function (
   const body = this.createChildFunction("return");
   runInContext(new FunctionContext(body, this.version), build);
   node.runBody = body;
+};
+
+FunctionContext.prototype.atEntity = function (
+  this: FunctionContext,
+  selector: Selector,
+  build: (ctx: FunctionContext) => void,
+  align?: Swizzle,
+): void {
+  const chain = this.execute().at(selector);
+  if (align) chain.align(align);
+  chain.run(build);
+};
+
+FunctionContext.prototype.whenItems = function (
+  this: FunctionContext,
+  target: Selector,
+  slot: ItemSlot,
+  item: ItemValue,
+  build: (ctx: FunctionContext) => void,
+  mode: Cond = "if",
+): void {
+  const chain = this.execute();
+  (mode === "if" ? chain.ifItems : chain.unlessItems).call(chain, target, slot, item);
+  chain.run(build);
 };

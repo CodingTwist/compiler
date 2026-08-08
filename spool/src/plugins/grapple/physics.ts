@@ -2,10 +2,7 @@ import { Fixed } from "helix";
 import type { FunctionContext, Score, ScoreVec3 } from "helix";
 import type { PlayerMotion } from "../player_motion";
 import { BAUMGARTE_DIV, SUSTAIN_DIV, RADIAL_DAMP_DIV, FRAC_SCALE, POS_PER_BLOCK } from "./tuning";
-import type { StateRepository } from "./state.repository";
-import type { Constants } from "./constants";
-import type { GrappleSelectors } from "./selectors";
-import type { SwingScratch } from "./scratch";
+import type { Constants, GrappleSelectors, StateRepository, SwingScratch } from "./state";
 
 /**
  * The **physics library**: the swing's math as pure logic over score-vectors, with no

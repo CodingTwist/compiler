@@ -8,9 +8,8 @@ import { ASTNode, FunctionNode } from "../ir/node";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { arg, buildTokens, lit, raw } from "../ir/command-builder";
 import { FunctionContext } from "../frontend/context";
-import { CommandPart } from "../ir/node";
+import { CommandPart, TreeCommandNode } from "../ir/node";
 import { litPart, argPart } from "./base";
-import { SummonNode } from "./summon";
 import { DisplayValue, EntityCondition } from "../values/display";
 import { Nbt } from "../values/nbt";
 import { Selector } from "../frontend/nodes/selector";
@@ -80,7 +79,7 @@ FunctionContext.prototype.summonIf = function (
   cond: EntityCondition,
   display: DisplayValue,
 ) {
-  const summon = new SummonNode();
+  const summon = new TreeCommandNode("summon");
   const parts: CommandPart[] = [
     litPart("summon"),
     argPart(DisplayValue.id),

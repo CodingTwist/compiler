@@ -1,4 +1,4 @@
-// Default TimingStrategy: realise countdowns and periodic clocks with a
+// Timing: realise countdowns and periodic clocks with a
 // scoreboard. Countdowns are a per-holder score on the `anim_life` objective;
 // periodic clocks are a per-period fake-player on a shared `clock` objective that
 // the `__clock` tick driver increments and resets. Scores survive /reload, so a
@@ -9,7 +9,7 @@ import { ScoreRangeNode } from "../commands/if";
 import type { Datapack } from "../ir/datapack";
 import type { FunctionContext } from "../frontend/context";
 import type { FunctionRef } from "../function_ref";
-import { Countdown, TimingStrategy } from "./strategy";
+import type { Objective } from "../frontend/nodes/objective";
 import { ScoreTarget } from "../values/score_target";
 import { privateName } from "../private-fn";
 
@@ -17,7 +17,23 @@ import { privateName } from "../private-fn";
 // away from authored functions rather than to the top of the list.
 const CLOCK = privateName("clock");
 
-export class ScoreboardTiming implements TimingStrategy {
+export const TICKS_PER_SECOND = 20;
+
+/** Max signed 32-bit score - an effectively-infinite countdown (~3.4 years). */
+export const FOREVER = 2147483647;
+
+/** A named, ticking-down counter: an (objective, holder) pair measured in ticks. */
+export interface Countdown {
+  objective: Objective;
+  holder: string;
+}
+
+/**
+ * How run-for-a-duration / periodic timing compiles: countdowns are a per-holder
+ * score on the `anim_life` objective; periodic clocks are a per-period fake-player
+ * on a shared `clock` objective driven by the `__clock` tick function.
+ */
+export class ScoreboardTiming {
   // Periods whose cycle-counter driver has already been installed in `__clock`.
   private installed = new Set<number>();
   // `${period}:${phase}` pairs whose fire-check has been installed in `__clock`.

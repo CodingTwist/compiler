@@ -1,13 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { Datapack } from "../ir/datapack";
 import { FunctionNode } from "../ir/node";
-import { ScoreSetNode } from "../commands/score_set";
+import { FunctionContext } from "../frontend/context";
+import { Score } from "../frontend/nodes/score";
+import { ScoreTarget } from "../values/score_target";
 import { Objective } from "../frontend/nodes/objective";
 import { buildCommand } from "../ir/command-builder";
 import { buildDatapack } from "./codegen";
 import { BrigadierNode } from "../commandtree/tree";
 import { VersionProfile } from "../../versions/profile";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 import {
   deriveVersion,
   fakeFutureReorderedScoreboard,
@@ -55,12 +57,14 @@ describe("fake future version: breaking grammar changes are absorbed", () => {
     expect(futureOrder).toBe("scoreboard players set 5 obj @s");
   });
 
-  it("the UNCHANGED ScoreSetCommand handler follows the new order end-to-end", () => {
+  it("the UNCHANGED scoreSet entry follows the new order end-to-end", () => {
     // Same authored node, compiled against the fake version through the real
     // dispatcher + handler. Nothing handler-side knows the order changed.
     const dp = new Datapack("pack", reordered);
     const fn = new FunctionNode("main");
-    fn.push(new ScoreSetNode("@s", new Objective("obj", "dummy"), 5));
+    new FunctionContext(fn, reordered).scoreSet(
+      new Score(new Objective("obj", "dummy"), ScoreTarget("@s"), 5),
+    );
     dp.functions.set("main", fn);
 
     const out = buildDatapack(dp).get("data/pack/function/main.mcfunction");

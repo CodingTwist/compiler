@@ -20,7 +20,7 @@ export {
   EVENT_OBJECTIVE,
 } from "./events";
 export type { OnOptions, EventHandler } from "./events";
-export { buildEnv, currentEnv, isDev, setBuildEnv } from "./env";
+export { buildEnv, isDev, setBuildEnv } from "./env";
 export { defineItem, ItemBuilder } from "./item";
 export { registerItem, registerItemGiveCommands } from "./item-registry";
 export type { ItemBehaviour } from "./item";

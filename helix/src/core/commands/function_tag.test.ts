@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Datapack } from "../ir/datapack";
 import { buildDatapack } from "../codegen/codegen";
 import { Time } from "../values/time";
-import { v26_1_2 } from "../../versions/26_1_2";
+import { v26_1_2 } from "../../versions/profiles";
 
 describe("function tags", () => {
   const build = (fn: (dp: Datapack) => void) => {

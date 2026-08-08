@@ -78,8 +78,8 @@ a literal, or diff into a scratch score first.)
 
 ## Capturing a command's result
 
-`score.storeResult(ctx, command)` wraps a command in `execute store result score …`, so a
-count or query lands directly in a cell - the typed form of `execute store result score`.
+`ctx.execute().storeResultScore(score).run(...)` lands a count or query directly in a
+cell - see [Execute chains](/guide/concepts/execute).
 
 ## Going further
 

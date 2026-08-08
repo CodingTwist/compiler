@@ -5,7 +5,7 @@ import { Selector } from "../frontend/nodes/selector";
 import { selectorText } from "../frontend/nodes/selector_text";
 import { text } from "../frontend/nodes/text";
 import { Color } from "../values/enums";
-import { v26_1_2 } from "../../versions/26_1_2";
+import { v26_1_2 } from "../../versions/profiles";
 
 describe("selectorText", () => {
   const render = (build: (dp: Datapack) => void): string => {

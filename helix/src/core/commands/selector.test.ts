@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Selector } from "../frontend/nodes/selector";
 import { renderSelector } from "./selector";
 import { Nbt } from "../values/nbt";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 import { EntityType } from "../values/resource.generated";
 
 describe("Selector rendering", () => {

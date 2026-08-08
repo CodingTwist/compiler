@@ -4,8 +4,8 @@ import { Item } from "./item";
 import { Predicate } from "./predicate";
 import { Datapack } from "../ir/datapack";
 import { buildDatapack } from "../codegen/codegen";
-import { v1_21_4 } from "../../versions/1_21_4";
-import { v1_20_1 } from "../../versions/1_20_1";
+import { v1_21_4 } from "../../versions/profiles";
+import { v1_20_1 } from "../../versions/profiles";
 
 describe("Trigger", () => {
   it("renders using_item with the item's predicate form", () => {

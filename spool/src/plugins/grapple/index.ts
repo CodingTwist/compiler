@@ -2,10 +2,10 @@ import { Datapack } from "helix";
 import type { KitPlugin } from "../../plugin";
 import { defineGrapple } from "./grapple.module";
 import type { Grapple } from "./grapple.module";
-import type { GrappleOptions } from "./config";
+import type { GrappleOptions } from "./state";
 
 export type { Grapple } from "./grapple.module";
-export type { GrappleOptions } from "./config";
+export type { GrappleOptions } from "./state";
 
 /**
  * A grapple / swing built on `player_motion`'s sustained per-tick impulse (`applyGlobal`).

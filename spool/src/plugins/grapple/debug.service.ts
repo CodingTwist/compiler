@@ -1,8 +1,6 @@
 import { Component, NbtPath } from "helix";
 import type { FunctionContext } from "helix";
-import type { Scratch, SwingScratch } from "./scratch";
-import type { GrappleSelectors } from "./selectors";
-import type { StateRepository } from "./state.repository";
+import type { GrappleSelectors, Scratch, StateRepository, SwingScratch } from "./state";
 
 interface DebugDeps {
   scratch: Scratch;

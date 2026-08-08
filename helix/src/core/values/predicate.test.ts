@@ -3,7 +3,7 @@ import { Predicate, PredicateRef, SLOTS } from "./predicate";
 import { Nbt, Short } from "./nbt";
 import { Item } from "./item";
 import { Datapack } from "../ir/datapack";
-import { v26_1_2 } from "../../versions/26_1_2";
+import { v26_1_2 } from "../../versions/profiles";
 import { buildDatapack } from "../codegen/codegen";
 import { Selector } from "../frontend/nodes/selector";
 import { Dispatcher, CodegenContext } from "../ir/commandhandler";
@@ -11,8 +11,8 @@ import { createHandlerMap } from "../codegen/codegen";
 import { IfElseNode, predicateCheck } from "../commands/if";
 import { FunctionNode } from "../ir/node";
 import { FunctionContext } from "../frontend/context";
-import { v1_21_4 } from "../../versions/1_21_4";
-import { v1_20_1 } from "../../versions/1_20_1";
+import { v1_21_4 } from "../../versions/profiles";
+import { v1_20_1 } from "../../versions/profiles";
 
 describe("Predicate builder", () => {
   it("renders an entity_properties check with an embedded NBT match", () => {

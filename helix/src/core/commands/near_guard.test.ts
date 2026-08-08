@@ -7,7 +7,7 @@ import { createHandlerMap } from "../codegen/codegen";
 import { FunctionContext } from "../frontend/context";
 import { Selector } from "../frontend/nodes/selector";
 import { Pos } from "../values";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 
 function env() {
   const dp = new Datapack("testpack", v1_21_4);

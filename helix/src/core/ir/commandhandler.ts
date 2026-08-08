@@ -1,5 +1,6 @@
 import type { Datapack } from "./datapack";
-import { ASTNode } from "./node";
+import { ASTNode, CommandNodeBase } from "./node";
+import { Token, lit, arg, buildTokens } from "./command-builder";
 
 export abstract class CommandHandler<N extends ASTNode = ASTNode> {
     abstract readonly type: N["type"];
@@ -44,14 +45,39 @@ export class CodegenContext {
     }
 }
 
+/**
+ * The handler for every "mechanical" command: render the node's accumulated
+ * literal/arg `parts` as tokens, validated against the target version's command
+ * tree. One shared instance serves all of them - {@link Dispatcher} falls back to
+ * it for any {@link CommandNodeBase} without a registered handler, so a generated
+ * command needs no handler class of its own. Commands whose lowering is
+ * version-dependent (give's NBT vs components, ...) register their own handler.
+ */
+export class TreeCommandHandler extends CommandHandler<CommandNodeBase> {
+    readonly type = "tree-command";
+
+    generate(node: CommandNodeBase, ctx: CodegenContext): void {
+        const tokens: Token[] = node.parts.map((p) =>
+            p.kind === "literal" ? lit(p.value) : arg(p.value.render(ctx.version)),
+        );
+        ctx.emit(buildTokens(ctx.version, tokens));
+    }
+}
+
+const TREE_HANDLER = new TreeCommandHandler();
+
 export class Dispatcher {
     constructor(private handlers: Map<ASTNode["type"], CommandHandler>) { }
 
     dispatch(node: ASTNode, ctx: CodegenContext) {
+        // Registered handlers first; anything that is just command parts (every
+        // generated command) falls back to the shared tree handler, so mechanical
+        // commands need no handler class of their own.
         const handler = this.handlers.get(node.type);
-        if (!handler) {
-            throw new Error(`No handler for node type '${node.type}'`);
+        if (handler) return handler.generate(node, ctx);
+        if (node instanceof CommandNodeBase) {
+            return TREE_HANDLER.generate(node, ctx);
         }
-        handler.generate(node, ctx);
+        throw new Error(`No handler for node type '${node.type}'`);
     }
 }

@@ -5,7 +5,7 @@ import { SayNode } from "../commands/saycommand";
 import { generateFunction, buildDatapack } from "./codegen";
 import { writeDatapack } from "./write";
 import { Dispatcher, CodegenContext, CommandHandler } from "../ir/commandhandler";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 import fs from "fs";
 
 // Keep the real fs (loadProfile reads version data from disk at import time);

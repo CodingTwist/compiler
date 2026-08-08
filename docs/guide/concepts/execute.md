@@ -5,8 +5,9 @@ context shifts, guards, and result capture. The
 [`ctx.execute()`](/api/helix/classes/FunctionContext) builder models the whole grammar: each
 method appends one clause **in call order**, and `.run(body)` terminates the chain.
 
-The narrower helpers (`selector.run(...)` for a bare `as`, `score.storeResult(...)` for one
-store) are shortcuts over this; reach for `ctx.execute()` when you need several clauses.
+The narrower helpers (`selector.run(...)` for a bare `as`, `ctx.atEntity(...)` for a body
+anchored at a selector, `ctx.whenItems(...)` for one slot guard) are shortcuts over this;
+reach for `ctx.execute()` directly when you need several clauses.
 
 ## The clauses
 
@@ -20,6 +21,7 @@ Context shifts move the execution position/rotation/dimension/executor:
 | `.facing(pos)` / `.facingEntity(sel, anchor)` | `facing` / `facing entity` |
 | `.anchored(EntityAnchor.EYES \| .FEET)` | `anchored` |
 | `.in(dim)` | `in <dimension>` |
+| `.align(axes)` | `align <axes>` (snap to the block grid) |
 
 Guards keep or drop the chain (each has an `unless…` twin):
 
@@ -30,6 +32,7 @@ Guards keep or drop the chain (each has an `unless…` twin):
 | `.ifScoreMatches(score, range)` | `if score … matches <range>` |
 | `.ifScore(a, op, b)` | `if score … <op> …` (`<`, `<=`, `=`, `>=`, `>`) |
 | `.ifPredicate(ref)` | `if predicate <id>` |
+| `.ifItems(sel, slot, item)` | `if items entity <sel> <slot> <item>` |
 
 Stores write the run target's result/success into a score or storage:
 

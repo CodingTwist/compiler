@@ -24,7 +24,6 @@
     "watch": "tsc -w",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "example": "node scripts/versions.mjs sync && tsx src/example/randomtests/example.ts",
     "test": "vitest",
     "pretest": "node scripts/versions.mjs sync",
     "docs": "typedoc"
@@ -49,15 +48,6 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.52.0",
     "vitest": "^4.0.18"
-  },
-  "oclif": {
-    "bin": "helix",
-    "commands": "./dist/commands",
-    "dirname": "helix",
-    "topicSeparator": " "
-  },
-  "dependencies": {
-    "@oclif/core": "^4.8.0"
   },
   "optionalDependencies": {
     "@spyglassmc/core": "^0.4.50",

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Datapack } from "../ir/datapack";
 import { buildResourcePack } from "../codegen/codegen";
-import { v26_2 } from "../../versions/26_2";
+import { v26_2 } from "../../versions/profiles";
 import { ModelRef } from "./model";
 import {
   ItemModel,

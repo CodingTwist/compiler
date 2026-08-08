@@ -6,7 +6,7 @@ import { CodegenContext, Dispatcher } from "../ir/commandhandler";
 import { Datapack } from "../ir/datapack";
 import { createHandlerMap } from "../codegen/codegen";
 import { FunctionContext } from "../frontend/context";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 
 function env() {
   const dp = new Datapack("testpack", v1_21_4);

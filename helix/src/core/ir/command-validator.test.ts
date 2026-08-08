@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { validateCommand } from "./command-validator";
-import { v1_21_4 } from "../../versions/1_21_4";
-import { v1_20_1 } from "../../versions/1_20_1";
+import { v1_21_4 } from "../../versions/profiles";
+import { v1_20_1 } from "../../versions/profiles";
 
 describe("validateCommand", () => {
   it("accepts a valid command and sub-command path", () => {

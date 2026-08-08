@@ -12,7 +12,7 @@ import { TellrawText } from "../frontend/nodes/tellraw_text";
 import { click } from "../frontend/nodes/click";
 import { hover } from "../frontend/nodes/hover";
 import { Selector } from "../frontend/nodes/selector";
-import { v1_21_4 } from "../../versions/1_21_4";
+import { v1_21_4 } from "../../versions/profiles";
 
 
 function createCommandTestEnv() {

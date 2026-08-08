@@ -11,7 +11,7 @@
  *   import { installKit } from "spool";
  *   import { holding } from "spool/plugins/holding";
  *   import { clip } from "spool/plugins/clip";
- *   installKit([holding, clip]);   // or createKit().use(holding).install()
+ *   installKit([holding, clip]);
  *
  * `installKit(allPlugins)` (from "spool/plugins/all") opts into everything.
  *
@@ -22,7 +22,7 @@
  */
 
 export type { KitPlugin } from "./plugin";
-export { Kit, createKit, installKit } from "./kit";
+export { installKit } from "./kit";
 
 // The entity-set type, for typing `dp.entitySet()` results (the runtime method is
 // installed by the `entitySet` plugin). Importing this does NOT activate any

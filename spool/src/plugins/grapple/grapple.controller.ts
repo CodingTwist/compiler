@@ -1,11 +1,10 @@
 import { Pos, EntityAnchor } from "helix";
 import { DEBUG } from "./tuning";
-import type { GrappleFunctions } from "./functions";
-import type { GrappleSelectors } from "./selectors";
 import type { RaycastRef } from "../raycast";
 import type { AttachService } from "./attach.service";
 import type { SwingService } from "./swing.service";
 import type { ReleaseService } from "./release.service";
+import type { GrappleFunctions, GrappleSelectors } from "./state";
 
 interface ControllerDeps {
   fn: GrappleFunctions;

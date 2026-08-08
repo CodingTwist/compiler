@@ -22,7 +22,7 @@ Every feature is a **`KitPlugin`** - `{ name, deps?, install() }` (see
 [src/plugin.ts](src/plugin.ts)):
 
 - A plugin is **inert** until you turn it on. Importing it does nothing at runtime.
-- You turn it on with `installKit([...])` (or `createKit().use(...).install()`).
+- You turn it on with `installKit([...])`.
 - `install()` adds the plugin's method to a shared helix prototype (e.g.
   `Datapack.prototype.playerMotion`). It runs **once, ever** - the kit guarantees that.
 
@@ -42,7 +42,7 @@ is the helix prototype, and each plugin only ever writes its own slot on it.
 ## Layout
 
 - [src/plugin.ts](src/plugin.ts) - the `KitPlugin` shape.
-- [src/kit.ts](src/kit.ts) - the installer: `installKit([...])` / `createKit()`.
+- [src/kit.ts](src/kit.ts) - the installer: `installKit([...])`.
 - [src/index.ts](src/index.ts) - the barrel. Exports the contract + each plugin's result
   **type** (e.g. `PlayerMotion`). Importing it turns on **nothing** - type-only by design.
 - [src/plugins/](src/plugins/) - **one directory per plugin**, each a self-contained

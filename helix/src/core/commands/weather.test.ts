@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { Datapack } from "../ir/datapack";
 import { buildDatapack } from "../codegen/codegen";
 import { FunctionContext } from "../frontend";
-import { v1_21_4 } from "../../versions/1_21_4";
-import { v1_20_4 } from "../../versions/1_20_4";
+import { v1_21_4 } from "../../versions/profiles";
+import { v1_20_4 } from "../../versions/profiles";
 
 describe("weather (builder chain)", () => {
   it("emits a validated command from a fluent chain", () => {
