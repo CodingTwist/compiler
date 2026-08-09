@@ -1,12 +1,31 @@
 import "reflect-metadata";
 import { Datapack, v1_20_4 } from "helix";
-import type { FunctionContext, VersionProfile, FunctionRef, RuntimeTarget } from "helix";
-import type { BuildEnv, ModuleClass, ModuleRef } from "./module.interface";
+import type { FunctionContext, Id, VersionProfile, FunctionRef, RuntimeTarget } from "helix";
+import type { BuildEnv, ModuleClass, ModuleRef, ModuleScope } from "./module.interface";
 import { buildEnv, setBuildEnv } from "./env";
 import { ActiveFlags } from "./flags";
-import { EventLatches } from "./events";
+import { EventLatches, getEventHandlers } from "./events";
 import { buildGraph, needsTickMemo, resolveDimensions, type Node } from "./graph";
-import { wireTick, type Wiring } from "./tick-wiring";
+import { emitArea, wireTick, type Wiring } from "./tick-wiring";
+
+/**
+ * The {@link ModuleScope} handed to a module's `register`: its resolved
+ * dimension, and a `createFunction` that applies it.
+ */
+function scopeFor(dp: Datapack, name: string, dimension: Id | undefined): ModuleScope {
+  return {
+    name,
+    dimension,
+    fn(fnName, body) {
+      const fn = dp.createFunction(fnName);
+      fn.build((ctx) => {
+        if (dimension) ctx.execute().in(dimension).run(body);
+        else body(ctx);
+      });
+      return fn;
+    },
+  };
+}
 
 /**
  * Resolve each throttled module's fire phase. An explicit `tickPhase` is honoured;
@@ -72,8 +91,17 @@ export class DatapackFactory {
 
     const graph = buildGraph(root, env);
 
+    // Each module's effective dimension, so its lifecycle, its tick subtree and
+    // the functions it creates in `register` all run where the module actually
+    // is rather than wherever they're called from. Resolved from metadata alone,
+    // so it's available before any module body has run.
+    const dims = resolveDimensions(graph);
+
     // register: arbitrary one-off setup, children-first.
-    for (const ref of graph.order) graph.nodes.get(ref)!.instance.register?.(dp);
+    for (const ref of graph.order) {
+      const { instance, meta } = graph.nodes.get(ref)!;
+      instance.register?.(dp, scopeFor(dp, meta.name, dims.get(ref)));
+    }
 
     // load: seed every area's flag, then run all (ungated) load bodies.
     const loaders = graph.order.filter((ref) => graph.nodes.get(ref)!.instance.onLoad);
@@ -87,10 +115,6 @@ export class DatapackFactory {
         for (const ref of loaders) graph.nodes.get(ref)!.instance.onLoad!(ctx);
       });
     }
-
-    // Each area's effective dimension, so its lifecycle and tick subtree run
-    // where the area actually is rather than wherever they're called from.
-    const dims = resolveDimensions(graph);
 
     // activate / deactivate functions per area (flag flip + lifecycle). The flag
     // is a scoreboard write, so it stays outside any dimension wrap; only the
@@ -119,6 +143,23 @@ export class DatapackFactory {
       deactivateOf.set(ref, deactivate);
     }
 
+    // `<name>/rearm` per module that has latched handlers: clear every `once`
+    // latch it owns, so the handlers can fire again.
+    //
+    // A latch is a scoreboard value, so it outlives a `/reload` and a server
+    // restart - and a latch that survived is indistinguishable, in the world,
+    // from a trigger that stopped working. A pack's own `reset`/`restart` needs
+    // something correct to call, and each one shouldn't have to rediscover the
+    // hazard and hand-list its handler keys.
+    for (const ref of graph.order) {
+      const { instance, meta } = graph.nodes.get(ref)!;
+      const latched = getEventHandlers(instance).filter((h) => h.opts.once !== false);
+      if (latched.length === 0) continue;
+      dp.createFunction(`${meta.name}/rearm`).build((ctx) => {
+        for (const h of latched) latches.score(meta.name, h.method).set(0, ctx);
+      });
+    }
+
     // tick: a single tree-walk. An area's *whole* subtree - its own `onTick`, its
     // descendants' ticks, AND its activation/presence detectors - is nested
     // behind its `active` flag. So a dormant area, and every area beneath it,
@@ -136,8 +177,16 @@ export class DatapackFactory {
       dims,
       phaseOf: makePhaseAllocator(),
     };
+    // A root that is itself an `area` gets the same treatment a child area does
+    // - trigger, `active` gate, presence disarm - rather than an ungated tick.
+    // Otherwise the one thing an area is for (the master switch) is the one
+    // thing the top-level module can't have, and every pack whose whole point is
+    // a single gated area has to wrap it in a do-nothing root to get it.
     if (w.needsTick(graph.root)) {
-      dp.tick((ctx) => wireTick(w, graph.root, ctx));
+      const rootIsArea = graph.nodes.get(graph.root)!.meta.area;
+      dp.tick((ctx) =>
+        rootIsArea ? emitArea(w, graph.root, ctx) : wireTick(w, graph.root, ctx),
+      );
     }
 
     consolidateTick(dp);

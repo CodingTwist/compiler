@@ -51,7 +51,12 @@ constructed and emits nothing** - that is the compile-time disable.
 
 A `DatapackModule` may implement any of:
 
-- `register(dp)` - one-off build-time setup (objectives, standalone functions, structures).
+- `register(dp, scope)` - one-off build-time setup (objectives, standalone functions,
+  structures). `scope` is the module's own `{ name, dimension, fn }` (`ModuleScope`):
+  `scope.fn(name, body)` creates a function whose body is wrapped in the module's
+  dimension, which is what anything called from *outside* the tick tree (admin
+  commands, scheduled one-shots, event rewards) needs - a `dimension` on `@Module`
+  only reaches what the framework itself emits.
 - `onLoad(ctx)` - appended to the shared `load` function; always runs (not gated).
 - `onTick(ctx)` - appended to the shared `tick` function, but **only reached while every
   `area` ancestor is active** - the parent's single `active` check skips the whole subtree
@@ -63,7 +68,9 @@ A `DatapackModule` may implement any of:
   to a plain `dp.createFunction`.
 
 `@Module({ name, area?, activeByDefault?, imports?, env? })` declares the module; an
-`area: true` module gates its subtree's tick cost behind a presence/region check.
+`area: true` module gates its subtree's tick cost behind a presence/region check. The
+**root** may be an area itself - it gets the same trigger / `active` gate / presence
+disarm a child area does, so a pack that is one gated area needs no wrapper module.
 
 ### Event handlers: `@On` / `@Every` ([src/events.ts](src/events.ts))
 
@@ -88,7 +95,15 @@ are where per-tick cost comes from:
 
 `opts.once: false` drops the latch for a body meant to repeat; `opts.name` puts the body
 in its own function (via `defineFunction`). `rearmEvents(ctx, dp, moduleName, instance,
-methods?)` clears latches - nothing re-arms itself.
+methods?)` clears latches - nothing re-arms itself. Latches are scoreboard values, so
+they **survive a `/reload` and a server restart**: a pack's `reset`/`restart` should call
+the generated `<name>/rearm` (emitted for every module with latched handlers, clearing
+all of them), or a stale latch silently suppresses its trigger forever.
+
+A module composes `HandlerGroup`s by holding them - discovered by type, from a
+field or from an **array** field. Prefer one `groups = [new A(...), new B(...)]` field
+when firing order matters: per-field discovery follows *declaration* order, not the
+order the constructor assigns, which is not visible where the groups are built.
 
 ### One `minecraft:tick` entry (the framework owns the tick tag)
 

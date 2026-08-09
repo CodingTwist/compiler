@@ -5,6 +5,37 @@ import type { AreaTrigger } from "./area";
 export type { AreaTrigger, Vec3, Zone } from "./area";
 
 /**
+ * What a module knows about itself at {@link DatapackModule.register} time.
+ *
+ * The `dimension` an area declares reaches its tick subtree and its
+ * `onActivate`/`onDeactivate` automatically, because the framework emits those.
+ * It cannot reach a function the module creates itself - and a block read that
+ * silently resolves against the wrong dimension fails by never matching, which
+ * is the worst way for a build to be wrong. So the resolved dimension is handed
+ * to `register`, and {@link fn} is the way to create a function that runs where
+ * the module actually is.
+ */
+export interface ModuleScope {
+  /** This module's `name` from its {@link ModuleMetadata}. */
+  readonly name: string;
+
+  /**
+   * The dimension this module resolved to - its own `dimension`, else the
+   * nearest ancestor's, else `undefined` (run wherever the caller is).
+   */
+  readonly dimension?: Id;
+
+  /**
+   * `dp.createFunction` + build, with the body wrapped in {@link dimension}.
+   *
+   * Use it for anything the module creates that is *called from outside* its
+   * tick tree - admin commands, scheduled one-shots, event rewards - all of
+   * which otherwise run in whatever dimension invoked them.
+   */
+  fn(name: string, body: (ctx: FunctionContext) => void): FunctionRef;
+}
+
+/**
  * A datapack module is a class with an optional constructor and the lifecycle
  * hooks below. It is instantiated once by {@link DatapackFactory} when its
  * containing module tree is enabled (i.e. it is reachable through the root
@@ -15,8 +46,12 @@ export interface DatapackModule {
   /**
    * Arbitrary one-off setup: declare extra objectives, create standalone
    * functions, register structures, etc. Runs once at build time.
+   *
+   * `scope` carries this module's resolved dimension and a `fn` that applies it
+   * - see {@link ModuleScope}. Ignore the second argument entirely if the module
+   * has no dimension to speak of.
    */
-  register?(dp: Datapack): void;
+  register?(dp: Datapack, scope: ModuleScope): void;
 
   /**
    * Appended to the shared `load` function (runs on pack load / `/reload`).

@@ -4,7 +4,7 @@ import { Block, Datapack, Detect, Pos, Selector, buildDatapack } from "helix";
 import type { Detector, FunctionContext } from "helix";
 import { Module } from "../src/module.decorator";
 import { DatapackFactory } from "../src/factory";
-import { On, rearmEvents } from "../src/events";
+import { HandlerGroup, On, rearmEvents } from "../src/events";
 
 const AT = Pos(1, 2, 3);
 const PRESSED = Block.STONE_BUTTON.state({ powered: true });
@@ -151,5 +151,73 @@ describe("@On", () => {
     class Root {}
 
     expect(compile(Root).all).toContain("if score #area active matches 1");
+  });
+});
+
+describe("handler groups", () => {
+  class Poll extends HandlerGroup {
+    constructor(
+      readonly ns: string,
+      private readonly msg: string,
+    ) {
+      super();
+    }
+    registerHandlers() {
+      this.on("hit", Detect.block(AT, PRESSED), (c) => c.say(this.msg));
+    }
+  }
+
+  it("discovers groups held in an array field, in array order", () => {
+    @Module({ name: "mod" })
+    class Mod {
+      groups = [new Poll("first", "alpha"), new Poll("second", "beta")];
+    }
+    @Module({ name: "root", imports: [Mod] })
+    class Root {}
+
+    const { all } = compile(Root);
+
+    expect(all).toContain("#mod.first/hit");
+    expect(all).toContain("#mod.second/hit");
+    expect(all.indexOf("alpha")).toBeLessThan(all.indexOf("beta"));
+  });
+});
+
+describe("generated rearm", () => {
+  it("emits <name>/rearm clearing every latch the module owns", () => {
+    @Module({ name: "puzzle" })
+    class Puzzle {
+      @On(Detect.block(AT, PRESSED))
+      solved(ctx: FunctionContext) {
+        ctx.say("solved");
+      }
+      @On(Detect.block(AT, PRESSED), { once: false })
+      polled(ctx: FunctionContext) {
+        ctx.say("polled");
+      }
+    }
+    @Module({ name: "root", imports: [Puzzle] })
+    class Root {}
+
+    const { files } = compile(Root);
+    const rearm = [...files].find(([p]) => p.endsWith("puzzle/rearm.mcfunction"))![1];
+
+    expect(rearm).toContain("scoreboard players set #puzzle.solved events 0");
+    // `once: false` never allocated a latch, so there is nothing to clear.
+    expect(rearm).not.toContain("#puzzle.polled");
+  });
+
+  it("emits no rearm for a module with no latched handlers", () => {
+    @Module({ name: "quiet" })
+    class Quiet {
+      @On(Detect.block(AT, PRESSED), { once: false })
+      polled(ctx: FunctionContext) {
+        ctx.say("polled");
+      }
+    }
+    @Module({ name: "root", imports: [Quiet] })
+    class Root {}
+
+    expect([...compile(Root).files.keys()].some((p) => p.includes("quiet/rearm"))).toBe(false);
   });
 });

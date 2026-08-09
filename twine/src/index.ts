@@ -33,6 +33,7 @@ export type {
   ModuleClass,
   ModuleMetadata,
   ModuleRef,
+  ModuleScope,
 } from "./module.interface";
 export type { AreaTrigger, PlayersTrigger, ScoreTrigger, Vec3, Zone } from "./area";
 export { Logger } from "./logger";

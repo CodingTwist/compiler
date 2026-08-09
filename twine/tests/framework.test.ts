@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { describe, it, expect } from "vitest";
-import { buildDatapack, Selector, Datapack, v1_20_4 } from "helix";
+import { Block, buildDatapack, Id, Pos, Selector, Datapack, v1_20_4 } from "helix";
 import { Module, defineModule } from "../src/module.decorator";
 import { DatapackFactory, consolidateTick } from "../src/factory";
 import { isDev, setBuildEnv } from "../src/env";
@@ -527,5 +527,64 @@ describe("compile-time disable", () => {
 
     expect(all).not.toContain("#timer active");
     expect([...files.keys()].some((p) => p.includes("timer/activate"))).toBe(false);
+  });
+});
+
+describe("root areas", () => {
+  it("gates a root module that is itself an area, trigger and all", () => {
+    @Module({
+      name: "tunnel",
+      area: true,
+      trigger: { kind: "players", selector: Selector.allPlayers().tag("Inside") },
+    })
+    class Tunnel {
+      onTick(ctx: any) {
+        ctx.tellraw(Selector.allPlayers(), "inside");
+      }
+    }
+
+    const { tick, all, files } = compileRoot(Tunnel);
+
+    // Same shape a child area gets: arm while off, work while on, disarm empty.
+    expect(tick).toContain("if score #tunnel active matches 0");
+    expect(tick).toContain("if score #tunnel active matches 1");
+    expect(all).toContain("function test:tunnel/deactivate");
+    expect([...files.keys()].some((p) => p.endsWith("tunnel/activate.mcfunction"))).toBe(true);
+    // The tick body itself is behind the flag, not emitted alongside it.
+    expect(tick).not.toContain("inside");
+  });
+});
+
+describe("register scope", () => {
+  it("wraps a function created in register in the module's dimension", () => {
+    @Module({ name: "end", area: true, dimension: Id("minecraft:the_end") })
+    class End {
+      register(_dp: any, scope: any) {
+        scope.fn("admin/goto", (ctx: any) => ctx.setblock(Pos(0, 64, 0), Block.STONE));
+      }
+    }
+
+    const { files } = compileRoot(End);
+    const admin = [...files].find(([p]) => p.endsWith("admin/goto.mcfunction"))![1];
+
+    expect(admin).toContain("in minecraft:the_end");
+    expect(admin).toContain("setblock 0 64 0 minecraft:stone");
+  });
+
+  it("leaves a dimensionless module's function unwrapped", () => {
+    @Module({ name: "plain" })
+    class Plain {
+      register(_dp: any, scope: any) {
+        scope.fn("plain/thing", (ctx: any) => ctx.setblock(Pos(0, 64, 0), Block.STONE));
+      }
+    }
+    @Module({ name: "root", imports: [Plain] })
+    class Root {}
+
+    const { files } = compileRoot(Root);
+    const thing = [...files].find(([p]) => p.endsWith("plain/thing.mcfunction"))![1];
+
+    expect(thing).not.toContain("execute in");
+    expect(thing).toContain("setblock 0 64 0 minecraft:stone");
   });
 });

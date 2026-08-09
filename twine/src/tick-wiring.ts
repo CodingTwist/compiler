@@ -132,25 +132,39 @@ export function wireTick(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: 
       wireTick(w, childRef, ctx, dim); // inline, gated by (and in the dimension of) ancestors
       continue;
     }
-    // An area with its own dimension (differing from the one already in effect)
-    // runs its detectors and whole subtree wrapped in it; a child that inherits
-    // its parent's dimension is already inside that `execute in …`, so it needs
-    // no wrap of its own. Positional triggers and block reads below then resolve
-    // against the area's dimension, not wherever the tick loop runs.
-    const childDim = w.dims.get(childRef) ?? dim;
-    // Only wrap when the area's dimension isn't already the one in effect - a
-    // child inheriting its parent's dimension is inside that `execute in …`
-    // already, so re-wrapping would just emit a redundant line.
-    const body = (host: FunctionContext) => {
-      if (child.meta.trigger) emitArm(w, childRef, host); // only fires while inactive
-      host.if(w.flags.score(child.meta.name).equal(1), (inner) => {
-        wireTick(w, childRef, inner, childDim);
-        if (child.meta.trigger) emitPresence(w, childRef, inner);
-      });
-    };
-    if (childDim && childDim !== dim) ctx.execute().in(childDim).run(body);
-    else body(ctx);
+    emitArea(w, childRef, ctx, dim);
   }
+}
+
+/**
+ * Emit one area's per-tick shape: its arm detector (behind `active == 0`), then
+ * its `active == 1` block holding its subtree and its presence disarm - all
+ * wrapped in the area's dimension when that differs from the one already in
+ * effect.
+ *
+ * Used for a child area within its parent's already-gated tick, and for a root
+ * module that is itself an area, which the factory calls directly - the two are
+ * the same shape, so an area at the top of the tree is gated exactly like one
+ * anywhere else.
+ */
+export function emitArea(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: Id): void {
+  const node = w.graph.nodes.get(ref)!;
+  // An area with its own dimension (differing from the one already in effect)
+  // runs its detectors and whole subtree wrapped in it; one that inherits its
+  // parent's dimension is already inside that `execute in …`, so it needs no
+  // wrap of its own - re-wrapping would just emit a redundant line. Positional
+  // triggers and block reads below then resolve against the area's dimension,
+  // not wherever the tick loop runs.
+  const areaDim = w.dims.get(ref) ?? dim;
+  const body = (host: FunctionContext) => {
+    if (node.meta.trigger) emitArm(w, ref, host); // only fires while inactive
+    host.if(w.flags.score(node.meta.name).equal(1), (inner) => {
+      wireTick(w, ref, inner, areaDim);
+      if (node.meta.trigger) emitPresence(w, ref, inner);
+    });
+  };
+  if (areaDim && areaDim !== dim) ctx.execute().in(areaDim).run(body);
+  else body(ctx);
 }
 
 /**

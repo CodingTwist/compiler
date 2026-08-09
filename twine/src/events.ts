@@ -179,16 +179,24 @@ export function every(
 }
 
 /**
- * Every handler on `instance`, in declaration order: those its class declared
- * via {@link On}/{@link Every}, those {@link addEventHandler} registered on the
- * instance itself, then - for each {@link HandlerGroup} the instance holds as a
- * field, in field order - that group's handlers, namespaced under the group's
+ * Every handler on `instance`: those its class declared via {@link On}/
+ * {@link Every}, those {@link addEventHandler} registered on the instance
+ * itself, then - for each {@link HandlerGroup} the instance holds, in field
+ * order - that group's handlers, namespaced under the group's
  * {@link HandlerGroup.ns}. Groups are discovered by type, so a module composes a
- * group just by constructing it as a field; no marker is needed.
+ * group just by holding it; no marker is needed.
+ *
+ * A field holding an **array** of groups counts too, and is the form to prefer
+ * when order matters: field order here is *property definition* order, which
+ * under `useDefineForClassFields` is the order the fields are **declared**, not
+ * the order the constructor assigns them - so a class with one field per group
+ * fires them in an order that isn't visible where the groups are built. One
+ * `groups = [new A(...), new B(...)]` field puts the order in the array literal,
+ * and needs no definite-assignment assertions.
  */
 export function getEventHandlers(instance: object): EventHandler[] {
-  const groups = Object.keys(instance)
-    .map((key) => (instance as Record<string, unknown>)[key])
+  const groups = Object.values(instance)
+    .flatMap((v) => (Array.isArray(v) ? (v as unknown[]) : [v]))
     .filter((v): v is HandlerGroup => v instanceof HandlerGroup);
   return [...getOwnEventHandlers(instance), ...groups.flatMap((g) => g.collect())];
 }
