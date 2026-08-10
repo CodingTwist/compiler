@@ -10,6 +10,9 @@ import { globalConversionTail } from "./math";
  * conversion) are unsupported in this build and `return fail` so a caller gets a
  * clear signal instead of silently-wrong motion.
  */
+/** The world-axis vector handed to the conversion, a `{x, y, z}` compound in `temp`. */
+const MATRIX = NbtPath("matrix");
+
 export function defineApi(I: PlayerMotionInternals): void {
   const {
     self, temp, fLaunchMain, fPolarGlobal, dummyScore, inputX, inputY, inputZ, workX, workY, workZ,
@@ -35,9 +38,9 @@ export function defineApi(I: PlayerMotionInternals): void {
       .ifEntity(self().xRotation(new Range(-90, -90)))
       .run((b) => b.returnRun((r) => r.call(fPolarGlobal)));
 
-    ctx.execute().storeResultStorage(temp, NbtPath("matrix.x"), "double", 1).run((b) => b.scoreGet(workX));
-    ctx.execute().storeResultStorage(temp, NbtPath("matrix.y"), "double", 1).run((b) => b.scoreGet(workY));
-    ctx.execute().storeResultStorage(temp, NbtPath("matrix.z"), "double", 1).run((b) => b.scoreGet(workZ));
+    ctx.execute().storeResultStorage(temp, MATRIX.child("x"), "double", 1).run((b) => b.scoreGet(workX));
+    ctx.execute().storeResultStorage(temp, MATRIX.child("y"), "double", 1).run((b) => b.scoreGet(workY));
+    ctx.execute().storeResultStorage(temp, MATRIX.child("z"), "double", 1).run((b) => b.scoreGet(workZ));
 
     globalConversionTail(I, ctx, 0);
   });

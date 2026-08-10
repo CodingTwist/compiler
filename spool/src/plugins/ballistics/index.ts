@@ -1,12 +1,13 @@
-import { Datapack, Double, EntityType, FunctionContext, Nbt, Pos, Short, round6 } from "helix";
+import { Datapack, EntityType, FunctionContext, Pos, Tnt, round6 } from "helix";
 import type { FunctionRef, NbtInput, Selector, Vec3 } from "helix";
 import type { KitPlugin } from "../../plugin";
 import { PROJECTILES } from "./physics";
-import { defineRuntimeShot, type RuntimeShotOptions } from "./runtime";
+import { defineRuntimeShot } from "./runtime";
+import type { RuntimeShotOptions } from "./options";
 import { solveLaunch, type LaunchOptions, type LaunchSolution } from "./solve";
 
 export { defineRuntimeShot } from "./runtime";
-export type { RuntimeShotOptions } from "./runtime";
+export type { RuntimeShotOptions } from "./options";
 
 export { PROJECTILES, MOTION_AXIS_LIMIT, simulate, stepOnce, trajectoryBasis, closestApproach } from "./physics";
 export type { ProjectileProfile, TrajectoryBasis, Approach, Motion } from "./physics";
@@ -83,13 +84,6 @@ declare module "helix" {
   }
 }
 
-/**
- * 1.21.5 renamed the TNT entity's NBT to snake_case (`Fuse` → `fuse`, `Block` →
- * `block_state`) along with the rest of the entity-data cleanup. The value is a short
- * either way.
- */
-const TNT_SNAKE_NBT_DATA_VERSION = 4325;
-
 export const ballistics: KitPlugin = {
   name: "ballistics",
   install(): void {
@@ -100,7 +94,6 @@ export const ballistics: KitPlugin = {
       opts: BallisticOptions = {},
     ): LaunchSolution {
       const solution = solveLaunch(from, to, opts);
-      const fuseKey = this.version.dataVersion >= TNT_SNAKE_NBT_DATA_VERSION ? "fuse" : "Fuse";
       const fuse =
         opts.fuse === false || solution.projectile.defaultFuse === undefined
           ? undefined
@@ -109,13 +102,11 @@ export const ballistics: KitPlugin = {
       this.summon(
         EntityType(solution.projectile.id),
         Pos(...from),
-        Nbt({
-          ...(fuse === undefined ? {} : { [fuseKey]: Short(fuse) }),
-          // Doubles, because `Motion` is a double list - a float list is read as zeroes.
-          // Six decimals is ~1e-6 blocks/tick, far below the tick granularity of the shot.
-          Motion: solution.velocity.map((c) => Double(round6(c))),
-          ...opts.nbt,
-        }),
+        // Six decimals is ~1e-6 blocks/tick, far below the tick granularity of the shot.
+        Tnt(
+          { fuse, motion: solution.velocity.map(round6) as Vec3 },
+          opts.nbt,
+        ),
       );
       return solution;
     };

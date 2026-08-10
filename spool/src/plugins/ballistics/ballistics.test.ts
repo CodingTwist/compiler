@@ -136,8 +136,8 @@ describe("ctx.ballistic", () => {
     dp.report(); // populate dp.files
     const cmd = dp.files.get("fire")!;
     expect(cmd).toContain("summon minecraft:tnt 0.5 70 0.5");
-    // 1.21.4 predates the snake_case entity-NBT rename, so the key is `Fuse` here.
-    expect(cmd).toContain(`Fuse:${Math.round(shot.ticks)}s`);
+    // `fuse` since 1.20.3; older profiles get `Fuse`, which the schema handles.
+    expect(cmd).toContain(`fuse:${Math.round(shot.ticks)}s`);
     expect(cmd).toMatch(/Motion:\[-?\d+\.\d+d,-?\d+\.\d+d,-?\d+\.\d+d\]/);
     expect(shot.error).toBeLessThan(1e-9);
   });
@@ -149,7 +149,7 @@ describe("ctx.ballistic", () => {
     });
     dp.report(); // populate dp.files
     const cmd = dp.files.get("fire")!;
-    expect(cmd).not.toContain("Fuse:");
+    expect(cmd).not.toContain("fuse:");
     expect(cmd).toContain('Tags:["shell"]');
   });
 });

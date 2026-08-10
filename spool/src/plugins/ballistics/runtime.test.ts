@@ -69,8 +69,7 @@ describe("runtime ballistics", () => {
     // Summoned at the launcher, fused to airburst on arrival, tagged only long enough
     // to have its Motion written.
     expect(lines.some((l) => l.startsWith("execute at @e[tag=gun,limit=1] run summon minecraft:tnt ~ ~ ~ "))).toBe(true);
-    // 1.21.4 still spells it `Fuse`; the snake_case rename lands in 1.21.5.
-    expect(lines.some((l) => l.includes("Fuse:40s"))).toBe(true);
+    expect(lines.some((l) => l.includes("fuse:40s"))).toBe(true);
     expect(lines).toContain("tag @e[tag=art.shot,limit=1] remove art.shot");
     // Nothing is fired unless every axis is inside vanilla's +/-10 Motion limit; the
     // caller learns which happened from the return value.

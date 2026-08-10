@@ -23,6 +23,19 @@ import type { PlayerMotionInternals } from "./context";
  *     scaled back down. (Upstream calls this a "no-tp approximation" - it skips a
  *     per-component teleport by doing the projection in arithmetic instead.)
  */
+/**
+ * The three reference vectors in `temp` storage - each a 3-element list, so an axis
+ * is `VEC.i.index(0)` rather than a `"vec_i[0]"` literal.
+ */
+const VEC = {
+  i: NbtPath("vec_i"),
+  j: NbtPath("vec_j"),
+  k: NbtPath("vec_k"),
+} as const;
+
+/** The entity position the reference vectors are read off. */
+const POS = NbtPath("Pos");
+
 export function defineMath(I: PlayerMotionInternals): void {
   const {
     self,
@@ -39,40 +52,35 @@ export function defineMath(I: PlayerMotionInternals): void {
   // --- internal/math/global/store_reference_vectors -------------------------
   fStoreRefVectors.build((ctx) => {
     ctx.teleport(self(), Pos.local(1, 0, 0));
-    ctx
-      .storage(temp)
-      .set(NbtPath("vec_i"), ctx.entity(self()).at(NbtPath("Pos")));
+    ctx.storage(temp).set(VEC.i, ctx.entity(self()).at(POS));
     ctx.teleport(self(), Pos.local(0, 1, 0));
-    ctx
-      .storage(temp)
-      .set(NbtPath("vec_j"), ctx.entity(self()).at(NbtPath("Pos")));
+    ctx.storage(temp).set(VEC.j, ctx.entity(self()).at(POS));
     ctx.teleport(self(), Pos.local(0, 0, 1));
-    ctx
-      .storage(temp)
-      .set(NbtPath("vec_k"), ctx.entity(self()).at(NbtPath("Pos")));
+    ctx.storage(temp).set(VEC.k, ctx.entity(self()).at(POS));
     ctx.teleport(self(), Pos.raw("0.0 0.0 0.0"), Pos.raw("0.0 0.0"));
   });
 
   // --- internal/math/global/convert_to_local (no-tp approximation) ----------
   fConvertToLocal.build((ctx) => {
-    const getInto = (dest: typeof workX, path: string) =>
+    const getInto = (dest: typeof workX, path: NbtPath) =>
       ctx
         .execute()
         .storeResultScore(dest)
-        .run((b) => b.storage(temp).get(NbtPath(path), 100000));
+        .run((b) => b.storage(temp).get(path, 100000));
 
     dummyScore("#_x").assign(workX);
     dummyScore("#_y").assign(workY);
     dummyScore("#_z").assign(workZ);
 
-    getInto(workX, "vec_i[0]");
-    getInto(dummyScore("#vec_i.z"), "vec_i[2]");
-    getInto(workY, "vec_j[0]");
-    getInto(dummyScore("#vec_j.y"), "vec_j[1]");
-    getInto(dummyScore("#vec_j.z"), "vec_j[2]");
-    getInto(workZ, "vec_k[0]");
-    getInto(dummyScore("#vec_k.y"), "vec_k[1]");
-    getInto(dummyScore("#vec_k.z"), "vec_k[2]");
+    // Only the non-zero components: i has no y, j no x, k no x-of-j etc.
+    getInto(workX, VEC.i.index(0));
+    getInto(dummyScore("#vec_i.z"), VEC.i.index(2));
+    getInto(workY, VEC.j.index(0));
+    getInto(dummyScore("#vec_j.y"), VEC.j.index(1));
+    getInto(dummyScore("#vec_j.z"), VEC.j.index(2));
+    getInto(workZ, VEC.k.index(0));
+    getInto(dummyScore("#vec_k.y"), VEC.k.index(1));
+    getInto(dummyScore("#vec_k.z"), VEC.k.index(2));
 
     workX.times(dummyScore("#_x"));
     dummyScore("#vec_i.z").times(dummyScore("#_z"));
@@ -146,15 +154,15 @@ export function globalConversionTail(
   ctx
     .execute()
     .storeResultScore(dummyScore("#vec_k_combined"))
-    .run((b) => b.storage(temp).get(NbtPath("vec_k[0]"), 10000));
+    .run((b) => b.storage(temp).get(VEC.k.index(0), 10000));
   ctx
     .execute()
     .storeResultScore(dummyScore("#temp1"))
-    .run((b) => b.storage(temp).get(NbtPath("vec_k[1]"), 10000));
+    .run((b) => b.storage(temp).get(VEC.k.index(1), 10000));
   ctx
     .execute()
     .storeResultScore(dummyScore("#temp2"))
-    .run((b) => b.storage(temp).get(NbtPath("vec_k[2]"), 10000));
+    .run((b) => b.storage(temp).get(VEC.k.index(2), 10000));
   dummyScore("#vec_k_combined").plus(dummyScore("#temp1"));
   dummyScore("#vec_k_combined").plus(dummyScore("#temp2"));
 
