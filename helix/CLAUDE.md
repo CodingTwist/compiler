@@ -42,6 +42,12 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
 - `npm test` / `npx vitest run` - vitest (`pretest` runs `versions.mjs sync` first)
 - `npm run gen:commands` - regenerate `src/core/commands/*` + `values/resource.generated.ts` from
   version data (see landmines below)
+- `npm run gen:entity-nbt` - regenerate `values/entities.generated.ts` (a typed NBT concept per
+  entity - `Tnt`, `Zombie`, …) + `values/entity-versions.generated.ts` (the `since`/`until`
+  gate table) from **vanilla-mcdoc**, cached in gitignored `scripts/.cache/`. Both outputs are
+  committed, so a normal build needs no network; re-run it when a Minecraft version lands.
+  Curated fields the parser can't infer (`blockState` → `BlockValue`) live in the script's
+  `OVERRIDES`; `entities.ts` keeps only the raw-NBT warning.
 
 ## Architecture
 

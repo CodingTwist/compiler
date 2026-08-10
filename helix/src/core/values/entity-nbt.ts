@@ -1,6 +1,10 @@
 import type { VersionProfile } from "../../versions/profile";
 import { Byte, Double, Float, NbtValue, toSnbt } from "./nbt";
 import type { NbtInput } from "./nbt";
+import type { ItemValue } from "./item";
+// The gate table: which dataVersion each version a schema mentions starts at. Generated
+// alongside the schemas from misode/mcmeta, so the two can't drift.
+import { DV } from "./entity-versions.generated";
 
 /**
  * Entity NBT as a **typed concept per entity type**, the way {@link Item} and
@@ -17,22 +21,6 @@ import type { NbtInput } from "./nbt";
  *
  * This file is the **mechanism**; the curated schemas it is fed are in `entities.ts`.
  */
-
-/**
- * The dataVersion each gated Minecraft version starts at, so a schema entry can be
- * written with the same version string mcdoc uses. From misode/mcmeta
- * `summary/versions/data.json` - add a key when a new gate is needed.
- */
-const DV = {
-  "1.17": 2724,
-  "1.20": 3463,
-  "1.20.2": 3578,
-  "1.20.3": 3698,
-  "1.20.5": 3837,
-  "1.21": 3953,
-  "1.21.2": 4080,
-  "1.21.5": 4325,
-} as const;
 
 export type McVersion = keyof typeof DV;
 
@@ -59,9 +47,12 @@ export function field<T>(spec: {
   was?: { key: string; until: McVersion };
   /** The field does not exist before this version, and is dropped rather than emitted. */
   since?: McVersion;
+  /** The field was removed at this version, and is dropped from it on. */
+  until?: McVersion;
 }): FieldEncoder<T> {
   return (value, version) => {
     if (spec.since !== undefined && !atLeast(version, spec.since)) return {};
+    if (spec.until !== undefined && atLeast(version, spec.until)) return {};
     const key =
       spec.was !== undefined && !atLeast(version, spec.was.until)
         ? spec.was.key
@@ -80,6 +71,26 @@ export const asList = (v: readonly NbtInput[]): NbtInput => [...v];
  * real text compound. Rich components (colour, click events) go through `raw` - building
  * one needs a `CodegenContext`, which value rendering does not have.
  */
+/** Slot -> item, for the 1.21.5+ `equipment` compound. An {@link Item} goes in whole. */
+export type EquipmentInput = Partial<
+  Record<
+    "mainhand" | "offhand" | "head" | "chest" | "legs" | "feet" | "body" | "saddle",
+    ItemValue | NbtInput
+  >
+>;
+
+export const asEquipment = (v: EquipmentInput): NbtInput =>
+  Object.fromEntries(
+    Object.entries(v).map(([slot, item]) => [
+      slot,
+      // Duck-typed rather than `instanceof`: importing item.ts here would put the whole
+      // item/text/tellraw graph behind every schema.
+      typeof (item as ItemValue)?.stackNbt === "function"
+        ? (item as ItemValue).stackNbt()
+        : (item as NbtInput),
+    ]),
+  );
+
 export const asText = (v: string, version: VersionProfile): NbtInput =>
   atLeast(version, "1.21.5") ? { text: v } : JSON.stringify({ text: v });
 
@@ -107,28 +118,59 @@ export class EntityNbtValue extends NbtValue {
     private readonly schema: Record<string, FieldEncoder<never>>,
     private readonly fields: Record<string, unknown>,
     private readonly raw?: Record<string, NbtInput>,
+    /** The entity this schema curates, when it names one - `summon` infers the type from it. */
+    readonly entity?: string,
   ) {
     super("");
   }
 
   override render(version: VersionProfile): string {
-    // Walk the *author's* fields, not the schema, so the emitted compound reads in the
-    // order it was written rather than in base-class-first schema order.
-    const out: Record<string, NbtInput> = {};
-    for (const [name, value] of Object.entries(this.fields)) {
-      const encode = this.schema[name];
-      if (value === undefined || encode === undefined) continue;
-      merge(out, encode(value as never, version));
-    }
+    const out = renderFields(this.schema, this.fields, version);
     if (this.raw) merge(out, this.raw);
     return toSnbt(out, version);
   }
 }
 
+/**
+ * A schema's fields as an SNBT record. Walks the *author's* fields, not the schema, so the
+ * emitted compound reads in the order it was written rather than base-class-first.
+ */
+export function renderFields(
+  schema: Record<string, FieldEncoder<never>>,
+  fields: Record<string, unknown>,
+  version: VersionProfile,
+): Record<string, NbtInput> {
+  const out: Record<string, NbtInput> = {};
+  for (const [name, value] of Object.entries(fields)) {
+    const encode = schema[name];
+    if (value === undefined || encode === undefined) continue;
+    merge(out, encode(value as never, version));
+  }
+  return out;
+}
+
+/**
+ * A field that is itself a curated compound (a villager's `VillagerData`), so its contents
+ * stay typed instead of degrading to a raw blob at the first nesting level.
+ */
+export const nested =
+  <F extends object>(schema: EntityNbtSchema<F>) =>
+  (value: F, version: VersionProfile): NbtInput =>
+    renderFields(
+      schema as unknown as Record<string, FieldEncoder<never>>,
+      value as Record<string, unknown>,
+      version,
+    );
+
 /** One {@link FieldEncoder} per author-facing field of `F`. */
 export type EntityNbtSchema<F> = {
   readonly [K in keyof F]-?: FieldEncoder<NonNullable<F[K]>>;
 };
+
+/** An {@link EntityNbtValue} whose schema named its entity, so `summon` can infer the type. */
+export interface IdentifiedEntityNbt extends EntityNbtValue {
+  readonly entity: string;
+}
 
 /**
  * Build a typed entity-NBT factory from a field schema. Exported so a plugin can curate
@@ -137,15 +179,28 @@ export type EntityNbtSchema<F> = {
  *   const Creeper = defineEntityNbt<MobFields & { fuse?: number }>({
  *     ...MOB,
  *     fuse: field({ key: "Fuse", encode: Short }),
- *   });
+ *   }, "minecraft:creeper");
+ *
+ * Naming the entity is what lets `ctx.summon(Creeper({ fuse: 20 }), pos)` state the type
+ * once. Omit it for a schema that fits many entities (a bare mob base, say) - those keep
+ * the explicit `ctx.summon(EntityType.X, pos, nbt)` form, since nothing can infer the id.
  */
 export function defineEntityNbt<F extends object>(
   schema: EntityNbtSchema<F>,
+  entity: string,
+): (fields: F, raw?: Record<string, NbtInput>) => IdentifiedEntityNbt;
+export function defineEntityNbt<F extends object>(
+  schema: EntityNbtSchema<F>,
+): (fields: F, raw?: Record<string, NbtInput>) => EntityNbtValue;
+export function defineEntityNbt<F extends object>(
+  schema: EntityNbtSchema<F>,
+  entity?: string,
 ): (fields: F, raw?: Record<string, NbtInput>) => EntityNbtValue {
   return (fields, raw) =>
     new EntityNbtValue(
       schema as unknown as Record<string, FieldEncoder<never>>,
       fields as Record<string, unknown>,
       raw,
+      entity,
     );
 }

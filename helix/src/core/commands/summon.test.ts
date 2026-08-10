@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { Datapack } from "../ir/datapack";
-import { EntityType, Nbt, Pos, Tnt } from "../values";
+import { Dispatcher } from "../ir/commandhandler";
+import { createHandlerMap } from "../codegen/codegen";
+import { generateFunction } from "../ir/generate";
+import { FunctionNode } from "../ir/node";
+import { FunctionContext } from "../frontend/context";
+import { defineEntityNbt, EntityType, MOB, type MobFields, Nbt, Pos, Tnt, Villager } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 import { v1_21_4 } from "../../versions/profiles";
 
@@ -29,5 +34,34 @@ describe("raw entity NBT warning", () => {
       expect(warn.mock.calls[2]?.[0]).toContain("defineEntityNbt()");
     });
     warn.mockRestore();
+  });
+});
+
+describe("summoning a curated entity concept", () => {
+  const emit = (build: (ctx: FunctionContext) => void): string => {
+    const dp = new Datapack("testpack", v1_21_4);
+    const fn = new FunctionNode("main");
+    build(new FunctionContext(fn, dp.version));
+    generateFunction(fn, dp, new Dispatcher(createHandlerMap()));
+    return dp.files.get("main") ?? "";
+  };
+
+  it("takes the entity from the schema, so the type is stated once", () => {
+    expect(emit((ctx) => ctx.summon(Villager({ persistenceRequired: true }), Pos.here()))).toEqual(
+      "summon minecraft:villager ~ ~ ~ {PersistenceRequired:1b}",
+    );
+  });
+
+  it("omits the position when there isn't one", () => {
+    expect(emit((ctx) => ctx.summon(Tnt({ fuse: 40 })))).toEqual("summon minecraft:tnt {fuse:40s}");
+  });
+
+  // Type-level only: never run, an id-less value has no entity to render.
+  it.skip("rejects a schema that names no entity - nothing to infer from", () => {
+    const Mob = defineEntityNbt<MobFields>(MOB);
+    emit((ctx) =>
+      // @ts-expect-error id-less factory: the explicit `summon(EntityType.X, pos, nbt)` form only.
+      ctx.summon(Mob({ persistenceRequired: true }), Pos.here()),
+    );
   });
 });

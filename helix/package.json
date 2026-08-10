@@ -26,7 +26,8 @@
     "format": "prettier --write .",
     "test": "vitest",
     "pretest": "node scripts/versions.mjs sync",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "gen:entity-nbt": "node scripts/gen-entity-nbt.mjs"
   },
   "keywords": [],
   "author": "Sam Hardy",

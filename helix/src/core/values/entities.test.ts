@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Block } from "./block";
-import { Tnt, Villager } from "./entities";
+import { Item } from "./item";
+import { Blaze, Tnt, Villager, Zombie } from "./entities.generated";
 import { v1_20_1, v1_21_4, v26_2 } from "../../versions/profiles";
 
 describe("entity NBT schemas", () => {
@@ -22,9 +23,24 @@ describe("entity NBT schemas", () => {
     expect(Tnt({ fallDistance: 3 }).render(v26_2)).toBe("{fall_distance:3.0d}");
   });
 
-  it("merges sibling fields that share a parent compound", () => {
-    expect(Villager({ level: 2, profession: "farmer" }).render(v1_21_4)).toBe(
+  it("keeps a nested compound typed one level down", () => {
+    expect(Villager({ villagerData: { level: 2, profession: "farmer" } }).render(v1_21_4)).toBe(
       `{VillagerData:{level:2,profession:"farmer"}}`,
+    );
+  });
+
+  it("covers every entity, not just the interesting ones", () => {
+    // A mob with no NBT of its own still gets a factory, carrying the mob base.
+    expect(Blaze({ persistenceRequired: true }).render(v1_21_4)).toBe("{PersistenceRequired:1b}");
+    // …and one with its own fields carries those too.
+    expect(Zombie({ isBaby: true, canBreakDoors: true }).render(v1_21_4)).toBe(
+      "{IsBaby:1b,CanBreakDoors:1b}",
+    );
+  });
+
+  it("takes an Item straight into an equipment slot", () => {
+    expect(Zombie({ equipment: { mainhand: Item.CROSSBOW } }).render(v26_2)).toBe(
+      `{equipment:{mainhand:{id:"minecraft:crossbow",count:1}}}`,
     );
   });
 

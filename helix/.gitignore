@@ -6,3 +6,6 @@ libraries/*
 versions/26.2/server-26.2.jar
 
 src/versions/data/
+
+# vanilla-mcdoc checkout used by gen:entity-nbt (re-fetched on demand)
+scripts/.cache/

@@ -11,6 +11,7 @@ export type NbtInput =
   | number
   | boolean
   | NbtNum
+  | NbtIntArray
   | CommandValue
   | NbtInput[]
   | { [key: string]: NbtInput };
@@ -45,6 +46,19 @@ export const Byte = (n: number): NbtNum => new NbtNum(n, "b");
 export const Short = (n: number): NbtNum => new NbtNum(n, "s");
 /** `1l` - a long. */
 export const Long = (n: number): NbtNum => new NbtNum(n, "l");
+
+/**
+ * `[I;1,2,3]` - an int array, which SNBT spells differently from a plain list. UUIDs and
+ * block positions are stored this way.
+ */
+export class NbtIntArray {
+  constructor(private readonly values: readonly number[]) {}
+  render(): string {
+    return `[I;${this.values.join(",")}]`;
+  }
+}
+
+export const IntArray = (values: readonly number[]): NbtIntArray => new NbtIntArray(values);
 
 const BARE_KEY = /^[A-Za-z0-9_.+-]+$/;
 
@@ -101,6 +115,7 @@ function embed(rendered: string): string {
 /** Serialize a JS value to SNBT, rendering any embedded `CommandValue`. */
 export function toSnbt(value: NbtInput, version: VersionProfile): string {
   if (value instanceof NbtNum) return value.render();
+  if (value instanceof NbtIntArray) return value.render();
   if (isCommandValue(value)) return embed(value.render(version));
   if (typeof value === "string") return quote(value);
   if (typeof value === "boolean") return value ? "true" : "false";

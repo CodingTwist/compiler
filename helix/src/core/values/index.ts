@@ -18,6 +18,7 @@ export * from "./range";
 export * from "./nbt";
 export * from "./entity-nbt";
 export * from "./entities";
+export * from "./entities.generated";
 export * from "./paths";
 export * from "./function-tag";
 export * from "./time";

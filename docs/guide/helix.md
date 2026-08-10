@@ -83,7 +83,9 @@ platform.build((ctx) => {
 ```
 
 `Pos.rel` renders the `~` form, `Pos.local` renders `^`, and `Block.STONE` is a typed
-member off the version's block registry rather than a bare string.
+member off the version's block registry rather than a bare string. Entity NBT is typed the
+same way - one factory per entity (`Tnt({ fuse: 40 })`, `Villager({ … })`), covered in
+[Items & NBT](/guide/concepts/items-and-nbt#entity-nbt-is-typed-per-entity).
 
 ## Scores & control flow
 

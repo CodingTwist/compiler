@@ -17,3 +17,4 @@ unravel/
 # OS / editor
 .DS_Store
 *.log
+helix/scripts/.cache/*
