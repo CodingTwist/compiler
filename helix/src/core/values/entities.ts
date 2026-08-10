@@ -3,6 +3,7 @@ import type { BlockValue } from "./block";
 import type { ItemValue } from "./item";
 import type { Vec3 } from "./transform-math";
 import { Byte, Double, Float, Long, Short } from "./nbt";
+import type { NbtValue } from "./nbt";
 import type { NbtInput } from "./nbt";
 import {
   asByte,
@@ -12,6 +13,7 @@ import {
   asText,
   atLeast,
   defineEntityNbt,
+  EntityNbtValue,
   field,
 } from "./entity-nbt";
 import type { EntityNbtSchema } from "./entity-nbt";
@@ -280,3 +282,55 @@ export const Villager = defineEntityNbt<VillagerFields>({
   xp: field({ key: "Xp" }),
   foodLevel: field({ key: "FoodLevel", encode: Byte }),
 });
+
+// --- the raw-NBT warning ------------------------------------------------------------
+
+/** The ids curated above, so the warning can name the factory the author wanted. */
+const FACTORY_NAMES: Readonly<Record<string, string>> = {
+  "minecraft:tnt": "Tnt",
+  "minecraft:falling_block": "FallingBlock",
+  "minecraft:item": "ItemEntity",
+  "minecraft:armor_stand": "ArmorStand",
+  "minecraft:area_effect_cloud": "AreaEffectCloud",
+  "minecraft:villager": "Villager",
+};
+
+/** One warning per call site - the point is to teach the API, not to spam a build log. */
+const warnedSites = new Set<string>();
+
+/** The frame that called the command - i.e. the author's own line, not helix's. */
+function callSite(): string {
+  const frames = new Error().stack?.split("\n").slice(1) ?? [];
+  const frame = frames.find(
+    (f) => !/[\\/](entities|summon|data)\.[jt]s:/.test(f) && /:\d+:\d+/.test(f),
+  );
+  return frame?.trim().replace(/^at\s+/, "") ?? "<unknown>";
+}
+
+/**
+ * Warn that a command was handed a **raw** entity NBT compound. Raw keys are frozen to
+ * one Minecraft version - an author who writes `{Fuse:40s}` gets a key 1.20.3+ silently
+ * ignores - whereas a factory above owns the spelling, the SNBT suffix and the version
+ * history, and takes a second argument for anything it doesn't curate. Not an error: an
+ * uncurated entity is a legitimate reason to pass raw.
+ *
+ * Called by every command that takes entity NBT (`summon`, `data merge entity`); pass
+ * `entity` when the command knows which one, so the message can name the factory.
+ */
+export function warnRawEntityNbt(nbt: NbtValue, entity?: string): void {
+  if (nbt instanceof EntityNbtValue) return;
+  const site = callSite();
+  if (warnedSites.has(site)) return;
+  warnedSites.add(site);
+  const factory = entity !== undefined ? FACTORY_NAMES[entity] : undefined;
+  console.warn(
+    `helix: raw Nbt${entity !== undefined ? ` for ${entity}` : ""} at ${site} - its keys ` +
+      `are frozen to one version. ` +
+      (factory
+        ? `Use ${factory}({ … }) instead: it owns the key spelling per version, and takes ` +
+          `uncurated keys as its second argument.`
+        : `If it needs to survive a version bump, use a typed entity factory (${Object.values(
+            FACTORY_NAMES,
+          ).join(", ")}) or defineEntityNbt() your own.`),
+  );
+}

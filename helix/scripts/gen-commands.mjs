@@ -54,7 +54,7 @@ const CONSOLE_ONLY = new Set([
 
 // Commands whose src/core/commands/<c>.ts is hand-refined: keep the file as-is
 // (don't overwrite) but still import/register it in the barrel.
-const HAND_REFINED = new Set(["setblock", "data", "stopsound"]);
+const HAND_REFINED = new Set(["setblock", "data", "stopsound", "summon"]);
 
 // Hand-refined files that register their own handler (their node isn't a plain
 // TreeCommandNode, so the shared tree handler can't render it).

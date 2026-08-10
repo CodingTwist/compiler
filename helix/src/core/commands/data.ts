@@ -6,7 +6,7 @@ import { CommandHandler, CodegenContext } from "../ir/commandhandler";
 import { renderArg, buildTokens, lit, arg, Token } from "../ir/command-builder";
 import { FunctionContext } from "../frontend/context";
 import { CommandBuilder } from "./base";
-import { Id, Nbt, NbtPath, Pos } from "../values";
+import { Id, Nbt, NbtPath, Pos, warnRawEntityNbt } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 import { ArgInput } from "../values/value";
 
@@ -51,6 +51,9 @@ export class DataBuilder extends CommandBuilder<DataNode> {
 
 export class DataMergeBuilder extends CommandBuilder<DataNode> {
   entity(target: Selector, value: Nbt): void {
+    // Same trap as `summon`: raw keys are frozen to one version. The selector doesn't say
+    // which entity, so the warning can't name a factory here - it just points at the line.
+    warnRawEntityNbt(value);
     this.node.args = { sub: "mergeEntity", target, value };
   }
   block(targetPos: Pos, value: Nbt): void {
