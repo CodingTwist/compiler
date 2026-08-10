@@ -9,20 +9,20 @@ and typed numbers get the right SNBT suffix automatically.
 ## Items define once, render everywhere
 
 Build the item once and hand the same object to every consumer. It lowers itself per target
-version *and* per context - an item-stack string for `give`, an `item_predicate` JSON body
+version _and_ per context - an item-stack string for `give`, an `item_predicate` JSON body
 for a `match_tool` check - so a granted item matches its own predicate by construction. You
 never re-encode it.
 
-| Method | Sets |
-| --- | --- |
-| `.named(name)` | `custom_name` (string or a styled component) |
-| `.lore(...lines)` | `lore` lines |
-| `.enchant(id, level)` | one enchantment (repeatable) |
-| `.count(n)` | stack size |
-| `.model(ref)` | the `item_model` component (from `dp.model(...)`) |
-| `.modelData(n)` | raw `custom_model_data` escape hatch |
+| Method                    | Sets                                               |
+| ------------------------- | -------------------------------------------------- |
+| `.named(name)`            | `custom_name` (string or a styled component)       |
+| `.lore(...lines)`         | `lore` lines                                       |
+| `.enchant(id, level)`     | one enchantment (repeatable)                       |
+| `.count(n)`               | stack size                                         |
+| `.model(ref)`             | the `item_model` component (from `dp.model(...)`)  |
+| `.modelData(n)`           | raw `custom_model_data` escape hatch               |
 | `.component(name, value)` | a raw component the typed builders don't model yet |
-| `.data(raw)` | verbatim `[components]` / `{nbt}` escape hatch |
+| `.data(raw)`              | verbatim `[components]` / `{nbt}` escape hatch     |
 
 ```ts compile
 import { Datapack, v26_2, Selector, Item, Enchantment } from "helix";
@@ -31,8 +31,11 @@ const dp = new Datapack("loot", v26_2);
 
 const fn = dp.createFunction("grant");
 fn.build((ctx) => {
-  const excalibur = Item.DIAMOND_SWORD
-    .named({ text: "Excalibur", color: "aqua", italic: false })
+  const excalibur = Item.DIAMOND_SWORD.named({
+    text: "Excalibur",
+    color: "aqua",
+    italic: false,
+  })
     .enchant(Enchantment.SHARPNESS, 5)
     .enchant(Enchantment.UNBREAKING, 3)
     .lore("Pulled from the stone");
@@ -49,12 +52,12 @@ Bare ids and `#tags` work too (`Item("diamond")`, `Item("#planks")`), and a type
 `Nbt(obj)` serialises a JS value to SNBT at codegen. JS has one number type but SNBT has
 several, so wrap fractional/tagged numbers with the helpers or they round-trip wrong:
 
-| Helper | SNBT | Use |
-| --- | --- | --- |
-| `Float(n)` | `1.0f` | 32-bit float (motion, rotations) |
-| `Double(n)` | `1.0d` | 64-bit double (positions) |
-| `Byte(n)` | `1b` | byte - and how booleans are usually written |
-| `Short(n)` / `Long(n)` | `1s` / `1l` | short / long |
+| Helper                 | SNBT        | Use                                         |
+| ---------------------- | ----------- | ------------------------------------------- |
+| `Float(n)`             | `1.0f`      | 32-bit float (motion, rotations)            |
+| `Double(n)`            | `1.0d`      | 64-bit double (positions)                   |
+| `Byte(n)`              | `1b`        | byte - and how booleans are usually written |
+| `Short(n)` / `Long(n)` | `1s` / `1l` | short / long                                |
 
 A plain JS number stays an int, strings are quoted, and any value object (a `Block`, say)
 embedded in the tree renders itself version-aware. That's why you build the tree instead of
@@ -94,12 +97,18 @@ const dp = new Datapack("mobs", v26_2);
 
 const fn = dp.createFunction("airburst");
 fn.build((ctx) => {
-  // summon minecraft:tnt ^ ^ ^2 {fuse:40s,block_state:{Name:"minecraft:sand"},Motion:[0.0d,1.0d,0.0d]}
-  ctx.summon(Tnt({ fuse: 40, blockState: Block.SAND, motion: [0, 1, 0] }), Pos.local(0, 0, 2));
+  ctx.summon(
+    Tnt({
+      fuse: 40,
+      blockState: Block.SAND,
+      motion: [0, 1, 0],
+    }),
+    Pos.local(0, 0, 2),
+  );
 });
 ```
 
-Note there is no `EntityType` argument: a curated schema *names its entity*, so
+Note there is no `EntityType` argument: a curated schema _names its entity_, so
 `ctx.summon(nbt, pos)` states the type once. (The three-argument
 `ctx.summon(EntityType.X, pos, nbt)` form still exists for raw NBT and for a type chosen at
 runtime.)
