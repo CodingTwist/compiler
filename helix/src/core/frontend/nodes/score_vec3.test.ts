@@ -4,6 +4,9 @@ import { v1_21_4 } from "../../../versions/profiles";
 import { Objective } from "./objective";
 import { ScoreVec3 } from "./score_vec3";
 import { ScoreTarget } from "../../values/score_target";
+import { Selector } from "./selector";
+import { Path } from "../../values/paths";
+import "../../commands";
 
 /** Build one function body and return its rendered command lines. */
 function emit(build: (vec: (p: string) => ScoreVec3, sc: (n: string) => any) => void): string {
@@ -44,6 +47,48 @@ describe("ScoreVec3", () => {
     expect(out).toContain("scoreboard players operation #scratch work = #a_y work");
     expect(out).toContain("scoreboard players operation #scratch work *= #b_y work");
     expect(out).toContain("scoreboard players operation #dot work += #scratch work");
+  });
+
+  it("builds from a per-axis score with `from`", () => {
+    const out = emit(() => {
+      const work = new Objective("work");
+      ScoreVec3.from((axis) => work.score(ScoreTarget(`#v${axis}`))).scale(
+        work.score(ScoreTarget("#k")),
+      );
+    });
+    expect(out).toContain("scoreboard players operation #vx work *= #k work");
+    expect(out).toContain("scoreboard players operation #vz work *= #k work");
+  });
+
+  it("reads a 3-element NBT list into the components, optionally `at` a selector", () => {
+    const out = emit((vec) => {
+      vec("p").readEntity(Selector.nearest(), Path.Entity.Pos, 100);
+      vec("q").readEntity(Selector.nearest(), Path.Entity.Pos, 100, {
+        at: Selector.self(),
+      });
+    });
+    expect(out).toContain(
+      "execute store result score #p_x work run data get entity @p Pos[0] 100",
+    );
+    expect(out).toContain(
+      "execute store result score #p_z work run data get entity @p Pos[2] 100",
+    );
+    // `at` rides the same chain, so the read stays one command per axis.
+    expect(out).toContain(
+      "execute at @s store result score #q_y work run data get entity @p Pos[1] 100",
+    );
+  });
+
+  it("writes the components back out into an NBT list", () => {
+    const out = emit((vec) => {
+      vec("v").storeEntity(Selector.self(), Path.Entity.Motion, "double", 0.0001);
+    });
+    expect(out).toContain(
+      "execute store result entity @s Motion[0] double 0.0001 run scoreboard players get #v_x work",
+    );
+    expect(out).toContain(
+      "execute store result entity @s Motion[2] double 0.0001 run scoreboard players get #v_z work",
+    );
   });
 
   it("clamps every axis into [lo, hi] (< hi then > lo)", () => {

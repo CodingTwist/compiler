@@ -145,6 +145,21 @@ export class NbtPathValue implements CommandValue {
   render(): string {
     return this.path;
   }
+
+  /**
+   * Index into a list tag: `Path.Entity.Pos.index(1)` -> `Pos[1]`. Returns a new
+   * path, so the curated constants in `Path.*` stay shared - and an axis of a
+   * `Pos`/`Motion` list is addressed as a path concept rather than a template
+   * literal.
+   */
+  index(i: number): NbtPathValue {
+    return new NbtPathValue(`${this.path}[${i}]`);
+  }
+
+  /** Descend into a compound tag: `Path.Player.abilities.child("mayfly")`. */
+  child(key: string): NbtPathValue {
+    return new NbtPathValue(`${this.path}.${key}`);
+  }
 }
 
 export type NbtPath = NbtPathValue;

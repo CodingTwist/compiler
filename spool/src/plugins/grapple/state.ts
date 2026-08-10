@@ -6,7 +6,7 @@
 // caller (the module in grapple.module.ts), and splitting them cost more import
 // ceremony than it bought. The *behaviour* still lives in its own services
 // (attach / swing / release / rope / debug) and the physics in physics.ts.
-import { EntityAnchor, Id, Nbt, NbtPath, Objective, Pos, Range, ScoreTarget, ScoreVec3, Selector } from "helix";
+import { EntityAnchor, Id, Nbt, Objective, Path, Pos, Range, ScoreTarget, ScoreVec3, Selector } from "helix";
 import type { Block, Datapack, FunctionContext, FunctionRef, Nbt as NbtType } from "helix";
 import type { PlayerMotion } from "../player_motion";
 import {
@@ -161,7 +161,7 @@ export function createScratch() {
   const work = new Objective("grapple.work");
   const scalar = (name: string): Score => work.score(ScoreTarget(`#${name}`));
   const vector = (prefix: string): ScoreVec3 =>
-    new ScoreVec3(scalar(`${prefix}_x`), scalar(`${prefix}_y`), scalar(`${prefix}_z`));
+    ScoreVec3.from((axis) => scalar(`${prefix}_${axis}`));
   return { work, scalar, vector };
 }
 
@@ -285,15 +285,15 @@ export function createStateRepository(d: StateRepositoryDeps) {
   // player's anchor by scoreboard compare alone (no macros, multiplayer-safe).
   const id = new Objective("grapple.id");
 
+  /** A `self`-bound vector over an [x, y, z] objective triple. */
+  const selfVec = (o: readonly Objective[]) =>
+    ScoreVec3.from((_, i) => o[i].score(self()));
   /** The anchor's world position (dm), as a `self`-bound vector. */
-  const anchorVec = () =>
-    new ScoreVec3(anchorX.score(self()), anchorY.score(self()), anchorZ.score(self()));
+  const anchorVec = () => selfVec([anchorX, anchorY, anchorZ]);
   /** Last tick's player position (dm), as a `self`-bound vector. */
-  const prevVec = () =>
-    new ScoreVec3(prevX.score(self()), prevY.score(self()), prevZ.score(self()));
+  const prevVec = () => selfVec([prevX, prevY, prevZ]);
   /** This player's last swing velocity, stored by drive, read by the release kick. */
-  const velVec = () =>
-    new ScoreVec3(velX.score(self()), velY.score(self()), velZ.score(self()));
+  const velVec = () => selfVec([velX, velY, velZ]);
   /** This player's fixed rope length², the constraint gates on. */
   const ropeLenSqOf = () => ropeLenSq.score(self());
   /** player_motion's launch input, viewed as a vector the constraint writes into. */
@@ -301,22 +301,17 @@ export function createStateRepository(d: StateRepositoryDeps) {
     new ScoreVec3(d.motion.launchInput.x, d.motion.launchInput.y, d.motion.launchInput.z);
 
   /**
-   * Read an entity's world position into three scores as fixed-point decimetres (the
-   * {@link POS_PER_BLOCK} scale). The **single place** that knows the `Pos[]` entity
-   * layout, so that raw Minecraft NBT knowledge isn't sprayed across the services. Works
+   * Read an entity's world position into a vector as fixed-point decimetres. helix's
+   * {@link ScoreVec3.readEntity} owns the `Pos[]` layout; the **one** thing the repository
+   * still owns is the {@link POS_PER_BLOCK} scale every stored position is held at. Works
    * on any builder context (a `fn.build`'s or a nested `.run`'s).
    */
   const readPos = (
     ctx: FunctionContext,
     who: Selector,
-    into: readonly [Score, Score, Score],
+    into: ScoreVec3,
   ): void => {
-    into.forEach((score, axis) => {
-      ctx
-        .execute()
-        .storeResultScore(score)
-        .run((b) => b.entity(who).get(NbtPath(`Pos[${axis}]`), POS_PER_BLOCK));
-    });
+    into.readEntity(who, Path.Entity.Pos, POS_PER_BLOCK, { ctx });
   };
 
   // The objectives `grapple/init` must create, in a stable order.
@@ -368,7 +363,7 @@ export function createAnchorService(d: AnchorDeps) {
      */
     place(ctx: FunctionContext): void {
       ctx.summon(d.config.anchorType, Pos.here(), d.config.anchorNbt());
-      d.repo.readPos(ctx, d.selectors.freshAnchorOne(), d.repo.anchorVec().components);
+      d.repo.readPos(ctx, d.selectors.freshAnchorOne(), d.repo.anchorVec());
     },
   };
 }

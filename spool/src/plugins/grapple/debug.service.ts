@@ -1,4 +1,4 @@
-import { Component, NbtPath } from "helix";
+import { Component, Path } from "helix";
 import type { FunctionContext } from "helix";
 import type { GrappleSelectors, Scratch, StateRepository, SwingScratch } from "./state";
 
@@ -25,8 +25,8 @@ export function createDebugService(d: DebugDeps) {
   function readFacing(ctx: FunctionContext) {
     const yaw = d.scratch.scalar("face_yaw");
     const pitch = d.scratch.scalar("face_pitch");
-    ctx.execute().storeResultScore(yaw).run((b) => b.entity(d.selectors.self()).get(NbtPath("Rotation[0]"), 100));
-    ctx.execute().storeResultScore(pitch).run((b) => b.entity(d.selectors.self()).get(NbtPath("Rotation[1]"), 100));
+    ctx.execute().storeResultScore(yaw).run((b) => b.entity(d.selectors.self()).get(Path.Entity.Rotation.index(0), 100));
+    ctx.execute().storeResultScore(pitch).run((b) => b.entity(d.selectors.self()).get(Path.Entity.Rotation.index(1), 100));
     return { yaw, pitch };
   }
 

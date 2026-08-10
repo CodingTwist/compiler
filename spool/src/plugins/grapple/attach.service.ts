@@ -30,7 +30,7 @@ export function createAttachService(d: AttachDeps) {
     /** Latch the executing player onto the fresh anchor. Runs as + at the player. */
     latch(ctx: FunctionContext): void {
       // Fix the swing radius = current distance² to the anchor, seeding prev-pos.
-      d.repo.readPos(ctx, d.selectors.self(), scratch.pos.components);
+      d.repo.readPos(ctx, d.selectors.self(), scratch.pos);
       fixRopeLength(d, scratch);
 
       // Stamp a fresh shared id on the player and its anchor.

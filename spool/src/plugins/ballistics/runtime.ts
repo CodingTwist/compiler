@@ -3,7 +3,7 @@ import {
   Double,
   EntityType,
   Nbt,
-  NbtPath,
+  Path,
   Pos,
   Range,
   ScoreTarget,
@@ -11,13 +11,7 @@ import {
   Selector,
   Short,
 } from "helix";
-import type {
-  FunctionContext,
-  FunctionRef,
-  NbtInput,
-  Objective,
-  Score,
-} from "helix";
+import type { FunctionRef, NbtInput, Objective, Score } from "helix";
 import {
   MOTION_AXIS_LIMIT,
   PROJECTILES,
@@ -110,11 +104,6 @@ const V_SCALE = 10000;
 
 const OBJECTIVE = "ballistics";
 const AXES = ["x", "y", "z"] as const;
-type Axis = (typeof AXES)[number];
-
-/** A `ScoreVec3` from a per-axis score, so no vector is ever spelled out three times. */
-const scoreVec = (of: (axis: Axis, index: number) => Score) =>
-  new ScoreVec3(of("x", 0), of("y", 1), of("z", 2));
 
 /** Players currently being diffed. Enrolment is by shot, not by being online. */
 const TRACK_TAG = "ballistics.tracked";
@@ -123,25 +112,6 @@ const TRACK_TAG = "ballistics.tracked";
  * sane reload cooldown, so a sustained engagement never falls back to a cold sample.
  */
 const TRACK_TTL = 200;
-
-/**
- * `store result score` each axis of `who`'s `Pos` (centi-blocks) into `into`. The one
- * place the `Pos[i]` NBT layout is spelled out; everything downstream is vector algebra.
- */
-function readPos(
-  ctx: FunctionContext,
-  who: Selector,
-  into: ScoreVec3,
-  at?: Selector,
-): void {
-  into.components.forEach((score, axis) => {
-    const chain = ctx.execute();
-    if (at) chain.at(at);
-    chain
-      .storeResultScore(score)
-      .run((c) => c.entity(who).get(NbtPath(`Pos[${axis}]`), POS_SCALE));
-  });
-}
 
 interface Tracker {
   /** Per-axis velocity in centi-blocks/tick, keyed by player. */
@@ -162,14 +132,14 @@ function targetVelocity(dp: Datapack): Tracker {
   const ttl = dp.objective(`${OBJECTIVE}.ttl`);
   const me = () => Selector.self();
   /** The three objectives as one `@s`-bound vector. */
-  const vec = (o: Objective[]) => scoreVec((_, i) => o[i].score(me()));
+  const vec = (o: Objective[]) => ScoreVec3.from((_, i) => o[i].score(me()));
 
   // Cold start: seed `prev` from the current position and zero the velocity. Without
   // this, a player who dropped out of the set, walked 500 blocks and got re-enrolled
   // would diff against where they left off and the next shell would aim at the moon.
   const init = dp.createFunction("zzz/track_init");
   init.build((ctx) => {
-    readPos(ctx, me(), vec(prev));
+    vec(prev).readEntity(me(), Path.Entity.Pos, POS_SCALE, { ctx });
     for (const axis of vec(vel).components) axis.set(0, ctx);
   });
 
@@ -189,9 +159,8 @@ function targetVelocity(dp: Datapack): Tracker {
     // tick's value before it is overwritten.
     const v = vec(vel);
     const then = vec(prev);
-    readPos(ctx, me(), v);
-    v.sub(then, ctx);
-    readPos(ctx, me(), then);
+    v.readEntity(me(), Path.Entity.Pos, POS_SCALE, { ctx }).sub(then, ctx);
+    then.readEntity(me(), Path.Entity.Pos, POS_SCALE, { ctx });
     // Nobody has shot at them in a while - stop paying for them.
     const left = ttl.score(me());
     left.remove(1, ctx);
@@ -236,8 +205,8 @@ export function defineRuntimeShot(
   const obj = dp.objective(OBJECTIVE);
   const slot = (holder: string): Score => obj.score(ScoreTarget(holder));
   /** The launch velocity being solved for, and a scratch point to build it from. */
-  const v = scoreVec((a) => slot(`#v${a}`));
-  const p = scoreVec((a) => slot(`#p${a}`));
+  const v = ScoreVec3.from((a) => slot(`#v${a}`));
+  const p = ScoreVec3.from((a) => slot(`#p${a}`));
   const kScale = slot("#v_scale");
   const kA = slot("#a");
   const kTicks = slot("#ticks");
@@ -245,7 +214,7 @@ export function defineRuntimeShot(
   // Velocity objectives read against the *target* - one row per tracked player.
   const tracker = opts.lead ? targetVelocity(dp) : undefined;
   const lead =
-    tracker && scoreVec((_, i) => tracker.vel[i].score(ScoreTarget(to)));
+    tracker && ScoreVec3.from((_, i) => tracker.vel[i].score(ScoreTarget(to)));
 
   const fuseKey =
     dp.version.dataVersion >= TNT_SNAKE_NBT_DATA_VERSION ? "fuse" : "Fuse";
@@ -279,7 +248,7 @@ export function defineRuntimeShot(
     // `at from` so the *target* selector resolves from the thrower: `@p` means its
     // nearest player, and any `limit=1` sorts from it, not from wherever the caller
     // happened to be standing (a `tick`-tagged function runs at the world origin).
-    readPos(ctx, to, v, from);
+    v.readEntity(to, Path.Entity.Pos, POS_SCALE, { at: from, ctx });
     // Where they'll be in `ticks` ticks, at their current velocity.
     if (lead) {
       // `at from` again - the velocity is read off the same entity `to` just resolved to.
@@ -292,7 +261,7 @@ export function defineRuntimeShot(
       p.scale(kTicks, ctx);
       v.add(p, ctx);
     }
-    readPos(ctx, from, p);
+    p.readEntity(from, Path.Entity.Pos, POS_SCALE, { ctx });
     v.sub(p, ctx);
     // Vertical only: take the gravity drop out before dividing (`v_y = (dy - G)/A`).
     // `scoreboard players add/remove` take a non-negative literal, so pick the verb.
@@ -329,17 +298,7 @@ export function defineRuntimeShot(
           }),
         ),
       );
-    v.components.forEach((axisVel, axis) =>
-      ctx
-        .execute()
-        .storeResultEntity(
-          shot(),
-          NbtPath(`Motion[${axis}]`),
-          "double",
-          1 / V_SCALE,
-        )
-        .run((s) => s.scoreGet(axisVel)),
-    );
+    v.storeEntity(shot(), Path.Entity.Motion, "double", 1 / V_SCALE, { ctx });
     ctx.tag().remove(shot(), shotTag);
     ctx.return_(1);
   });

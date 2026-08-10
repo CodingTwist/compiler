@@ -39,7 +39,7 @@ const SQUARED_SCALE = POS_PER_BLOCK * POS_PER_BLOCK;
  * hands the filled-in scratch to {@link solveConstraint}.
  */
 export function senseSwingState(d: PhysicsDeps, scratch: SwingScratch, ctx: FunctionContext): void {
-  d.repo.readPos(ctx, d.selectors.self(), scratch.pos.components);
+  d.repo.readPos(ctx, d.selectors.self(), scratch.pos);
   measureVelocity(d, scratch);
   d.repo.velVec().assign(scratch.velocity); // stash this tick's swing velocity for the release kick
   d.repo.prevVec().assign(scratch.pos); // prev for next tick (after velocity has read the old prev)
