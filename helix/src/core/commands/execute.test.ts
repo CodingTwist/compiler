@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Datapack, Objective, ScoreTarget, Selector, Id, NbtPath, Pos, Range, Block, Nbt, Item } from "../../index";
+import { Datapack, Objective, ScoreTarget, Selector, Id, NbtPath, Pos, Range, Block, Nbt, Item, Relation } from "../../index";
 import { v26_2 } from "../../versions/profiles";
 import { buildDatapack } from "../codegen/codegen";
 
@@ -117,6 +117,27 @@ describe("ctx.execute() chain builder", () => {
     expect(dp.files.get("f")).toBe(
       "execute if entity @s[x_rotation=-90] run return run function t:m",
     );
+  });
+
+  it("ifFunction branches on a function's return value", () => {
+    const dp = new Datapack("t", v26_2);
+    const probe = dp.createFunction("probe");
+    probe.build((ctx) => ctx.return_(1));
+    dp.createFunction("f").build((ctx) =>
+      ctx.execute().ifFunction(probe).run((b: any) => b.say("hit")),
+    );
+    buildDatapack(dp);
+    expect(dp.files.get("f")).toBe("execute if function t:probe run say hit");
+  });
+
+  it("on <relation> swaps the executor", () => {
+    const [line] = render((ctx) =>
+      ctx
+        .execute()
+        .on(Relation.TARGET)
+        .run((b: any) => b.say("you")),
+    );
+    expect(line).toBe("execute on target run say you");
   });
 
   it("scoreOp emits every operator", () => {

@@ -13,12 +13,10 @@
  *   import { clip } from "spool/plugins/clip";
  *   installKit([holding, clip]);
  *
- * `installKit(allPlugins)` (from "spool/plugins/all") opts into everything.
- *
- * Adding a plugin: new file under `src/plugins/`, export a `KitPlugin` whose
+ * Adding a plugin: new `src/plugins/<name>/index.ts`, export a `KitPlugin` whose
  * `install()` does the augmentation (build only on helix's public API - no
- * `dist/core/...`, no `new XxxNode`). Declare cross-plugin ordering with `deps`,
- * and register it in `plugins/all.ts`. See spool/CLAUDE.md.
+ * `dist/core/...`, no `new XxxNode`). Declare cross-plugin ordering with `deps`.
+ * There is no central registry to update. See spool/CLAUDE.md.
  */
 
 export type { KitPlugin } from "./plugin";
@@ -48,6 +46,16 @@ export type { RaycastRef, RaycastOptions } from "./plugins/raycast";
 // is installed by the `grapple` plugin, which deps on `player_motion` + `raycast`).
 // Importing this does NOT activate any augmentation.
 export type { Grapple, GrappleOptions } from "./plugins/grapple";
+
+// The trajectory-solver types, for typing `ctx.ballistic()` results (the runtime method
+// is installed by the `ballistics` plugin). The solver itself (`solveLaunch`) is a pure
+// function on the `spool/plugins/ballistics` subpath and needs no install.
+export type {
+  LaunchOptions,
+  LaunchSolution,
+  BallisticOptions,
+  ProjectileProfile,
+} from "./plugins/ballistics";
 
 // The clip/cutscene timeline engine, for typing animation results (the runtime
 // `dp.clip()`/`dp.cutscene()` methods are installed by the `clip` plugin).

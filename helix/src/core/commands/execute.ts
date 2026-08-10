@@ -23,10 +23,12 @@ import { FunctionContext } from "../frontend/context";
 import { runInContext } from "../frontend/context/ambient";
 import { Score } from "../frontend/nodes/score";
 import { Selector } from "../frontend/nodes/selector";
-import { Block, EntityAnchor, Id, ItemSlot, NbtPath, Pos, Swizzle } from "../values";
+import { Block, EntityAnchor, Id, ItemSlot, NbtPath, Pos, Relation, Swizzle } from "../values";
 import { ItemValue } from "../values/item";
 import { toCommandValue } from "../values/value";
 import { PredicateRef } from "../values/predicate";
+// Type-only: erased at runtime, so it can't form the import cycle a value import would.
+import type { FunctionRef } from "../function_ref";
 
 /** `if` or `unless` for a guard clause. */
 type Cond = "if" | "unless";
@@ -48,6 +50,7 @@ type Clause =
   | { k: "facing"; pos: Pos }
   | { k: "facingEntity"; sel: Selector; anchor: EntityAnchor }
   | { k: "anchored"; anchor: EntityAnchor }
+  | { k: "on"; relation: Relation }
   | { k: "align"; axes: Swizzle }
   | { k: "scoreMatches"; mode: Cond; score: Score; range: Range }
   | { k: "scoreCompare"; mode: Cond; a: Score; op: "<" | "<=" | "=" | ">=" | ">"; b: Score }
@@ -55,7 +58,16 @@ type Clause =
   | { k: "items"; mode: Cond; sel: Selector; slot: ItemSlot; item: ItemValue }
   | { k: "block"; mode: Cond; pos: Pos; block: Block }
   | { k: "predicate"; mode: Cond; id: string }
+  | { k: "callFunction"; mode: Cond; fn: FunctionRef }
   | { k: "storeScore"; mode: StoreMode; score: Score }
+  | {
+      k: "storeEntity";
+      mode: StoreMode;
+      sel: Selector;
+      path: NbtPath;
+      type: StoreNumType;
+      scale: number;
+    }
   | {
       k: "storeStorage";
       mode: StoreMode;
@@ -138,6 +150,16 @@ export class ExecuteBuilder {
     this.node.clauses.push({ k: "anchored", anchor });
     return this;
   }
+  /**
+   * `on <relation>` - become an entity related to the current executor (its
+   * {@link Relation.TARGET}, vehicle, owner, …). Position is *not* moved, only the
+   * executor. If there is no such entity the chain silently does nothing, which makes
+   * `on target` both the "is this mob actually fighting?" test and the way to get at who.
+   */
+  on(relation: Relation): this {
+    this.node.clauses.push({ k: "on", relation });
+    return this;
+  }
   ifScoreMatches(score: Score, range: Range): this {
     this.node.clauses.push({ k: "scoreMatches", mode: "if", score, range });
     return this;
@@ -160,6 +182,21 @@ export class ExecuteBuilder {
   }
   unlessEntity(sel: Selector): this {
     this.node.clauses.push({ k: "entity", mode: "unless", sel });
+    return this;
+  }
+  /**
+   * `if function <fn>` - run `fn` and branch on what it **returns** (`return <n>`):
+   * non-zero passes, `0` and `return fail` do not. The composable way to consume a
+   * function's result, as opposed to parking it in a score first.
+   *
+   * Note it *executes* the function to find out - this is a call, not a lookup.
+   */
+  ifFunction(fn: FunctionRef): this {
+    this.node.clauses.push({ k: "callFunction", mode: "if", fn });
+    return this;
+  }
+  unlessFunction(fn: FunctionRef): this {
+    this.node.clauses.push({ k: "callFunction", mode: "unless", fn });
     return this;
   }
   /** `align <axes>` - snap the position to the block grid on those axes (e.g. "xyz"). */
@@ -205,6 +242,20 @@ export class ExecuteBuilder {
   }
   storeSuccessScore(score: Score): this {
     this.node.clauses.push({ k: "storeScore", mode: "success", score });
+    return this;
+  }
+  /**
+   * `store <result|success> entity <sel> <path> <type> <scale>` - write the value
+   * straight into an entity's NBT. The direct route for score-computed `Motion` /
+   * `Rotation` / attribute values: no storage round-trip, and the `scale` turns an
+   * integer score into the fractional double the field wants.
+   */
+  storeResultEntity(sel: Selector, path: NbtPath, type: StoreNumType, scale: number): this {
+    this.node.clauses.push({ k: "storeEntity", mode: "result", sel, path, type, scale });
+    return this;
+  }
+  storeSuccessEntity(sel: Selector, path: NbtPath, type: StoreNumType, scale: number): this {
+    this.node.clauses.push({ k: "storeEntity", mode: "success", sel, path, type, scale });
     return this;
   }
   storeResultStorage(id: Id, path: NbtPath, type: StoreNumType, scale: number): this {
@@ -258,7 +309,7 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
 
   generate(node: ExecuteNode, ctx: CodegenContext): void {
     const v = ctx.version;
-    const parts = node.clauses.map((c) => this.clause(c, v));
+    const parts = node.clauses.map((c) => this.clause(c, v, ctx.datapack.name));
     if (node.runBody) {
       const cmd = generateRunTarget(node.runBody, ctx.datapack, ctx.dispatcher);
       parts.push(`run ${cmd}`);
@@ -270,7 +321,7 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
     return `${toCommandValue(s.target).render(v)} ${s.objective.objective}`;
   }
 
-  private clause(c: Clause, v: VersionProfile): string {
+  private clause(c: Clause, v: VersionProfile, ns: string): string {
     switch (c.k) {
       case "as":
         return `as ${toCommandValue(c.sel).render(v)}`;
@@ -290,6 +341,8 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
         return `facing entity ${toCommandValue(c.sel).render(v)} ${c.anchor}`;
       case "anchored":
         return `anchored ${c.anchor}`;
+      case "on":
+        return `on ${c.relation}`;
       case "align":
         return `align ${c.axes}`;
       case "scoreMatches":
@@ -304,8 +357,12 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
         return `${c.mode} block ${toCommandValue(c.pos).render(v)} ${c.block.render(v)}`;
       case "predicate":
         return `${c.mode} predicate ${c.id}`;
+      case "callFunction":
+        return `${c.mode} function ${ns}:${c.fn.getName()}`;
       case "storeScore":
         return `store ${c.mode} score ${this.score(c.score, v)}`;
+      case "storeEntity":
+        return `store ${c.mode} entity ${toCommandValue(c.sel).render(v)} ${c.path.render()} ${c.type} ${c.scale}`;
       case "storeStorage":
         return `store ${c.mode} storage ${c.id.render()} ${c.path.render()} ${c.type} ${c.scale}`;
     }

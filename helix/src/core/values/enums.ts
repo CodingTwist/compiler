@@ -44,6 +44,27 @@ export const EntityAnchor = {
 export type EntityAnchor = (typeof EntityAnchor)[keyof typeof EntityAnchor];
 
 /**
+ * `execute on <relation>` - swap the executor for an entity related to it. Named-constant
+ * namespace + union type (declaration merging), same stance as {@link Gamemode}.
+ *
+ * The relation is the only way to reach state the game keeps but NBT does not expose -
+ * notably `TARGET`, a hostile mob's *current* attack target, which is what separates
+ * "this mob is fighting someone" from "a player is nearby". A relation with no match
+ * (no target, no vehicle) yields no executor, so the chain simply does nothing.
+ */
+export const Relation = {
+  ATTACKER: "attacker",
+  CONTROLLER: "controller",
+  LEASHER: "leasher",
+  ORIGIN: "origin",
+  OWNER: "owner",
+  PASSENGERS: "passengers",
+  TARGET: "target",
+  VEHICLE: "vehicle",
+} as const;
+export type Relation = (typeof Relation)[keyof typeof Relation];
+
+/**
  * The vanilla **named text colours** - the fixed palette a text component's
  * `color` field accepts by name. Named-constant namespace + union type
  * (declaration merging), same stance as {@link Gamemode}: author

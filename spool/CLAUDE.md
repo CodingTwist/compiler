@@ -50,8 +50,8 @@ is the helix prototype, and each plugin only ever writes its own slot on it.
   `declare module` augmentation). Current: `holding`, `clip`, `entity_set`, `native`,
   `player_motion`. A plugin's whole implementation - engine code, concern files, its own
   `*.test.ts` - lives inside its folder and nowhere else, so the folder is the unit you
-  read, move, or delete. [src/plugins/all.ts](src/plugins/all.ts) is the only flat file;
-  it bundles every plugin for `installKit(allPlugins)`.
+  read, move, or delete. There are **no flat files** under `plugins/` - a loose file
+  would not resolve through the `./plugins/*` → `*/index.js` subpath mapping.
 
 ## Using it
 
@@ -67,9 +67,10 @@ Consumers import from a plugin's **subpath** - `spool/plugins/<name>` resolves t
 [package.json](package.json). The folder is invisible from the outside: the import path is
 just the plugin name.
 
-**Adding a plugin:** create `src/plugins/<name>/index.ts`, export a `KitPlugin`, list it
-in `plugins/all.ts`, and if it returns a handle, export that handle's **type** from
-`src/index.ts`. Build only on helix's public API.
+**Adding a plugin:** create `src/plugins/<name>/index.ts`, export a `KitPlugin`, and if it
+returns a handle, export that handle's **type** from `src/index.ts`. There is no central
+registry to update - the subpath mapping picks the folder up on its own. Build only on
+helix's public API.
 
 **A multi-file plugin** keeps every extra file inside its own folder. `player_motion` is
 the reference (and mirrors the `lab` timebubble module style): `index.ts` is the thin
