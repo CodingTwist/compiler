@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Datapack, v1_21_4 } from "helix";
+import { Block, Datapack, FallingBlock, Tnt, v1_21_4 } from "helix";
 import { installKit } from "../../kit";
 import { ballistics } from "./index";
 import { PROJECTILES, closestApproach, sampleAt, simulate, trajectoryBasis } from "./physics";
@@ -142,14 +142,33 @@ describe("ctx.ballistic", () => {
     expect(shot.error).toBeLessThan(1e-9);
   });
 
-  it("merges extra nbt and can leave the fuse alone", () => {
+  it("takes the shell's own nbt and can leave the fuse alone", () => {
     const dp = new Datapack("cannon", v1_21_4);
     dp.createFunction("fire").build((ctx) => {
-      ctx.ballistic([0, 70, 0], [40, 64, 0], { fuse: false, nbt: { Tags: ["shell"] } });
+      ctx.ballistic([0, 70, 0], [40, 64, 0], {
+        fuse: false,
+        shell: (s) => Tnt({ ...s, tags: ["shell"], blockState: Block.DIAMOND_BLOCK }),
+      });
     });
     dp.report(); // populate dp.files
     const cmd = dp.files.get("fire")!;
     expect(cmd).not.toContain("fuse:");
     expect(cmd).toContain('Tags:["shell"]');
+    expect(cmd).toContain('block_state:{Name:"minecraft:diamond_block"}');
+  });
+
+  it("throws something that isn't TNT at all", () => {
+    const dp = new Datapack("cannon", v1_21_4);
+    dp.createFunction("fire").build((ctx) => {
+      ctx.ballistic([0, 70, 0], [40, 64, 0], {
+        projectile: PROJECTILES.falling_block,
+        shell: (s) => FallingBlock({ ...s, blockState: Block.ANVIL }),
+      });
+    });
+    dp.report();
+    const cmd = dp.files.get("fire")!;
+    expect(cmd).toContain("summon minecraft:falling_block");
+    expect(cmd).toContain('BlockState:{Name:"minecraft:anvil"}');
+    expect(cmd).not.toContain("fuse:");
   });
 });

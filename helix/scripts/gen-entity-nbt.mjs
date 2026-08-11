@@ -28,8 +28,10 @@ const DV_OUT = path.join("src", "core", "values", "entity-versions.generated.ts"
 const ALIASES = { EntityBase: "Entity", LivingEntity: "Living", MobBase: "Mob" };
 // Entity ids whose PascalCase name would collide with an existing helix value export.
 const FACTORY_RENAMES = { "minecraft:item": "ItemEntity", "minecraft:player": "PlayerEntity" };
-// The three bases double as id-less factories: any entity can be summoned with them.
-const BASE_FACTORIES = ["Entity", "Living", "Mob"];
+// Structs that get an id-less factory too: the three bases (any entity can be summoned
+// with them) plus the shared compounds a `data merge` writes on their own (a display's
+// transform tween is a partial Display, not a whole entity).
+const BASE_FACTORIES = ["Entity", "Living", "Mob", "DisplayBase", "DecomposedTransformation"];
 // Entities mcdoc dispatches nothing for - they carry only their base's fields, but they
 // are still summonable, so they still get a factory.
 const EXTRA_DISPATCH = {
@@ -414,7 +416,7 @@ function main(structs, dataVersions) {
 
   for (const b of BASE_FACTORIES)
     factories.push(
-      `/** Any entity with no curated schema of its own - state the type explicitly. */\n` +
+      `/** Id-less: the fields of \`${b}\` as a standalone compound - state the entity type explicitly. */\n` +
         `export const ${b} = defineEntityNbt<${b}Fields>(${structConst(b)});`,
     );
 

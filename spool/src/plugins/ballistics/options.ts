@@ -1,7 +1,6 @@
 import { Selector } from "helix";
-import type { NbtInput } from "helix";
-import type { ProjectileProfile } from "./physics";
 import { PROJECTILES } from "./physics";
+import type { ShellOptions } from "./shell";
 
 /**
  * **The runtime half of `ballistics`: aim at a target that moves.**
@@ -39,7 +38,7 @@ import { PROJECTILES } from "./physics";
  * Precision: see the scales in `constants.ts` (~0.003 blocks of landing error, plus
  * ~0.04 % of range from rounding `A(n)` to centi-precision).
  */
-export interface RuntimeShotOptions {
+export interface RuntimeShotOptions extends ShellOptions {
   /** Who throws it. Default `@s` - so the function is called *as* the thrower. */
   readonly from?: Selector;
   /** What to hit. Default `@p` - the thrower's nearest player. */
@@ -56,12 +55,9 @@ export interface RuntimeShotOptions {
    * non-player target simply gets no lead (its velocity scores stay 0).
    */
   readonly lead?: boolean;
-  /** Which entity to fire. Default {@link PROJECTILES.tnt}. */
-  readonly projectile?: ProjectileProfile;
-  /** Override the fuse, or `false` to leave the vanilla one (it lands instead of airbursting). */
-  readonly fuse?: number | false;
-  /** Extra NBT merged into the summon. */
-  readonly nbt?: Record<string, NbtInput>;
+  // What to throw - `projectile` (the maths) and `shell` (the NBT) - comes from
+  // `ShellOptions`, shared with the build-time half so a shell is described the same way
+  // whichever solver fires it.
 }
 
 /** The options with every default filled in - the one place they live. */

@@ -57,6 +57,11 @@ export type {
   ProjectileProfile,
 } from "./plugins/ballistics";
 
+// The in-game test suite, for typing `dp.probe()` results (the runtime method is
+// installed by the `probe` plugin). Importing this does NOT activate any
+// augmentation.
+export type { Suite, ProbeCase, ProbeOptions } from "./plugins/probe";
+
 // The clip/cutscene timeline engine, for typing animation results (the runtime
 // `dp.clip()`/`dp.cutscene()` methods are installed by the `clip` plugin).
 // Importing these does NOT activate any augmentation.

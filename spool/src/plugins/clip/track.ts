@@ -14,6 +14,8 @@
  * via a `Cutscene`.
  */
 import {
+  DecomposedTransformation,
+  DisplayBase,
   Float,
   Nbt,
   Pos,
@@ -50,15 +52,17 @@ export interface Track {
 /** Build the per-member transform NBT for one baked frame. */
 function transformNbt(translation: Vec3, scale: Vec3, left: Quat, interpDuration: number) {
   const f = (v: number) => Float(round6(v));
-  return Nbt({
-    transformation: {
-      left_rotation: left.map(f),
-      right_rotation: [0, 0, 0, 1].map(f),
-      scale: scale.map(f),
-      translation: translation.map(f),
-    },
-    start_interpolation: 0,
-    interpolation_duration: interpDuration,
+  return DisplayBase({
+    // The rotations are plain lists in the schema, so they carry their own `f` suffix;
+    // scale/translation are encoded as floats for us and only need the rounding.
+    transformation: DecomposedTransformation({
+      leftRotation: left.map(f),
+      rightRotation: IDENTITY_QUAT.map(f),
+      scale: scale.map(round6),
+      translation: translation.map(round6),
+    }),
+    startInterpolation: 0,
+    interpolationDuration: interpDuration,
   });
 }
 

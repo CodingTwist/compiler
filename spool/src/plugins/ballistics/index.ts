@@ -1,16 +1,33 @@
-import { Datapack, EntityType, FunctionContext, Pos, Tnt, round6 } from "helix";
-import type { FunctionRef, NbtInput, Selector, Vec3 } from "helix";
+import { Datapack, FunctionContext } from "helix";
+import type { FunctionRef, Vec3 } from "helix";
 import type { KitPlugin } from "../../plugin";
 import { PROJECTILES } from "./physics";
 import { defineRuntimeShot } from "./runtime";
 import type { RuntimeShotOptions } from "./options";
-import { solveLaunch, type LaunchOptions, type LaunchSolution } from "./solve";
+import { emitStaticShot, type BallisticOptions } from "./static";
+import type { LaunchSolution } from "./solve";
 
 export { defineRuntimeShot } from "./runtime";
 export type { RuntimeShotOptions } from "./options";
+export { emitStaticShot } from "./static";
+export type { BallisticOptions } from "./static";
+export { DEFAULT_SHELL } from "./shell";
+export type { ShellOptions, ShellSpec, ShellFactory } from "./shell";
 
-export { PROJECTILES, MOTION_AXIS_LIMIT, simulate, stepOnce, trajectoryBasis, closestApproach } from "./physics";
-export type { ProjectileProfile, TrajectoryBasis, Approach, Motion } from "./physics";
+export {
+  PROJECTILES,
+  MOTION_AXIS_LIMIT,
+  simulate,
+  stepOnce,
+  trajectoryBasis,
+  closestApproach,
+} from "./physics";
+export type {
+  ProjectileProfile,
+  TrajectoryBasis,
+  Approach,
+  Motion,
+} from "./physics";
 export { solveLaunch } from "./solve";
 export type { LaunchOptions, LaunchSolution } from "./solve";
 
@@ -19,13 +36,22 @@ export type { LaunchOptions, LaunchSolution } from "./solve";
  *
  * The maths is `physics.ts` (Minecraft's real per-tick integrator, in vanilla's own
  * operation order) and `solve.ts` (an exact inversion of it). Read those two for the
- * physics, the coordinate conventions, and the accuracy caveats; this file is only the
- * thin command-emitting shell around them.
+ * physics, the coordinate conventions, and the accuracy caveats. This file is only the
+ * plugin wiring; the two ways to *fire* live one per file:
+ *
+ * | | where it solves | file | entry point | aiming knobs |
+ * | --- | --- | --- | --- | --- |
+ * | **static** | at build time, endpoints baked into the `/summon` | `static.ts` | `ctx.ballistic(from, to)` | all of {@link LaunchOptions} |
+ * | **runtime** | in game, from two entities' live positions | `runtime.ts` | `dp.ballisticRuntime(name)` | flight time only |
+ *
+ * Take the static one whenever both endpoints are known at build time - it is one command
+ * and exact. Take the runtime one when the target moves. Either way *what* is thrown is
+ * the same vocabulary - {@link ShellOptions} in `shell.ts`, which owns the single
+ * `/summon` both halves emit: `projectile` picks whose flight the maths inverts, `shell`
+ * is the author's own NBT for it.
  *
  * The solver is **pure and needs no install** - import `solveLaunch` from this subpath and
- * use it anywhere, including outside a datapack. Installing the plugin adds one
- * convenience on top: {@link FunctionContext.ballistic}, which solves at build time and
- * emits the `/summon` that performs the shot.
+ * use it anywhere, including outside a datapack.
  *
  * ```ts
  * installKit([ballistics]);
@@ -35,25 +61,15 @@ export type { LaunchOptions, LaunchSolution } from "./solve";
  *   // summon minecraft:tnt 0 70 0 {fuse:41s,Motion:[2.4...d,1.7...d,0.8...d]}
  *   console.log(shot.pitch, shot.speed, shot.error);
  * });
- * ```
  *
- * Because that solve happens at **compile time**, both endpoints must be known then. For
- * a target that moves in game, {@link Datapack.ballisticRuntime} emits the same inversion
- * as scoreboard arithmetic against two entities' live positions - see `runtime.ts` for
- * what that costs (a fixed flight time, and centi-block precision).
+ * // A diamond-block shell that chases whoever it is aimed at:
+ * dp.ballisticRuntime("throw/mortar", {
+ *   ticks: 70,
+ *   lead: true,
+ *   shell: (s) => Tnt({ ...s, blockState: Block.DIAMOND_BLOCK }),
+ * });
+ * ```
  */
-export interface BallisticOptions extends LaunchOptions {
-  /**
-   * Ticks on the TNT `fuse` tag. Defaults to the solved flight time, so it **airbursts on
-   * the target**; pass a number to override, or `false` to leave the fuse alone (the
-   * entity gets its vanilla 80 and lands/bounces instead). Ignored for projectiles with
-   * no fuse.
-   */
-  readonly fuse?: number | false;
-  /** Extra NBT merged into the summon (tags, custom name, `block_state`, …). */
-  readonly nbt?: Record<string, NbtInput>;
-}
-
 declare module "helix" {
   interface FunctionContext {
     /**
@@ -93,22 +109,7 @@ export const ballistics: KitPlugin = {
       to: Vec3,
       opts: BallisticOptions = {},
     ): LaunchSolution {
-      const solution = solveLaunch(from, to, opts);
-      const fuse =
-        opts.fuse === false || solution.projectile.defaultFuse === undefined
-          ? undefined
-          : (opts.fuse ?? Math.round(solution.ticks));
-
-      this.summon(
-        EntityType(solution.projectile.id),
-        Pos(...from),
-        // Six decimals is ~1e-6 blocks/tick, far below the tick granularity of the shot.
-        Tnt(
-          { fuse, motion: solution.velocity.map(round6) as Vec3 },
-          opts.nbt,
-        ),
-      );
-      return solution;
+      return emitStaticShot(this, from, to, opts);
     };
 
     Datapack.prototype.ballisticRuntime = function (

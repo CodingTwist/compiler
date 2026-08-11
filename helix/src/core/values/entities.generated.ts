@@ -3497,14 +3497,20 @@ export const LingeringPotion = defineEntityNbt<PotionFields>(POTION, "minecraft:
 /** `minecraft:tnt` */
 export const Tnt = defineEntityNbt<TntFields>(TNT, "minecraft:tnt");
 
-/** Any entity with no curated schema of its own - state the type explicitly. */
+/** Id-less: the fields of `Entity` as a standalone compound - state the entity type explicitly. */
 export const Entity = defineEntityNbt<EntityFields>(ENTITY);
 
-/** Any entity with no curated schema of its own - state the type explicitly. */
+/** Id-less: the fields of `Living` as a standalone compound - state the entity type explicitly. */
 export const Living = defineEntityNbt<LivingFields>(LIVING);
 
-/** Any entity with no curated schema of its own - state the type explicitly. */
+/** Id-less: the fields of `Mob` as a standalone compound - state the entity type explicitly. */
 export const Mob = defineEntityNbt<MobFields>(MOB);
+
+/** Id-less: the fields of `DisplayBase` as a standalone compound - state the entity type explicitly. */
+export const DisplayBase = defineEntityNbt<DisplayBaseFields>(DISPLAY_BASE);
+
+/** Id-less: the fields of `DecomposedTransformation` as a standalone compound - state the entity type explicitly. */
+export const DecomposedTransformation = defineEntityNbt<DecomposedTransformationFields>(DECOMPOSED_TRANSFORMATION);
 
 /** The factory curating each entity, for the raw-NBT warning. */
 export const ENTITY_FACTORY_NAMES: Readonly<Record<string, string>> = {

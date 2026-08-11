@@ -1,15 +1,14 @@
 import {
   Datapack,
-  EntityType,
   Path,
   Pos,
   Range,
   ScoreTarget,
   ScoreVec3,
   Selector,
-  Tnt,
 } from "helix";
 import type { FunctionRef, Score } from "helix";
+import { shellFuse, summonShell } from "./shell";
 import { MOTION_AXIS_LIMIT, trajectoryBasis } from "./physics";
 import { OBJECTIVE, POS_SCALE, V_SCALE } from "./constants";
 import { resolveShotOptions, type RuntimeShotOptions } from "./options";
@@ -52,10 +51,7 @@ export function defineRuntimeShot(
   const lead =
     tracker && ScoreVec3.from((_, i) => tracker.vel[i].score(ScoreTarget(to)));
 
-  const fuse =
-    opts.fuse === false || profile.defaultFuse === undefined
-      ? undefined
-      : (opts.fuse ?? ticks);
+  const fuse = shellFuse(opts, profile, ticks);
   const shotTag = `${dp.name}.shot`;
   // Rebuilt per use: Selector builders mutate in place, so one shared instance would
   // leak its filters into every clause it appears in.
@@ -119,13 +115,14 @@ export function defineRuntimeShot(
       .execute()
       .at(from)
       .run((at) =>
-        at.summon(
-          EntityType(profile.id),
-          Pos.here(),
-          // `motion` up front because `store … entity Motion[i]` needs the list to
-          // already exist - it is filled in by the store below, not here.
-          Tnt({ fuse, motion: [0, 0, 0], tags: [shotTag] }, opts.nbt),
-        ),
+        // `motion` is zeroed here rather than omitted: `store … entity Motion[i]` below
+        // needs the list to already exist.
+        summonShell(at, Pos.here(), {
+          shell: opts.shell,
+          motion: [0, 0, 0],
+          fuse,
+          tags: [shotTag],
+        }),
       );
     v.storeEntity(shot(), Path.Entity.Motion, "double", 1 / V_SCALE, { ctx });
     ctx.tag().remove(shot(), shotTag);

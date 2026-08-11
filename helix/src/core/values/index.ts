@@ -18,6 +18,7 @@ export * from "./range";
 export * from "./macro";
 export * from "./nbt";
 export * from "./entity-nbt";
+export * from "./effect";
 export * from "./entities";
 export * from "./entities.generated";
 export * from "./paths";

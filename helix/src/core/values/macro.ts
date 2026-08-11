@@ -19,7 +19,7 @@ import { CommandValue } from "./value";
  * defaults to `any` so no cast is needed - the value only exists at runtime,
  * so there is nothing to type-check anyway.
  */
-export function Macro<T = any>(name: string): T & CommandValue {
+export function Macro<T = unknown>(name: string): T & CommandValue {
   const token = `$(${name})`;
   return {
     render: () => token,
