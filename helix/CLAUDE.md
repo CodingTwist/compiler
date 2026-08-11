@@ -82,6 +82,12 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
      chain, plus the `atEntity`/`whenItems` sugar), `execute_as`, `entity_guard`, `near_guard`,
      `selector`, `data_op`, `native`. These are NOT 1:1 vanilla commands - their nodes are emitted
      by the frontend mixins. Registered via the generator's `EXTRA_HANDLERS` list, never regenerated.
+- **Function macros.** `Macro<T>("name")` (`values/macro.ts`) is a `CommandValue` rendering
+  `$(name)`; `CodegenContext.emit` prefixes any line containing `$(` with `$`, so every
+  handler gets macro lines right without knowing about them (`generateRunTarget` strips the
+  `$` when inlining a body so the prefix ends up on the composed `execute … run` line, and
+  the validator skips a leading `$`). Call one with `ctx.callWith(fn, Nbt({…}) | NbtRef)`
+  (`MacroCallNode` in `commands/function.ts`).
 - **`src/core/codegen/codegen.ts`** - the **pure** build half: `buildDatapack`/`buildResourcePack`
   (→ in-memory `Map<path, contents>`), `buildPackMcmeta`, `createHandlerMap()` (just
   `createCommandHandlers()` → Map by node `type`); re-exports `generate*` from `ir/generate`. It (and

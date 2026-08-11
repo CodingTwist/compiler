@@ -12,6 +12,7 @@ import { TriggerCommand } from "./trigger";
 import { RandomCommand } from "./random";
 import { FunctionCommand } from "./function";
 import { FunctionTagCallCommand } from "./function";
+import { MacroCallCommand } from "./function";
 import { SelectorCommand } from "./selector";
 import { DataOpCommand } from "./data_op";
 import { IfHandler } from "./if";
@@ -116,6 +117,7 @@ export function createCommandHandlers(): CommandHandler[] {
     new RandomCommand(),
     new FunctionCommand(),
     new FunctionTagCallCommand(),
+    new MacroCallCommand(),
     new SelectorCommand(),
     new DataOpCommand(),
     new IfHandler(),

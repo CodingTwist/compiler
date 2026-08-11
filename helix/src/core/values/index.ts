@@ -15,6 +15,7 @@ export * from "./score_target";
 export * from "./resource";
 export * from "./resource.generated";
 export * from "./range";
+export * from "./macro";
 export * from "./nbt";
 export * from "./entity-nbt";
 export * from "./entities";

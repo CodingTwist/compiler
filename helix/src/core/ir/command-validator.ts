@@ -35,7 +35,8 @@ export function hasCommandTree(root: BrigadierNode | undefined): boolean {
  * it never rejects a valid command, it only flags impossible literal paths.
  */
 export function validateCommand(command: string, version: VersionProfile): void {
-  const trimmed = command.trim().replace(/^\//, "");
+  // A leading `$` marks a macro line; the command keyword follows it.
+  const trimmed = command.trim().replace(/^[/$]/, "");
   if (!trimmed || trimmed.startsWith("#")) return;
 
   const root = version.commands as BrigadierNode;

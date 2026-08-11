@@ -6,7 +6,7 @@
 // caller (the module in grapple.module.ts), and splitting them cost more import
 // ceremony than it bought. The *behaviour* still lives in its own services
 // (attach / swing / release / rope / debug) and the physics in physics.ts.
-import { EntityAnchor, Id, Nbt, Objective, Path, Pos, Range, ScoreTarget, ScoreVec3, Selector } from "helix";
+import { EntityAnchor, Id, Marker, Objective, Path, Pos, Range, ScoreTarget, ScoreVec3, Selector } from "helix";
 import type { Block, Datapack, FunctionContext, FunctionRef, Nbt as NbtType } from "helix";
 import type { PlayerMotion } from "../player_motion";
 import {
@@ -69,7 +69,7 @@ export function createConfig(opts: GrappleOptions = {}) {
      * hand-built SNBT string, so it renders through helix's serializer).
      */
     anchorNbt(): NbtType {
-      return Nbt({ Tags: ["grapple.anchor", "grapple._new"] });
+      return Marker({ tags: ["grapple.anchor", "grapple._new"] });
     },
   };
 }

@@ -57,6 +57,9 @@ export function generateRunTarget(
 
   if (ctx.lines.length === 1 && ctx.externalLines.size === 0) {
     // Inline: the parent function validates the composed `execute … run <line>`.
+    // A macro line's leading `$` belongs at the front of the whole composed
+    // line, not mid-command - drop it here, the parent's emit re-adds it.
+    if (ctx.lines[0].startsWith("$")) return ctx.lines[0].slice(1);
     // A native call is never inlined - a bare `paper:…` keyword can't follow
     // `execute … run` (which expects a vanilla literal), so it gets its own file.
     return ctx.lines[0];

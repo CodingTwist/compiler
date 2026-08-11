@@ -3,9 +3,10 @@ import type { FunctionContext } from "../frontend/context";
 // Selector is used only inside method bodies (kill), never at module-init, so
 // this value import does not trip the frontend<->values cycle.
 import { Selector } from "../frontend/nodes/selector";
-import { EntityType } from "./resource.generated";
 import { BlockValue } from "./block";
-import { Float, Nbt, NbtInput, toSnbt } from "./nbt";
+import { Float, NbtInput } from "./nbt";
+import type { IdentifiedEntityNbt } from "./entity-nbt";
+import { BlockDisplay } from "./entities.generated";
 import { CommandValue } from "./value";
 import { Pos, PosValue } from "./pos";
 import { Vec3, Quat } from "./transform-math";
@@ -159,11 +160,7 @@ export class DisplayValue implements CommandValue {
   /** Summon the display at its {@link at} position. */
   summon(ctx: FunctionContext): void {
     const pos = this.getPos();
-    ctx.summon(
-      EntityType(DisplayValue.id),
-      pos instanceof PosValue ? pos : Pos.raw(pos),
-      Nbt(this),
-    );
+    ctx.summon(this.toNbt(), pos instanceof PosValue ? pos : Pos.raw(pos));
   }
 
   /** Summon the display only when `cond` holds (e.g. `cog.notExist`). */
@@ -207,29 +204,35 @@ export class DisplayValue implements CommandValue {
     }) as Vec3;
   }
 
+  /**
+   * The typed `block_display` NBT this summons as - root first, children as
+   * `passengers`. Built through the entity's own schema, so the key spellings and
+   * SNBT suffixes are the compiler's business, not this file's.
+   */
+  toNbt(): IdentifiedEntityNbt {
+    const member = (
+      c: DisplayChild,
+      idx: number,
+      raw?: Record<string, NbtInput>,
+    ): IdentifiedEntityNbt =>
+      BlockDisplay(
+        {
+          blockState: c.block,
+          transformation: transformNbt(c.transform),
+          brightness: this._brightness,
+          tags: this._name ? [this._name, `${this._name}_${idx}`] : undefined,
+          // A passenger names its own entity type; the root's comes from the summon.
+          passengers: idx === 0 && this.children.length > 0
+            ? this.children.map((c, i) => member(c, i + 1, { id: DisplayValue.id }))
+            : undefined,
+        },
+        raw,
+      );
+    return member({ block: this.block, transform: this.rootTransform }, 0);
+  }
+
   render(version: VersionProfile): string {
-    const tags = (i: number): Record<string, NbtInput> =>
-      this._name ? { Tags: [this._name, `${this._name}_${i}`] } : {};
-    const brightness: Record<string, NbtInput> = this._brightness
-      ? { brightness: { block: this._brightness.block, sky: this._brightness.sky } }
-      : {};
-    const passenger = (c: DisplayChild, idx: number): NbtInput => ({
-      block_state: c.block.toBlockState(),
-      id: DisplayValue.id,
-      transformation: transformNbt(c.transform),
-      ...brightness,
-      ...tags(idx + 1),
-    });
-    const root: NbtInput = {
-      block_state: this.block.toBlockState(),
-      transformation: transformNbt(this.rootTransform),
-      ...brightness,
-      ...tags(0),
-    };
-    if (this.children.length > 0) {
-      root.Passengers = this.children.map(passenger);
-    }
-    return toSnbt(root, version);
+    return this.toNbt().render(version);
   }
 }
 

@@ -11,7 +11,6 @@ import { FunctionContext } from "../frontend/context";
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { litPart, argPart } from "./base";
 import { DisplayValue, EntityCondition } from "../values/display";
-import { Nbt } from "../values/nbt";
 import { Selector } from "../frontend/nodes/selector";
 import { toCommandValue } from "../values/value";
 import { VersionProfile } from "../../versions/profile";
@@ -84,7 +83,7 @@ FunctionContext.prototype.summonIf = function (
     litPart("summon"),
     argPart(DisplayValue.id),
     argPart(display.getPos()),
-    argPart(Nbt(display)),
+    argPart(display.toNbt()),
   ];
   summon.parts = parts;
   this.emit(new EntityGuardNode(cond.mode, cond.selector, summon));

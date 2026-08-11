@@ -23,7 +23,12 @@ export class CodegenContext {
     ) { }
 
     emit(line: string) {
-        this.lines.push(line.toString());
+        // A line carrying a `$(arg)` macro substitution must be marked with a
+        // leading `$`. Done here so every handler gets it for free.
+        // ponytail: a literal "$(" in e.g. a tellraw string would also trip
+        // this; pass the text differently if that ever bites.
+        const text = line.toString();
+        this.lines.push(text.includes("$(") ? `$${text}` : text);
     }
 
     /**

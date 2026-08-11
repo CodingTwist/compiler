@@ -73,6 +73,7 @@ const EXTRA_HANDLERS = [
   { module: "random", cls: "RandomCommand" },
   { module: "function", cls: "FunctionCommand" },
   { module: "function", cls: "FunctionTagCallCommand" },
+  { module: "function", cls: "MacroCallCommand" },
   { module: "selector", cls: "SelectorCommand" },
   { module: "data_op", cls: "DataOpCommand" },
   { module: "if", cls: "IfHandler" },

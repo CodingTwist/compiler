@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Block } from "./block";
 import { Item } from "./item";
 import { Blaze, Tnt, Villager, Zombie } from "./entities.generated";
+import { Display } from "./display";
 import { v1_20_1, v1_21_4, v26_2 } from "../../versions/profiles";
 
 describe("entity NBT schemas", () => {
@@ -42,6 +43,12 @@ describe("entity NBT schemas", () => {
     expect(Zombie({ equipment: { mainhand: Item.CROSSBOW } }).render(v26_2)).toBe(
       `{equipment:{mainhand:{id:"minecraft:crossbow",count:1}}}`,
     );
+  });
+
+  it("renders a Display through the block_display schema, children as passengers", () => {
+    const d = Display(Block.STONE).add(Block.OAK_PLANKS, { translation: [0, 1, 0] }).named("cog");
+    expect(d.toNbt().entity).toBe("minecraft:block_display");
+    expect(d.render(v26_2)).toContain(`Tags:["cog","cog_0"],Passengers:[{block_state:`);
   });
 
   it("merges raw keys last, for anything uncurated", () => {

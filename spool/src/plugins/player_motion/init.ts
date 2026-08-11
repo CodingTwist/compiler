@@ -1,4 +1,4 @@
-import { Pos, Nbt, EntityType } from "helix";
+import { Marker, Pos } from "helix";
 import type { PlayerMotionInternals } from "./context";
 
 /**
@@ -26,11 +26,11 @@ export function defineInit(I: PlayerMotionInternals): void {
 
     ctx.kill(marker());
     ctx.summon(
-      EntityType("marker"),
+      Marker({
+        uuid: [-725781337, 1317161479, -2007965756, -660627921],
+        tags: ["smithed.strict", "smithed.entity"],
+      }),
       Pos.raw("0.0 0.0 0.0"),
-      Nbt(
-        '{UUID:[I; -725781337, 1317161479, -2007965756, -660627921], Tags:["smithed.strict", "smithed.entity"]}',
-      ),
     );
   });
 }
