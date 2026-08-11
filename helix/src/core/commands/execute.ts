@@ -75,7 +75,11 @@ type Clause =
       path: NbtPath;
       type: StoreNumType;
       scale: number;
-    };
+    }
+  | { k: "storeBossbar"; mode: StoreMode; id: Id; field: BossbarField };
+
+/** Which number of a bossbar a `store … bossbar` clause writes. */
+export type BossbarField = "value" | "max";
 
 export class ExecuteNode extends ASTNode {
   readonly type = "execute";
@@ -266,6 +270,20 @@ export class ExecuteBuilder {
     this.node.clauses.push({ k: "storeStorage", mode: "success", id, path, type, scale });
     return this;
   }
+  /**
+   * `store <result|success> bossbar <id> <value|max>` - drive a bossbar from a
+   * computed number. `bossbar set … value` takes a literal only, so this store
+   * clause is the *only* way a bar tracks something that changes at runtime (a
+   * boss's health, a timer, a capture progress).
+   */
+  storeResultBossbar(id: Id, field: BossbarField): this {
+    this.node.clauses.push({ k: "storeBossbar", mode: "result", id, field });
+    return this;
+  }
+  storeSuccessBossbar(id: Id, field: BossbarField): this {
+    this.node.clauses.push({ k: "storeBossbar", mode: "success", id, field });
+    return this;
+  }
 
   /**
    * Terminate the chain with **no** `run` - the conditions themselves are the
@@ -365,6 +383,8 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
         return `store ${c.mode} entity ${toCommandValue(c.sel).render(v)} ${c.path.render()} ${c.type} ${c.scale}`;
       case "storeStorage":
         return `store ${c.mode} storage ${c.id.render()} ${c.path.render()} ${c.type} ${c.scale}`;
+      case "storeBossbar":
+        return `store ${c.mode} bossbar ${c.id.render()} ${c.field}`;
     }
   }
 }

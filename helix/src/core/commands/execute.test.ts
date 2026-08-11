@@ -103,6 +103,16 @@ describe("ctx.execute() chain builder", () => {
     );
   });
 
+  it("stores a computed value into a bossbar", () => {
+    const [line] = render((ctx) =>
+      ctx
+        .execute()
+        .storeResultBossbar(Id("t:king"), "value")
+        .run((b: any) => b.scoreGet(D("#hp"))),
+    );
+    expect(line).toBe("execute store result bossbar t:king value run scoreboard players get #hp d");
+  });
+
   it("returnRun renders `return run <command>` and nests under execute", () => {
     const dp = new Datapack("t", v26_2);
     const fn = dp.createFunction("m");

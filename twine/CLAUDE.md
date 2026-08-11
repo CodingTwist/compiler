@@ -37,6 +37,18 @@ constructed and emits nothing** - that is the compile-time disable.
 - [src/events.ts](src/events.ts) - the `@On` / `@Every` method decorators, the
   per-handler latch objective (`EventLatches`), and `rearmEvents`.
 - [src/item.ts](src/item.ts) - `defineItem` / `ItemBuilder`: custom behavioural items.
+- [src/boss.ts](src/boss.ts) - `defineBoss` / `BossBuilder`: a boss fight compiled to a
+  `ConfiguredModule`. Composes what already exists rather than adding concepts: the arena
+  is a plain `area` trigger (so entering starts it and the region emptying is the loss
+  condition), phases are a `StateMachine` whose transitions are health-percentage
+  thresholds, and cooldowns are scores on the boss's own objective. A real mob is the
+  source of truth - its `Health` is mirrored to a 0..100 score each poll (divided by a max
+  read once at spawn, so no config field can disagree with the NBT) which drives both the
+  phase guards and the bar. Abilities are picked by rolling the full int range **modulo**
+  the summed weight of whatever is off cooldown (`random value` needs a build-time literal
+  range, so the live total can only enter via the modulo), then walking cumulative
+  thresholds. Death is the entity being *gone*, not health 0. `cleanup` calls
+  `rearmEvents`, which is what makes a fight repeatable.
 - [src/item-registry.ts](src/item-registry.ts) - `registerItem(name, item)` /
   `registerItemGiveCommands(dp)`: dev-only `debug/give/<name>` functions for plain
   (non-behavioural) `ItemValue`s a pack declares.

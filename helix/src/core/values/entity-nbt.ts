@@ -129,6 +129,26 @@ export class EntityNbtValue extends NbtValue {
     if (this.raw) merge(out, this.raw);
     return toSnbt(out, version);
   }
+
+  /**
+   * A copy of this value with extra `Tags` **appended** - how a caller labels an
+   * entity it summons from a concept someone else authored, so it can select the
+   * entity afterwards. Appending (rather than a raw `{Tags:[…]}` merge, which
+   * replaces: {@link merge} descends into compounds, not lists) is what keeps the
+   * author's own tags. Returns a new value; `this` is untouched.
+   */
+  tagged<T extends EntityNbtValue>(this: T, ...names: string[]): T {
+    if (!this.schema.tags) {
+      throw new Error(`${this.entity ?? "This"} entity NBT schema has no \`tags\` field`);
+    }
+    const tags = [...((this.fields.tags as readonly string[] | undefined) ?? []), ...names];
+    return new EntityNbtValue(
+      this.schema,
+      { ...this.fields, tags },
+      this.raw,
+      this.entity,
+    ) as T;
+  }
 }
 
 /**

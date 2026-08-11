@@ -22,6 +22,15 @@ export {
 export type { OnOptions, EventHandler } from "./events";
 export { buildEnv, isDev, setBuildEnv } from "./env";
 export { defineItem, ItemBuilder } from "./item";
+export { defineBoss, BossBuilder } from "./boss";
+export type {
+  AbilityOpts,
+  BarStyle,
+  BossBody,
+  BossModuleOpts,
+  BossbarColor,
+  PhaseOpts,
+} from "./boss";
 export { registerItem, registerItemGiveCommands } from "./item-registry";
 export type { ItemBehaviour } from "./item";
 export { StateMachine } from "./state-machine";
