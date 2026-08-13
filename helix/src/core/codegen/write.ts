@@ -90,6 +90,11 @@ function collectDatapackFiles(dp: Datapack): Map<string, Buffer> {
 export function writeResourcePack(dp: Datapack, outDir: string) {
   const files = buildResourcePack(dp);
 
+  // `pack.mcmeta` below is written straight into outDir, and the per-file loop
+  // only creates it as a side effect - so a pack with no models/assets at all
+  // would never create it. Ensure it up front.
+  fs.mkdirSync(outDir, { recursive: true });
+
   // Clear this namespace's generated model/item trees first so a rebuild never
   // leaves orphaned JSON behind (renamed/deleted models). Scoped to the
   // fully-generated folders - copied assets and other namespaces are untouched.
