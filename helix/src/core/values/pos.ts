@@ -1,32 +1,46 @@
 import { CommandValue } from "./value";
 
-type Mode = "absolute" | "relative" | "local";
+type Mode = "absolute" | "exact" | "relative" | "local";
 
 /**
- * A coordinate tuple (`block_pos`, `vec3`, `vec2`, `column_pos`). One mode
- * applies to the whole vector:
+ * A single axis pinned to its own mode. Pass one in place of a number to mix
+ * modes within a vector (`~ 0 ~`), which vanilla allows per-axis - the only
+ * illegal mix is local (`^`) with anything else.
+ */
+export interface Coord {
+  readonly n: number;
+  readonly mode: Mode;
+}
+
+/** A coordinate as authored: a bare number (the vector's mode) or a {@link Coord}. */
+export type CoordArg = number | Coord;
+
+/**
+ * A coordinate tuple (`block_pos`, `vec3`, `vec2`, `column_pos`). The factory
+ * picks the default mode; any axis may override it:
  *
- *   Pos(10, 4, 5)       -> "10 4 5"     (absolute)
- *   Pos.rel(0, 1, 0)    -> "~ ~1 ~"     (relative, ~)
- *   Pos.local(0, 0, 2)  -> "^ ^ ^2"     (local, ^)
- *   Pos.here()          -> "~ ~ ~"
+ *   Pos(10, 4, 5)                 -> "10 4 5"     (absolute)
+ *   Pos.rel(0, 1, 0)              -> "~ ~1 ~"     (relative, ~)
+ *   Pos.local(0, 0, 2)            -> "^ ^ ^2"     (local, ^)
+ *   Pos.here()                    -> "~ ~ ~"
+ *   Pos.rel(0, Pos.abs(0), 0)     -> "~ 0 ~"      (mixed)
  */
 export class PosValue implements CommandValue {
-  constructor(
-    private readonly coords: number[],
-    private readonly mode: Mode,
-  ) {}
+  private readonly parts: Coord[];
 
-  render(): string {
-    return this.coords.map((n) => component(n, this.mode)).join(" ");
+  constructor(coords: CoordArg[], mode: Mode = "absolute") {
+    this.parts = coords.map((c) => (typeof c === "number" ? { n: c, mode } : c));
   }
 
-  /** A new position shifted by `(dx, dy, dz)`, keeping the same mode. */
+  render(): string {
+    return this.parts.map((c) => component(c.n, c.mode)).join(" ");
+  }
+
+  /** A new position shifted by `(dx, dy, dz)`, keeping each axis' mode. */
   offset(dx: number, dy: number, dz: number): PosValue {
     const d = [dx, dy, dz];
     return new PosValue(
-      this.coords.map((n, i) => n + (d[i] ?? 0)),
-      this.mode,
+      this.parts.map((c, i) => ({ n: c.n + (d[i] ?? 0), mode: c.mode })),
     );
   }
 
@@ -43,6 +57,9 @@ export class PosValue implements CommandValue {
 
 function component(n: number, mode: Mode): string {
   if (mode === "absolute") return String(n);
+  // A whole number in a vec3 is block-centered by vanilla (`0` means 0.5 on x/z);
+  // the trailing `.0` is what pins it to the exact coordinate.
+  if (mode === "exact") return Number.isInteger(n) ? `${n}.0` : String(n);
   const prefix = mode === "relative" ? "~" : "^";
   return n === 0 ? prefix : `${prefix}${n}`;
 }
@@ -73,14 +90,25 @@ class RawPos extends PosValue {
 export type Pos = PosValue;
 
 export const Pos = Object.assign(
-  (...coords: number[]): PosValue => new PosValue(coords, "absolute"),
+  (...coords: CoordArg[]): PosValue => new PosValue(coords, "absolute"),
   {
+    /**
+     * Absolute, but pinned to the exact coordinate (`0.0`) rather than the block
+     * center vanilla infers from a whole number (`0` -> 0.5 on x/z in a vec3).
+     */
+    exact: (...coords: CoordArg[]): PosValue => new PosValue(coords, "exact"),
     /** Relative to the executor (`~`). */
-    rel: (...coords: number[]): PosValue => new PosValue(coords, "relative"),
+    rel: (...coords: CoordArg[]): PosValue => new PosValue(coords, "relative"),
     /** Local, relative to facing (`^`). */
-    local: (...coords: number[]): PosValue => new PosValue(coords, "local"),
+    local: (...coords: CoordArg[]): PosValue => new PosValue(coords, "local"),
     /** `~ ~ ~` - the executor's own position. */
     here: (): PosValue => new PosValue([0, 0, 0], "relative"),
+    /** One absolute axis (`0`) inside an otherwise relative/local vector. */
+    abs: (n: number): Coord => ({ n, mode: "absolute" }),
+    /** One relative axis (`~n`) inside an otherwise absolute vector. */
+    tilde: (n: number): Coord => ({ n, mode: "relative" }),
+    /** One local axis (`^n`). */
+    caret: (n: number): Coord => ({ n, mode: "local" }),
     /** Wrap a raw coordinate string (legacy escape hatch); renders verbatim. */
     raw: (text: string): PosValue => new RawPos(text),
   },

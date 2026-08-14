@@ -54,7 +54,7 @@ describe("ctx.execute() chain builder", () => {
         .execute()
         .as(Selector.uuid("d4bd74a7-4e82-4a07-8850-dfc4d89f9e2f"))
         .in(Id("minecraft:overworld"))
-        .positioned(Pos.raw("0.0 0.0 0.0"))
+        .positioned(Pos.exact(0, 0, 0))
         .run((b: any) => b.call(fn)),
     );
     buildDatapack(dp);
@@ -158,7 +158,7 @@ describe("ctx.execute() chain builder", () => {
   it("teleport resolves the targets+location overload (not the destination leaf)", () => {
     const [a, b] = render((ctx) => {
       ctx.teleport(Selector.self(), Pos.local(1, 0, 0));
-      ctx.teleport(Selector.self(), Pos.raw("0.0 0.0 0.0"), Pos.raw("0.0 0.0"));
+      ctx.teleport(Selector.self(), Pos.exact(0, 0, 0), Pos.exact(0, 0));
     });
     expect(a).toBe("teleport @s ^1 ^ ^");
     expect(b).toBe("teleport @s 0.0 0.0 0.0 0.0 0.0");

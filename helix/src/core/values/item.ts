@@ -164,6 +164,7 @@ export class ItemValue implements CommandValue {
   private canPlaceOnValue: string[] = [];
   private writtenBookValue?: { title: string; author: string; pages: (TellrawPart | string | TellrawPart[])[] };
   private extraComponents: { stack: string; key?: string; json?: unknown }[] = [];
+  private subPredicates: { type: string; json: unknown }[] = [];
 
   constructor(private readonly id: string) {}
 
@@ -273,6 +274,29 @@ export class ItemValue implements CommandValue {
       key: predicate?.key,
       json: predicate?.json,
     });
+    return this;
+  }
+
+  /**
+   * An item **sub-predicate** - the `predicates: { "<type>": <json> }` half of an
+   * `item_predicate`, which asks a *question* about a component rather than
+   * matching its exact value the way {@link component}/{@link toPredicate}'s
+   * `components` map does. This is the only way to express "has an enchantment at
+   * all", "damage in a range", "custom_data contains this key":
+   *
+   *   Item("diamond_sword").subPredicate("enchantments", [{}])   // any enchantment
+   *   Item("diamond_sword").subPredicate("damage", { durability: { min: 1 } })
+   *
+   * Predicate-only - it describes a match, not a stack, so it is ignored by
+   * {@link render}/{@link toStackNbt}. There is no *negative* form in vanilla
+   * (an item predicate can't say "component absent"); wrap the whole condition in
+   * `Predicate.not(...)` for that.
+   *
+   * Sub-predicates arrived with data components (1.20.5), so rendering one for an
+   * older target throws rather than silently matching everything.
+   */
+  subPredicate(type: string, json: unknown): this {
+    this.subPredicates.push({ type: normalizeId(type), json });
     return this;
   }
 
@@ -459,6 +483,16 @@ export class ItemValue implements CommandValue {
     } else if (this.hasStructuredData()) {
       const nbt = this.legacyNbt(version);
       if (nbt) out.nbt = `{${nbt}}`;
+    }
+    if (this.subPredicates.length) {
+      if (version.dataVersion < COMPONENTS_DATA_VERSION) {
+        throw new Error(
+          `Item sub-predicates need data components (1.20.5+); target version ${version.id} predates them.`,
+        );
+      }
+      const predicates: Record<string, unknown> = {};
+      for (const p of this.subPredicates) predicates[p.type] = p.json;
+      out.predicates = predicates;
     }
     return out;
   }

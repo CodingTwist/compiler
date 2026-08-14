@@ -196,3 +196,25 @@ describe("inventory slot matches", () => {
     expect(Object.keys(json.predicate.slots)).toEqual(["armor.head"]);
   });
 });
+
+describe("item sub-predicates", () => {
+  it("asks about a component instead of matching its value, and inverts", () => {
+    const enchanted = Item("diamond_sword").subPredicate("enchantments", [{}]);
+
+    expect(Predicate.matchTool(enchanted).toJson(v26_1_2)).toEqual({
+      condition: "minecraft:match_tool",
+      predicate: {
+        items: "minecraft:diamond_sword",
+        predicates: { "minecraft:enchantments": [{}] },
+      },
+    });
+
+    // No negative form in vanilla item predicates - negate the condition.
+    expect(Predicate.matchTool(enchanted).not().toJson(v26_1_2)).toMatchObject({
+      condition: "minecraft:inverted",
+    });
+
+    // Predicate-only: never leaks into the give/stack form.
+    expect(enchanted.render(v26_1_2)).toBe("minecraft:diamond_sword");
+  });
+});

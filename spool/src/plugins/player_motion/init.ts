@@ -30,7 +30,7 @@ export function defineInit(I: PlayerMotionInternals): void {
         uuid: [-725781337, 1317161479, -2007965756, -660627921],
         tags: ["smithed.strict", "smithed.entity"],
       }),
-      Pos.raw("0.0 0.0 0.0"),
+      Pos.exact(0, 0, 0),
     );
   });
 }

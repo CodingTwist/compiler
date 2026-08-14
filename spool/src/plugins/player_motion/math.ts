@@ -57,7 +57,7 @@ export function defineMath(I: PlayerMotionInternals): void {
     ctx.storage(temp).set(VEC.j, ctx.entity(self()).at(POS));
     ctx.teleport(self(), Pos.local(0, 0, 1));
     ctx.storage(temp).set(VEC.k, ctx.entity(self()).at(POS));
-    ctx.teleport(self(), Pos.raw("0.0 0.0 0.0"), Pos.raw("0.0 0.0"));
+    ctx.teleport(self(), Pos.exact(0, 0, 0), Pos.exact(0, 0));
   });
 
   // --- internal/math/global/convert_to_local (no-tp approximation) ----------
@@ -147,7 +147,7 @@ export function globalConversionTail(
     .execute()
     .as(marker())
     .in(Id("minecraft:overworld"))
-    .positioned(Pos.raw("0.0 0.0 0.0"))
+    .positioned(Pos.exact(0, 0, 0))
     .run((b) => b.call(fStoreRefVectors));
 
   // Combine the vec_k components into one score for the reuse comparison.
