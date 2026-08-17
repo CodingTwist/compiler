@@ -235,7 +235,16 @@ function mixNbt(a: NbtValue, b: NbtValue, u: number): NbtValue {
 
 /**
  * Teleports a selector along a positional path over keyframes - a camera dolly or
- * any entity move. Always baked (one `tp` per tick).
+ * any entity move. Baked: by default one `tp` per tick.
+ *
+ * **Gliding** (`glide`) teleports only *on* the keyframes and sets the entity's
+ * `teleport_duration` to the gap ahead, so the client tweens the move instead of
+ * snapping - a 4-keyframe 100-tick path costs 4 teleports rather than 100, and
+ * looks smoother than the per-tick version because it interpolates between
+ * client frames rather than between server ticks.
+ *
+ * `teleport_duration` is a **display-entity** field, so gliding only applies to
+ * display targets; a mob path has to stay per-tick.
  */
 export class TpTrack implements Track {
   readonly mode: TrackMode = "frame";
@@ -243,15 +252,23 @@ export class TpTrack implements Track {
   constructor(
     private readonly selector: Selector,
     private readonly keys: readonly Keyframe<Vec3>[],
+    private readonly glide = false,
   ) {
     if (keys.length === 0) throw new Error("tp track needs at least one keyframe.");
+    // The client tween is always linear, so a held ("step") segment can't survive it.
+    if (glide && keys.some((k) => k.ease === "step")) {
+      throw new Error("a glide tp track can't use a 'step' ease - the client tween is linear.");
+    }
   }
 
   empty(): boolean {
     return false;
   }
   length(): number {
-    return this.keys[this.keys.length - 1].tick;
+    const last = this.keys[this.keys.length - 1].tick;
+    // Sampling a per-tick path at its last tick lands on the final value anyway, but
+    // a glide *fires* on that tick - so the clip has to be long enough to contain it.
+    return this.glide ? last + 1 : last;
   }
   period(duration: number): number {
     return Math.max(1, duration);
@@ -261,11 +278,27 @@ export class TpTrack implements Track {
   }
 
   emitFrame(ctx: FunctionContext, f: number): void {
-    const p = sampleVec3(this.keys, f);
     // `teleport <targets> <location>` isn't accepted by the command grammar, so
     // run a location-only teleport in the selector's `as` context instead:
     // `execute as <sel> run teleport <x y z>`.
-    this.selector.run((c) => c.teleport(undefined, Pos(p[0], p[1], p[2])))(ctx);
+    const tp = (p: Vec3) =>
+      this.selector.run((c) => c.teleport(undefined, Pos(p[0], p[1], p[2])))(ctx);
+
+    if (!this.glide) {
+      tp(sampleVec3(this.keys, f));
+      return;
+    }
+    // Gliding: this frame does nothing unless a keyframe lands on it. The
+    // duration must be written *before* the teleport it applies to, and re-written
+    // each time, since consecutive gaps differ.
+    const i = this.keys.findIndex((k) => k.tick === f);
+    if (i === -1) return;
+    const next = this.keys[i + 1];
+    ctx
+      .data()
+      .merge()
+      .entity(this.selector, DisplayBase({ teleportDuration: next ? next.tick - f : 0 }));
+    tp(this.keys[i].value);
   }
 
   emitSmooth(): void {

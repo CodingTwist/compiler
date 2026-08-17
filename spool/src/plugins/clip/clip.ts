@@ -123,9 +123,14 @@ export class Clip {
     this.tracks.push(new NbtTrack(selector, path, keys));
     return this;
   }
-  /** Teleport `selector` along a positional path over keyframes - camera/entity dolly. */
-  tp(selector: Selector, keys: readonly Keyframe<Vec3>[]): this {
-    this.tracks.push(new TpTrack(selector, keys));
+  /**
+   * Teleport `selector` along a positional path over keyframes - camera/entity
+   * dolly. `glide` teleports only on the keyframes and lets the client tween
+   * between them via `teleport_duration` (display entities only) - far fewer
+   * commands, and smoother than the per-tick default.
+   */
+  tp(selector: Selector, keys: readonly Keyframe<Vec3>[], glide = false): this {
+    this.tracks.push(new TpTrack(selector, keys, glide));
     return this;
   }
 

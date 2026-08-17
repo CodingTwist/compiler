@@ -51,6 +51,34 @@ describe("entity NBT schemas", () => {
     expect(d.render(v26_2)).toContain(`Tags:["cog","cog_0"],Passengers:[{block_state:`);
   });
 
+  it("renders an item member through the item_display schema", () => {
+    const rig = Display.item(Item.NETHERITE_SWORD, {}, "head").add(Block.STONE).named("boss");
+    expect(rig.toNbt().entity).toBe("minecraft:item_display");
+    const out = rig.render(v26_2);
+    expect(out).toContain(`item:{id:"minecraft:netherite_sword",count:1},item_display:"head"`);
+    // The child keeps its own type - a group may mix block and item members.
+    expect(out).toContain(`id:"minecraft:block_display"`);
+  });
+
+  it("rides an interaction hitbox on the root, sized from the model bounds", () => {
+    const d = Display(Block.STONE)
+      .add(Block.STONE, { translation: [0, 3, 2] })
+      .named("boss")
+      .hitbox();
+    // bounds are 1 x 4 x 3 -> width = max(x,z) = 3, height = y = 4.
+    expect(d.render(v26_2)).toContain(
+      `{width:3.0f,height:4.0f,response:1b,Tags:["boss","boss_hitbox"],id:"minecraft:interaction"}`,
+    );
+    expect(d.hitboxSelector()).toBe("@e[tag=boss_hitbox]");
+    // The hitbox is not an animatable member - only the two displays are.
+    expect(d.members()).toHaveLength(2);
+  });
+
+  it("carries interpolation defaults onto every display member", () => {
+    const d = Display(Block.STONE).interpolation(4).teleportDuration(6);
+    expect(d.render(v26_2)).toContain("interpolation_duration:4,teleport_duration:6");
+  });
+
   it("merges raw keys last, for anything uncurated", () => {
     expect(Tnt({ fuse: 40 }, { Foo: 1 }).render(v1_21_4)).toBe("{fuse:40s,Foo:1}");
   });

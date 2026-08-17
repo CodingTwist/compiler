@@ -171,3 +171,43 @@ describe("Cutscene: compose clips + camera + events on one timeline", () => {
     expect(fn(files, "zzz/intro/cam_0/frame_2")).toContain("execute as @a run teleport 4 100 0");
   });
 });
+
+describe("Clip: gliding tp track", () => {
+  const dp = new Datapack("anim", v1_21_4);
+  const rig = Selector.allEntities().tag("rig").limit(1);
+  const rig_model = Display(Block("minecraft:stone")).named("swoop").at("~ ~ ~");
+  dp.clip(rig_model).tp(
+    rig,
+    [
+      { tick: 0, value: [0, 64, 0] },
+      { tick: 6, value: [0, 70, 0] },
+      { tick: 10, value: [8, 70, 0] },
+    ],
+    true,
+  );
+  const files = buildDatapack(dp);
+
+  it("teleports only on keyframes, with the gap ahead as teleport_duration", () => {
+    expect(fn(files, "zzz/swoop/frame_0")).toContain(
+      "data merge entity @e[tag=rig,limit=1] {teleport_duration:6}",
+    );
+    expect(fn(files, "zzz/swoop/frame_0")).toContain("execute as @e[tag=rig,limit=1] run teleport 0 64 0");
+    expect(fn(files, "zzz/swoop/frame_6")).toContain("{teleport_duration:4}");
+    // The last keyframe has nothing ahead of it, so it lands immediately.
+    expect(fn(files, "zzz/swoop/frame_10")).toContain("{teleport_duration:0}");
+  });
+
+  it("emits nothing on the ticks between keyframes", () => {
+    [1, 2, 3, 4, 5, 7, 8, 9].forEach((f) =>
+      expect(fn(files, `zzz/swoop/frame_${f}`).trim()).toBe(""),
+    );
+  });
+
+  it("rejects a stepped ease, which a linear client tween cannot honour", () => {
+    expect(() =>
+      dp
+        .clip(Display(Block("minecraft:stone")).named("bad").at("~ ~ ~"))
+        .tp(rig, [{ tick: 0, value: [0, 0, 0], ease: "step" }], true),
+    ).toThrow(/step/);
+  });
+});

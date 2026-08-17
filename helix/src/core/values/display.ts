@@ -8,6 +8,7 @@ import { Float, NbtInput } from "./nbt";
 import type { IdentifiedEntityNbt } from "./entity-nbt";
 import type { ItemValue } from "./item";
 import { BlockDisplay, Interaction, ItemDisplay } from "./entities.generated";
+import type { ItemDisplayFields } from "./entities.generated";
 import { CommandValue } from "./value";
 import { Pos, PosValue } from "./pos";
 import { Vec3, Quat } from "./transform-math";
@@ -33,10 +34,34 @@ export interface Transform {
   rightRotation?: Quat;
 }
 
+/**
+ * What one member of a display group renders. `context` is the item model's
+ * `display` section (`fixed`, `head`, …) - typed straight off the generated
+ * schema's own field, so this file never restates a vocabulary mcdoc owns.
+ */
+export type DisplayContent =
+  | { readonly kind: "block"; readonly block: BlockValue }
+  | {
+      readonly kind: "item";
+      readonly item: ItemValue;
+      readonly context?: ItemDisplayFields["itemDisplay"];
+    };
+
 export interface DisplayChild {
-  block: BlockValue;
+  content: DisplayContent;
   transform: Transform;
 }
+
+/**
+ * The entity id each member summons as, taken from the generated schemas rather
+ * than spelled out here - the factories already name their entity, so this stays
+ * correct by construction if a schema is regenerated.
+ */
+const ENTITY = {
+  block: BlockDisplay({}).entity,
+  item: ItemDisplay({}).entity,
+  hitbox: Interaction({}).entity,
+} as const;
 
 const IDENTITY_QUAT: Quat = [0, 0, 0, 1];
 const UNIT_SCALE: Vec3 = [1, 1, 1];
@@ -52,8 +77,10 @@ function transformNbt(t: Transform): NbtInput {
 }
 
 /**
- * A `block_display` made of a root block plus child block displays carried as
- * `Passengers`. Renders to the summon data tag - pass it as the `nbt` arg:
+ * A display **group**: a root member plus child members carried as `Passengers`,
+ * each rendering either a block state (`block_display`) or an item stack
+ * (`item_display`), and optionally an `interaction` hitbox riding the root.
+ * Renders to the summon data tag - pass it as the `nbt` arg:
  *
  *   const d = Display(Block.POLISHED_BASALT.state({ axis: "x" }))
  *     .add(Block.WAXED_COPPER_BLOCK, { translation: [-0.5, -3.5, -0.5] });
@@ -68,24 +95,97 @@ export class DisplayValue implements CommandValue {
   private _name?: string;
   private _pos: Pos | string = "~ ~ ~";
   private _brightness?: { block: number; sky: number };
+  private _hitbox?: { width: number; height: number; response: boolean };
+  private _interpolation?: number;
+  private _teleportDuration?: number;
 
   constructor(
-    private block: BlockValue,
+    private content: DisplayContent,
     private readonly rootTransform: Transform = {},
   ) {}
 
   /** The entity id to summon this with (`ctx.summon(Display.id, ...)`). */
-  static readonly id = "minecraft:block_display";
+  static readonly id = ENTITY.block;
 
-  /** Replace the root block. */
+  /** Replace the root member with a block. */
   setBlock(block: BlockValue): this {
-    this.block = block;
+    this.content = { kind: "block", block };
+    return this;
+  }
+
+  /** Replace the root member with an item. */
+  setItem(item: ItemValue, context?: ItemDisplayFields["itemDisplay"]): this {
+    this.content = { kind: "item", item, context };
     return this;
   }
 
   /** Append a child block display at the given transform. */
   add(block: BlockValue, transform: Transform = {}): this {
-    this.children.push({ block, transform });
+    this.children.push({ content: { kind: "block", block }, transform });
+    return this;
+  }
+
+  /**
+   * Append a child **item** display - a custom-modelled item is one member
+   * instead of the dozens of cubes the same shape costs in blocks.
+   */
+  addItem(
+    item: ItemValue,
+    transform: Transform = {},
+    context?: ItemDisplayFields["itemDisplay"],
+  ): this {
+    this.children.push({ content: { kind: "item", item, context }, transform });
+    return this;
+  }
+
+  /**
+   * Give the group a **hitbox**. Display entities have none - nothing can hit
+   * them, and nothing can stand on them - so this rides an `interaction` entity
+   * on the root, which is the vanilla primitive that *does* have one: a cube
+   * `width` across and `height` tall that records the last attack/use in its own
+   * NBT (readable at `attack.player` / `interaction.player`).
+   *
+   * Both default to the model's own {@link boundsSize}. `response` (default
+   * `true`) is whether hitting it plays the hit sound / swings the arm.
+   *
+   * Relaying that recorded hit onto a real mob is deliberately *not* here: it's a
+   * gameplay convention, so it belongs a layer up. This is the mechanism.
+   */
+  hitbox(width?: number, height?: number, response = true): this {
+    const [bx, by, bz] = this.boundsSize();
+    // ponytail: the box is anchored at the group origin and spans up from it,
+    // because a passenger can't be offset from its vehicle. A model whose bounds
+    // don't start at the origin wants explicit dims (or its own mounted entity).
+    this._hitbox = { width: width ?? Math.max(bx, bz), height: height ?? by, response };
+    return this;
+  }
+
+  /** A selector for the hitbox alone - what an attack-relay reads. */
+  hitboxSelector(): string {
+    if (!this._hitbox) throw new Error("Display has no hitbox - call .hitbox() first.");
+    return `@e[tag=${this.getName()}_hitbox]`;
+  }
+
+  /**
+   * Tween transform changes over `ticks` instead of snapping to them. Display
+   * entities don't interpolate for free: the duration is stored **on the entity**
+   * and every later update has to re-trigger it (`start_interpolation`), which is
+   * what the clip engine's transform writes already do - this sets the resting
+   * default so an ad-hoc `data merge` moves smoothly too.
+   */
+  interpolation(ticks: number): this {
+    this._interpolation = ticks;
+    return this;
+  }
+
+  /**
+   * Glide over `ticks` when **teleported** rather than jumping. Separate from
+   * {@link interpolation} in vanilla (transform tweening and positional tweening
+   * are different fields), and the one that matters for a model being moved
+   * around by `tp` - a boss rig following its mob, say.
+   */
+  teleportDuration(ticks: number): this {
+    this._teleportDuration = ticks;
     return this;
   }
 
@@ -174,9 +274,13 @@ export class DisplayValue implements CommandValue {
     ctx.kill(Selector.allEntities().tag(this.getName()));
   }
 
-  /** Ordered members - root first (index 0), then the added children. */
+  /**
+   * Ordered members - root first (index 0), then the added children. The hitbox
+   * is **not** one: it carries no transform, so nothing that animates members
+   * should ever address it.
+   */
   members(): DisplayChild[] {
-    return [{ block: this.block, transform: this.rootTransform }, ...this.children];
+    return [{ content: this.content, transform: this.rootTransform }, ...this.children];
   }
 
   /**
@@ -211,25 +315,51 @@ export class DisplayValue implements CommandValue {
    * SNBT suffixes are the compiler's business, not this file's.
    */
   toNbt(): IdentifiedEntityNbt {
+    const tags = (suffix: string) =>
+      this._name ? [this._name, `${this._name}_${suffix}`] : undefined;
+
+    const hitboxNbt = (): IdentifiedEntityNbt[] =>
+      this._hitbox
+        ? [
+            Interaction(
+              {
+                width: this._hitbox.width,
+                height: this._hitbox.height,
+                response: this._hitbox.response,
+                tags: tags("hitbox"),
+              },
+              { id: ENTITY.hitbox },
+            ),
+          ]
+        : [];
+
     const member = (
       c: DisplayChild,
       idx: number,
       raw?: Record<string, NbtInput>,
-    ): IdentifiedEntityNbt =>
-      BlockDisplay(
-        {
-          blockState: c.block,
-          transformation: transformNbt(c.transform),
-          brightness: this._brightness,
-          tags: this._name ? [this._name, `${this._name}_${idx}`] : undefined,
-          // A passenger names its own entity type; the root's comes from the summon.
-          passengers: idx === 0 && this.children.length > 0
-            ? this.children.map((c, i) => member(c, i + 1, { id: DisplayValue.id }))
-            : undefined,
-        },
-        raw,
-      );
-    return member({ block: this.block, transform: this.rootTransform }, 0);
+    ): IdentifiedEntityNbt => {
+      // A passenger names its own entity type; the root's comes from the summon.
+      const riders =
+        idx === 0
+          ? [...this.children.map((c, i) => member(c, i + 1, { id: ENTITY[c.content.kind] })), ...hitboxNbt()]
+          : [];
+      const common = {
+        transformation: transformNbt(c.transform),
+        brightness: this._brightness,
+        interpolationDuration: this._interpolation,
+        teleportDuration: this._teleportDuration,
+        tags: tags(String(idx)),
+        passengers: riders.length > 0 ? riders : undefined,
+      };
+      // Content first, so a block group renders byte-identically to before items existed.
+      return c.content.kind === "block"
+        ? BlockDisplay({ blockState: c.content.block, ...common }, raw)
+        : ItemDisplay(
+            { item: c.content.item.stackNbt(), itemDisplay: c.content.context, ...common },
+            raw,
+          );
+    };
+    return member({ content: this.content, transform: this.rootTransform }, 0);
   }
 
   render(version: VersionProfile): string {
@@ -240,6 +370,14 @@ export class DisplayValue implements CommandValue {
 export type Display = DisplayValue;
 export const Display = Object.assign(
   (block: BlockValue, rootTransform?: Transform): DisplayValue =>
-    new DisplayValue(block, rootTransform),
-  { id: DisplayValue.id },
+    new DisplayValue({ kind: "block", block }, rootTransform),
+  {
+    id: DisplayValue.id,
+    /** A group whose root is an **item** display (a custom-modelled item rig). */
+    item: (
+      item: ItemValue,
+      rootTransform?: Transform,
+      context?: ItemDisplayFields["itemDisplay"],
+    ): DisplayValue => new DisplayValue({ kind: "item", item, context }, rootTransform),
+  },
 );
