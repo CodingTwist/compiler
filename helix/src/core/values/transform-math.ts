@@ -56,6 +56,22 @@ export function quat(axis: Axis, angleDeg: number): Quat {
   }
 }
 
+/**
+ * Compose two rotations: `b` is applied **first**, then `a` - the same order as
+ * writing `a * b`. `quat` is single-axis, so this is how a transform gets a second
+ * axis without burning the display's other rotation slot.
+ */
+export function mulQuat(a: Quat, b: Quat): Quat {
+  const [ax, ay, az, aw] = a;
+  const [bx, by, bz, bw] = b;
+  return [
+    aw * bx + ax * bw + ay * bz - az * by,
+    aw * by - ax * bz + ay * bw + az * bx,
+    aw * bz + ax * by - ay * bx + az * bw,
+    aw * bw - ax * bx - ay * by - az * bz,
+  ];
+}
+
 function cross(a: Vec3, b: Vec3): Vec3 {
   return [
     a[1] * b[2] - a[2] * b[1],

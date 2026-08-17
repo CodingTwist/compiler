@@ -11,7 +11,7 @@ import { BlockDisplay, Interaction, ItemDisplay } from "./entities.generated";
 import type { ItemDisplayFields } from "./entities.generated";
 import { CommandValue } from "./value";
 import { Pos, PosValue } from "./pos";
-import { Vec3, Quat } from "./transform-math";
+import { Vec3, Quat, add } from "./transform-math";
 
 export type { Vec3, Quat };
 
@@ -87,6 +87,7 @@ function transformNbt(t: Transform): NbtInput {
 export class DisplayValue implements CommandValue {
   readonly children: DisplayChild[] = [];
   private _pivot: Vec3 = [0, 0, 0];
+  private _offset: Vec3 = [0, 0, 0];
   private _name?: string;
   private _pos: Pos | string = "~ ~ ~";
   private _brightness?: { block: number; sky: number };
@@ -196,6 +197,18 @@ export class DisplayValue implements CommandValue {
     return this;
   }
 
+  /**
+   * Shift **every** member by `v`. The knob for a group that doesn't sit where its
+   * entity does - chiefly a rig *riding* a mob: a passenger is planted at the
+   * vehicle's mount point (roughly `height * 0.75` up), so the model floats unless
+   * the group is pushed back down by that much. The interaction hitbox is
+   * deliberately not moved: it can't be offset from its vehicle at all.
+   */
+  offset(v: Vec3): this {
+    this._offset = v;
+    return this;
+  }
+
   /** Set the local-space pivot the group rotates about (default origin). */
   pivot(p: Vec3): this {
     this._pivot = p;
@@ -275,7 +288,12 @@ export class DisplayValue implements CommandValue {
    * should ever address it.
    */
   members(): DisplayChild[] {
-    return [{ content: this.content, transform: this.rootTransform }, ...this.children];
+    const all = [{ content: this.content, transform: this.rootTransform }, ...this.children];
+    if (this._offset.every((n) => n === 0)) return all;
+    return all.map((m) => ({
+      ...m,
+      transform: { ...m.transform, translation: add(m.transform.translation ?? [0, 0, 0], this._offset) },
+    }));
   }
 
   /**
@@ -325,12 +343,12 @@ export class DisplayValue implements CommandValue {
           ]
         : [];
 
+    // Through `members()`, so a group `offset` reaches the emitted NBT.
+    const all = this.members();
     const member = (c: DisplayChild, idx: number): IdentifiedEntityNbt => {
       // A passenger names its own entity type; the root's comes from the summon.
       const riders =
-        idx === 0
-          ? [...this.children.map((c, i) => member(c, i + 1)), ...hitboxNbt()]
-          : [];
+        idx === 0 ? [...all.slice(1).map((c, i) => member(c, i + 1)), ...hitboxNbt()] : [];
       const common = {
         transformation: transformNbt(c.transform),
         brightness: this._brightness,
@@ -350,7 +368,7 @@ export class DisplayValue implements CommandValue {
             });
       return idx === 0 ? nbt : nbt.asPassenger();
     };
-    return member({ content: this.content, transform: this.rootTransform }, 0);
+    return member(all[0], 0);
   }
 
   render(version: VersionProfile): string {

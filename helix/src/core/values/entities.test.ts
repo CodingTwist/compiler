@@ -80,6 +80,18 @@ describe("entity NBT schemas", () => {
     expect(d.members()).toHaveLength(2);
   });
 
+  it("shifts every member by the group offset, leaving the hitbox anchored", () => {
+    const d = Display(Block.STONE, { translation: [0, 0.5, 0] })
+      .add(Block.STONE, { translation: [0, 2, 0] })
+      .named("rig")
+      .offset([0, -1.5, 0])
+      .hitbox(1, 1);
+    const out = d.render(v26_2);
+    expect(out).toContain("translation:[0.0f,-1.0f,0.0f]"); // root: 0.5 - 1.5
+    expect(out).toContain("translation:[0.0f,0.5f,0.0f]"); // child: 2 - 1.5
+    expect(out).toContain("width:1.0f,height:1.0f");
+  });
+
   it("carries interpolation defaults onto every display member", () => {
     const d = Display(Block.STONE).interpolation(4).teleportDuration(6);
     expect(d.render(v26_2)).toContain("interpolation_duration:4,teleport_duration:6");

@@ -49,6 +49,18 @@ constructed and emits nothing** - that is the compile-time disable.
   range, so the live total can only enter via the modulo), then walking cumulative
   thresholds. Death is the entity being *gone*, not health 0. `cleanup` calls
   `rearmEvents`, which is what makes a fight repeatable.
+- [src/mob.ts](src/mob.ts) - `defineMob` / `MobBuilder`: a **custom mob** compiled to a
+  `ConfiguredModule` - a real vanilla mob (AI, damage, death) wearing a helix `Display`
+  rig. The two are summoned separately and joined with `ride mount` (so neither value has
+  to know about the other), and the module owns the three things riding doesn't give you:
+  the rig's yaw (each rig tags itself, then `on vehicle` copies *its own* mob's
+  `Rotation[0]` back onto it *and on down to its own passengers*, since every member is
+  its own display entity that keeps its own rotation - not the nearest rig, which made two
+  mobs standing in each other share a model, and yaw only, since a copied pitch tilts it), hit relay from the model's `interaction`
+  hitbox onto the mob, and killing rigs whose mob is gone - a killed vehicle only
+  *dismounts* its passengers, so orphans are found by mark-and-sweep (there is no "has a
+  vehicle" check; only the vehicle knows its passengers). A rig that rides sits at the
+  mount point (`height * 0.75` up), which is what `Display.offset(...)` exists to cancel.
 - [src/item-registry.ts](src/item-registry.ts) - `registerItem(name, item)` /
   `registerItemGiveCommands(dp)`: dev-only `debug/give/<name>` functions for plain
   (non-behavioural) `ItemValue`s a pack declares.

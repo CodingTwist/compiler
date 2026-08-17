@@ -23,6 +23,8 @@ export type { OnOptions, EventHandler } from "./events";
 export { buildEnv, isDev, setBuildEnv } from "./env";
 export { defineItem, ItemBuilder } from "./item";
 export { defineBoss, BossBuilder } from "./boss";
+export { defineMob, MobBuilder } from "./mob";
+export type { MobModuleOpts } from "./mob";
 export type {
   AbilityOpts,
   BarStyle,

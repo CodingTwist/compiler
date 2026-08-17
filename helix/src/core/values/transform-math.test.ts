@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  mulQuat,
   quat,
   rotateVec,
   rotateAboutPivot,
@@ -45,5 +46,12 @@ describe("transform-math", () => {
 
   it("round6 normalises -0 to 0", () => {
     expect(Object.is(round6(-0), 0)).toBe(true);
+  });
+
+  it("mulQuat applies its right operand first", () => {
+    // x180 flips [0,1,0] to [0,-1,0], then z90 sends that to [1,0,0].
+    close(rotateVec([0, 1, 0], mulQuat(quat("z", 90), quat("x", 180))), [1, 0, 0]);
+    // The other order is a different rotation: z90 first gives [-1,0,0], x180 keeps it.
+    close(rotateVec([0, 1, 0], mulQuat(quat("x", 180), quat("z", 90))), [-1, 0, 0]);
   });
 });
