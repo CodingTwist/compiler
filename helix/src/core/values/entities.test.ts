@@ -19,6 +19,12 @@ describe("entity NBT schemas", () => {
     expect(tnt.render(v1_20_1)).toBe("{}");
   });
 
+  it("writes its own id when nested as a passenger", () => {
+    expect(Tnt({ fuse: 40 }).asPassenger().render(v1_21_4)).toBe(
+      `{fuse:40s,id:"minecraft:tnt"}`,
+    );
+  });
+
   it("follows a field that changed type as well as name", () => {
     expect(Tnt({ fallDistance: 3 }).render(v1_21_4)).toBe("{FallDistance:3.0f}");
     expect(Tnt({ fallDistance: 3 }).render(v26_2)).toBe("{fall_distance:3.0d}");
@@ -77,9 +83,5 @@ describe("entity NBT schemas", () => {
   it("carries interpolation defaults onto every display member", () => {
     const d = Display(Block.STONE).interpolation(4).teleportDuration(6);
     expect(d.render(v26_2)).toContain("interpolation_duration:4,teleport_duration:6");
-  });
-
-  it("merges raw keys last, for anything uncurated", () => {
-    expect(Tnt({ fuse: 40 }, { Foo: 1 }).render(v1_21_4)).toBe("{fuse:40s,Foo:1}");
   });
 });

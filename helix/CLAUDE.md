@@ -47,7 +47,10 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
   gate table) from **vanilla-mcdoc**, cached in gitignored `scripts/.cache/`. Both outputs are
   committed, so a normal build needs no network; re-run it when a Minecraft version lands.
   Curated fields the parser can't infer (`blockState` → `BlockValue`) live in the script's
-  `OVERRIDES`; `entities.ts` keeps only the raw-NBT warning.
+  `OVERRIDES`; `entities.ts` keeps only the raw-NBT warning. A field mcdoc marks
+  `#[id="<registry>"]` takes helix's **typed concept** for that registry
+  (`AttributeInstance({ id: Attribute.MAX_HEALTH })`, not an id string) - the pairing is
+  read off `resource.generated.ts`, so a registry with no concept stays a string.
 
 ## Architecture
 

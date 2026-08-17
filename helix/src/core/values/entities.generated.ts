@@ -16,6 +16,7 @@ import {
 } from "./entity-nbt";
 import { Byte, Double, Float, IntArray, Long, Short, type NbtInput } from "./nbt";
 import type { BlockValue } from "./block";
+import type { Attribute, Dimension, EntityType, MobEffect } from "./resource.generated";
 
 /** `minecraft:fishing_bobber`, `minecraft:lightning_bolt` */
 export interface EntityFields {
@@ -1896,16 +1897,16 @@ export interface DropChancesFields {
 export const DROP_CHANCES: EntityNbtSchema<DropChancesFields> = {
 };
 
-export interface AttributeFields {
-  name?: NbtInput;
+export interface AttributeInstanceFields {
+  name?: Attribute;
   base?: number;
   /** Modifiers that act on it. */
   modifiers?: readonly NbtInput[];
-  id?: string;
+  id?: Attribute;
 }
 
-export const ATTRIBUTE: EntityNbtSchema<AttributeFields> = {
-  name: field({ key: "Name", until: "1.21" }),
+export const ATTRIBUTE_INSTANCE: EntityNbtSchema<AttributeInstanceFields> = {
+  name: field({ key: "Name", encode: (v: Attribute) => v.render(), until: "1.21" }),
   base: (v, version): Record<string, NbtInput> =>
     atLeast(version, "1.21")
       ? { base: Double(v) }
@@ -1914,7 +1915,7 @@ export const ATTRIBUTE: EntityNbtSchema<AttributeFields> = {
     atLeast(version, "1.21")
       ? { modifiers: asList(v) }
       : { Modifiers: asList(v) },
-  id: field({ key: "id", since: "1.21" }),
+  id: field({ key: "id", encode: (v: Attribute) => v.render(), since: "1.21" }),
 };
 
 export interface ModernAttributeModifierFields {
@@ -2085,11 +2086,11 @@ export const ENTERED_NETHER_POSITION: EntityNbtSchema<EnteredNetherPositionField
 
 export interface AnyEntityFields {
   /** The ID of this entity. Not present on player entities. */
-  id?: string;
+  id?: EntityType;
 }
 
 export const ANY_ENTITY: EntityNbtSchema<AnyEntityFields> = {
-  id: field({ key: "id" }),
+  id: field({ key: "id", encode: (v: EntityType) => v.render() }),
 };
 
 export interface RootVehicleFields {
@@ -2153,7 +2154,7 @@ export const WARDEN_SPAWN_TRACKER: EntityNbtSchema<WardenSpawnTrackerFields> = {
 export interface PlayerFields extends Omit<LivingFields, "customName" | "customNameVisible">, FallDamageLogicDataFields {
   /** Version of the player NBT structure */
   dataVersion?: number;
-  dimension?: NbtInput;
+  dimension?: Dimension;
   /** Location of the player's last death. */
   lastDeathLocation?: NbtInput;
   /** Game mode that the player is in. */
@@ -2168,7 +2169,7 @@ export interface PlayerFields extends Omit<LivingFields, "customName" | "customN
   selectedItem?: NbtInput;
   equipment?: EquipmentInput;
   /** Dimension of the player's respawn point. */
-  spawnDimension?: string;
+  spawnDimension?: Dimension;
   /** The Y-rotation of the player's respawn point. */
   spawnAngle?: number;
   /** X coordinate of the player's spawn point. */
@@ -2235,7 +2236,7 @@ export const PLAYER: EntityNbtSchema<PlayerFields> = {
   ...LIVING,
   ...FALL_DAMAGE_LOGIC_DATA,
   dataVersion: field({ key: "DataVersion" }),
-  dimension: field({ key: "Dimension" }),
+  dimension: field({ key: "Dimension", encode: (v: Dimension) => v.render() }),
   lastDeathLocation: field({ key: "LastDeathLocation", since: "1.19" }),
   playerGameType: field({ key: "playerGameType" }),
   previousPlayerGameType: field({ key: "previousPlayerGameType", since: "1.16" }),
@@ -2243,7 +2244,7 @@ export const PLAYER: EntityNbtSchema<PlayerFields> = {
   selectedItemSlot: field({ key: "SelectedItemSlot" }),
   selectedItem: field({ key: "SelectedItem" }),
   equipment: field({ key: "equipment", encode: asEquipment, since: "1.21.5" }),
-  spawnDimension: field({ key: "SpawnDimension", since: "1.16", until: "1.21.5" }),
+  spawnDimension: field({ key: "SpawnDimension", encode: (v: Dimension) => v.render(), since: "1.16", until: "1.21.5" }),
   spawnAngle: field({ key: "SpawnAngle", encode: Float, since: "1.16.2", until: "1.21.5" }),
   spawnX: field({ key: "SpawnX", until: "1.21.5" }),
   spawnY: field({ key: "SpawnY", until: "1.21.5" }),
@@ -2284,12 +2285,12 @@ export const PLAYER: EntityNbtSchema<PlayerFields> = {
 };
 
 export interface EnderPearlFields extends AnyEntityFields {
-  enderPearlDimension?: string;
+  enderPearlDimension?: Dimension;
 }
 
 export const ENDER_PEARL: EntityNbtSchema<EnderPearlFields> = {
   ...ANY_ENTITY,
-  enderPearlDimension: field({ key: "ender_pearl_dimension" }),
+  enderPearlDimension: field({ key: "ender_pearl_dimension", encode: (v: Dimension) => v.render() }),
 };
 
 export interface PlayerEquipmentFields {
@@ -2745,7 +2746,7 @@ export interface ArrowFields extends ArrowBaseFields {
   /** Effects to give to the hit entity. */
   customPotionEffects?: readonly NbtInput[];
   /** Name of the default potion effect. */
-  potion?: string;
+  potion?: MobEffect;
 }
 
 export const ARROW: EntityNbtSchema<ArrowFields> = {
@@ -2755,7 +2756,7 @@ export const ARROW: EntityNbtSchema<ArrowFields> = {
     atLeast(version, "1.20.2")
       ? { custom_potion_effects: asList(v) }
       : { CustomPotionEffects: asList(v) },
-  potion: field({ key: "Potion", until: "1.20.5" }),
+  potion: field({ key: "Potion", encode: (v: MobEffect) => v.render(), until: "1.20.5" }),
 };
 
 /** `minecraft:spectral_arrow` */
@@ -3511,6 +3512,9 @@ export const DisplayBase = defineEntityNbt<DisplayBaseFields>(DISPLAY_BASE);
 
 /** Id-less: the fields of `DecomposedTransformation` as a standalone compound - state the entity type explicitly. */
 export const DecomposedTransformation = defineEntityNbt<DecomposedTransformationFields>(DECOMPOSED_TRANSFORMATION);
+
+/** Id-less: the fields of `AttributeInstance` as a standalone compound - state the entity type explicitly. */
+export const AttributeInstance = defineEntityNbt<AttributeInstanceFields>(ATTRIBUTE_INSTANCE);
 
 /** The factory curating each entity, for the raw-NBT warning. */
 export const ENTITY_FACTORY_NAMES: Readonly<Record<string, string>> = {

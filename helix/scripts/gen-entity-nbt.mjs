@@ -16,6 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { CONCEPT_REGISTRIES } from "./concept-registries.mjs";
 
 const CACHE = path.join("scripts", ".cache", "vanilla-mcdoc");
 const TARBALL = "https://codeload.github.com/SpyglassMC/vanilla-mcdoc/tar.gz/refs/heads/main";
@@ -25,13 +26,29 @@ const DV_OUT = path.join("src", "core", "values", "entity-versions.generated.ts"
 
 // Structs whose generated names are the ones the hand-written schemas already used, so
 // consumers keep `ENTITY`/`MobFields`/… across this change.
-const ALIASES = { EntityBase: "Entity", LivingEntity: "Living", MobBase: "Mob" };
+const ALIASES = {
+  EntityBase: "Entity",
+  LivingEntity: "Living",
+  MobBase: "Mob",
+  // `Attribute` is taken by the registry concept (`Attribute.MAX_HEALTH`); this struct
+  // is one *entry* of an entity's attribute list.
+  Attribute: "AttributeInstance",
+};
 // Entity ids whose PascalCase name would collide with an existing helix value export.
 const FACTORY_RENAMES = { "minecraft:item": "ItemEntity", "minecraft:player": "PlayerEntity" };
 // Structs that get an id-less factory too: the three bases (any entity can be summoned
 // with them) plus the shared compounds a `data merge` writes on their own (a display's
 // transform tween is a partial Display, not a whole entity).
-const BASE_FACTORIES = ["Entity", "Living", "Mob", "DisplayBase", "DecomposedTransformation"];
+const BASE_FACTORIES = [
+  "Entity",
+  "Living",
+  "Mob",
+  "DisplayBase",
+  "DecomposedTransformation",
+  // A mob's `attributes`/`active_effects` are lists of these compounds, so they are
+  // written on their own rather than as a whole entity.
+  "AttributeInstance",
+];
 // Entities mcdoc dispatches nothing for - they carry only their base's fields, but they
 // are still summonable, so they still get a factory.
 const EXTRA_DISPATCH = {
@@ -203,10 +220,35 @@ const OVERRIDES = {
   equipment: { enc: "asEquipment", ts: "EquipmentInput" },
 };
 
+/**
+ * mcdoc marks a registry-backed string as `#[id="<registry>"]`, and helix already has a
+ * typed concept for those registries - so such a field takes the concept
+ * (`Attribute.MAX_HEALTH`), not a bare id string. The pairing is read off
+ * `resource.generated.ts` itself, so a concept helix doesn't have stays a plain string.
+ */
+const RESOURCE_CONCEPTS = new Map(
+  [
+    ...fs
+      .readFileSync(path.join("src", "core", "values", "resource.generated.ts"), "utf-8")
+      .matchAll(/export type (\w+) = ResourceId<"minecraft:([^"]+)">/g),
+  ]
+    .filter(([, , registry]) => CONCEPT_REGISTRIES.includes(`minecraft:${registry}`))
+    .map(([, concept, registry]) => [registry, concept]),
+);
+/** Concepts actually referenced by the generated file, so the import list stays exact. */
+const usedConcepts = new Set();
+
 /** `{ enc, ts }`: the `field({ encode })` argument and the author-facing TS type. */
 function encoderFor(type) {
   const t = type.replace(/#\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
   const uuid = /#\[uuid\]/.test(type);
+  // A registry-backed id: state the concept, let it render its own id.
+  const registry = /#\[id="([^"]+)"\]/.exec(type)?.[1];
+  const concept = registry && RESOURCE_CONCEPTS.get(registry);
+  if (concept && /\bstring\b/.test(t)) {
+    usedConcepts.add(concept);
+    return { enc: `(v: ${concept}) => v.render()`, ts: concept };
+  }
   // A homogeneous list of scalars keeps its element type; anything richer is raw NBT.
   const list = /^\[\s*(?:#\[[^\]]*\]\s*)?(\w+)/.exec(t);
   if (list && /^(string|int|short|long|byte)$/.test(list[1]))
@@ -438,7 +480,11 @@ import {
 } from "./entity-nbt";
 import { Byte, Double, Float, IntArray, Long, Short, type NbtInput } from "./nbt";
 import type { BlockValue } from "./block";
-`;
+${
+  usedConcepts.size
+    ? `import type { ${[...usedConcepts].sort().join(", ")} } from "./resource.generated";\n`
+    : ""
+}`;
 
   // What the raw-NBT warning names when it knows the entity id.
   const map =

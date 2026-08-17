@@ -148,12 +148,9 @@ fn.build((ctx) => {
 ```
 
 Nested compounds stay typed one level down (`Villager({ villagerData: { level: 2,
-profession: "farmer" } })`), and anything uncurated goes through a **second `raw`
-argument**, merged last:
-
-```ts
-Zombie({ isBaby: true }, { Foo: 1 }); // {IsBaby:1b,Foo:1}
-```
+profession: "farmer" } })`). There is no raw-key escape hatch: a field a factory is
+missing is a gap in the generator (`helix/scripts/gen-entity-nbt.mjs`), and fixing it
+there types it for every consumer rather than freezing one call site to one version.
 
 Curating an entity the compiler doesn't model is
 [`defineEntityNbt`](/api/helix/functions/defineEntityNbt) - the same mechanism the

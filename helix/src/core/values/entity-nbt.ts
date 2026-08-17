@@ -16,8 +16,9 @@ import { DV } from "./entity-versions.generated";
  *
  * The author names the *concept* in camelCase and the compiler owns the rest: the
  * vanilla key, the SNBT type suffix, and which version renamed, retyped or introduced
- * the field. Anything not curated here still goes through as raw keys - every factory
- * takes a second `raw` argument that is merged last.
+ * the field. There is deliberately no raw-key escape hatch: a field the schema is
+ * missing is a hole in the generator (`scripts/gen-entity-nbt.mjs`), and patching it
+ * there fixes it for everyone instead of freezing one call site to one version.
  *
  * This file is the **mechanism**; the curated schemas it is fed are in `entities.ts`.
  */
@@ -68,8 +69,8 @@ export const asList = (v: readonly NbtInput[]): NbtInput => [...v];
 
 /**
  * A plain-string display name. Until 1.21.5 a name is a *JSON string*; since, it is a
- * real text compound. Rich components (colour, click events) go through `raw` - building
- * one needs a `CodegenContext`, which value rendering does not have.
+ * real text compound. Rich components (colour, click events) aren't expressible here -
+ * building one needs a `CodegenContext`, which value rendering does not have.
  */
 /** Slot -> item, for the 1.21.5+ `equipment` compound. An {@link Item} goes in whole. */
 export type EquipmentInput = Partial<
@@ -117,25 +118,36 @@ export class EntityNbtValue extends NbtValue {
   constructor(
     private readonly schema: Record<string, FieldEncoder<never>>,
     private readonly fields: Record<string, unknown>,
-    private readonly raw?: Record<string, NbtInput>,
     /** The entity this schema curates, when it names one - `summon` infers the type from it. */
     readonly entity?: string,
+    /** Whether to write the entity's own `id` key - see {@link asPassenger}. */
+    private readonly withId = false,
   ) {
     super("");
   }
 
   override render(version: VersionProfile): string {
     const out = renderFields(this.schema, this.fields, version);
-    if (this.raw) merge(out, this.raw);
+    // Last, so a passenger reads as "the NBT, then what it is".
+    if (this.withId && this.entity) out.id = this.entity;
     return toSnbt(out, version);
+  }
+
+  /**
+   * A copy that also writes its own `id`. A `summon` states the type in the command,
+   * but anything *nested* - a `Passengers` entry, an item's `entity_data` - has to
+   * carry it in the compound. The value already knows its entity, so nothing has to
+   * spell the id out.
+   */
+  asPassenger<T extends EntityNbtValue>(this: T): T {
+    return new EntityNbtValue(this.schema, this.fields, this.entity, true) as T;
   }
 
   /**
    * A copy of this value with extra `Tags` **appended** - how a caller labels an
    * entity it summons from a concept someone else authored, so it can select the
-   * entity afterwards. Appending (rather than a raw `{Tags:[…]}` merge, which
-   * replaces: {@link merge} descends into compounds, not lists) is what keeps the
-   * author's own tags. Returns a new value; `this` is untouched.
+   * entity afterwards. Appending keeps the author's own tags. Returns a new value;
+   * `this` is untouched.
    */
   tagged<T extends EntityNbtValue>(this: T, ...names: string[]): T {
     if (!this.schema.tags) {
@@ -145,8 +157,8 @@ export class EntityNbtValue extends NbtValue {
     return new EntityNbtValue(
       this.schema,
       { ...this.fields, tags },
-      this.raw,
       this.entity,
+      this.withId,
     ) as T;
   }
 }
@@ -208,19 +220,18 @@ export interface IdentifiedEntityNbt extends EntityNbtValue {
 export function defineEntityNbt<F extends object>(
   schema: EntityNbtSchema<F>,
   entity: string,
-): (fields: F, raw?: Record<string, NbtInput>) => IdentifiedEntityNbt;
+): (fields: F) => IdentifiedEntityNbt;
 export function defineEntityNbt<F extends object>(
   schema: EntityNbtSchema<F>,
-): (fields: F, raw?: Record<string, NbtInput>) => EntityNbtValue;
+): (fields: F) => EntityNbtValue;
 export function defineEntityNbt<F extends object>(
   schema: EntityNbtSchema<F>,
   entity?: string,
-): (fields: F, raw?: Record<string, NbtInput>) => EntityNbtValue {
-  return (fields, raw) =>
+): (fields: F) => EntityNbtValue {
+  return (fields) =>
     new EntityNbtValue(
       schema as unknown as Record<string, FieldEncoder<never>>,
       fields as Record<string, unknown>,
-      raw,
       entity,
     );
 }

@@ -53,15 +53,10 @@ export interface DisplayChild {
 }
 
 /**
- * The entity id each member summons as, taken from the generated schemas rather
- * than spelled out here - the factories already name their entity, so this stays
- * correct by construction if a schema is regenerated.
+ * The entity a group summons as, taken from the generated schema rather than spelled
+ * out here. Members carry their own id via `asPassenger()`.
  */
-const ENTITY = {
-  block: BlockDisplay({}).entity,
-  item: ItemDisplay({}).entity,
-  hitbox: Interaction({}).entity,
-} as const;
+const ROOT_ENTITY = BlockDisplay({}).entity;
 
 const IDENTITY_QUAT: Quat = [0, 0, 0, 1];
 const UNIT_SCALE: Vec3 = [1, 1, 1];
@@ -105,7 +100,7 @@ export class DisplayValue implements CommandValue {
   ) {}
 
   /** The entity id to summon this with (`ctx.summon(Display.id, ...)`). */
-  static readonly id = ENTITY.block;
+  static readonly id = ROOT_ENTITY;
 
   /** Replace the root member with a block. */
   setBlock(block: BlockValue): this {
@@ -321,27 +316,20 @@ export class DisplayValue implements CommandValue {
     const hitboxNbt = (): IdentifiedEntityNbt[] =>
       this._hitbox
         ? [
-            Interaction(
-              {
-                width: this._hitbox.width,
-                height: this._hitbox.height,
-                response: this._hitbox.response,
-                tags: tags("hitbox"),
-              },
-              { id: ENTITY.hitbox },
-            ),
+            Interaction({
+              width: this._hitbox.width,
+              height: this._hitbox.height,
+              response: this._hitbox.response,
+              tags: tags("hitbox"),
+            }).asPassenger(),
           ]
         : [];
 
-    const member = (
-      c: DisplayChild,
-      idx: number,
-      raw?: Record<string, NbtInput>,
-    ): IdentifiedEntityNbt => {
+    const member = (c: DisplayChild, idx: number): IdentifiedEntityNbt => {
       // A passenger names its own entity type; the root's comes from the summon.
       const riders =
         idx === 0
-          ? [...this.children.map((c, i) => member(c, i + 1, { id: ENTITY[c.content.kind] })), ...hitboxNbt()]
+          ? [...this.children.map((c, i) => member(c, i + 1)), ...hitboxNbt()]
           : [];
       const common = {
         transformation: transformNbt(c.transform),
@@ -352,12 +340,15 @@ export class DisplayValue implements CommandValue {
         passengers: riders.length > 0 ? riders : undefined,
       };
       // Content first, so a block group renders byte-identically to before items existed.
-      return c.content.kind === "block"
-        ? BlockDisplay({ blockState: c.content.block, ...common }, raw)
-        : ItemDisplay(
-            { item: c.content.item.stackNbt(), itemDisplay: c.content.context, ...common },
-            raw,
-          );
+      const nbt =
+        c.content.kind === "block"
+          ? BlockDisplay({ blockState: c.content.block, ...common })
+          : ItemDisplay({
+              item: c.content.item.stackNbt(),
+              itemDisplay: c.content.context,
+              ...common,
+            });
+      return idx === 0 ? nbt : nbt.asPassenger();
     };
     return member({ content: this.content, transform: this.rootTransform }, 0);
   }

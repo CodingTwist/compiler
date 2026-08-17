@@ -25,9 +25,8 @@ function callSite(): string {
 /**
  * Warn that a command was handed a **raw** entity NBT compound. Raw keys are frozen to
  * one Minecraft version - an author who writes `{Fuse:40s}` gets a key 1.20.3+ silently
- * ignores - whereas the entity's factory owns the spelling, the SNBT suffix and the version
- * history, and takes a second argument for anything it doesn't curate. Not an error: an
- * uncurated entity is a legitimate reason to pass raw.
+ * ignores - whereas the entity's factory owns the spelling, the SNBT suffix and the
+ * version history. Not an error: an uncurated entity is a legitimate reason to pass raw.
  *
  * Called by every command that takes entity NBT (`summon`, `data merge entity`); pass
  * `entity` when the command knows which one, so the message can name the factory.
@@ -42,8 +41,8 @@ export function warnRawEntityNbt(nbt: NbtValue, entity?: string): void {
     `helix: raw Nbt${entity !== undefined ? ` for ${entity}` : ""} at ${site} - its keys ` +
       `are frozen to one version. ` +
       (factory
-        ? `Use ${factory}({ … }) instead: it owns the key spelling per version, and takes ` +
-          `uncurated keys as its second argument.`
+        ? `Use ${factory}({ … }) instead: it owns the key spelling per version. A field it ` +
+          `is missing is a gap in scripts/gen-entity-nbt.mjs - fix it there.`
         : `If it needs to survive a version bump, use the entity's own factory (Tnt, ` +
           `Villager, Zombie, … - one per entity in entities.generated.ts), a base ` +
           `(Entity/Living/Mob), or defineEntityNbt() your own.`),
