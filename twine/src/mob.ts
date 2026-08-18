@@ -1,12 +1,30 @@
-import { NbtPath, Nbt, Pos, Relation, Selector } from "helix";
+import {
+  NbtPath,
+  Nbt,
+  Pos,
+  Range,
+  Relation,
+  ScoreTarget,
+  Selector,
+  add,
+  displayPose,
+  mulQuat,
+  rotateAboutPivot,
+  round6,
+} from "helix";
 import type {
   DamageType,
   Datapack,
+  Detector,
   DisplayValue,
   FunctionContext,
   FunctionRef,
   Id,
   IdentifiedEntityNbt,
+  Objective,
+  Quat,
+  Transform,
+  Vec3,
 } from "helix";
 import type { ConfiguredModule, DatapackModule, ModuleScope } from "./module.interface";
 import { defineModule } from "./module.decorator";
@@ -45,8 +63,30 @@ export interface MobModuleOpts {
  * The mob is summoned by the generated `<name>/summon` function, at wherever it
  * is run from ({@link summonRef} gets you a handle to call it).
  */
+/**
+ * A one-shot **member animation**: swing an arm, open a jaw, tilt a head. Vanilla
+ * has no per-mob animation state, so a gesture is a rotation about a pivot that is
+ * snapped on and then interpolated back to the model's own rest pose - two `data
+ * merge`s per member, no tween to drive.
+ */
+export interface Gesture {
+  /** Which members move, as indices into the model's `members()` (root is 0). */
+  members: number[];
+  /** What they turn about, in the model's own coordinates (the group `offset` is added for you). */
+  pivot: Vec3;
+  /** How far, held for the raise. Falling back to rest is the visible half. */
+  rotate: Quat;
+  /** Ticks the fall takes (default `4`). A feel knob - shorter is snappier. */
+  fall?: number;
+  /** Ticks before it can fire again (default `20`). Ignored for manual calls. */
+  cooldown?: number;
+  /** When it fires, evaluated as the mob at its own position. Omit for manual-only. */
+  when?: Detector;
+}
+
 export class MobBuilder {
   private relay?: { damage: number; type?: DamageType };
+  private readonly gestures = new Map<string, Gesture>();
 
   constructor(
     private readonly nbt: IdentifiedEntityNbt,
@@ -63,25 +103,44 @@ export class MobBuilder {
     return this;
   }
 
-  /** Compile to a drop-in {@link ConfiguredModule} (name = module / tag id). */
-  toModule(name: string, opts: MobModuleOpts = {}): ConfiguredModule {
-    const tickEvery = opts.tickEvery ?? 2;
-    return defineModule(
-      { name, tickEvery, dimension: opts.dimension },
-      new MobModule(name, this.nbt, this.model, this.relay),
-    );
+  /**
+   * Add a named {@link Gesture}. It becomes a `<mob>/<name>` function you can call
+   * as the mob yourself, plus - if the gesture has a `when` - a per-tick trigger.
+   */
+  gesture(name: string, g: Gesture): this {
+    this.gestures.set(name, g);
+    return this;
   }
 
-  /** The generated summon function, for a consumer calling it directly. */
-  summonRef(dp: Datapack, name: string): FunctionRef {
-    const ref = dp.functionRef(`${name}/summon`);
-    if (!ref) {
-      throw new Error(
-        `Mob "${name}" has no summon function yet - its module registers late, so read this from onLoad/onTick, not a module constructor.`,
-      );
-    }
-    return ref;
+  /** Compile to a drop-in {@link ConfiguredModule} (name = module / tag id). */
+  toModule(name: string, opts: MobModuleOpts = {}): MobModuleRef {
+    const tickEvery = opts.tickEvery ?? 2;
+    const mob = new MobModule(name, this.nbt, this.model, this.relay, this.gestures);
+    const mod = defineModule({ name, tickEvery, dimension: opts.dimension }, mob) as MobModuleRef;
+    // Getters, not values: the functions don't exist until the module registers,
+    // which is after the importing module has built this.
+    Object.defineProperties(mod, {
+      summon: { get: () => mob.fnRef("summon"), enumerable: true },
+      gestures: {
+        get: () =>
+          Object.fromEntries([...this.gestures.keys()].map((g) => [g, mob.fnRef(g)])),
+        enumerable: true,
+      },
+    });
+    return mod;
   }
+}
+
+/**
+ * A configured mob module, plus handles to the functions it generated - so a
+ * consumer calls `mob.summon` rather than looking a name up on the datapack.
+ * Both are read *after* registration (from `onLoad`/`onTick`/a later `register`).
+ */
+export interface MobModuleRef extends ConfiguredModule {
+  /** Summons the mob wherever it is run - `ctx.execute().at(...).run(b => b.call(mob.summon))`. */
+  readonly summon: FunctionRef;
+  /** Each {@link Gesture}'s raise function, by name - call it *as* the mob. */
+  readonly gestures: Record<string, FunctionRef>;
 }
 
 /** The {@link DatapackModule} a {@link MobBuilder} compiles to. */
@@ -94,7 +153,22 @@ class MobModule implements DatapackModule {
     private readonly nbt: IdentifiedEntityNbt,
     private readonly model: DisplayValue,
     private readonly relay?: { damage: number; type?: DamageType },
+    private readonly gestures: ReadonlyMap<string, Gesture> = new Map(),
   ) {}
+
+  /** Each generated function by short name (`summon`, a gesture), once registered. */
+  private readonly fns = new Map<string, FunctionRef>();
+  private cooldowns?: Objective;
+
+  fnRef(short: string): FunctionRef {
+    const ref = this.fns.get(short);
+    if (!ref) {
+      throw new Error(
+        `Mob "${this.name}" has no "${short}" function yet - it registers after the module importing it, so read this from onLoad/onTick, not a constructor.`,
+      );
+    }
+    return ref;
+  }
 
   /** The rig's group name - every member is tagged with it (see `Display.named`). */
   private get rig(): string {
@@ -151,7 +225,7 @@ class MobModule implements DatapackModule {
       ctx.tag().remove(Selector.self(), this.curTag);
     });
 
-    scope.fn(`${this.name}/summon`, (ctx) => {
+    const summon = scope.fn(`${this.name}/summon`, (ctx) => {
       const fresh = this.freshTag;
       // Summoned separately and mounted, rather than nested in the mob's own NBT:
       // the two typed values stay independent, so the same rig can ride any mob.
@@ -165,9 +239,91 @@ class MobModule implements DatapackModule {
         );
       ctx.tag().remove(Selector.allEntities().tag(fresh), fresh);
     });
+
+    this.fns.set("summon", summon);
+
+    if (this.gestures.size) this.cooldowns = dp.objective(`${this.name}.gest`);
+    for (const [gname, g] of this.gestures) {
+      this.fns.set(
+        gname,
+        scope.fn(`${this.name}/${gname}`, (ctx) => {
+          ctx.tag().add(Selector.self(), this.gestureTag(gname));
+          if (g.cooldown !== 0) {
+            this.cooldown(Selector.self()).set(g.cooldown ?? 20, ctx);
+          }
+          this.poseMembers(ctx, Selector.self(), g, true, 0);
+        }),
+      );
+    }
+  }
+
+  /** Worn while a gesture is raised - cleared next tick, which starts the fall. */
+  private gestureTag(gname: string): string {
+    return `${this.name}.${gname}`;
+  }
+
+  private cooldown(target: Selector) {
+    return this.cooldowns!.score(ScoreTarget(target));
+  }
+
+  /**
+   * Merge one pose onto each moving member. Run as the mob: `passengers` twice is
+   * mob -> rig root -> its own members, so this only ever touches *this* mob's rig
+   * (a tag alone would hit every one of them).
+   */
+  private poseMembers(
+    ctx: FunctionContext,
+    self: Selector,
+    g: Gesture,
+    raised: boolean,
+    duration: number,
+  ): void {
+    const members = this.model.members();
+    const pivot = add(g.pivot, this.model.getOffset());
+    for (const i of g.members) {
+      const rest = members[i]?.transform;
+      if (!rest) throw new Error(`Gesture member ${i} is not a member of "${this.name}"'s model.`);
+      ctx
+        .execute()
+        .as(self)
+        .on(Relation.PASSENGERS)
+        .on(Relation.PASSENGERS)
+        .run((b) =>
+          b
+            .data()
+            .merge()
+            .entity(
+              Selector.self().tag(`${this.rig}_${i}`),
+              displayPose(raised ? raise(rest, pivot, g.rotate) : rest, duration),
+            ),
+        );
+    }
+  }
+
+  private tickGesture(ctx: FunctionContext, gname: string, g: Gesture): void {
+    const tag = this.gestureTag(gname);
+    const raisedMobs = () => Selector.allEntities().tag(this.name).tag(tag);
+    // The fall is emitted *before* the trigger, or a gesture started this tick
+    // would be dropped again by its own end in the same function body.
+    this.poseMembers(ctx, raisedMobs(), g, false, g.fall ?? 4);
+    ctx.tag().remove(raisedMobs(), tag);
+
+    if (g.cooldown !== 0) {
+      // Only the ones actually counting down: `remove` on an unset score would
+      // start one at -1 and run it down forever.
+      this.cooldown(
+        Selector.allEntities().tag(this.name).score(this.cooldowns!, new Range(1, undefined)),
+      ).remove(1, ctx);
+    }
+    if (!g.when) return;
+    const chain = ctx.execute().as(Selector.allEntities().tag(this.name)).at(Selector.self());
+    if (g.cooldown !== 0) chain.unlessScoreMatches(this.cooldown(Selector.self()), new Range(1, undefined));
+    g.when(chain);
+    chain.run((b) => b.call(this.fnRef(gname)));
   }
 
   onTick(ctx: FunctionContext): void {
+    for (const [gname, g] of this.gestures) this.tickGesture(ctx, gname, g);
     this.faceRig(ctx);
     if (this.relay) this.relayHits(ctx, this.relay);
     this.sweepOrphans(ctx);
@@ -211,6 +367,20 @@ class MobModule implements DatapackModule {
       .as(Selector.allEntities().tag(`${this.rig}_0`).tag(this.orphanTag))
       .run((b) => b.call(this.killRig));
   }
+}
+
+/**
+ * A member's rest transform, rotated about `pivot`. Display entities have no
+ * transform inheritance, so turning a member is two things at once: its position
+ * is the rotated offset, and the same rotation is composed onto whatever
+ * orientation it already holds (`mulQuat(q, left)` applies `left` first).
+ */
+function raise(rest: Transform, pivot: Vec3, q: Quat): Transform {
+  return {
+    ...rest,
+    translation: rotateAboutPivot(rest.translation ?? [0, 0, 0], pivot, q).map(round6) as Vec3,
+    leftRotation: mulQuat(q, rest.leftRotation ?? [0, 0, 0, 1]).map(round6) as Quat,
+  };
 }
 
 /** Start a custom-mob definition from the mob it really is and the model it wears. */

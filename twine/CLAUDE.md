@@ -61,6 +61,15 @@ constructed and emits nothing** - that is the compile-time disable.
   *dismounts* its passengers, so orphans are found by mark-and-sweep (there is no "has a
   vehicle" check; only the vehicle knows its passengers). A rig that rides sits at the
   mount point (`height * 0.75` up), which is what `Display.offset(...)` exists to cancel.
+  `toModule` returns the `ConfiguredModule` **plus handles** (`.summon`, `.gestures.x`)
+  to the functions it generated, so a consumer never looks a name up on the datapack.
+  `.gesture(name, {...})` is the member-animation primitive: vanilla has no per-mob
+  animation state, so a gesture snaps the named members to a rotation about a pivot
+  (`helix` `displayPose` + `rotateAboutPivot`) and lets the display's own interpolation
+  carry them back to the model's rest pose - rest comes from `model.members()`, so a
+  pose can't drift from what was summoned. Cooldown is a score on `<name>.gest`; the
+  trigger is the author's `Detector` (vanilla has no attack event - the nearest thing,
+  a nearby player's `HurtTime` hitting 10, never fires in creative).
 - [src/item-registry.ts](src/item-registry.ts) - `registerItem(name, item)` /
   `registerItemGiveCommands(dp)`: dev-only `debug/give/<name>` functions for plain
   (non-behavioural) `ItemValue`s a pack declares.

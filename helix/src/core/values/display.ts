@@ -7,7 +7,7 @@ import { BlockValue } from "./block";
 import { Float, NbtInput } from "./nbt";
 import type { IdentifiedEntityNbt } from "./entity-nbt";
 import type { ItemValue } from "./item";
-import { BlockDisplay, Interaction, ItemDisplay } from "./entities.generated";
+import { BlockDisplay, DisplayBase, Interaction, ItemDisplay } from "./entities.generated";
 import type { ItemDisplayFields } from "./entities.generated";
 import { CommandValue } from "./value";
 import { Pos, PosValue } from "./pos";
@@ -69,6 +69,22 @@ function transformNbt(t: Transform): NbtInput {
     scale: vec(t.scale ?? UNIT_SCALE),
     translation: vec(t.translation ?? [0, 0, 0]),
   };
+}
+
+/**
+ * One member's whole transform as a mergeable display NBT - what animating a group
+ * member is: `data merge entity <member> displayPose(t, ticks)`. `ticks` is the
+ * interpolation the game plays getting there (`0` snaps).
+ *
+ * The same shape the summon NBT carries, so a pose built from a
+ * {@link DisplayValue.members} transform lands exactly back on the summoned one.
+ */
+export function displayPose(t: Transform, interpolationDuration = 0) {
+  return DisplayBase({
+    transformation: transformNbt(t),
+    startInterpolation: 0,
+    interpolationDuration,
+  });
 }
 
 /**
@@ -207,6 +223,11 @@ export class DisplayValue implements CommandValue {
   offset(v: Vec3): this {
     this._offset = v;
     return this;
+  }
+
+  /** The shift {@link offset} applied - what {@link members} already carries. */
+  getOffset(): Vec3 {
+    return this._offset;
   }
 
   /** Set the local-space pivot the group rotates about (default origin). */
