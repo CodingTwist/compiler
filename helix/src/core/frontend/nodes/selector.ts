@@ -48,6 +48,7 @@ export class Selector {
   private xRotationRange?: Range;
   private yRotationRange?: Range;
   private gamemodeValue?: string;
+  private readonly notGamemodes: string[] = [];
   private entityTypeValue?: string;
   private yBandValue?: { y: number; dy: number };
 
@@ -160,6 +161,16 @@ export class Selector {
   }
 
   /**
+   * Exclude a game mode (`gamemode=!creative`). Repeatable - vanilla ANDs the
+   * negations, which is the only way to say "anyone I can actually interact
+   * with" (creative players ignore damage; spectators aren't there at all).
+   */
+  notGamemode(mode: Gamemode): this {
+    this.notGamemodes.push(mode);
+    return this;
+  }
+
+  /**
    * Restrict to one entity type (`type=<id>`). Accepts a typed `EntityType`
    * (`EntityType.ENDERMAN`) or a raw id string - a leading `#` is a registry
    * tag reference (`type=#tunnel:removable`), passed through as-is rather than
@@ -212,6 +223,7 @@ export class Selector {
       this.gamemodeValue,
       this.entityTypeValue,
       this.yBandValue,
+      this.notGamemodes,
     );
   }
 

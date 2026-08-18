@@ -61,13 +61,23 @@ constructed and emits nothing** - that is the compile-time disable.
   *dismounts* its passengers, so orphans are found by mark-and-sweep (there is no "has a
   vehicle" check; only the vehicle knows its passengers). A rig that rides sits at the
   mount point (`height * 0.75` up), which is what `Display.offset(...)` exists to cancel.
-  `toModule` returns the `ConfiguredModule` **plus handles** (`.summon`, `.gestures.x`)
-  to the functions it generated, so a consumer never looks a name up on the datapack.
+  `toModule` returns the `ConfiguredModule` **plus handles** (`.summon`, `.spawn`,
+  `.gestures.x`) to the functions it generated, so a consumer never looks a name up on
+  the datapack - and it emits `<name>/spawn` (summon one at the nearest player) itself,
+  which every pack used to hand-write.
   `.gesture(name, {...})` is the member-animation primitive: vanilla has no per-mob
   animation state, so a gesture snaps the named members to a rotation about a pivot
   (`helix` `displayPose` + `rotateAboutPivot`) and lets the display's own interpolation
   carry them back to the model's rest pose - rest comes from `model.members()`, so a
-  pose can't drift from what was summoned. Cooldown is a score on `<name>.gest`; the
+  pose can't drift from what was summoned. `rotate` may be an **array**, which makes the
+  gesture a sequence - one pose per poll, stepped off the mob's own `<name>.gest`
+  countdown (so each mob animates independently), then the fall home; that's how a
+  rotation bigger than a snap-and-slerp-back is expressed (a spin attack). `tilt` is a
+  constant rotation held for the gesture that touches the members' *orientation* only -
+  an axis change in `rotate` would swing their translations out of the orbit plane too.
+  `onFire`
+  emits the author's own commands into the gesture function, as the mob - the hit that
+  goes with the swing, since vanilla gives no contact event. Cooldown is a score on `<name>.gest`; the
   trigger is the author's `Detector` (vanilla has no attack event - the nearest thing,
   a nearby player's `HurtTime` hitting 10, never fires in creative).
 - [src/item-registry.ts](src/item-registry.ts) - `registerItem(name, item)` /

@@ -74,14 +74,38 @@ export interface Gesture {
   members: number[];
   /** What they turn about, in the model's own coordinates (the group `offset` is added for you). */
   pivot: Vec3;
-  /** How far, held for the raise. Falling back to rest is the visible half. */
-  rotate: Quat;
+  /**
+   * How far, held for the raise. Falling back to rest is the visible half.
+   *
+   * An **array** is a sequence: one pose per poll, each interpolated over the
+   * module's `tickEvery`, then the fall back to rest - which is how a rotation
+   * bigger than a snap (a spin, a wind-up) is expressed, since a single pose can
+   * only ever be somewhere the slerp home from it looks right. The steps are
+   * driven by the gesture's own cooldown score, so each mob runs its own
+   * sequence; `cooldown` must exceed the number of steps.
+   */
+  rotate: Quat | Quat[];
+  /**
+   * A constant rotation held for the whole gesture, composed onto the members'
+   * own orientation but **not** applied to their positions - the difference
+   * between orbiting the pivot and lying flat while doing it. Put an axis change
+   * in `rotate` instead and the members' translations rotate out of the orbit
+   * plane with them.
+   */
+  tilt?: Quat;
   /** Ticks the fall takes (default `4`). A feel knob - shorter is snappier. */
   fall?: number;
   /** Ticks before it can fire again (default `20`). Ignored for manual calls. */
   cooldown?: number;
   /** When it fires, evaluated as the mob at its own position. Omit for manual-only. */
   when?: Detector;
+  /**
+   * Extra commands emitted into the gesture's own function, i.e. run **as the mob,
+   * at it** - the hit that goes with the swing. Vanilla gives no attack event, so
+   * this fires with the gesture, not on contact. The pack is passed too, since the
+   * hit is usually where a library (a motion kick, a particle effect) is reached for.
+   */
+  onFire?: (ctx: FunctionContext, dp: Datapack) => void;
 }
 
 export class MobBuilder {
@@ -115,12 +139,13 @@ export class MobBuilder {
   /** Compile to a drop-in {@link ConfiguredModule} (name = module / tag id). */
   toModule(name: string, opts: MobModuleOpts = {}): MobModuleRef {
     const tickEvery = opts.tickEvery ?? 2;
-    const mob = new MobModule(name, this.nbt, this.model, this.relay, this.gestures);
+    const mob = new MobModule(name, this.nbt, this.model, tickEvery, this.relay, this.gestures);
     const mod = defineModule({ name, tickEvery, dimension: opts.dimension }, mob) as MobModuleRef;
     // Getters, not values: the functions don't exist until the module registers,
     // which is after the importing module has built this.
     Object.defineProperties(mod, {
       summon: { get: () => mob.fnRef("summon"), enumerable: true },
+      spawn: { get: () => mob.fnRef("spawn"), enumerable: true },
       gestures: {
         get: () =>
           Object.fromEntries([...this.gestures.keys()].map((g) => [g, mob.fnRef(g)])),
@@ -139,6 +164,8 @@ export class MobBuilder {
 export interface MobModuleRef extends ConfiguredModule {
   /** Summons the mob wherever it is run - `ctx.execute().at(...).run(b => b.call(mob.summon))`. */
   readonly summon: FunctionRef;
+  /** `<name>/spawn`: summons one at the nearest player, from anywhere. The command to type. */
+  readonly spawn: FunctionRef;
   /** Each {@link Gesture}'s raise function, by name - call it *as* the mob. */
   readonly gestures: Record<string, FunctionRef>;
 }
@@ -152,6 +179,7 @@ class MobModule implements DatapackModule {
     private readonly name: string,
     private readonly nbt: IdentifiedEntityNbt,
     private readonly model: DisplayValue,
+    private readonly tickEvery: number,
     private readonly relay?: { damage: number; type?: DamageType },
     private readonly gestures: ReadonlyMap<string, Gesture> = new Map(),
   ) {}
@@ -242,8 +270,22 @@ class MobModule implements DatapackModule {
 
     this.fns.set("summon", summon);
 
+    // The command a human types. Every pack wrote this by hand; it belongs here.
+    this.fns.set(
+      "spawn",
+      scope.fn(`${this.name}/spawn`, (ctx) => {
+        ctx.execute().at(Selector.nearest()).run((b) => b.call(summon));
+      }),
+    );
+
     if (this.gestures.size) this.cooldowns = dp.objective(`${this.name}.gest`);
     for (const [gname, g] of this.gestures) {
+      const steps = poses(g);
+      if (steps.length > 1 && (g.cooldown ?? 20) <= steps.length) {
+        throw new Error(
+          `Gesture "${gname}" has ${steps.length} steps but a cooldown of ${g.cooldown ?? 20} - the cooldown is the step clock, so it must be longer.`,
+        );
+      }
       this.fns.set(
         gname,
         scope.fn(`${this.name}/${gname}`, (ctx) => {
@@ -251,7 +293,8 @@ class MobModule implements DatapackModule {
           if (g.cooldown !== 0) {
             this.cooldown(Selector.self()).set(g.cooldown ?? 20, ctx);
           }
-          this.poseMembers(ctx, Selector.self(), g, true, 0);
+          this.poseMembers(ctx, Selector.self(), g, steps[0], 0);
+          g.onFire?.(ctx, dp);
         }),
       );
     }
@@ -267,15 +310,17 @@ class MobModule implements DatapackModule {
   }
 
   /**
-   * Merge one pose onto each moving member. Run as the mob: `passengers` twice is
-   * mob -> rig root -> its own members, so this only ever touches *this* mob's rig
-   * (a tag alone would hit every one of them).
+   * Merge one pose onto each moving member. Run as the mob, walking `passengers`
+   * down to the member, so this only ever touches *this* mob's rig (a tag alone
+   * would hit every one of them). Member 0 **is** the rig root, i.e. one hop from
+   * the mob; every other member is a passenger of that root, so two.
    */
   private poseMembers(
     ctx: FunctionContext,
     self: Selector,
     g: Gesture,
-    raised: boolean,
+    /** The rotation to hold, or `undefined` for the model's own rest pose. */
+    q: Quat | undefined,
     duration: number,
   ): void {
     const members = this.model.members();
@@ -283,18 +328,16 @@ class MobModule implements DatapackModule {
     for (const i of g.members) {
       const rest = members[i]?.transform;
       if (!rest) throw new Error(`Gesture member ${i} is not a member of "${this.name}"'s model.`);
-      ctx
-        .execute()
-        .as(self)
-        .on(Relation.PASSENGERS)
-        .on(Relation.PASSENGERS)
+      const chain = ctx.execute().as(self).on(Relation.PASSENGERS);
+      if (i !== 0) chain.on(Relation.PASSENGERS);
+      chain
         .run((b) =>
           b
             .data()
             .merge()
             .entity(
               Selector.self().tag(`${this.rig}_${i}`),
-              displayPose(raised ? raise(rest, pivot, g.rotate) : rest, duration),
+              displayPose(q ? raise(rest, pivot, q, g.tilt) : rest, duration),
             ),
         );
     }
@@ -302,11 +345,14 @@ class MobModule implements DatapackModule {
 
   private tickGesture(ctx: FunctionContext, gname: string, g: Gesture): void {
     const tag = this.gestureTag(gname);
+    const steps = poses(g);
     const raisedMobs = () => Selector.allEntities().tag(this.name).tag(tag);
     // The fall is emitted *before* the trigger, or a gesture started this tick
     // would be dropped again by its own end in the same function body.
-    this.poseMembers(ctx, raisedMobs(), g, false, g.fall ?? 4);
-    ctx.tag().remove(raisedMobs(), tag);
+    if (steps.length === 1) {
+      this.poseMembers(ctx, raisedMobs(), g, undefined, g.fall ?? 4);
+      ctx.tag().remove(raisedMobs(), tag);
+    }
 
     if (g.cooldown !== 0) {
       // Only the ones actually counting down: `remove` on an unset score would
@@ -315,6 +361,24 @@ class MobModule implements DatapackModule {
         Selector.allEntities().tag(this.name).score(this.cooldowns!, new Range(1, undefined)),
       ).remove(1, ctx);
     }
+
+    // A sequence walks itself down its own cooldown: step k is whichever mobs are
+    // exactly k polls past their raise, so every mob runs its own animation
+    // (rather than a shared clock, which would put them all in lockstep). Emitted
+    // *after* the decrement, so the poll right after the raise is step 1.
+    if (steps.length > 1) {
+      const start = g.cooldown ?? 20;
+      const at = (v: number) =>
+        Selector.allEntities().tag(this.name).score(this.cooldowns!, new Range(v, v));
+      for (let k = 1; k < steps.length; k++) {
+        this.poseMembers(ctx, at(start - k), g, steps[k], this.tickEvery);
+      }
+      // Home again. Slerp takes the short way, so a sequence ending just short of
+      // a full turn finishes it forwards rather than winding back.
+      this.poseMembers(ctx, at(start - steps.length), g, undefined, g.fall ?? 4);
+      ctx.tag().remove(at(start - steps.length), tag);
+    }
+
     if (!g.when) return;
     const chain = ctx.execute().as(Selector.allEntities().tag(this.name)).at(Selector.self());
     if (g.cooldown !== 0) chain.unlessScoreMatches(this.cooldown(Selector.self()), new Range(1, undefined));
@@ -375,12 +439,19 @@ class MobModule implements DatapackModule {
  * is the rotated offset, and the same rotation is composed onto whatever
  * orientation it already holds (`mulQuat(q, left)` applies `left` first).
  */
-function raise(rest: Transform, pivot: Vec3, q: Quat): Transform {
+function raise(rest: Transform, pivot: Vec3, q: Quat, tilt?: Quat): Transform {
   return {
     ...rest,
     translation: rotateAboutPivot(rest.translation ?? [0, 0, 0], pivot, q).map(round6) as Vec3,
-    leftRotation: mulQuat(q, rest.leftRotation ?? [0, 0, 0, 1]).map(round6) as Quat,
+    leftRotation: mulQuat(tilt ? mulQuat(q, tilt) : q, rest.leftRotation ?? [0, 0, 0, 1]).map(
+      round6,
+    ) as Quat,
   };
+}
+
+/** A gesture's poses, as a sequence - the single-quat form is the one-step case. */
+function poses(g: Gesture): Quat[] {
+  return Array.isArray(g.rotate[0]) ? (g.rotate as Quat[]) : [g.rotate as Quat];
 }
 
 /** Start a custom-mob definition from the mob it really is and the model it wears. */

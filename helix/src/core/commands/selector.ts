@@ -24,6 +24,7 @@ export class SelectorNode extends ASTNode {
     public readonly gamemode?: string,
     public readonly entityType?: string,
     public readonly yBand?: { y: number; dy: number },
+    public readonly notGamemodes: string[] = [],
   ) {
     super();
   }
@@ -53,6 +54,7 @@ export function renderSelector(node: SelectorNode, version?: VersionProfile): st
   if (node.xRotation) args.push(`x_rotation=${node.xRotation}`);
   if (node.yRotation) args.push(`y_rotation=${node.yRotation}`);
   if (node.gamemode) args.push(`gamemode=${node.gamemode}`);
+  for (const mode of node.notGamemodes) args.push(`gamemode=!${mode}`);
   if (node.entityType) args.push(`type=${node.entityType}`);
   if (node.yBand) args.push(`y=${node.yBand.y}`, `dy=${node.yBand.dy}`);
 

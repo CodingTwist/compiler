@@ -4,6 +4,7 @@ import { renderSelector } from "./selector";
 import { Nbt } from "../values/nbt";
 import { v1_21_4 } from "../../versions/profiles";
 import { EntityType } from "../values/resource.generated";
+import { Gamemode } from "../values/enums";
 
 describe("Selector rendering", () => {
   it("renders a volume box as x/y/z/dx/dy/dz", () => {
@@ -34,6 +35,12 @@ describe("Selector rendering", () => {
 
   it("renders a partial vertical band (y/dy, no x/z)", () => {
     expect(Selector.self().yBand(-30, -100).toString()).toBe("@s[y=-30,dy=-100]");
+  });
+
+  it("ANDs negated game modes onto a selector", () => {
+    expect(
+      Selector.allPlayers().notGamemode(Gamemode.CREATIVE).notGamemode(Gamemode.SPECTATOR).toString(),
+    ).toBe("@a[gamemode=!creative,gamemode=!spectator]");
   });
 
   it("throws if an nbt selector is rendered without a version (toString)", () => {
