@@ -1,5 +1,6 @@
 import { normalizeId } from "../../versions/registry";
 import { CommandValue } from "./value";
+import type { VersionProfile } from "../../versions/profile";
 
 /**
  * A resource-location that knows WHICH registry it belongs to. The registry id
@@ -29,7 +30,9 @@ export class ResourceId<R extends string = string> implements CommandValue {
     readonly registry: R,
   ) {}
 
-  render(): string {
+  // The version is unused here (an id is an id), but the parameter is declared so
+  // subclasses that DO render per-version can override this - see `ParticleOptionsValue`.
+  render(_version?: VersionProfile): string {
     if (this.id.startsWith("#")) return "#" + normalizeId(this.id.slice(1));
     return normalizeId(this.id);
   }

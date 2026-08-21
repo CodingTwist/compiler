@@ -2,12 +2,12 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { FunctionContext } from "../frontend/context";
 import { CommandBuilder, litPart, argPart } from "./base";
-import { Id, Pos } from "../values";
+import { Pos, SoundEvent } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
 /** `playsound` */
 export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
-  ambient(sound: Id, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
+  ambient(sound: SoundEvent, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
     this.$set(litPart("playsound"), argPart(sound), litPart("ambient"));
     if (targets !== undefined) this.$append(argPart(targets));
     if (pos !== undefined) this.$append(argPart(pos));
@@ -17,7 +17,7 @@ export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  block(sound: Id, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
+  block(sound: SoundEvent, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
     this.$set(litPart("playsound"), argPart(sound), litPart("block"));
     if (targets !== undefined) this.$append(argPart(targets));
     if (pos !== undefined) this.$append(argPart(pos));
@@ -27,7 +27,7 @@ export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  hostile(sound: Id, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
+  hostile(sound: SoundEvent, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
     this.$set(litPart("playsound"), argPart(sound), litPart("hostile"));
     if (targets !== undefined) this.$append(argPart(targets));
     if (pos !== undefined) this.$append(argPart(pos));
@@ -37,7 +37,7 @@ export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  master(sound: Id, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
+  master(sound: SoundEvent, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
     this.$set(litPart("playsound"), argPart(sound), litPart("master"));
     if (targets !== undefined) this.$append(argPart(targets));
     if (pos !== undefined) this.$append(argPart(pos));
@@ -47,7 +47,7 @@ export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  music(sound: Id, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
+  music(sound: SoundEvent, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
     this.$set(litPart("playsound"), argPart(sound), litPart("music"));
     if (targets !== undefined) this.$append(argPart(targets));
     if (pos !== undefined) this.$append(argPart(pos));
@@ -57,7 +57,7 @@ export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  neutral(sound: Id, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
+  neutral(sound: SoundEvent, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
     this.$set(litPart("playsound"), argPart(sound), litPart("neutral"));
     if (targets !== undefined) this.$append(argPart(targets));
     if (pos !== undefined) this.$append(argPart(pos));
@@ -67,7 +67,7 @@ export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  player(sound: Id, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
+  player(sound: SoundEvent, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
     this.$set(litPart("playsound"), argPart(sound), litPart("player"));
     if (targets !== undefined) this.$append(argPart(targets));
     if (pos !== undefined) this.$append(argPart(pos));
@@ -77,7 +77,7 @@ export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  record(sound: Id, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
+  record(sound: SoundEvent, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
     this.$set(litPart("playsound"), argPart(sound), litPart("record"));
     if (targets !== undefined) this.$append(argPart(targets));
     if (pos !== undefined) this.$append(argPart(pos));
@@ -87,7 +87,7 @@ export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  ui(sound: Id, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
+  ui(sound: SoundEvent, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
     this.$set(litPart("playsound"), argPart(sound), litPart("ui"));
     if (targets !== undefined) this.$append(argPart(targets));
     if (pos !== undefined) this.$append(argPart(pos));
@@ -97,7 +97,7 @@ export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  voice(sound: Id, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
+  voice(sound: SoundEvent, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
     this.$set(litPart("playsound"), argPart(sound), litPart("voice"));
     if (targets !== undefined) this.$append(argPart(targets));
     if (pos !== undefined) this.$append(argPart(pos));
@@ -107,7 +107,7 @@ export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  weather(sound: Id, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
+  weather(sound: SoundEvent, targets?: Selector, pos?: Pos, volume?: number, pitch?: number, minVolume?: number): this {
     this.$set(litPart("playsound"), argPart(sound), litPart("weather"));
     if (targets !== undefined) this.$append(argPart(targets));
     if (pos !== undefined) this.$append(argPart(pos));
@@ -121,11 +121,11 @@ export class PlaysoundBuilder extends CommandBuilder<TreeCommandNode> {
 declare module "../frontend/context" {
   interface FunctionContext {
     /** `playsound` - `ctx.playsound()...` */
-    playsound(sound?: Id): PlaysoundBuilder;
+    playsound(sound?: SoundEvent): PlaysoundBuilder;
   }
 }
 
-FunctionContext.prototype.playsound = function (this: FunctionContext, sound?: Id) {
+FunctionContext.prototype.playsound = function (this: FunctionContext, sound?: SoundEvent) {
   const node = new TreeCommandNode("playsound");
   this.emit(node);
   const parts: CommandPart[] = [litPart("playsound")];

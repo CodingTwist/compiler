@@ -218,6 +218,15 @@ const PARSERS = {
   "minecraft:uuid": V("Uuid"),
 };
 
+// Per-command argument overrides, keyed "<command>.<argName>". The command tree
+// types these slots as a bare resource_location, but helix has a branded type for
+// the registry they actually name - so `playsound` takes `SoundEvent.ENTITY_...`
+// and a typo fails to compile, the same as every other concept slot.
+const ARG_OVERRIDES = {
+  "playsound.sound": V("SoundEvent"),
+  // (`stopsound` is HAND_REFINED, so its own file carries the same type.)
+};
+
 const RESERVED = new Set([
   "break", "case", "catch", "class", "const", "continue", "debugger",
   "default", "delete", "do", "else", "enum", "export", "extends", "false",
@@ -337,7 +346,7 @@ function groupMethods(endpoints, cmd) {
  * expression to each segment. Required parts (literals + required args) keep
  * their position; optional args are always trailing, so they're appended after.
  */
-function planSegments(segments, forceOptional, imports) {
+function planSegments(cmd, segments, forceOptional, imports) {
   const used = new Set();
   const params = [];
   const requiredParts = []; // part expressions, in order
@@ -349,7 +358,7 @@ function planSegments(segments, forceOptional, imports) {
     }
     const id = paramIdent(seg.name, used);
     const optional = forceOptional || seg.optional;
-    const t = argType(seg.parser, seg.properties);
+    const t = ARG_OVERRIDES[`${cmd}.${seg.name}`] ?? argType(seg.parser, seg.properties);
     if (t.ident && t.source) imports[t.source].add(t.ident);
     if (t.registry) RESOURCE_TYPES.set(t.ident, t.registry);
     params.push(`${id}${optional ? "?" : ""}: ${t.type}`);
@@ -366,6 +375,7 @@ function renderMethod(cmd, group, forceOptional) {
   // method survives dedup, so a dropped duplicate leaves no orphaned import.
   const imports = { values: new Set(), frontend: new Set() };
   const { params, requiredParts, optionalArgs } = planSegments(
+    cmd,
     group.segments,
     forceOptional,
     imports,
@@ -385,6 +395,7 @@ function renderEntry(cmd, methodName, Cmd, emptyGroup, hasOtherGroups, imports) 
   // literals, so all its args are trailing and safe to make optional.
   const segments = emptyGroup ? emptyGroup.segments : [{ kind: "lit", value: cmd }];
   const { params, requiredParts, optionalArgs } = planSegments(
+    cmd,
     segments,
     hasOtherGroups,
     imports,

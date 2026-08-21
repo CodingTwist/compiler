@@ -80,3 +80,8 @@ export {
   type Keyframe,
   type Ease,
 } from "./plugins/clip";
+
+// The particle-shape options, for typing `ctx.particleRing()` calls (the runtime
+// method is installed by the `particles` plugin). Importing this does NOT activate
+// any augmentation.
+export type { RingOptions } from "./plugins/particles";
