@@ -52,8 +52,13 @@ describe("summoning a curated entity concept", () => {
     );
   });
 
-  it("omits the position when there isn't one", () => {
-    expect(emit((ctx) => ctx.summon(Tnt({ fuse: 40 })))).toEqual("summon minecraft:tnt {fuse:40s}");
+  // Brigadier can't skip an optional argument, so NBT with no position fails to
+  // parse (the game reads `{` where the position goes) and takes the whole
+  // function down at load. `~ ~ ~` is what omitting it means anyway.
+  it("defaults the position, since NBT without one doesn't parse", () => {
+    expect(emit((ctx) => ctx.summon(Tnt({ fuse: 40 })))).toEqual(
+      "summon minecraft:tnt ~ ~ ~ {fuse:40s}",
+    );
   });
 
   // Type-level only: never run, an id-less value has no entity to render.

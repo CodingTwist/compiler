@@ -6,6 +6,7 @@ export * from "./block";
 export * from "./display";
 export * from "./transform-math";
 export * from "./item";
+export * from "./firework";
 export * from "./model";
 export * from "./item-model";
 export * from "./block-state";

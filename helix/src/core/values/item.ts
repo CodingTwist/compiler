@@ -4,6 +4,7 @@ import { withMembers } from "./members";
 import { ITEM_IDS } from "../../versions/data/ids";
 import { VersionProfile } from "../../versions/profile";
 import { ModelRef } from "./model";
+import { FireworkValue } from "./firework";
 import { toSnbt, NbtInput } from "./nbt";
 import { textJson as tellrawJson } from "./text-json";
 import { TellrawPart } from "../frontend/nodes/tellraw_part";
@@ -163,7 +164,11 @@ export class ItemValue implements CommandValue {
   private loreValue: TextComponent[] = [];
   private canPlaceOnValue: string[] = [];
   private writtenBookValue?: { title: string; author: string; pages: (TellrawPart | string | TellrawPart[])[] };
-  private extraComponents: { stack: string; key?: string; json?: unknown }[] = [];
+  private extraComponents: {
+    stack: string | ((version: VersionProfile) => string);
+    key?: string;
+    json?: unknown;
+  }[] = [];
   private subPredicates: { type: string; json: unknown }[] = [];
 
   constructor(private readonly id: string) {}
@@ -264,13 +269,38 @@ export class ItemValue implements CommandValue {
   }
 
   /**
+   * `minecraft:charged_projectiles` - what a crossbow is loaded with. It is also
+   * what makes one *render* loaded: the vanilla crossbow model selects on
+   * `charge_type`, so a crossbow carrying a rocket here draws with the rocket in
+   * it, and an empty one draws unstrung.
+   */
+  chargedProjectiles(...items: ItemValue[]): this {
+    return this.component("charged_projectiles", {
+      render: (version: VersionProfile) =>
+        `[${items.map((i) => i.toStackNbt(version)).join(",")}]`,
+    });
+  }
+
+  /** The `minecraft:fireworks` component - see {@link Firework}. */
+  firework(value: FireworkValue): this {
+    return this.component("fireworks", value);
+  }
+
+  /**
    * A raw data component for things the typed builders don't model yet, e.g.
    * `.component("unbreakable", "{}")`. `key`/`json` are optional predicate
    * counterparts so it can still participate in `match_tool` matching.
    */
-  component(name: string, stackValue: string, predicate?: { key: string; json: unknown }): this {
+  component(
+    name: string,
+    stackValue: string | CommandValue,
+    predicate?: { key: string; json: unknown },
+  ): this {
     this.extraComponents.push({
-      stack: `${name}=${stackValue}`,
+      stack:
+        typeof stackValue === "string"
+          ? `${name}=${stackValue}`
+          : (version) => `${name}=${stackValue.render(version)}`,
       key: predicate?.key,
       json: predicate?.json,
     });
@@ -406,7 +436,12 @@ export class ItemValue implements CommandValue {
       const value: NbtInput = { title, author, resolved: true, pages: pagesNbt };
       out.push({ stack: `written_book_content=${toSnbt(value, version)}` });
     }
-    out.push(...this.extraComponents);
+    out.push(
+      ...this.extraComponents.map((c) => ({
+        ...c,
+        stack: typeof c.stack === "string" ? c.stack : c.stack(version),
+      })),
+    );
     return out;
   }
 

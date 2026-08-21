@@ -154,6 +154,33 @@ describe("defineMob", () => {
     );
   });
 
+  it("puts back on a later beat what the shot spent", () => {
+    const mob = defineMob(Husk({ silent: true }), Display(Block.STONE))
+      .gesture("fire", {
+        members: [0],
+        pivot: [0, 0, 0],
+        rotate: quat("x", -14),
+        cooldown: 30,
+        recoverAfter: 24,
+        onFire: (ctx) => ctx.say("shot"),
+        onRecover: (ctx) => ctx.say("reloaded"),
+      })
+      .toModule("sentinel");
+
+    @Module({ name: "root", imports: [mob] })
+    class Root {}
+
+    const files = buildDatapack(DatapackFactory.create(Root as never, { name: "test", env: "dev" }));
+    const all = [...files.values()].join("\n");
+
+    expect(all).toContain(
+      "execute as @e[scores={sentinel.gest=6},tag=sentinel] at @s run function test:sentinel/fire_recover",
+    );
+    expect(files.get([...files.keys()].find((k) => k.endsWith("fire_recover.mcfunction"))!)).toContain(
+      "say reloaded",
+    );
+  });
+
   it("rejects a sequence whose cooldown can't fit its rise as well as its steps", () => {
     const build3 = (rise: number) => () => {
       const mob = defineMob(Husk({}), Display(Block.STONE))

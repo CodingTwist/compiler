@@ -127,6 +127,15 @@ export interface Gesture {
    * it stays per-mob; it needs a cooldown (the step clock) and must land inside it.
    */
   fireAfter?: number;
+  /**
+   * A second beat, later in the same cooldown: extra commands run {@link recoverAfter}
+   * ticks after the raise, as the mob, at it. What {@link onFire} spends,
+   * {@link onRecover} puts back - a crossbow emptied on the shot and reloaded before
+   * the next one. Needs a cooldown (the clock it is counted on) and must land inside it.
+   */
+  onRecover?: (ctx: FunctionContext, dp: Datapack) => void;
+  /** Ticks after the raise that {@link onRecover} lands. Default `0`. */
+  recoverAfter?: number;
 }
 
 export class MobBuilder {
@@ -320,6 +329,17 @@ class MobModule implements DatapackModule {
           scope.fn(`${this.name}/${gname}_hit`, (ctx) => g.onFire?.(ctx, dp)),
         );
       }
+      if (g.onRecover) {
+        if ((g.cooldown ?? 20) <= (g.recoverAfter ?? 0)) {
+          throw new Error(
+            `Gesture "${gname}" recovers ${g.recoverAfter ?? 0} ticks in but has a cooldown of ${g.cooldown ?? 20} - the cooldown is the clock the delay is counted on, so it must be longer.`,
+          );
+        }
+        this.fns.set(
+          `${gname}_recover`,
+          scope.fn(`${this.name}/${gname}_recover`, (ctx) => g.onRecover?.(ctx, dp)),
+        );
+      }
       this.fns.set(
         gname,
         scope.fn(`${this.name}/${gname}`, (ctx) => {
@@ -407,6 +427,15 @@ class MobModule implements DatapackModule {
         .as(at((g.cooldown ?? 20) - g.fireAfter))
         .at(Selector.self())
         .run((b) => b.call(this.fnRef(`${gname}_hit`)));
+    }
+
+    // Same clock, a later beat: whatever `onFire` spent, put back.
+    if (g.onRecover) {
+      ctx
+        .execute()
+        .as(at((g.cooldown ?? 20) - (g.recoverAfter ?? 0)))
+        .at(Selector.self())
+        .run((b) => b.call(this.fnRef(`${gname}_recover`)));
     }
 
     // A sequence walks itself down its own cooldown: step k is whichever mobs are

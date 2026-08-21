@@ -33,7 +33,12 @@ FunctionContext.prototype.summon = function (
   const node = new TreeCommandNode("summon");
   this.emit(node);
   const parts: CommandPart[] = [litPart("summon"), argPart(entity)];
+  // Brigadier has no way to skip an optional argument, so NBT without a position
+  // doesn't parse - the game reads `{...}` where the position should be and the
+  // whole function fails to load. Default the position to `~ ~ ~`, which is what
+  // omitting it means anyway.
   if (pos !== undefined) parts.push(argPart(pos));
+  else if (nbt !== undefined) parts.push(argPart(Pos.here()));
   if (nbt !== undefined) {
     warnRawEntityNbt(nbt, entity.render());
     parts.push(argPart(nbt));
