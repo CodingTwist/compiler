@@ -80,6 +80,43 @@ function cross(a: Vec3, b: Vec3): Vec3 {
   ];
 }
 
+function normalize(v: Vec3): Vec3 {
+  const len = Math.hypot(v[0], v[1], v[2]);
+  if (len === 0) throw new Error("Cannot normalise a zero-length direction.");
+  return [v[0] / len, v[1] / len, v[2] / len];
+}
+
+/**
+ * The shortest rotation taking direction `from` onto direction `to` - a pose stated as
+ * an *intent* ("aim the down-pointing blade out front") rather than a hand-derived axis
+ * and angle. Neither input has to be unit length; neither may be zero.
+ *
+ * The antiparallel case has no shortest rotation (every half-turn about a perpendicular
+ * axis works), so one perpendicular is picked.
+ */
+export function quatFromTo(from: Vec3, to: Vec3): Quat {
+  const a = normalize(from);
+  const b = normalize(to);
+  const d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  if (d > 1 - 1e-6) return [0, 0, 0, 1];
+  if (d < -1 + 1e-6) {
+    // Any axis perpendicular to `a`: cross it with whichever principal axis it is
+    // least aligned with, which can never itself be parallel.
+    const least: Vec3 =
+      Math.abs(a[0]) <= Math.abs(a[1]) && Math.abs(a[0]) <= Math.abs(a[2])
+        ? [1, 0, 0]
+        : Math.abs(a[1]) <= Math.abs(a[2])
+          ? [0, 1, 0]
+          : [0, 0, 1];
+    const [x, y, z] = normalize(cross(a, least));
+    return [x, y, z, 0];
+  }
+  const [x, y, z] = cross(a, b);
+  const w = 1 + d;
+  const len = Math.hypot(x, y, z, w);
+  return [x / len, y / len, z / len, w / len];
+}
+
 /** Rotate a vector by a quaternion: `v' = v + 2w(u×v) + 2u×(u×v)`, `u = q.xyz`. */
 export function rotateVec(v: Vec3, q: Quat): Vec3 {
   const u: Vec3 = [q[0], q[1], q[2]];

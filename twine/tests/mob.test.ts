@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { describe, it, expect } from "vitest";
 // From the "helix" barrel, not a deep dist path - see the note in boss.test.ts.
-import { Block, buildDatapack, Display, Husk, Range, Selector, quat } from "helix";
+import { Block, buildDatapack, Display, Husk, Range, Selector, quat, quatFromTo } from "helix";
 import { Module } from "../src/module.decorator";
 import { DatapackFactory } from "../src/factory";
 import { defineMob } from "../src/mob";
@@ -93,5 +93,86 @@ describe("defineMob", () => {
     expect(all).toContain(
       "scoreboard players remove @e[scores={sentinel.gest=1..},tag=sentinel] sentinel.gest 1",
     );
+  });
+
+  it("eases a rise in and holds it, pushing the sequence's step clock back", () => {
+    const rig = Display(Block.STONE).add(Block.STONE, { translation: [0, 0, 1] });
+    const mob = defineMob(Husk({ silent: true }), rig)
+      .gesture("whirl", {
+        members: [1],
+        pivot: [0, 0, 0],
+        rotate: [quat("y", 90), quat("y", 180)],
+        tilt: quatFromTo([0, -1, 0], [0, 0, 1]),
+        rise: 3,
+        cooldown: 20,
+      })
+      .toModule("sentinel");
+
+    @Module({ name: "root", imports: [mob] })
+    class Root {}
+
+    const all = [...buildDatapack(DatapackFactory.create(Root as never, { name: "test", env: "dev" })).values()].join("\n");
+
+    // The first pose interpolates over `rise` rather than snapping, and carries the
+    // tilt (x -90) composed onto the step's own y 90.
+    expect(all).toContain(
+      "run data merge entity @s[tag=sentinel_rig_1] {transformation:{left_rotation:[-0.5f,0.5f,0.5f,0.5f],right_rotation:[0.0f,0.0f,0.0f,1.0f],scale:[1.0f,1.0f,1.0f],translation:[1.0f,0.0f,0.0f]},start_interpolation:0,interpolation_duration:3}",
+    );
+    // Step 1 waits out the 2-poll hold: 20 - 2 - 1, not 20 - 1.
+    expect(all).toContain("@e[scores={sentinel.gest=17},tag=sentinel]");
+    expect(all).not.toContain("sentinel.gest=19}");
+    // ...and so does the fall home, at 20 - 2 - 2.
+    expect(all).toContain("@e[scores={sentinel.gest=16},tag=sentinel]");
+  });
+
+  it("lands a delayed hit partway through the swing, off the mob's own clock", () => {
+    const mob = defineMob(Husk({ silent: true }), Display(Block.STONE))
+      .gesture("whirl", {
+        members: [0],
+        pivot: [0, 0, 0],
+        rotate: [quat("y", 90), quat("y", 180)],
+        cooldown: 20,
+        fireAfter: 6,
+        onFire: (ctx) => ctx.say("hit"),
+      })
+      .toModule("sentinel");
+
+    @Module({ name: "root", imports: [mob] })
+    class Root {}
+
+    const files = buildDatapack(DatapackFactory.create(Root as never, { name: "test", env: "dev" }));
+    const all = [...files.values()].join("\n");
+
+    // The hit moved out of the gesture function into its own, called from the poll
+    // by whichever mobs are exactly 6 ticks past their raise.
+    expect(all).toContain(
+      "execute as @e[scores={sentinel.gest=14},tag=sentinel] at @s run function test:sentinel/whirl_hit",
+    );
+    expect([...files.keys()].find((k) => k.endsWith("whirl.mcfunction"))).toBeDefined();
+    expect(files.get([...files.keys()].find((k) => k.endsWith("whirl.mcfunction"))!)).not.toContain(
+      "say hit",
+    );
+  });
+
+  it("rejects a sequence whose cooldown can't fit its rise as well as its steps", () => {
+    const build3 = (rise: number) => () => {
+      const mob = defineMob(Husk({}), Display(Block.STONE))
+        .gesture("whirl", {
+          members: [0],
+          pivot: [0, 0, 0],
+          rotate: [quat("y", 90), quat("y", 180)],
+          rise,
+          cooldown: 3,
+        })
+        .toModule("sentinel");
+
+      @Module({ name: "root", imports: [mob] })
+      class Root {}
+
+      DatapackFactory.create(Root as never, { name: "test", env: "dev" });
+    };
+    // Two steps inside a cooldown of 3 is fine until the rise wants polls too.
+    expect(build3(0)).not.toThrow();
+    expect(build3(4)).toThrow(/rise hold/);
   });
 });

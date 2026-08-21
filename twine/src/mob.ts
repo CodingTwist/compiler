@@ -93,6 +93,16 @@ export interface Gesture {
    * plane with them.
    */
   tilt?: Quat;
+  /**
+   * Ticks the **first** pose takes to interpolate in, and that it is held before the
+   * sequence steps on - a wind-up, and the only way a `tilt` eases in rather than
+   * snapping. Default `0`: the pose lands on the frame it fires, which is what a
+   * one-step gesture (snap out, slerp home) wants.
+   *
+   * The hold is what makes it visible: a duration alone would be overwritten by the
+   * next poll's step a tick later, so the step clock shifts with it.
+   */
+  rise?: number;
   /** Ticks the fall takes (default `4`). A feel knob - shorter is snappier. */
   fall?: number;
   /** Ticks before it can fire again (default `20`). Ignored for manual calls. */
@@ -104,8 +114,19 @@ export interface Gesture {
    * at it** - the hit that goes with the swing. Vanilla gives no attack event, so
    * this fires with the gesture, not on contact. The pack is passed too, since the
    * hit is usually where a library (a motion kick, a particle effect) is reached for.
+   *
+   * See {@link fireAfter} to land it partway through the animation instead.
    */
   onFire?: (ctx: FunctionContext, dp: Datapack) => void;
+  /**
+   * Ticks after the raise that {@link onFire} lands, so the hit reads as the *result*
+   * of the swing rather than its cause - the blade comes round, and a beat later you
+   * go flying. Default `0`: it fires with the raise, in the gesture's own function.
+   *
+   * Anything else moves it into the poll loop, guarded on the mob's own cooldown, so
+   * it stays per-mob; it needs a cooldown (the step clock) and must land inside it.
+   */
+  fireAfter?: number;
 }
 
 export class MobBuilder {
@@ -281,9 +302,22 @@ class MobModule implements DatapackModule {
     if (this.gestures.size) this.cooldowns = dp.objective(`${this.name}.gest`);
     for (const [gname, g] of this.gestures) {
       const steps = poses(g);
-      if (steps.length > 1 && (g.cooldown ?? 20) <= steps.length) {
+      if (steps.length > 1 && (g.cooldown ?? 20) <= steps.length + hold(g)) {
         throw new Error(
-          `Gesture "${gname}" has ${steps.length} steps but a cooldown of ${g.cooldown ?? 20} - the cooldown is the step clock, so it must be longer.`,
+          `Gesture "${gname}" has ${steps.length} steps plus a ${hold(g)}-tick rise hold but a cooldown of ${g.cooldown ?? 20} - the cooldown is the step clock, so it must be longer.`,
+        );
+      }
+      if (g.fireAfter) {
+        if ((g.cooldown ?? 20) <= g.fireAfter) {
+          throw new Error(
+            `Gesture "${gname}" fires its hit ${g.fireAfter} ticks in but has a cooldown of ${g.cooldown ?? 20} - the cooldown is the clock the delay is counted on, so it must be longer.`,
+          );
+        }
+        // Its own function, not inlined into the poll: the tick pays one call, and
+        // only for the mobs actually mid-swing.
+        this.fns.set(
+          `${gname}_hit`,
+          scope.fn(`${this.name}/${gname}_hit`, (ctx) => g.onFire?.(ctx, dp)),
         );
       }
       this.fns.set(
@@ -293,8 +327,8 @@ class MobModule implements DatapackModule {
           if (g.cooldown !== 0) {
             this.cooldown(Selector.self()).set(g.cooldown ?? 20, ctx);
           }
-          this.poseMembers(ctx, Selector.self(), g, steps[0], 0);
-          g.onFire?.(ctx, dp);
+          this.poseMembers(ctx, Selector.self(), g, steps[0], g.rise ?? 0);
+          if (!g.fireAfter) g.onFire?.(ctx, dp);
         }),
       );
     }
@@ -362,14 +396,27 @@ class MobModule implements DatapackModule {
       ).remove(1, ctx);
     }
 
+    const at = (v: number) =>
+      Selector.allEntities().tag(this.name).score(this.cooldowns!, new Range(v, v));
+
+    // The delayed hit rides the same clock as the steps: the mobs exactly
+    // `fireAfter` polls past their raise, run as themselves, at themselves.
+    if (g.fireAfter) {
+      ctx
+        .execute()
+        .as(at((g.cooldown ?? 20) - g.fireAfter))
+        .at(Selector.self())
+        .run((b) => b.call(this.fnRef(`${gname}_hit`)));
+    }
+
     // A sequence walks itself down its own cooldown: step k is whichever mobs are
     // exactly k polls past their raise, so every mob runs its own animation
     // (rather than a shared clock, which would put them all in lockstep). Emitted
     // *after* the decrement, so the poll right after the raise is step 1.
     if (steps.length > 1) {
-      const start = g.cooldown ?? 20;
-      const at = (v: number) =>
-        Selector.allEntities().tag(this.name).score(this.cooldowns!, new Range(v, v));
+      // The rise's hold pushes the whole sequence back, so the first pose gets its
+      // interpolation to itself instead of being overwritten by step 1 next poll.
+      const start = (g.cooldown ?? 20) - hold(g);
       for (let k = 1; k < steps.length; k++) {
         this.poseMembers(ctx, at(start - k), g, steps[k], this.tickEvery);
       }
@@ -447,6 +494,15 @@ function raise(rest: Transform, pivot: Vec3, q: Quat, tilt?: Quat): Transform {
       round6,
     ) as Quat,
   };
+}
+
+/**
+ * Extra polls the first pose is held for. A `rise` of 1 already lands within one poll,
+ * so only what's beyond that shifts the step clock - which is what keeps `rise: 0`
+ * (and a plain gesture that never sets it) emitting exactly what it always did.
+ */
+function hold(g: Gesture): number {
+  return Math.max(0, (g.rise ?? 0) - 1);
 }
 
 /** A gesture's poses, as a sequence - the single-quat form is the one-step case. */
