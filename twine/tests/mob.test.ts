@@ -88,10 +88,10 @@ describe("defineMob", () => {
     );
     // Gated on its own cooldown, which only counts down for mobs that have one.
     expect(all).toContain(
-      "execute as @e[tag=sentinel] at @s unless score @s sentinel.gest matches 1.. if entity @a[distance=..3] run function test:sentinel/swing",
+      "execute as @e[tag=sentinel] at @s unless score @s sentinel.swing matches 1.. if entity @a[distance=..3] run function test:sentinel/swing",
     );
     expect(all).toContain(
-      "scoreboard players remove @e[scores={sentinel.gest=1..},tag=sentinel] sentinel.gest 1",
+      "scoreboard players remove @e[scores={sentinel.swing=1..},tag=sentinel] sentinel.swing 1",
     );
   });
 
@@ -119,10 +119,10 @@ describe("defineMob", () => {
       "run data merge entity @s[tag=sentinel_rig_1] {transformation:{left_rotation:[-0.5f,0.5f,0.5f,0.5f],right_rotation:[0.0f,0.0f,0.0f,1.0f],scale:[1.0f,1.0f,1.0f],translation:[1.0f,0.0f,0.0f]},start_interpolation:0,interpolation_duration:3}",
     );
     // Step 1 waits out the 2-poll hold: 20 - 2 - 1, not 20 - 1.
-    expect(all).toContain("@e[scores={sentinel.gest=17},tag=sentinel]");
-    expect(all).not.toContain("sentinel.gest=19}");
+    expect(all).toContain("@e[scores={sentinel.whirl=17},tag=sentinel]");
+    expect(all).not.toContain("sentinel.whirl=19}");
     // ...and so does the fall home, at 20 - 2 - 2.
-    expect(all).toContain("@e[scores={sentinel.gest=16},tag=sentinel]");
+    expect(all).toContain("@e[scores={sentinel.whirl=16},tag=sentinel]");
   });
 
   it("lands a delayed hit partway through the swing, off the mob's own clock", () => {
@@ -146,12 +146,34 @@ describe("defineMob", () => {
     // The hit moved out of the gesture function into its own, called from the poll
     // by whichever mobs are exactly 6 ticks past their raise.
     expect(all).toContain(
-      "execute as @e[scores={sentinel.gest=14},tag=sentinel] at @s run function test:sentinel/whirl_hit",
+      "execute as @e[scores={sentinel.whirl=14},tag=sentinel] at @s run function test:sentinel/whirl_hit",
     );
     expect([...files.keys()].find((k) => k.endsWith("whirl.mcfunction"))).toBeDefined();
     expect(files.get([...files.keys()].find((k) => k.endsWith("whirl.mcfunction"))!)).not.toContain(
       "say hit",
     );
+  });
+
+  it("gives each gesture its own clock, so an idle one can't gate the rest", () => {
+    const mob = defineMob(Husk({ silent: true }), Display(Block.STONE))
+      .gesture("bob", { members: [0], pivot: [0, 0, 0], rotate: quat("x", 8), cooldown: 10 })
+      .gesture("swing", {
+        members: [0],
+        pivot: [0, 0, 0],
+        rotate: quat("x", -90),
+        when: (c) => c.ifEntity(Selector.allPlayers()),
+      })
+      .toModule("sentinel");
+
+    @Module({ name: "root", imports: [mob] })
+    class Root {}
+
+    const all = [...buildDatapack(DatapackFactory.create(Root as never, { name: "test", env: "dev" })).values()].join("\n");
+
+    // The swing waits on its own countdown only - on the shared one it would be
+    // starved by every bob.
+    expect(all).toContain("unless score @s sentinel.swing matches 1..");
+    expect(all).not.toContain("unless score @s sentinel.bob matches 1.. if entity @a");
   });
 
   it("puts back on a later beat what the shot spent", () => {
@@ -174,7 +196,7 @@ describe("defineMob", () => {
     const all = [...files.values()].join("\n");
 
     expect(all).toContain(
-      "execute as @e[scores={sentinel.gest=6},tag=sentinel] at @s run function test:sentinel/fire_recover",
+      "execute as @e[scores={sentinel.fire=6},tag=sentinel] at @s run function test:sentinel/fire_recover",
     );
     expect(files.get([...files.keys()].find((k) => k.endsWith("fire_recover.mcfunction"))!)).toContain(
       "say reloaded",

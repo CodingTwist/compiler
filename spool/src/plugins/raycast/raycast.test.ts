@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Datapack, v26_2, Block, Selector } from "helix";
+import { Datapack, v26_2, Block, Range, Selector } from "helix";
 import { installKit } from "../../kit";
 import { raycast } from ".";
 
@@ -63,5 +63,25 @@ describe("dp.raycast (kit)", () => {
     const probe = dp.files.get("probe")!;
     expect(probe).toContain("scoreboard players set #web_steps raycast.work 60");
     expect(probe).toContain("function test:raycast/web");
+  });
+});
+
+describe("dp.raycast stopAt (line of sight)", () => {
+  it("ends the march at the target and tail-calls the reach body with its result", () => {
+    const { dp } = build({
+      stopAt: Selector.nearest().distance(new Range(undefined, 2)),
+      onReach: (ctx) => ctx.return_(1),
+    });
+    const ray = dp.files.get("raycast/web")!;
+    // Checked BEFORE the step, so the target's own cell never counts as a block hit.
+    expect(ray.trim().split("\n")[0]).toBe(
+      "execute if entity @p[distance=..2] run return run function test:raycast/web_reach",
+    );
+    expect(dp.files.get("raycast/web_reach")).toContain("return 1");
+  });
+
+  it("leaves the march untouched when no target is given", () => {
+    const { dp } = build();
+    expect(dp.files.has("raycast/web_reach")).toBe(false);
   });
 });

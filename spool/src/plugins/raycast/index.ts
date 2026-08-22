@@ -1,5 +1,5 @@
 import { Datapack } from "helix";
-import type { Block, FunctionRef, FunctionContext } from "helix";
+import type { Block, FunctionRef, FunctionContext, Selector } from "helix";
 import type { KitPlugin } from "../../plugin";
 import { createRaycastState } from "./context";
 import type { RaycastState } from "./context";
@@ -38,10 +38,31 @@ export interface RaycastOptions {
    */
   readonly hitOn?: Block;
   /**
+   * Entities that **end the ray early**, checked at every cell it marches through:
+   * the first cell where this matches stops the march (nothing hits, {@link onHit}
+   * never fires) and runs {@link onReach} there instead.
+   *
+   * This is what turns "what do I hit?" into "**can I see you?**" - cast at a target
+   * with `stopAt` set to it, and the two endings are exactly blocked vs clear line of
+   * sight. Give the selector a `distance` slack (the ray samples every `stepBlocks`,
+   * and `distance=` measures to an entity's *feet*), or the ray steps straight past it.
+   */
+  readonly stopAt?: Selector;
+  /**
+   * What to do where {@link stopAt} matched, positioned at that cell. Runs as a child
+   * function tail-called with `return run`, so ending it with `ctx.return_(1)` makes
+   * the whole ray return `1` - i.e. `execute if function <ref>.cast` becomes the
+   * line-of-sight test itself.
+   */
+  onReach?(ctx: FunctionContext): void;
+  /**
    * What to do at the hit. Runs **positioned at the hit block** (and, with `hitOn`,
    * only when it matches), building commands into the marcher's on-hit branch.
+   *
+   * Optional, because "the ray was blocked" is a perfectly good ending to do nothing
+   * with - a pure line-of-sight ray puts all of its behaviour in {@link onReach}.
    */
-  onHit(ctx: FunctionContext): void;
+  onHit?(ctx: FunctionContext): void;
 }
 
 export interface RaycastRef {

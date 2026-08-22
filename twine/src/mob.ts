@@ -216,7 +216,12 @@ class MobModule implements DatapackModule {
 
   /** Each generated function by short name (`summon`, a gesture), once registered. */
   private readonly fns = new Map<string, FunctionRef>();
-  private cooldowns?: Objective;
+  /**
+   * One clock **per gesture**, not one per mob: they share the poll but not the
+   * countdown, or a cheap idle gesture's cooldown would gate every other gesture
+   * (its `unless score … matches 1..`) and starve them.
+   */
+  private readonly cooldowns = new Map<string, Objective>();
 
   fnRef(short: string): FunctionRef {
     const ref = this.fns.get(short);
@@ -308,8 +313,8 @@ class MobModule implements DatapackModule {
       }),
     );
 
-    if (this.gestures.size) this.cooldowns = dp.objective(`${this.name}.gest`);
     for (const [gname, g] of this.gestures) {
+      this.cooldowns.set(gname, dp.objective(`${this.name}.${gname}`));
       const steps = poses(g);
       if (steps.length > 1 && (g.cooldown ?? 20) <= steps.length + hold(g)) {
         throw new Error(
@@ -345,7 +350,7 @@ class MobModule implements DatapackModule {
         scope.fn(`${this.name}/${gname}`, (ctx) => {
           ctx.tag().add(Selector.self(), this.gestureTag(gname));
           if (g.cooldown !== 0) {
-            this.cooldown(Selector.self()).set(g.cooldown ?? 20, ctx);
+            this.cooldown(Selector.self(), gname).set(g.cooldown ?? 20, ctx);
           }
           this.poseMembers(ctx, Selector.self(), g, steps[0], g.rise ?? 0);
           if (!g.fireAfter) g.onFire?.(ctx, dp);
@@ -359,8 +364,8 @@ class MobModule implements DatapackModule {
     return `${this.name}.${gname}`;
   }
 
-  private cooldown(target: Selector) {
-    return this.cooldowns!.score(ScoreTarget(target));
+  private cooldown(target: Selector, gname: string) {
+    return this.cooldowns.get(gname)!.score(ScoreTarget(target));
   }
 
   /**
@@ -399,6 +404,7 @@ class MobModule implements DatapackModule {
 
   private tickGesture(ctx: FunctionContext, gname: string, g: Gesture): void {
     const tag = this.gestureTag(gname);
+    const clock = this.cooldowns.get(gname)!;
     const steps = poses(g);
     const raisedMobs = () => Selector.allEntities().tag(this.name).tag(tag);
     // The fall is emitted *before* the trigger, or a gesture started this tick
@@ -412,12 +418,13 @@ class MobModule implements DatapackModule {
       // Only the ones actually counting down: `remove` on an unset score would
       // start one at -1 and run it down forever.
       this.cooldown(
-        Selector.allEntities().tag(this.name).score(this.cooldowns!, new Range(1, undefined)),
+        Selector.allEntities().tag(this.name).score(clock, new Range(1, undefined)),
+        gname,
       ).remove(1, ctx);
     }
 
     const at = (v: number) =>
-      Selector.allEntities().tag(this.name).score(this.cooldowns!, new Range(v, v));
+      Selector.allEntities().tag(this.name).score(clock, new Range(v, v));
 
     // The delayed hit rides the same clock as the steps: the mobs exactly
     // `fireAfter` polls past their raise, run as themselves, at themselves.
@@ -457,7 +464,9 @@ class MobModule implements DatapackModule {
 
     if (!g.when) return;
     const chain = ctx.execute().as(Selector.allEntities().tag(this.name)).at(Selector.self());
-    if (g.cooldown !== 0) chain.unlessScoreMatches(this.cooldown(Selector.self()), new Range(1, undefined));
+    if (g.cooldown !== 0) {
+      chain.unlessScoreMatches(this.cooldown(Selector.self(), gname), new Range(1, undefined));
+    }
     g.when(chain);
     chain.run((b) => b.call(this.fnRef(gname)));
   }

@@ -70,14 +70,15 @@ constructed and emits nothing** - that is the compile-time disable.
   (`helix` `displayPose` + `rotateAboutPivot`) and lets the display's own interpolation
   carry them back to the model's rest pose - rest comes from `model.members()`, so a
   pose can't drift from what was summoned. `rotate` may be an **array**, which makes the
-  gesture a sequence - one pose per poll, stepped off the mob's own `<name>.gest`
+  gesture a sequence - one pose per poll, stepped off the mob's own `<mob>.<gesture>`
   countdown (so each mob animates independently), then the fall home; that's how a
   rotation bigger than a snap-and-slerp-back is expressed (a spin attack). `tilt` is a
   constant rotation held for the gesture that touches the members' *orientation* only -
   an axis change in `rotate` would swing their translations out of the orbit plane too.
   `onFire`
   emits the author's own commands into the gesture function, as the mob - the hit that
-  goes with the swing, since vanilla gives no contact event. Cooldown is a score on `<name>.gest`; the
+  goes with the swing, since vanilla gives no contact event. Cooldown is a score on `<mob>.<gesture>` - one clock **per gesture**, so an idle
+  gesture's countdown can't gate the others; the
   trigger is the author's `Detector` (vanilla has no attack event - the nearest thing,
   a nearby player's `HurtTime` hitting 10, never fires in creative).
 - [src/item-registry.ts](src/item-registry.ts) - `registerItem(name, item)` /

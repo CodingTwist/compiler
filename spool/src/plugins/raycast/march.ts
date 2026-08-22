@@ -10,6 +10,7 @@ const AIR = Block.tag(BLOCK_TAGS.AIR);
  * Build one raycast marcher into `fn`: a recursive step-and-check along the local
  * forward axis (`^`), the classic datapack ray. Reads top-down as the ray's story:
  *
+ *   0. reached the target? (only with `stopAt`) → run `onReach` here and stop
  *   1. spend a step   (decrement this marcher's budget)
  *   2. air ahead + budget left → step forward and recurse (carry the position via `^`)
  *   3. otherwise this cell is the hit → run the caller's `onHit`, gated on `hitOn`
@@ -23,7 +24,20 @@ export function buildMarcher(state: RaycastState, fn: FunctionRef, opts: Raycast
   const steps = state.steps(opts.name);
   const stepBlocks = opts.stepBlocks ?? 0.5;
 
+  // The early ending, built as its own function so the marcher can `return run` it:
+  // that both stops the recursion and hands the caller its result (see `onReach`).
+  const reach = opts.stopAt ? state.dp.createFunction(`raycast/${opts.name}_reach`) : undefined;
+  reach?.build((ctx) => opts.onReach?.(ctx));
+
   fn.build((ctx) => {
+    // 0. The target is in this cell: this ending is "clear line of sight", not a hit.
+    if (reach) {
+      ctx
+        .execute()
+        .ifEntity(opts.stopAt!)
+        .run((b) => b.returnRun((r) => r.call(reach)));
+    }
+
     // 1. Spend a step of this marcher's reach budget.
     ctx.scoreRemove(steps.remove(1));
 
@@ -40,8 +54,9 @@ export function buildMarcher(state: RaycastState, fn: FunctionRef, opts: Raycast
     // 3. This cell is the hit. Run the caller's on-hit body here (positioned at the hit
     //    block). With `hitOn` set, gate it: a non-matching block places nothing, so the
     //    caller sees a clean miss.
+    if (!opts.onHit) return;
     if (opts.hitOn) {
-      ctx.execute().ifBlock(Pos.here(), opts.hitOn).run((b) => opts.onHit(b));
+      ctx.execute().ifBlock(Pos.here(), opts.hitOn).run((b) => opts.onHit!(b));
     } else {
       opts.onHit(ctx);
     }
