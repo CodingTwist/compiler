@@ -444,6 +444,17 @@ declare module "../frontend/context" {
     ): void;
     /** `return run <command>` - return the result of running `build`'s command. */
     returnRun(build: (ctx: FunctionContext) => void): void;
+    /**
+     * Score-range switch: for each case in order, emit
+     * `execute if score <score> matches <range> run return run function <fn>`.
+     * The first matching range calls its function and returns its result - the
+     * same shape every hand-rolled "pick a bucket, call it, propagate the
+     * result" dispatch already uses, just without re-writing the chain per case.
+     */
+    dispatchScore(
+      score: Score,
+      cases: readonly { range: Range; fn: FunctionRef }[],
+    ): void;
   }
 }
 
@@ -486,4 +497,16 @@ FunctionContext.prototype.whenItems = function (
   const chain = this.execute();
   (mode === "if" ? chain.ifItems : chain.unlessItems).call(chain, target, slot, item);
   chain.run(build);
+};
+
+FunctionContext.prototype.dispatchScore = function (
+  this: FunctionContext,
+  score: Score,
+  cases: readonly { range: Range; fn: FunctionRef }[],
+): void {
+  for (const { range, fn } of cases) {
+    this.execute()
+      .ifScoreMatches(score, range)
+      .run((c) => c.returnRun((x) => x.call(fn)));
+  }
 };

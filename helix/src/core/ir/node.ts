@@ -78,6 +78,24 @@ export class Range extends ASTNode {
 }
 
 /**
+ * "Nearest wins" bands over a sorted ladder of targets: one {@link Range} per
+ * target, split at neighbor midpoints, open-ended at both ends. Splits the
+ * number line the same way `Selector`'s nearest-of-N patterns do for scores -
+ * useful for "snap this score to the nearest of these rungs" dispatch (see
+ * {@link FunctionContext.dispatchScore}). Tiling with no gaps is a property of
+ * the construction (each band's edges come directly from its neighbors), not
+ * something to separately assert.
+ */
+export function bandsFromTargets(targets: readonly number[]): Range[] {
+  const mid = (a: number, b: number) => Math.floor((a + b) / 2);
+  return targets.map((t, i) => {
+    const from = i === 0 ? undefined : mid(targets[i - 1], t) + 1;
+    const upTo = i === targets.length - 1 ? undefined : mid(t, targets[i + 1]);
+    return new Range(from, upTo);
+  });
+}
+
+/**
  * A neutral command part: either a fixed literal token or a deferred argument
  * value. A command builder fills these in as the author chains calls; the arg
  * holds a `CommandValue` concept whose rendering is deferred to codegen (so it
