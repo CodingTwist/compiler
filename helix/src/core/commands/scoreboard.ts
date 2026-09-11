@@ -65,6 +65,18 @@ export const scoreOpNode = (
     sourceObjective: b.objective.getName(),
   });
 
+/** `scoreboard players set|add|remove <target> <objective> <value>` - literal arithmetic. */
+export const scoreLitNode = (
+  verb: "set" | "add" | "remove",
+  score: Score,
+  value: number,
+): ScoreboardNode =>
+  new ScoreboardNode(["players", verb], {
+    targets: score.target,
+    objective: score.objective.getName(),
+    score: value,
+  });
+
 /**
  * `scoreboard players <verb> <target> <objective> [<value>]`. The holder slot is
  * named `targets` everywhere except `get`, which takes a single `target`.

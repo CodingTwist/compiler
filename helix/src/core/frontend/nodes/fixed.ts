@@ -1,8 +1,6 @@
 import { Score } from "./score";
 import type { FunctionContext } from "../context";
-import { emitScoreExpr } from "../../commands/score-expr";
-import { scoreOpNode } from "../../commands/scoreboard";
-import { ContextInt as i } from "../../values/context-provider";
+import { math } from "./math";
 
 /**
  * A **fixed-point scalar**: one integer {@link Score} that stands for a fractional
@@ -12,13 +10,14 @@ import { ContextInt as i } from "../../values/context-provider";
  * fraction is floored away. `Fixed` makes that bookkeeping part of the type and the
  * method names instead of a comment you have to keep in your head.
  *
- * **Why a scale `Score` and not just a number.** A `scoreboard players operation`
- * operand must itself be a score - you can't `*= 1000` against a literal. So a `Fixed`
- * that wants to multiply or divide by its own scale carries `scaleScore`, a slot
- * seeded once at load to `scale` (e.g. `ctx.scoreSet(scaleScore.set(1000))`). The
- * plain `number` `scale` is kept alongside for reasoning and asserts. Ops that don't
- * touch the scale (`assign`/`add`/`sub`/`negate`/`gain`/`reduce`/`clamp`) need no
- * `scaleScore`; {@link mul} and {@link divide} do.
+ * **Why a scale `Score` as well as a number.** A `scoreboard players operation`
+ * operand must itself be a score - you can't `*= 1000` against a literal - so on a
+ * pre-26.3 target a literal scale costs one extra `scoreboard players set <temp>
+ * 1000` before every multiply. `scaleScore` is a slot seeded once at load to
+ * `scale` (e.g. `ctx.scoreSet(scaleScore.set(1000))`) that removes that command.
+ * It is a **hint, not a requirement**: omit it and the math is identical, one
+ * command longer on ≤26.2 and exactly the same on 26.3+, where the whole formula
+ * is one `/compute` and literals are free.
  *
  * Like {@link Score}/{@link ScoreVec3} it holds a *reference* to an existing slot and
  * allocates nothing, emits into the **ambient** context (pass `ctx` to override), and
@@ -33,14 +32,6 @@ export class Fixed {
 
   private operand(other: Fixed | Score): Score {
     return other instanceof Fixed ? other.score : other;
-  }
-
-  private requireScale(): Score {
-    if (!this.scaleScore)
-      throw new Error(
-        "Fixed: this op needs the scale score. Construct the Fixed with `scaleScore` (a slot seeded to `scale` at load) before calling mul()/divide().",
-      );
-    return this.scaleScore;
   }
 
   /** `this = other` (same scale; `other` may be a raw `Score` already at this scale). */
@@ -68,12 +59,7 @@ export class Fixed {
    * pack that targets 26.3+.
    */
   negate(negOne?: Score, ctx?: FunctionContext): this {
-    emitScoreExpr(
-      this.score,
-      i.mul(i.score(this.score), -1),
-      () => [scoreOpNode(this.score, "*=", needed(negOne, "negate() needs a `-1` slot on a pre-26.3 target."))],
-      ctx,
-    );
+    math`${this.score} * ${negOne ?? -1}`.into(this.score, ctx);
     return this;
   }
 
@@ -83,13 +69,8 @@ export class Fixed {
    * other ; /= scale`. (Needs `scaleScore`.)
    */
   mul(other: Fixed, ctx?: FunctionContext): this {
-    emitScoreExpr(
+    math`${this.score} * ${other.score} / ${this.scaleScore ?? this.scale}`.into(
       this.score,
-      i.floorDiv(i.mul(i.score(this.score), i.score(other.score)), this.scale),
-      () => [
-        scoreOpNode(this.score, "*=", other.score),
-        scoreOpNode(this.score, "/=", this.requireScale()),
-      ],
       ctx,
     );
     return this;
@@ -104,13 +85,8 @@ export class Fixed {
    * divisor`. `divisor` is any `Score`/`Fixed`. (Needs `scaleScore`.)
    */
   divide(divisor: Fixed | Score, ctx?: FunctionContext): this {
-    emitScoreExpr(
+    math`${this.score} * ${this.scaleScore ?? this.scale} / ${this.operand(divisor)}`.into(
       this.score,
-      i.floorDiv(i.mul(i.score(this.score), this.scale), i.score(this.operand(divisor))),
-      () => [
-        scoreOpNode(this.score, "*=", this.requireScale()),
-        scoreOpNode(this.score, "/=", this.operand(divisor)),
-      ],
       ctx,
     );
     return this;
@@ -146,16 +122,5 @@ export function clampScore(
   hi: Score,
   ctx?: FunctionContext,
 ): void {
-  emitScoreExpr(
-    s,
-    i.max(i.min(i.score(s), i.score(hi)), i.score(lo)),
-    () => [scoreOpNode(s, "<", hi), scoreOpNode(s, ">", lo)],
-    ctx,
-  );
-}
-
-/** Demand a value the pre-26.3 lowering needs, at the point that lowering is chosen. */
-function needed<T>(value: T | undefined, message: string): T {
-  if (value === undefined) throw new Error(`Fixed: ${message}`);
-  return value;
+  math`max(min(${s}, ${hi}), ${lo})`.into(s, ctx);
 }

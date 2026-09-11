@@ -85,6 +85,13 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
      chain, plus the `atEntity`/`whenItems` sugar), `execute_as`, `entity_guard`, `near_guard`,
      `selector`, `data_op`, `native`. These are NOT 1:1 vanilla commands - their nodes are emitted
      by the frontend mixins. Registered via the generator's `EXTRA_HANDLERS` list, never regenerated.
+  3. **`score-expr`** - the one handler that picks a *backend*. `math\`…\`` (frontend/nodes/math.ts,
+     jsep-parsed infix → the `ExprNode` tree in `frontend/nodes/expr.ts`) emits one `ScoreExprNode`
+     per destination slot; the handler lowers it to a single `/compute` on 26.3+ and to the
+     equivalent `scoreboard players operation` chain below it. Both lowerings live in `score-expr.ts`
+     (`toProvider` / `toScoreOps`) so an op is written once, not once per version. `Fixed` and
+     `ScoreVec3.dot` route through it, so every pack gets `/compute` on 26.3 without opting in.
+     Temps are `#_t<depth>` fake players on the destination's own objective - a **reserved prefix**.
 - **Function macros.** `Macro<T>("name")` (`values/macro.ts`) is a `CommandValue` rendering
   `$(name)`; `CodegenContext.emit` prefixes any line containing `$(` with `$`, so every
   handler gets macro lines right without knowing about them (`generateRunTarget` strips the

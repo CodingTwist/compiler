@@ -7,6 +7,8 @@ export * from "./player";
 export * from "./score";
 export * from "./score_vec3";
 export * from "./fixed";
+export * from "./expr";
+export * from "./math";
 export * from "./objective";
 export * from "./click";
 export * from "./hover";

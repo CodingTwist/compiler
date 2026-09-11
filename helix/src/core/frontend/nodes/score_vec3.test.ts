@@ -38,15 +38,15 @@ describe("ScoreVec3", () => {
     expect(out).toContain("scoreboard players operation #v_x work *= #k work");
   });
 
-  it("computes a dot product into out via the scratch slot", () => {
+  it("computes a dot product into out, cross terms in an internal temp", () => {
     const out = emit((vec, sc) => {
-      vec("a").dot(vec("b"), sc("dot"), sc("scratch"));
+      vec("a").dot(vec("b"), sc("dot"));
     });
     expect(out).toContain("scoreboard players operation #dot work = #a_x work");
     expect(out).toContain("scoreboard players operation #dot work *= #b_x work");
-    expect(out).toContain("scoreboard players operation #scratch work = #a_y work");
-    expect(out).toContain("scoreboard players operation #scratch work *= #b_y work");
-    expect(out).toContain("scoreboard players operation #dot work += #scratch work");
+    expect(out).toContain("scoreboard players operation #_t0 work = #a_y work");
+    expect(out).toContain("scoreboard players operation #_t0 work *= #b_y work");
+    expect(out).toContain("scoreboard players operation #dot work += #_t0 work");
   });
 
   it("builds from a per-axis score with `from`", () => {

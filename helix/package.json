@@ -54,5 +54,8 @@
     "@spyglassmc/core": "^0.4.50",
     "@spyglassmc/java-edition": "^0.3.63",
     "@spyglassmc/mcdoc": "^0.3.54"
+  },
+  "dependencies": {
+    "jsep": "^1.4.0"
   }
 }

@@ -1,4 +1,6 @@
 import { Score } from "./score";
+import { opE, scoreE } from "./expr";
+import { emitScoreExpr } from "../../commands/score-expr";
 import { currentContext } from "../context/ambient";
 import type { FunctionContext } from "../context";
 import type { Selector } from "./selector";
@@ -113,27 +115,36 @@ export class ScoreVec3 {
   }
 
   /**
-   * Dot product into `out`, using `scratch` for the cross terms - both
-   * caller-owned scalar slots, distinct from this vector's components:
+   * Dot product into `out` - `out = x·o.x + y·o.y + z·o.z`, as one expression:
+   * one `/compute` command on 26.3+, the same eight `scoreboard players
+   * operation` lines below it.
    *
-   *   out = x·o.x + y·o.y + z·o.z
+   * @param scratch **Unused.** The cross terms now live in an internal temp, so
+   * no caller-owned slot is needed; the parameter is kept only so existing call
+   * sites keep compiling.
    */
   dot(
     other: ScoreVec3,
     out: Score,
-    scratch: Score,
+    scratch?: Score,
     ctx?: FunctionContext,
   ): Score {
-    out.assign(this.x, ctx).times(other.x, ctx);
-    scratch.assign(this.y, ctx).times(other.y, ctx);
-    out.plus(scratch, ctx);
-    scratch.assign(this.z, ctx).times(other.z, ctx);
-    out.plus(scratch, ctx);
+    void scratch;
+    emitScoreExpr(
+      out,
+      opE(
+        "add",
+        ...this.components.map((c, axis) =>
+          opE("mul", scoreE(c), scoreE(other.components[axis])),
+        ),
+      ),
+      ctx,
+    );
     return out;
   }
 
-  /** Squared length `|v|² = v·v` (into `out`, via `scratch`). */
-  lengthSquared(out: Score, scratch: Score, ctx?: FunctionContext): Score {
+  /** Squared length `|v|² = v·v` (into `out`). */
+  lengthSquared(out: Score, scratch?: Score, ctx?: FunctionContext): Score {
     return this.dot(this, out, scratch, ctx);
   }
 

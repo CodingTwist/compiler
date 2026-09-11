@@ -6,6 +6,7 @@
 import { CommandHandler } from "../ir/commandhandler";
 import { SayCommand } from "./saycommand";
 import { ScoreboardCommand } from "./scoreboard";
+import { ScoreExprCommand } from "./score-expr";
 import { TellrawCommand } from "./tellraw";
 import { PlayerGiveCommand } from "./give";
 import { TriggerCommand } from "./trigger";
@@ -86,6 +87,7 @@ export * from "./worldborder";
 // export * keeps the files referenced so the augmentations reach consumers.
 export * from "./saycommand";
 export * from "./scoreboard";
+export * from "./score-expr";
 export * from "./tellraw";
 export * from "./give";
 export * from "./trigger";
@@ -113,6 +115,7 @@ export function createCommandHandlers(): CommandHandler[] {
   return [
     new SayCommand(),
     new ScoreboardCommand(),
+    new ScoreExprCommand(),
     new TellrawCommand(),
     new PlayerGiveCommand(),
     new TriggerCommand(),
