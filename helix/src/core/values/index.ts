@@ -29,6 +29,7 @@ export * from "./time";
 export * from "./component";
 export * from "./enums";
 export * from "./predicate";
+export * from "./context-provider";
 export * from "./holding";
 export * from "./advancement";
 export * from "./loot-function";

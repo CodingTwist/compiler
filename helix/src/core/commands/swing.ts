@@ -2,17 +2,22 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { FunctionContext } from "../frontend/context";
 import { CommandBuilder, litPart, argPart } from "./base";
+import { SwingAnimation, Time } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
 /** `swing` */
 export class SwingBuilder extends CommandBuilder<TreeCommandNode> {
-  mainhand(targets: Selector): this {
+  mainhand(targets: Selector, animation?: SwingAnimation, duration?: Time): this {
     this.$set(litPart("swing"), argPart(targets), litPart("mainhand"));
+    if (animation !== undefined) this.$append(argPart(animation));
+    if (duration !== undefined) this.$append(argPart(duration));
     return this;
   }
 
-  offhand(targets: Selector): this {
+  offhand(targets: Selector, animation?: SwingAnimation, duration?: Time): this {
     this.$set(litPart("swing"), argPart(targets), litPart("offhand"));
+    if (animation !== undefined) this.$append(argPart(animation));
+    if (duration !== undefined) this.$append(argPart(duration));
     return this;
   }
 }

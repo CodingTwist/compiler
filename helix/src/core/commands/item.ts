@@ -7,48 +7,120 @@ import { Selector } from "../frontend/nodes/selector";
 
 /** `item` */
 export class ItemBuilder extends CommandBuilder<TreeCommandNode> {
-  modifyBlock(pos: Pos, slot: ItemSlot, modifier: LootModifier): this {
-    this.$set(litPart("item"), litPart("modify"), litPart("block"), argPart(pos), argPart(slot), argPart(modifier));
-    return this;
-  }
-
-  modifyEntity(targets: Selector, slot: ItemSlot, modifier: LootModifier): this {
-    this.$set(litPart("item"), litPart("modify"), litPart("entity"), argPart(targets), argPart(slot), argPart(modifier));
-    return this;
-  }
-
-  replaceBlockFromBlock(pos: Pos, slot: ItemSlot, source: Pos, sourceSlot: ItemSlot, modifier?: LootModifier): this {
-    this.$set(litPart("item"), litPart("replace"), litPart("block"), argPart(pos), argPart(slot), litPart("from"), litPart("block"), argPart(source), argPart(sourceSlot));
+  fillBlockFromBlock(target: Pos, slots: ItemSlot, source: Pos, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("fill"), litPart("block"), argPart(target), argPart(slots), litPart("from"), litPart("block"), argPart(source), argPart(sourceSlots));
     if (modifier !== undefined) this.$append(argPart(modifier));
     return this;
   }
 
-  replaceBlockFromEntity(pos: Pos, slot: ItemSlot, source: Selector, sourceSlot: ItemSlot, modifier?: LootModifier): this {
-    this.$set(litPart("item"), litPart("replace"), litPart("block"), argPart(pos), argPart(slot), litPart("from"), litPart("entity"), argPart(source), argPart(sourceSlot));
+  fillBlockFromEntity(target: Pos, slots: ItemSlot, source: Selector, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("fill"), litPart("block"), argPart(target), argPart(slots), litPart("from"), litPart("entity"), argPart(source), argPart(sourceSlots));
     if (modifier !== undefined) this.$append(argPart(modifier));
     return this;
   }
 
-  replaceBlockWith(pos: Pos, slot: ItemSlot, item: Item, count?: number): this {
-    this.$set(litPart("item"), litPart("replace"), litPart("block"), argPart(pos), argPart(slot), litPart("with"), argPart(item));
+  fillBlockWith(target: Pos, slots: ItemSlot, item: Item, count?: number): this {
+    this.$set(litPart("item"), litPart("fill"), litPart("block"), argPart(target), argPart(slots), litPart("with"), argPart(item));
     if (count !== undefined) this.$append(argPart(count));
     return this;
   }
 
-  replaceEntityFromBlock(targets: Selector, slot: ItemSlot, source: Pos, sourceSlot: ItemSlot, modifier?: LootModifier): this {
-    this.$set(litPart("item"), litPart("replace"), litPart("entity"), argPart(targets), argPart(slot), litPart("from"), litPart("block"), argPart(source), argPart(sourceSlot));
+  fillEntityFromBlock(target: Selector, slots: ItemSlot, source: Pos, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("fill"), litPart("entity"), argPart(target), argPart(slots), litPart("from"), litPart("block"), argPart(source), argPart(sourceSlots));
     if (modifier !== undefined) this.$append(argPart(modifier));
     return this;
   }
 
-  replaceEntityFromEntity(targets: Selector, slot: ItemSlot, source: Selector, sourceSlot: ItemSlot, modifier?: LootModifier): this {
-    this.$set(litPart("item"), litPart("replace"), litPart("entity"), argPart(targets), argPart(slot), litPart("from"), litPart("entity"), argPart(source), argPart(sourceSlot));
+  fillEntityFromEntity(target: Selector, slots: ItemSlot, source: Selector, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("fill"), litPart("entity"), argPart(target), argPart(slots), litPart("from"), litPart("entity"), argPart(source), argPart(sourceSlots));
     if (modifier !== undefined) this.$append(argPart(modifier));
     return this;
   }
 
-  replaceEntityWith(targets: Selector, slot: ItemSlot, item: Item, count?: number): this {
-    this.$set(litPart("item"), litPart("replace"), litPart("entity"), argPart(targets), argPart(slot), litPart("with"), argPart(item));
+  fillEntityWith(target: Selector, slots: ItemSlot, item: Item, count?: number): this {
+    this.$set(litPart("item"), litPart("fill"), litPart("entity"), argPart(target), argPart(slots), litPart("with"), argPart(item));
+    if (count !== undefined) this.$append(argPart(count));
+    return this;
+  }
+
+  modifyBlock(target: Pos, slots: ItemSlot, modifier: LootModifier): this {
+    this.$set(litPart("item"), litPart("modify"), litPart("block"), argPart(target), argPart(slots), argPart(modifier));
+    return this;
+  }
+
+  modifyEntity(target: Selector, slots: ItemSlot, modifier: LootModifier): this {
+    this.$set(litPart("item"), litPart("modify"), litPart("entity"), argPart(target), argPart(slots), argPart(modifier));
+    return this;
+  }
+
+  overrideBlockFromBlock(target: Pos, slots: ItemSlot, source: Pos, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("override"), litPart("block"), argPart(target), argPart(slots), litPart("from"), litPart("block"), argPart(source), argPart(sourceSlots));
+    if (modifier !== undefined) this.$append(argPart(modifier));
+    return this;
+  }
+
+  overrideBlockFromEntity(target: Pos, slots: ItemSlot, source: Selector, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("override"), litPart("block"), argPart(target), argPart(slots), litPart("from"), litPart("entity"), argPart(source), argPart(sourceSlots));
+    if (modifier !== undefined) this.$append(argPart(modifier));
+    return this;
+  }
+
+  overrideBlockWith(target: Pos, slots: ItemSlot, item: Item, count?: number): this {
+    this.$set(litPart("item"), litPart("override"), litPart("block"), argPart(target), argPart(slots), litPart("with"), argPart(item));
+    if (count !== undefined) this.$append(argPart(count));
+    return this;
+  }
+
+  overrideEntityFromBlock(target: Selector, slots: ItemSlot, source: Pos, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("override"), litPart("entity"), argPart(target), argPart(slots), litPart("from"), litPart("block"), argPart(source), argPart(sourceSlots));
+    if (modifier !== undefined) this.$append(argPart(modifier));
+    return this;
+  }
+
+  overrideEntityFromEntity(target: Selector, slots: ItemSlot, source: Selector, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("override"), litPart("entity"), argPart(target), argPart(slots), litPart("from"), litPart("entity"), argPart(source), argPart(sourceSlots));
+    if (modifier !== undefined) this.$append(argPart(modifier));
+    return this;
+  }
+
+  overrideEntityWith(target: Selector, slots: ItemSlot, item: Item, count?: number): this {
+    this.$set(litPart("item"), litPart("override"), litPart("entity"), argPart(target), argPart(slots), litPart("with"), argPart(item));
+    if (count !== undefined) this.$append(argPart(count));
+    return this;
+  }
+
+  replaceBlockFromBlock(target: Pos, slots: ItemSlot, source: Pos, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("replace"), litPart("block"), argPart(target), argPart(slots), litPart("from"), litPart("block"), argPart(source), argPart(sourceSlots));
+    if (modifier !== undefined) this.$append(argPart(modifier));
+    return this;
+  }
+
+  replaceBlockFromEntity(target: Pos, slots: ItemSlot, source: Selector, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("replace"), litPart("block"), argPart(target), argPart(slots), litPart("from"), litPart("entity"), argPart(source), argPart(sourceSlots));
+    if (modifier !== undefined) this.$append(argPart(modifier));
+    return this;
+  }
+
+  replaceBlockWith(target: Pos, slots: ItemSlot, item: Item, count?: number): this {
+    this.$set(litPart("item"), litPart("replace"), litPart("block"), argPart(target), argPart(slots), litPart("with"), argPart(item));
+    if (count !== undefined) this.$append(argPart(count));
+    return this;
+  }
+
+  replaceEntityFromBlock(target: Selector, slots: ItemSlot, source: Pos, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("replace"), litPart("entity"), argPart(target), argPart(slots), litPart("from"), litPart("block"), argPart(source), argPart(sourceSlots));
+    if (modifier !== undefined) this.$append(argPart(modifier));
+    return this;
+  }
+
+  replaceEntityFromEntity(target: Selector, slots: ItemSlot, source: Selector, sourceSlots: ItemSlot, modifier?: LootModifier): this {
+    this.$set(litPart("item"), litPart("replace"), litPart("entity"), argPart(target), argPart(slots), litPart("from"), litPart("entity"), argPart(source), argPart(sourceSlots));
+    if (modifier !== undefined) this.$append(argPart(modifier));
+    return this;
+  }
+
+  replaceEntityWith(target: Selector, slots: ItemSlot, item: Item, count?: number): this {
+    this.$set(litPart("item"), litPart("replace"), litPart("entity"), argPart(target), argPart(slots), litPart("with"), argPart(item));
     if (count !== undefined) this.$append(argPart(count));
     return this;
   }

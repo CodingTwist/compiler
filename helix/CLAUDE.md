@@ -201,6 +201,16 @@ rebuild the handler map per version.
   (moderation, save/publish, profiling, chat); not generated.
 - **`AUGMENT_ONLY`** = hand-written modules the barrel re-exports for their `ctx.<method>`
   augmentation but that register no handler.
+- **`EXTRA_RESOURCE_TYPES`** = resource types `values/resource.generated.ts` must keep even when
+  no *generated* command argument names their registry. `RESOURCE_TYPES` is collected while
+  rendering, so a registry used only by a `HAND_REFINED` file silently vanishes from the public
+  API on the next run - that is how `EntityType` (only `summon` names `minecraft:entity_type`,
+  and summon is hand-refined) disappeared once.
+- **`PARSERS` must be fed on every Minecraft update.** A parser it doesn't know falls back to
+  `string`, so a typed slot silently becomes a stringly one. 26.3 alone added five:
+  `context_int_provider` / `context_float_provider` (`/compute`), `feature`, `slot_source`
+  (the successor to `item_slot`/`item_slots`), and `swing_animation`. After a `versions.mjs sync`
+  to a newer version, diff the **whole** `gen:commands` re-run, not just the new command's file.
 - `commandHandlers` is built **lazily** via `createCommandHandlers()` (a function, not a top-level
   array) on purpose: sugar handlers import `codegen.ts`, which imports this barrel - eager
   construction would hit the import cycle before those classes initialise.

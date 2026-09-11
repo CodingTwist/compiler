@@ -44,6 +44,17 @@ export const EntityAnchor = {
 export type EntityAnchor = (typeof EntityAnchor)[keyof typeof EntityAnchor];
 
 /**
+ * `swing_animation` (26.3+) - which arm animation `/swing` plays. Named-constant
+ * namespace + union type (declaration merging), same stance as {@link Gamemode}.
+ */
+export const SwingAnimation = {
+  NONE: "none",
+  WHACK: "whack",
+  STAB: "stab",
+} as const;
+export type SwingAnimation = (typeof SwingAnimation)[keyof typeof SwingAnimation];
+
+/**
  * `execute on <relation>` - swap the executor for an entity related to it. Named-constant
  * namespace + union type (declaration merging), same stance as {@link Gamemode}.
  *

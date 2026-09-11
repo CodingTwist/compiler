@@ -2,11 +2,11 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { FunctionContext } from "../frontend/context";
 import { CommandBuilder, litPart, argPart } from "./base";
-import { FunctionId, Time } from "../values";
+import { FunctionId, Id, Time } from "../values";
 
 /** `schedule` */
 export class ScheduleBuilder extends CommandBuilder<TreeCommandNode> {
-  clear(function_: string): this {
+  clear(function_: Id): this {
     this.$set(litPart("schedule"), litPart("clear"), argPart(function_));
     return this;
   }

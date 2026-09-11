@@ -67,6 +67,7 @@ const HAND_REFINED_HANDLERS = ["data", "setblock"];
 const EXTRA_HANDLERS = [
   { module: "saycommand", cls: "SayCommand" },
   { module: "scoreboard", cls: "ScoreboardCommand" },
+  { module: "score-expr", cls: "ScoreExprCommand" },
   { module: "tellraw", cls: "TellrawCommand" },
   { module: "give", cls: "PlayerGiveCommand" },
   { module: "trigger", cls: "TriggerCommand" },
@@ -137,6 +138,16 @@ const RESOURCE_PARSERS = new Set([
 // Every named resource type used, collected during rendering -> emitted as
 // `export type X = ResourceId<"registry">` + factory in resource.generated.ts.
 const RESOURCE_TYPES = new Map(); // ident -> registry id
+
+// Resource types that must exist even when no GENERATED command argument names
+// their registry - because a HAND_REFINED / HAND_WRITTEN_ELSEWHERE file (or the
+// value layer) imports them. Without this they silently vanish from
+// resource.generated.ts on the next run: `summon` is hand-refined, so nothing
+// generated mentions minecraft:entity_type, and `EntityType` - used by
+// selector.type(), biome spawners and entity-nbt - disappears from the public API.
+const EXTRA_RESOURCE_TYPES = {
+  EntityType: "minecraft:entity_type",
+};
 
 // Pick the concept type for an argument, considering registry properties.
 const argType = (parser, properties) => {
@@ -216,6 +227,19 @@ const PARSERS = {
   "minecraft:team_color": V("TeamColor"),
   "minecraft:hex_color": V("HexColor"),
   "minecraft:uuid": V("Uuid"),
+
+  // 26.3 renamed/split several parsers. Without these they fall back to `string`
+  // and a typed slot silently becomes a stringly one (and `ConfiguredFeature`
+  // vanishes from resource.generated.ts, since nothing else names that registry).
+  "minecraft:feature": R("ConfiguredFeature", "minecraft:worldgen/configured_feature"),
+  "minecraft:slot_source": V("ItemSlot"), // successor to `item_slot`/`item_slots`
+  "minecraft:swing_animation": V("SwingAnimation"),
+
+  // 26.3+ `/compute`: a recursive expression tree, not a number. Named for the
+  // `context_*_provider` registry it comes from - the sibling `int_provider_type`
+  // registry (loot-function.ts's NumberProvider) is a DIFFERENT vocabulary.
+  "minecraft:context_int_provider": V("ContextIntProvider"),
+  "minecraft:context_float_provider": V("ContextFloatProvider"),
 };
 
 // Per-command argument overrides, keyed "<command>.<argName>". The command tree
@@ -550,6 +574,9 @@ ${HAND_REFINED_HANDLERS.map((c) => `    new ${pascal(c)}Handler(),`).join("\n")}
   // Those whose registry has enumerable vanilla contents (CONCEPT_REGISTRIES)
   // also gain typed member accessors (`Enchantment.SHARPNESS`), wired to the
   // generated `<X>_IDS` maps in versions/data/ids.ts.
+  for (const [ident, registry] of Object.entries(EXTRA_RESOURCE_TYPES)) {
+    if (!RESOURCE_TYPES.has(ident)) RESOURCE_TYPES.set(ident, registry);
+  }
   const resourceNames = [...RESOURCE_TYPES.keys()].sort();
   const concept = new Set(CONCEPT_REGISTRIES);
   const idsImports = resourceNames

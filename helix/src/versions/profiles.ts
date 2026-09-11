@@ -7,3 +7,4 @@ export const v1_20_4 = loadProfile("1_20_4.json");
 export const v1_21_4 = loadProfile("1_21_4.json");
 export const v26_2 = loadProfile("26_2.json");
 export const v26_1_2 = loadProfile("26_1_2.json");
+export const v26_3_rc_2 = loadProfile("26_3_rc_2.json");

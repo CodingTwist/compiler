@@ -1,5 +1,8 @@
 import { Score } from "./score";
 import type { FunctionContext } from "../context";
+import { emitScoreExpr } from "../../commands/score-expr";
+import { scoreOpNode } from "../../commands/scoreboard";
+import { ContextInt as i } from "../../values/context-provider";
 
 /**
  * A **fixed-point scalar**: one integer {@link Score} that stands for a fractional
@@ -59,12 +62,18 @@ export class Fixed {
   }
 
   /**
-   * Negate in place (`*= -1`). Scoreboards have no unary minus, so this multiplies
-   * by a caller-owned `-1` slot - clearer at the call site than spelling out the
-   * `times(negOne)` every time.
+   * Negate in place (`*= -1`). Pre-26.3 scoreboards have no unary minus, so this
+   * multiplies by a caller-owned `-1` slot; on 26.3+ `/compute` negates directly
+   * and `negOne` is never read - which is why it is optional. Omit it only in a
+   * pack that targets 26.3+.
    */
-  negate(negOne: Score, ctx?: FunctionContext): this {
-    this.score.times(negOne, ctx);
+  negate(negOne?: Score, ctx?: FunctionContext): this {
+    emitScoreExpr(
+      this.score,
+      i.mul(i.score(this.score), -1),
+      () => [scoreOpNode(this.score, "*=", needed(negOne, "negate() needs a `-1` slot on a pre-26.3 target."))],
+      ctx,
+    );
     return this;
   }
 
@@ -74,7 +83,15 @@ export class Fixed {
    * other ; /= scale`. (Needs `scaleScore`.)
    */
   mul(other: Fixed, ctx?: FunctionContext): this {
-    this.score.times(other.score, ctx).divide(this.requireScale(), ctx);
+    emitScoreExpr(
+      this.score,
+      i.floorDiv(i.mul(i.score(this.score), i.score(other.score)), this.scale),
+      () => [
+        scoreOpNode(this.score, "*=", other.score),
+        scoreOpNode(this.score, "/=", this.requireScale()),
+      ],
+      ctx,
+    );
     return this;
   }
 
@@ -87,7 +104,15 @@ export class Fixed {
    * divisor`. `divisor` is any `Score`/`Fixed`. (Needs `scaleScore`.)
    */
   divide(divisor: Fixed | Score, ctx?: FunctionContext): this {
-    this.score.times(this.requireScale(), ctx).divide(this.operand(divisor), ctx);
+    emitScoreExpr(
+      this.score,
+      i.floorDiv(i.mul(i.score(this.score), this.scale), i.score(this.operand(divisor))),
+      () => [
+        scoreOpNode(this.score, "*=", this.requireScale()),
+        scoreOpNode(this.score, "/=", this.operand(divisor)),
+      ],
+      ctx,
+    );
     return this;
   }
 
@@ -109,7 +134,28 @@ export class Fixed {
 
   /** Clamp the underlying score into `[lo, hi]` (`< hi` then `> lo`). */
   clamp(lo: Score, hi: Score, ctx?: FunctionContext): this {
-    this.score.min(hi, ctx).max(lo, ctx);
+    clampScore(this.score, lo, hi, ctx);
     return this;
   }
+}
+
+/** `s = max(min(s, hi), lo)` - one `/compute` on 26.3+, the `< hi ; > lo` pair below it. */
+export function clampScore(
+  s: Score,
+  lo: Score,
+  hi: Score,
+  ctx?: FunctionContext,
+): void {
+  emitScoreExpr(
+    s,
+    i.max(i.min(i.score(s), i.score(hi)), i.score(lo)),
+    () => [scoreOpNode(s, "<", hi), scoreOpNode(s, ">", lo)],
+    ctx,
+  );
+}
+
+/** Demand a value the pre-26.3 lowering needs, at the point that lowering is chosen. */
+function needed<T>(value: T | undefined, message: string): T {
+  if (value === undefined) throw new Error(`Fixed: ${message}`);
+  return value;
 }
