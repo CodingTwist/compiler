@@ -148,3 +148,34 @@ describe("runtime ballistics", () => {
     }
   });
 });
+
+it("shellFunction lifts the summon into its own one-line function", () => {
+  const dp = new Datapack("art", v1_21_4);
+  dp.ballisticRuntime("throw", { ticks: 20, shellFunction: "shell/throw" });
+  const files = new Map(buildDatapack(dp));
+  const shell = files.get("data/art/function/shell/throw.mcfunction")!;
+  expect(shell.trim().split("\n")).toHaveLength(1);
+  expect(shell).toContain("summon minecraft:tnt");
+  const shot = files.get("data/art/function/throw.mcfunction")!;
+  expect(shot).toContain("execute at @s run function art:shell/throw");
+  expect(shot).not.toContain("summon");
+  expect(() => dp.ballisticRuntime("throw2", { shellFunction: "shell/throw" })).toThrow(
+    /already exists/,
+  );
+});
+
+it("a shellFunction callback places the shell and is given the shot's spec", () => {
+  const dp = new Datapack("art", v1_21_4);
+  let seen: unknown;
+  dp.ballisticRuntime("throw", {
+    ticks: 20,
+    shellFunction: (ctx, spec) => {
+      seen = spec;
+      ctx.tag().add(Selector.allEntities().tag("ammo").limit(1), spec.tags![0]);
+    },
+  });
+  expect(seen).toEqual({ motion: [0, 0, 0], fuse: 20, tags: ["art.shot"] });
+  const shot = new Map(buildDatapack(dp)).get("data/art/function/throw.mcfunction")!;
+  expect(shot).not.toContain("summon");
+  expect(shot).toContain("execute at @s run tag @e[tag=ammo,limit=1] add art.shot");
+});

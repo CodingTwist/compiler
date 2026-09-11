@@ -13,6 +13,12 @@ import type { Vec3 } from "helix";
  *   move(SELF, deltaMovement);                setDeltaMovement(delta.scale(inertia));
  *   setDeltaMovement(delta.scale(0.98));      if (!isNoGravity())
  *   if (onGround()) delta.multiply(.7,-.5,.7)   setDeltaMovement(delta.add(0,-gravity,0));
+ *
+ * LivingEntity.travel():                    // mobs, players, armor stands
+ *   vec = handleRelativeFrictionAndCalculateMovement(...)   // this is the move
+ *   double y = vec.y - getGravity();                        // 0.08
+ *   float f1 = onGround() ? friction * 0.91F : 0.91F;
+ *   setDeltaMovement(vec.x * f1, y * 0.98, vec.z * f1);
  * ```
  *
  * So **TNT applies gravity *before* it moves** (the very first tick of flight already
@@ -20,19 +26,26 @@ import type { Vec3 } from "helix";
  * the raw, undragged launch velocity). Arrows and throwables do the opposite - move,
  * drag, *then* gravity - which is why the same launch vector produces a different curve
  * for a snowball than for TNT. Getting that ordering backwards is a systematic ~1 tick
- * of gravity, roughly half a block over a long shot.
+ * of gravity, roughly half a block over a long shot. A living entity is a third order
+ * again: move, gravity, *then* drag, so its gravity step is itself dragged. All three
+ * are spelled out by {@link TickOrder}.
  *
  * Two further facts that shape the whole solver:
  *
- * - **Drag is isotropic.** `delta.scale(0.98)` multiplies *all three* axes, y included.
- *   Vertical velocity is dragged exactly like horizontal velocity, which is why TNT
- *   reaches a terminal state rather than falling forever: the stored `deltaMovement.y`
- *   converges on `-g·d/(1-d)` = `-1.96`, and since gravity is applied *before* the move,
- *   the observed fall rate settles at exactly `-2.0` blocks per tick.
+ * - **Drag is per-axis constant.** For the projectile families it is *isotropic* -
+ *   `delta.scale(0.98)` multiplies all three axes, y included - which is why TNT reaches
+ *   a terminal state rather than falling forever: the stored `deltaMovement.y` converges
+ *   on `-g·d/(1-d)` = `-1.96`, and since gravity is applied *before* the move, the
+ *   observed fall rate settles at exactly `-2.0` blocks per tick. A living entity drags
+ *   **0.91 horizontally against 0.98 vertically** ({@link ProjectileProfile.dragY}), so
+ *   its two axes decay at different rates - it still terminates, at the familiar
+ *   `-0.08·0.98/0.02` = `-3.92` blocks per tick.
  * - **Gravity is a constant additive step**, independent of velocity.
  *
  * Together those two make the tick map **affine in the launch velocity** - the property
- * {@link trajectoryBasis} exploits to invert the trajectory exactly. See `solve.ts`.
+ * {@link trajectoryBasis} exploits to invert the trajectory exactly. Anisotropic drag
+ * costs nothing there: it only means the horizontal and vertical responses are two
+ * different scalars (`A` and `Ay`) instead of one. See `solve.ts`.
  *
  * ## Coordinate system and angle conventions
  *
@@ -52,18 +65,30 @@ import type { Vec3 } from "helix";
  * that vector: useful to aim a display entity, a particle, or a bow-like projectile, and
  * exactly what you would feed `/summon` for an entity that *does* read rotation.
  */
+export type TickOrder =
+  /** `PrimedTnt`, `FallingBlockEntity`. */
+  | "gravity-move-drag"
+  /** `AbstractArrow`, `ThrowableProjectile`. */
+  | "move-drag-gravity"
+  /** `LivingEntity` - the gravity step is applied to the post-move delta, then dragged. */
+  | "move-gravity-drag";
+
 export interface ProjectileProfile {
   /** The entity id to `/summon`. */
   readonly id: string;
   /** Blocks/tick² subtracted from `vy` once per tick (`Entity.getDefaultGravity()`). */
   readonly gravity: number;
-  /** Per-tick velocity multiplier applied to **all three axes** (vanilla calls it inertia). */
+  /** Per-tick **horizontal** velocity multiplier (vanilla calls it inertia or friction). */
   readonly drag: number;
   /**
-   * `true` for the TNT/falling-block family (gravity → move → drag), `false` for the
-   * arrow/throwable family (move → drag → gravity). Load-bearing; see the file docstring.
+   * Per-tick **vertical** multiplier, when it differs from {@link drag}. Omit for the
+   * projectile families, whose `delta.scale(inertia)` is isotropic; set it for a living
+   * entity, which drags y by `0.98` while x/z get `0.91`.
    */
-  readonly gravityBeforeMove: boolean;
+  readonly dragY?: number;
+  /** Where the gravity step falls relative to the move and the drag. Load-bearing; see
+   * the file docstring. */
+  readonly order: TickOrder;
   /** `fuse` ticks a `/summon`ed one starts with, where the entity has a fuse at all. */
   readonly defaultFuse?: number;
 }
@@ -81,20 +106,32 @@ export interface ProjectileProfile {
  */
 export const PROJECTILES = {
   /** `PrimedTnt` - the default. Gravity **before** the move, 2 % drag on every axis. */
-  tnt: { id: "minecraft:tnt", gravity: 0.04, drag: 0.98, gravityBeforeMove: true, defaultFuse: 80 },
+  tnt: { id: "minecraft:tnt", gravity: 0.04, drag: 0.98, order: "gravity-move-drag", defaultFuse: 80 },
   /** `FallingBlockEntity` - identical integrator to TNT, no fuse. */
-  falling_block: { id: "minecraft:falling_block", gravity: 0.04, drag: 0.98, gravityBeforeMove: true },
+  falling_block: { id: "minecraft:falling_block", gravity: 0.04, drag: 0.98, order: "gravity-move-drag" },
   /** `Arrow` - 1 % drag, gravity **after** the move. Ignores the `inGround` freeze. */
-  arrow: { id: "minecraft:arrow", gravity: 0.05, drag: 0.99, gravityBeforeMove: false },
-  spectral_arrow: { id: "minecraft:spectral_arrow", gravity: 0.05, drag: 0.99, gravityBeforeMove: false },
-  trident: { id: "minecraft:trident", gravity: 0.05, drag: 0.99, gravityBeforeMove: false },
+  arrow: { id: "minecraft:arrow", gravity: 0.05, drag: 0.99, order: "move-drag-gravity" },
+  spectral_arrow: { id: "minecraft:spectral_arrow", gravity: 0.05, drag: 0.99, order: "move-drag-gravity" },
+  trident: { id: "minecraft:trident", gravity: 0.05, drag: 0.99, order: "move-drag-gravity" },
   /** `ThrowableItemProjectile` family - lighter gravity than an arrow. */
-  snowball: { id: "minecraft:snowball", gravity: 0.03, drag: 0.99, gravityBeforeMove: false },
-  egg: { id: "minecraft:egg", gravity: 0.03, drag: 0.99, gravityBeforeMove: false },
-  ender_pearl: { id: "minecraft:ender_pearl", gravity: 0.03, drag: 0.99, gravityBeforeMove: false },
-  splash_potion: { id: "minecraft:splash_potion", gravity: 0.05, drag: 0.99, gravityBeforeMove: false },
-  experience_bottle: { id: "minecraft:experience_bottle", gravity: 0.07, drag: 0.99, gravityBeforeMove: false },
-  llama_spit: { id: "minecraft:llama_spit", gravity: 0.06, drag: 0.99, gravityBeforeMove: false },
+  snowball: { id: "minecraft:snowball", gravity: 0.03, drag: 0.99, order: "move-drag-gravity" },
+  egg: { id: "minecraft:egg", gravity: 0.03, drag: 0.99, order: "move-drag-gravity" },
+  ender_pearl: { id: "minecraft:ender_pearl", gravity: 0.03, drag: 0.99, order: "move-drag-gravity" },
+  splash_potion: { id: "minecraft:splash_potion", gravity: 0.05, drag: 0.99, order: "move-drag-gravity" },
+  experience_bottle: { id: "minecraft:experience_bottle", gravity: 0.07, drag: 0.99, order: "move-drag-gravity" },
+  llama_spit: { id: "minecraft:llama_spit", gravity: 0.06, drag: 0.99, order: "move-drag-gravity" },
+  /**
+   * `LivingEntity` - **every mob, and the armor stand**. Heavier gravity than anything
+   * above, gravity between the move and the drag, and the only anisotropic drag in the
+   * table (`0.91` horizontal, `0.98` vertical). `id` is nominal: what actually gets
+   * summoned is the shell, and every living entity shares these constants.
+   *
+   * The one thing this model cannot see is **AI**. A mob with a path steers in mid-air
+   * (`travel()`'s input term, ~0.02/tick of air control) and lands with a velocity of its
+   * own choosing, so it drifts from the solved arc by a little. A `no_ai: true` mob, or
+   * an armor stand, follows this exactly.
+   */
+  living: { id: "minecraft:armor_stand", gravity: 0.08, drag: 0.91, dragY: 0.98, order: "move-gravity-drag" },
 } as const satisfies Record<string, ProjectileProfile>;
 
 /**
@@ -121,14 +158,15 @@ export interface Motion {
  * with. See the accuracy notes in `solve.ts`.
  */
 export function stepOnce(m: Motion, profile: ProjectileProfile, gravity = profile.gravity): void {
-  if (profile.gravityBeforeMove) m.v[1] -= gravity;
+  if (profile.order === "gravity-move-drag") m.v[1] -= gravity;
   m.p[0] += m.v[0];
   m.p[1] += m.v[1];
   m.p[2] += m.v[2];
+  if (profile.order === "move-gravity-drag") m.v[1] -= gravity;
   m.v[0] *= profile.drag;
-  m.v[1] *= profile.drag;
+  m.v[1] *= profile.dragY ?? profile.drag;
   m.v[2] *= profile.drag;
-  if (!profile.gravityBeforeMove) m.v[1] -= gravity;
+  if (profile.order === "move-drag-gravity") m.v[1] -= gravity;
 }
 
 /** Integrate `ticks` ticks from a launch, returning position at tick `0…ticks` inclusive. */
@@ -151,39 +189,46 @@ export function simulate(from: Vec3, velocity: Vec3, profile: ProjectileProfile,
  * gravity term:
  *
  * ```
- *   p(n) = p₀ + v₀·A(n) + ĵ·G(n)
+ *   p(n) = p₀ + (v₀ ∘ [A(n), Ay(n), A(n)]) + ĵ·G(n)
  * ```
  *
- * where `A(n)` is a **scalar** (the same for all three axes, since drag is isotropic) and
- * `G(n)` is the purely vertical drop a *dropped* projectile accumulates. Concretely
- * `A(n) = Σ dᵏ`, but we don't hard-code that series: `A` is measured by running
- * {@link stepOnce} with unit velocity and gravity disabled, and `G` by running it from
- * rest with gravity enabled. That keeps the basis honest by construction - if the tick
+ * where `A(n)` is the **horizontal** response, `Ay(n)` the vertical one (identical to `A`
+ * whenever drag is isotropic, which is every profile but `living`), and `G(n)` is the
+ * purely vertical drop a *dropped* projectile accumulates. Concretely `A(n) = Σ dᵏ`, but
+ * we don't hard-code that series: `A`/`Ay` are measured by running {@link stepOnce} with
+ * unit velocity and gravity disabled, and `G` by running it from rest with gravity
+ * enabled. That keeps the basis honest by construction - if the tick
  * order or a constant changes, the basis changes with it, and the test asserts the
  * decomposition reproduces a directly-simulated trajectory to floating-point precision.
  *
  * Inverting for a launch velocity is then division, not search:
- * `v₀ = (target − p₀ − ĵ·G(n)) / A(n)`.
+ * `v_h = R / A(n)`, `v_y = (Δy − G(n)) / Ay(n)`.
  */
 export interface TrajectoryBasis {
-  /** `A[n]`: blocks travelled per 1 block/tick of launch velocity, after `n` ticks. */
+  /** `A[n]`: blocks travelled **horizontally** per 1 block/tick of launch velocity. */
   readonly A: readonly number[];
+  /** `Ay[n]`: the same for the vertical axis - equal to `A` unless the drag is anisotropic. */
+  readonly Ay: readonly number[];
   /** `G[n]`: the vertical drop (negative) gravity alone contributes after `n` ticks. */
   readonly G: readonly number[];
 }
 
 export function trajectoryBasis(profile: ProjectileProfile, ticks: number): TrajectoryBasis {
   const unit: Motion = { p: [0, 0, 0], v: [1, 0, 0] };
+  const unitY: Motion = { p: [0, 0, 0], v: [0, 1, 0] };
   const dropped: Motion = { p: [0, 0, 0], v: [0, 0, 0] };
   const A: number[] = [0];
+  const Ay: number[] = [0];
   const G: number[] = [0];
   for (let n = 0; n < ticks; n++) {
-    stepOnce(unit, profile, 0); // velocity response: gravity off
+    stepOnce(unit, profile, 0); // horizontal velocity response: gravity off
+    stepOnce(unitY, profile, 0); // vertical velocity response: gravity off
     stepOnce(dropped, profile); // gravity response: launched from rest
     A.push(unit.p[0]);
+    Ay.push(unitY.p[1]);
     G.push(dropped.p[1]);
   }
-  return { A, G };
+  return { A, Ay, G };
 }
 
 /**

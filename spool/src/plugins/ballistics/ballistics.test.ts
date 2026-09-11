@@ -32,6 +32,19 @@ describe("physics", () => {
     expect(path[1199][1] - path[1198][1]).toBeCloseTo(-2.0, 6);
   });
 
+  it("reaches a living entity's terminal fall rate: -3.92 blocks/tick", () => {
+    // 0.08 gravity dragged by 0.98, and applied *before* the drag, so the stored velocity
+    // and the observed fall rate are the same number - unlike TNT's.
+    const path = simulate([0, 0, 0], [0, 0, 0], PROJECTILES.living, 1200);
+    expect(path[1199][1] - path[1198][1]).toBeCloseTo(-3.92, 6);
+  });
+
+  it("drags a living entity's horizontal axis harder than its vertical one", () => {
+    // 0.91 against 0.98: after one tick the x velocity has lost 9%, not 2%.
+    const path = simulate([0, 0, 0], [1, 0, 0], PROJECTILES.living, 2);
+    expect(path[2][0] - path[1][0]).toBeCloseTo(0.91, 12);
+  });
+
   it("basis decomposition reproduces a directly simulated trajectory", () => {
     const { A, G } = trajectoryBasis(TNT, 60);
     const v: [number, number, number] = [0.8, 1.3, -0.45];
@@ -39,6 +52,18 @@ describe("physics", () => {
     for (let n = 0; n <= 60; n++) {
       expect(10 + v[0] * A[n]).toBeCloseTo(path[n][0], 9);
       expect(70 + v[1] * A[n] + G[n]).toBeCloseTo(path[n][1], 9);
+      expect(-5 + v[2] * A[n]).toBeCloseTo(path[n][2], 9);
+    }
+  });
+
+  it("splits the basis per axis when the drag is anisotropic", () => {
+    const { A, Ay, G } = trajectoryBasis(PROJECTILES.living, 60);
+    expect(Ay[30]).not.toBeCloseTo(A[30], 3);
+    const v: [number, number, number] = [0.8, 1.3, -0.45];
+    const path = simulate([10, 70, -5], v, PROJECTILES.living, 60);
+    for (let n = 0; n <= 60; n++) {
+      expect(10 + v[0] * A[n]).toBeCloseTo(path[n][0], 9);
+      expect(70 + v[1] * Ay[n] + G[n]).toBeCloseTo(path[n][1], 9);
       expect(-5 + v[2] * A[n]).toBeCloseTo(path[n][2], 9);
     }
   });
@@ -123,6 +148,17 @@ describe("solveLaunch", () => {
     // Same shot, different drag and gravity, so a different launch vector is required.
     expect(arrow.speed).not.toBeCloseTo(tnt.speed, 3);
     expect(arrow.error).toBeLessThan(1e-9);
+  });
+
+  it("solves a living entity exactly, anisotropic drag and all", () => {
+    const mob = solveLaunch([0, 64, 0], [40, 70, -12], { projectile: PROJECTILES.living });
+    // Verified against the real integrator, so this is the whole claim: a mob handed this
+    // Motion arrives on the target rather than near it.
+    expect(mob.error).toBeLessThan(1e-9);
+    expect(mob.speed).not.toBeCloseTo(
+      solveLaunch([0, 64, 0], [40, 70, -12], { projectile: PROJECTILES.tnt }).speed,
+      3,
+    );
   });
 });
 

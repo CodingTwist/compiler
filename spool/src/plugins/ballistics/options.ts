@@ -1,6 +1,7 @@
 import { Selector } from "helix";
+import type { FunctionContext, Score } from "helix";
 import { PROJECTILES } from "./physics";
-import type { ShellOptions } from "./shell";
+import type { ShellOptions, ShellSpec } from "./shell";
 
 /**
  * **The runtime half of `ballistics`: aim at a target that moves.**
@@ -53,8 +54,27 @@ export interface RuntimeShotOptions extends ShellOptions {
    * target point. Off by default because it costs a per-tick tracker - see
    * `tracking.ts` for what that is and how enrolment keeps it cheap. Players only, so a
    * non-player target simply gets no lead (its velocity scores stay 0).
+   *
+   * Pass a **{@link Score}** instead of `true` to make it a runtime switch: the lead is
+   * multiplied by it, so `0` fires straight at where the target stands and `1` leads.
+   * (Anything else scales the lead - `2` double-leads. The tracker still runs.)
    */
-  readonly lead?: boolean;
+  readonly lead?: boolean | Score;
+  /**
+   * Where the shell comes from, instead of an inlined `/summon`.
+   *
+   * A **string** names a function to emit the summon into and call: the shipped pack then
+   * has one file per shot holding one editable line, which is the whole editing surface
+   * for someone running the built pack without the compiler. Give each shot its own name -
+   * the fuse baked into the shell is that shot's flight time - reusing one throws.
+   *
+   * A **callback** hands the decision back entirely: it runs at the launch position, is
+   * given the same {@link ShellSpec} a `shell` factory gets, and must leave an entity
+   * there tagged with `spec.tags`. That is the hook for a macro-driven shell
+   * (`ctx.callWith(fn, ctx.storage(...).at(name))`), or for launching an entity that is
+   * already in the world instead of summoning one.
+   */
+  readonly shellFunction?: string | ((ctx: FunctionContext, spec: ShellSpec) => void);
   // What to throw - `projectile` (the maths) and `shell` (the NBT) - comes from
   // `ShellOptions`, shared with the build-time half so a shell is described the same way
   // whichever solver fires it.

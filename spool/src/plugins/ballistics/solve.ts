@@ -22,16 +22,16 @@ import {
  * `physics.ts`:
  *
  * ```
- *   p(t) = p₀ + v₀·A(t) + ĵ·G(t)
+ *   p(t) = p₀ + (v₀ ∘ [A(t), Ay(t), A(t)]) + ĵ·G(t)
  * ```
  *
- * `A` and `G` are fixed once the projectile type is chosen - they don't depend on the
+ * `A`, `Ay` and `G` are fixed once the projectile type is chosen - they don't depend on the
  * launch at all. So **flight time is the only free parameter**. Pick a time of flight `t`
  * and the required launch velocity falls out by division, exactly:
  *
  * ```
  *   horizontal:  v_h = R / A(t)                 R = horizontal distance to target
- *   vertical:    v_y = (Δy − G(t)) / A(t)
+ *   vertical:    v_y = (Δy − G(t)) / Ay(t)      Ay = A unless the drag is anisotropic
  * ```
  *
  * Every `t` for which `A(t) > 0` yields a launch that hits the target *dead on*. That
@@ -167,18 +167,19 @@ export function solveLaunch(from: Vec3, to: Vec3, opts: LaunchOptions = {}): Lau
   const [ux, uz] = range < 1e-9 ? [0, 0] : [dx / range, dz / range];
 
   // The basis only needs building once - it is a property of the projectile, not the shot.
-  const { A, G } = trajectoryBasis(profile, maxTicks);
+  const { A, Ay, G } = trajectoryBasis(profile, maxTicks);
 
   let best: { t: number; v: Vec3; speed: number; score: number } | undefined;
   let closestSpeed = Infinity; // for the diagnostic when nothing fits the speed budget
   for (let i = minTicks * samples; i <= maxTicks * samples; i++) {
     const t = i / samples;
     const a = sampleAt(A, t);
-    if (a <= 0) continue;
+    const ay = sampleAt(Ay, t);
+    if (a <= 0 || ay <= 0) continue;
 
-    // The exact inverse: horizontal displacement is v_h·A, vertical is v_y·A + G.
+    // The exact inverse: horizontal displacement is v_h·A, vertical is v_y·Ay + G.
     const vh = range / a;
-    const vy = (dy - sampleAt(G, t)) / a;
+    const vy = (dy - sampleAt(G, t)) / ay;
     const v: Vec3 = [vh * ux, vy, vh * uz];
     const speed = Math.hypot(vh, vy);
 

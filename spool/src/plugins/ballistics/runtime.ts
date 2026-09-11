@@ -7,7 +7,7 @@ import {
   ScoreVec3,
   Selector,
 } from "helix";
-import type { FunctionRef, Score } from "helix";
+import type { FunctionContext, FunctionRef, Score } from "helix";
 import { shellFuse, summonShell } from "./shell";
 import { MOTION_AXIS_LIMIT, trajectoryBasis } from "./physics";
 import { OBJECTIVE, POS_SCALE, V_SCALE } from "./constants";
@@ -17,7 +17,8 @@ import { targetVelocity } from "./tracking";
 export type { RuntimeShotOptions } from "./options";
 
 /**
- * Emit the in-game solver: `v = (target - launcher - ĵ·G(n)) / A(n)` as scoreboard
+ * Emit the in-game solver: `v_h = (target - launcher)/A(n)`, `v_y = (Δy - G(n))/Ay(n)`
+ * as scoreboard
  * arithmetic, then a `/summon` whose `Motion` is stored from it. See `options.ts` for
  * the shape of the shot and what it trades against the compile-time solver.
  */
@@ -29,13 +30,17 @@ export function defineRuntimeShot(
   const { from, to, profile, ticks } = resolveShotOptions(opts);
 
   // The same basis the compile-time solver inverts - sampled at the one chosen tick.
-  const { A, G } = trajectoryBasis(profile, ticks);
+  const { A, Ay, G } = trajectoryBasis(profile, ticks);
   const aFixed = Math.round(A[ticks] * POS_SCALE);
+  const ayFixed = Math.round(Ay[ticks] * POS_SCALE);
   const gFixed = Math.round(G[ticks] * POS_SCALE);
-  if (aFixed <= 0)
+  if (aFixed <= 0 || ayFixed <= 0)
     throw new Error(
       `ballistics: A(${ticks}) is not positive - no shot exists.`,
     );
+  // Isotropic drag (everything but a living entity) makes the two responses the same
+  // number, so the emitted function keeps its single divisor and its single constant.
+  const anisotropic = ayFixed !== aFixed;
 
   const obj = dp.objective(OBJECTIVE);
   const slot = (holder: string): Score => obj.score(ScoreTarget(holder));
@@ -44,6 +49,7 @@ export function defineRuntimeShot(
   const p = ScoreVec3.from((a) => slot(`#p${a}`));
   const kScale = slot("#v_scale");
   const kA = slot("#a");
+  const kAy = slot("#ay");
   const kTicks = slot("#ticks");
 
   // Velocity objectives read against the *target* - one row per tracked player.
@@ -57,12 +63,39 @@ export function defineRuntimeShot(
   // leak its filters into every clause it appears in.
   const shot = () => Selector.allEntities().tag(shotTag).limit(1);
 
+  const spec = { motion: [0, 0, 0], fuse, tags: [shotTag] } as const;
+  // `motion` is zeroed rather than omitted: `store … entity Motion[i]` below needs the
+  // list to already exist.
+  let place = (c: FunctionContext) =>
+    summonShell(c, Pos.here(), { shell: opts.shell, ...spec });
+
+  // Lifted out of the solver so a pack can ship an editable one-line shell file, or decide
+  // for itself what appears - see `shellFunction`. The fuse in it is this shot's flight
+  // time, so a named file is this shot's alone.
+  if (typeof opts.shellFunction === "function") {
+    const build = opts.shellFunction;
+    place = (c) => build(c, spec);
+  } else if (opts.shellFunction) {
+    if (dp.functionRef(opts.shellFunction))
+      throw new Error(
+        `ballistics: shellFunction "${opts.shellFunction}" already exists - ` +
+          `each shot needs its own (the fuse baked into it is that shot's flight time).`,
+      );
+    const shellFn = dp.createFunction(opts.shellFunction);
+    shellFn.build(place);
+    place = (c) => c.call(shellFn);
+  }
+
   const fn = dp.createFunction(name);
   fn.build((ctx) => {
     kScale.set(V_SCALE, ctx);
     kA.set(aFixed, ctx);
+    if (anisotropic) kAy.set(ayFixed, ctx);
     if (tracker) {
       kTicks.set(ticks, ctx);
+      // The lead is `vel x kTicks`, so scaling the tick constant by the caller's score
+      // is the whole runtime switch - 0 there means no lead, with no second arc baked.
+      if (typeof opts.lead === "object") kTicks.times(opts.lead, ctx);
       // Shooting at someone is what enrols them, so the tick loop only pays for players
       // actually under fire. `at from` first so `to` resolves from the thrower.
       // ponytail: the opening shell of an engagement is therefore unled - the sample is
@@ -99,7 +132,12 @@ export function defineRuntimeShot(
     else if (gFixed < 0) v.y.add(-gFixed, ctx);
     // d(centi) * 10000 / A(centi) = v * 10000. Multiply first: the divide is integer,
     // and dividing a centi-block displacement by A directly would floor most of it away.
-    v.scale(kScale, ctx).divide(kA, ctx);
+    v.scale(kScale, ctx);
+    if (anisotropic) {
+      v.x.divide(kA, ctx);
+      v.y.divide(kAy, ctx);
+      v.z.divide(kA, ctx);
+    } else v.divide(kA, ctx);
 
     // Vanilla *zeroes* a Motion axis past +/-10 rather than clamping it, which would drop
     // the shot on the thrower's head. Bail out instead; `0` tells the caller it held fire.
@@ -114,16 +152,7 @@ export function defineRuntimeShot(
     ctx
       .execute()
       .at(from)
-      .run((at) =>
-        // `motion` is zeroed here rather than omitted: `store … entity Motion[i]` below
-        // needs the list to already exist.
-        summonShell(at, Pos.here(), {
-          shell: opts.shell,
-          motion: [0, 0, 0],
-          fuse,
-          tags: [shotTag],
-        }),
-      );
+      .run(place);
     v.storeEntity(shot(), Path.Entity.Motion, "double", 1 / V_SCALE, { ctx });
     ctx.tag().remove(shot(), shotTag);
     ctx.return_(1);
