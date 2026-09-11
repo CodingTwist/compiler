@@ -1,4 +1,4 @@
-import { Pos, NbtPath, Id, Range } from "helix";
+import { Pos, NbtPath, Id, Range, math } from "helix";
 import type { FunctionContext } from "helix";
 import type { PlayerMotionInternals } from "./context";
 
@@ -68,38 +68,36 @@ export function defineMath(I: PlayerMotionInternals): void {
         .storeResultScore(dest)
         .run((b) => b.storage(temp).get(path, 100000));
 
-    dummyScore("#_x").assign(workX);
-    dummyScore("#_y").assign(workY);
-    dummyScore("#_z").assign(workZ);
+    // The world vector, saved off because the work slots double as each
+    // reference vector's x component below (one slot fewer than reading them
+    // into three more).
+    const g = { x: dummyScore("#_x"), y: dummyScore("#_y"), z: dummyScore("#_z") };
+    g.x.assign(workX);
+    g.y.assign(workY);
+    g.z.assign(workZ);
 
-    // Only the non-zero components: i has no y, j no x, k no x-of-j etc.
+    // Only the components that can be non-zero: i (left) is horizontal, so no y.
+    const iZ = dummyScore("#vec_i.z");
+    const jY = dummyScore("#vec_j.y");
+    const jZ = dummyScore("#vec_j.z");
+    const kY = dummyScore("#vec_k.y");
+    const kZ = dummyScore("#vec_k.z");
     getInto(workX, VEC.i.index(0));
-    getInto(dummyScore("#vec_i.z"), VEC.i.index(2));
+    getInto(iZ, VEC.i.index(2));
     getInto(workY, VEC.j.index(0));
-    getInto(dummyScore("#vec_j.y"), VEC.j.index(1));
-    getInto(dummyScore("#vec_j.z"), VEC.j.index(2));
+    getInto(jY, VEC.j.index(1));
+    getInto(jZ, VEC.j.index(2));
     getInto(workZ, VEC.k.index(0));
-    getInto(dummyScore("#vec_k.y"), VEC.k.index(1));
-    getInto(dummyScore("#vec_k.z"), VEC.k.index(2));
+    getInto(kY, VEC.k.index(1));
+    getInto(kZ, VEC.k.index(2));
 
-    workX.times(dummyScore("#_x"));
-    dummyScore("#vec_i.z").times(dummyScore("#_z"));
-    workY.times(dummyScore("#_x"));
-    dummyScore("#vec_j.y").times(dummyScore("#_y"));
-    dummyScore("#vec_j.z").times(dummyScore("#_z"));
-    workZ.times(dummyScore("#_x"));
-    dummyScore("#vec_k.y").times(dummyScore("#_y"));
-    dummyScore("#vec_k.z").times(dummyScore("#_z"));
-
-    workX.plus(dummyScore("#vec_i.z"));
-    workY.plus(dummyScore("#vec_j.y"));
-    workY.plus(dummyScore("#vec_j.z"));
-    workZ.plus(dummyScore("#vec_k.y"));
-    workZ.plus(dummyScore("#vec_k.z"));
-
-    workX.divide(constant("#constant.100000"));
-    workY.divide(constant("#constant.100000"));
-    workZ.divide(constant("#constant.100000"));
+    // local = (g·i, g·j, g·k) / 100000 - the projection, written as itself.
+    // `#constant.100000` rather than the literal so the scoreboard backend gets
+    // a score operand instead of materialising the number three times.
+    const S = constant("#constant.100000");
+    math`(${workX} * ${g.x} + ${iZ} * ${g.z}) / ${S}`.into(workX);
+    math`(${workY} * ${g.x} + ${jY} * ${g.y} + ${jZ} * ${g.z}) / ${S}`.into(workY);
+    math`(${workZ} * ${g.x} + ${kY} * ${g.y} + ${kZ} * ${g.z}) / ${S}`.into(workZ);
   });
 }
 

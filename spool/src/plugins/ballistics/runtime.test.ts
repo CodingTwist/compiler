@@ -124,12 +124,14 @@ describe("runtime ballistics", () => {
     expect(lines).toContain(
       "scoreboard players operation @s ballistics.vx -= @s ballistics.px",
     );
-    // Target point is displaced by velocity x flight time before the solve.
+    // Target point is displaced by velocity x flight time inside the solve.
     expect(lines).toContain("scoreboard players set #ticks ballistics 30");
     expect(lines).toContain(
-      "execute at @s run scoreboard players operation #px ballistics = @p ballistics.vx",
+      "execute at @s run scoreboard players operation #lx ballistics = @p ballistics.vx",
     );
-    expect(lines).toContain("scoreboard players operation #px ballistics *= #ticks ballistics");
+    expect(lines).toContain("scoreboard players operation #_t0 ballistics = #lx ballistics");
+    expect(lines).toContain("scoreboard players operation #_t0 ballistics *= #ticks ballistics");
+    expect(lines).toContain("scoreboard players operation #vx ballistics += #_t0 ballistics");
   });
 
   it("the integer arithmetic still lands the shot", () => {

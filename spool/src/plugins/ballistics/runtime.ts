@@ -6,6 +6,7 @@ import {
   ScoreTarget,
   ScoreVec3,
   Selector,
+  math,
 } from "helix";
 import type { FunctionContext, FunctionRef, Score } from "helix";
 import { shellFuse, summonShell } from "./shell";
@@ -44,9 +45,10 @@ export function defineRuntimeShot(
 
   const obj = dp.objective(OBJECTIVE);
   const slot = (holder: string): Score => obj.score(ScoreTarget(holder));
-  /** The launch velocity being solved for, and a scratch point to build it from. */
+  /** The launch velocity being solved for, the launcher's position, the target's velocity. */
   const v = ScoreVec3.from((a) => slot(`#v${a}`));
   const p = ScoreVec3.from((a) => slot(`#p${a}`));
+  const lv = ScoreVec3.from((a) => slot(`#l${a}`));
   const kScale = slot("#v_scale");
   const kA = slot("#a");
   const kAy = slot("#ay");
@@ -112,32 +114,32 @@ export function defineRuntimeShot(
     // nearest player, and any `limit=1` sorts from it, not from wherever the caller
     // happened to be standing (a `tick`-tagged function runs at the world origin).
     v.readEntity(to, Path.Entity.Pos, POS_SCALE, { at: from, ctx });
-    // Where they'll be in `ticks` ticks, at their current velocity.
-    if (lead) {
+    // Their current velocity, for the `+ vel * ticks` lead term below.
+    if (lead)
       // `at from` again - the velocity is read off the same entity `to` just resolved to.
       lead.components.forEach((vel, axis) =>
         ctx
           .execute()
           .at(from)
-          .run((c) => p.components[axis].assign(vel, c)),
+          .run((c) => lv.components[axis].assign(vel, c)),
       );
-      p.scale(kTicks, ctx);
-      v.add(p, ctx);
-    }
     p.readEntity(from, Path.Entity.Pos, POS_SCALE, { ctx });
-    v.sub(p, ctx);
-    // Vertical only: take the gravity drop out before dividing (`v_y = (dy - G)/A`).
-    // `scoreboard players add/remove` take a non-negative literal, so pick the verb.
-    if (gFixed > 0) v.y.remove(gFixed, ctx);
-    else if (gFixed < 0) v.y.add(-gFixed, ctx);
-    // d(centi) * 10000 / A(centi) = v * 10000. Multiply first: the divide is integer,
-    // and dividing a centi-block displacement by A directly would floor most of it away.
-    v.scale(kScale, ctx);
-    if (anisotropic) {
-      v.x.divide(kA, ctx);
-      v.y.divide(kAy, ctx);
-      v.z.divide(kA, ctx);
-    } else v.divide(kA, ctx);
+
+    // The solve, one axis at a time:
+    //
+    //   v = (target + vel*ticks - launcher - G) * V_SCALE / A
+    //
+    // `* V_SCALE` before the divide because the divide is integer: dividing a
+    // centi-block displacement by A directly would floor most of it away. `- G` is
+    // vertical only, and free (`scoreboard players add|remove` takes the literal).
+    const aim = (axis: 0 | 1 | 2) =>
+      lead
+        ? math`${v.components[axis]} + ${lv.components[axis]} * ${kTicks} - ${p.components[axis]}`
+        : math`${v.components[axis]} - ${p.components[axis]}`;
+    const dy = gFixed === 0 ? aim(1) : math`${aim(1)} - ${gFixed}`;
+    math`${aim(0)} * ${kScale} / ${kA}`.into(v.x, ctx);
+    math`${dy} * ${kScale} / ${anisotropic ? kAy : kA}`.into(v.y, ctx);
+    math`${aim(2)} * ${kScale} / ${kA}`.into(v.z, ctx);
 
     // Vanilla *zeroes* a Motion axis past +/-10 rather than clamping it, which would drop
     // the shot on the thrower's head. Bail out instead; `0` tells the caller it held fire.
