@@ -161,8 +161,11 @@ export function globalConversionTail(
     .execute()
     .storeResultScore(dummyScore("#temp2"))
     .run((b) => b.storage(temp).get(VEC.k.index(2), 10000));
-  dummyScore("#vec_k_combined").plus(dummyScore("#temp1"));
-  dummyScore("#vec_k_combined").plus(dummyScore("#temp2"));
+  const kCombined = dummyScore("#vec_k_combined");
+  math`${kCombined} + ${dummyScore("#temp1")} + ${dummyScore("#temp2")}`.into(
+    kCombined,
+    ctx,
+  );
 
   // Reuse the previous local vector if the inputs and orientation match.
   ctx

@@ -11,8 +11,7 @@ execute as d4bd74a7-4e82-4a07-8850-dfc4d89f9e2f in minecraft:overworld positione
 execute store result score #vec_k_combined player_motion.internal.dummy run data get storage test:internal/temp vec_k[0] 10000
 execute store result score #temp1 player_motion.internal.dummy run data get storage test:internal/temp vec_k[1] 10000
 execute store result score #temp2 player_motion.internal.dummy run data get storage test:internal/temp vec_k[2] 10000
-scoreboard players operation #vec_k_combined player_motion.internal.dummy += #temp1 player_motion.internal.dummy
-scoreboard players operation #vec_k_combined player_motion.internal.dummy += #temp2 player_motion.internal.dummy
+execute store result score #vec_k_combined player_motion.internal.dummy run compute default integer {"type":"add","inputs":[{"type":"add","inputs":[{"type":"score","target":{"type":"fixed","name":"#vec_k_combined"},"score":"player_motion.internal.dummy"},{"type":"score","target":{"type":"fixed","name":"#temp1"},"score":"player_motion.internal.dummy"}]},{"type":"score","target":{"type":"fixed","name":"#temp2"},"score":"player_motion.internal.dummy"}]}
 execute if score @s player_motion.internal.previous_method matches 0 if score @s player_motion.internal.previous_vec_k = #vec_k_combined player_motion.internal.dummy if score @s player_motion.internal.previous_x.in = $x player_motion.api.launch if score @s player_motion.internal.previous_y.in = $y player_motion.api.launch if score @s player_motion.internal.previous_z.in = $z player_motion.api.launch run return run function test:internal/launch/use_previous
 scoreboard players operation @s player_motion.internal.previous_vec_k = #vec_k_combined player_motion.internal.dummy
 scoreboard players set @s player_motion.internal.previous_method 0

@@ -1,4 +1,4 @@
-import { Id, Path, Pos, Range, Selector } from "helix";
+import { Id, Path, Pos, Range, Selector, math } from "helix";
 import type {
   Component,
   Datapack,
@@ -473,8 +473,9 @@ class BossModule implements DatapackModule {
         .execute()
         .storeResultScore(roll)
         .run((b) => b.emit(b.random(0, MAX_INT)));
-      roll.modulo(this.score("total"), ctx);
-      roll.add(1, ctx);
+      // 1..total, the weights' own range - each ability then subtracts its weight
+      // in `try_*` until one takes the roll to zero.
+      math`${roll} % ${this.score("total")} + 1`.into(roll, ctx);
       picked.set(0, ctx);
       phase.abilities.forEach((a, i) => {
         ctx
