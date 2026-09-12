@@ -116,20 +116,11 @@ export class ScoreVec3 {
 
   /**
    * Dot product into `out` - `out = x·o.x + y·o.y + z·o.z`, as one expression:
-   * one `/compute` command on 26.3+, the same eight `scoreboard players
-   * operation` lines below it.
-   *
-   * @param scratch **Unused.** The cross terms now live in an internal temp, so
-   * no caller-owned slot is needed; the parameter is kept only so existing call
-   * sites keep compiling.
+   * one `/compute` command on 26.3+, the equivalent `scoreboard players
+   * operation` lines below it. The cross terms live in an internal temp, so no
+   * caller-owned scratch slot is needed.
    */
-  dot(
-    other: ScoreVec3,
-    out: Score,
-    scratch?: Score,
-    ctx?: FunctionContext,
-  ): Score {
-    void scratch;
+  dot(other: ScoreVec3, out: Score, ctx?: FunctionContext): Score {
     emitScoreExpr(
       out,
       opE(
@@ -144,8 +135,8 @@ export class ScoreVec3 {
   }
 
   /** Squared length `|v|² = v·v` (into `out`). */
-  lengthSquared(out: Score, scratch?: Score, ctx?: FunctionContext): Score {
-    return this.dot(this, out, scratch, ctx);
+  lengthSquared(out: Score, ctx?: FunctionContext): Score {
+    return this.dot(this, out, ctx);
   }
 
   /**

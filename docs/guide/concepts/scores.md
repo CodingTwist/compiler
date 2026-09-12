@@ -27,6 +27,11 @@ The verbs differ on purpose: `add`/`remove` are taken by the *literal-constant*
 commands, so score-to-score `+=`/`-=` are `plus`/`minus`. All the `operation` verbs
 return `this`, so they chain - `acc.times(k).plus(delta)` reads as algebra.
 
+It only *reads* as algebra, though: a chain is a sequence of mutations, one command each,
+and it can't express anything with a nested term (`(a + b) * c` needs a scratch cell you
+manage yourself). When you're writing a formula rather than stepping a counter, use
+`` math`…` `` - see [Math and `/compute`](/guide/concepts/math-and-compute).
+
 ```ts compile
 import { Datapack, v26_2, ScoreTarget } from "helix";
 
@@ -83,6 +88,8 @@ cell - see [Execute chains](/guide/concepts/execute).
 
 ## Going further
 
-For vector algebra over three cells at once, see [Score vectors](/guide/concepts/score-vectors);
-for sub-integer precision, [`Fixed`](/api/helix/classes/Fixed) tracks a scale factor on
-top of this same `Score` primitive.
+For whole formulas in one expression - and the single `/compute` they become on 26.3+ -
+see [Math and `/compute`](/guide/concepts/math-and-compute). For vector algebra over three
+cells at once, see [Score vectors](/guide/concepts/score-vectors); for sub-integer
+precision, [`Fixed`](/api/helix/classes/Fixed) tracks a scale factor on top of this same
+`Score` primitive.

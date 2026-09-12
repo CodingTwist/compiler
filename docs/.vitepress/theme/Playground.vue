@@ -7,12 +7,13 @@ const props = withDefaults(
   { code: "", height: "520px" },
 );
 
-const KNOWN_VERSIONS = ["v1_20_1", "v1_20_4", "v1_21_4", "v26_2"] as const;
+const KNOWN_VERSIONS = ["v1_20_1", "v1_20_4", "v1_21_4", "v26_2", "v26_3_rc_2"] as const;
 const VERSION_LABELS: Record<string, string> = {
   v1_20_1: "1.20.1",
   v1_20_4: "1.20.4",
   v1_21_4: "1.21.4",
   v26_2: "26.2",
+  v26_3_rc_2: "26.3-rc-2",
 };
 
 const editorEl = ref<HTMLElement | null>(null);

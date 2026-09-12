@@ -31,28 +31,31 @@ export function defineRuntimeShot(
   const { from, to, profile, ticks } = resolveShotOptions(opts);
 
   // The same basis the compile-time solver inverts - sampled at the one chosen tick.
-  const { A, Ay, G } = trajectoryBasis(profile, ticks);
-  const aFixed = Math.round(A[ticks] * POS_SCALE);
-  const ayFixed = Math.round(Ay[ticks] * POS_SCALE);
-  const gFixed = Math.round(G[ticks] * POS_SCALE);
-  if (aFixed <= 0 || ayFixed <= 0)
+  const { A: dragBasis, Ay: dragBasisY, G: gravityBasis } = trajectoryBasis(
+    profile,
+    ticks,
+  );
+  const dragFixed = Math.round(dragBasis[ticks] * POS_SCALE);
+  const dragFixedY = Math.round(dragBasisY[ticks] * POS_SCALE);
+  const gravityFixed = Math.round(gravityBasis[ticks] * POS_SCALE);
+  if (dragFixed <= 0 || dragFixedY <= 0)
     throw new Error(
       `ballistics: A(${ticks}) is not positive - no shot exists.`,
     );
   // Isotropic drag (everything but a living entity) makes the two responses the same
   // number, so the emitted function keeps its single divisor and its single constant.
-  const anisotropic = ayFixed !== aFixed;
+  const anisotropic = dragFixedY !== dragFixed;
 
-  const obj = dp.objective(OBJECTIVE);
-  const slot = (holder: string): Score => obj.score(ScoreTarget(holder));
+  const objective = dp.objective(OBJECTIVE);
+  const scoreFor = (holder: string): Score => objective.score(ScoreTarget(holder));
   /** The launch velocity being solved for, the launcher's position, the target's velocity. */
-  const v = ScoreVec3.from((a) => slot(`#v${a}`));
-  const p = ScoreVec3.from((a) => slot(`#p${a}`));
-  const lv = ScoreVec3.from((a) => slot(`#l${a}`));
-  const kScale = slot("#v_scale");
-  const kA = slot("#a");
-  const kAy = slot("#ay");
-  const kTicks = slot("#ticks");
+  const velocity = ScoreVec3.from((a) => scoreFor(`#v${a}`));
+  const launcherPos = ScoreVec3.from((a) => scoreFor(`#p${a}`));
+  const targetVel = ScoreVec3.from((a) => scoreFor(`#l${a}`));
+  const scaleConst = scoreFor("#v_scale");
+  const dragConst = scoreFor("#a");
+  const dragConstY = scoreFor("#ay");
+  const ticksConst = scoreFor("#ticks");
 
   // Velocity objectives read against the *target* - one row per tracked player.
   const tracker = opts.lead ? targetVelocity(dp) : undefined;
@@ -63,20 +66,20 @@ export function defineRuntimeShot(
   const shotTag = `${dp.name}.shot`;
   // Rebuilt per use: Selector builders mutate in place, so one shared instance would
   // leak its filters into every clause it appears in.
-  const shot = () => Selector.allEntities().tag(shotTag).limit(1);
+  const shotSelector = () => Selector.allEntities().tag(shotTag).limit(1);
 
-  const spec = { motion: [0, 0, 0], fuse, tags: [shotTag] } as const;
+  const shellSpec = { motion: [0, 0, 0], fuse, tags: [shotTag] } as const;
   // `motion` is zeroed rather than omitted: `store … entity Motion[i]` below needs the
   // list to already exist.
-  let place = (c: FunctionContext) =>
-    summonShell(c, Pos.here(), { shell: opts.shell, ...spec });
+  let spawnShell = (c: FunctionContext) =>
+    summonShell(c, Pos.here(), { shell: opts.shell, ...shellSpec });
 
   // Lifted out of the solver so a pack can ship an editable one-line shell file, or decide
   // for itself what appears - see `shellFunction`. The fuse in it is this shot's flight
   // time, so a named file is this shot's alone.
   if (typeof opts.shellFunction === "function") {
     const build = opts.shellFunction;
-    place = (c) => build(c, spec);
+    spawnShell = (c) => build(c, shellSpec);
   } else if (opts.shellFunction) {
     if (dp.functionRef(opts.shellFunction))
       throw new Error(
@@ -84,20 +87,20 @@ export function defineRuntimeShot(
           `each shot needs its own (the fuse baked into it is that shot's flight time).`,
       );
     const shellFn = dp.createFunction(opts.shellFunction);
-    shellFn.build(place);
-    place = (c) => c.call(shellFn);
+    shellFn.build(spawnShell);
+    spawnShell = (c) => c.call(shellFn);
   }
 
-  const fn = dp.createFunction(name);
-  fn.build((ctx) => {
-    kScale.set(V_SCALE, ctx);
-    kA.set(aFixed, ctx);
-    if (anisotropic) kAy.set(ayFixed, ctx);
+  const shotFn = dp.createFunction(name);
+  shotFn.build((ctx) => {
+    scaleConst.set(V_SCALE, ctx);
+    dragConst.set(dragFixed, ctx);
+    if (anisotropic) dragConstY.set(dragFixedY, ctx);
     if (tracker) {
-      kTicks.set(ticks, ctx);
+      ticksConst.set(ticks, ctx);
       // The lead is `vel x kTicks`, so scaling the tick constant by the caller's score
       // is the whole runtime switch - 0 there means no lead, with no second arc baked.
-      if (typeof opts.lead === "object") kTicks.times(opts.lead, ctx);
+      if (typeof opts.lead === "object") ticksConst.times(opts.lead, ctx);
       // Shooting at someone is what enrols them, so the tick loop only pays for players
       // actually under fire. `at from` first so `to` resolves from the thrower.
       // ponytail: the opening shell of an engagement is therefore unled - the sample is
@@ -113,7 +116,7 @@ export function defineRuntimeShot(
     // `at from` so the *target* selector resolves from the thrower: `@p` means its
     // nearest player, and any `limit=1` sorts from it, not from wherever the caller
     // happened to be standing (a `tick`-tagged function runs at the world origin).
-    v.readEntity(to, Path.Entity.Pos, POS_SCALE, { at: from, ctx });
+    velocity.readEntity(to, Path.Entity.Pos, POS_SCALE, { at: from, ctx });
     // Their current velocity, for the `+ vel * ticks` lead term below.
     if (lead)
       // `at from` again - the velocity is read off the same entity `to` just resolved to.
@@ -121,9 +124,9 @@ export function defineRuntimeShot(
         ctx
           .execute()
           .at(from)
-          .run((c) => lv.components[axis].assign(vel, c)),
+          .run((c) => targetVel.components[axis].assign(vel, c)),
       );
-    p.readEntity(from, Path.Entity.Pos, POS_SCALE, { ctx });
+    launcherPos.readEntity(from, Path.Entity.Pos, POS_SCALE, { ctx });
 
     // The solve, one axis at a time:
     //
@@ -132,32 +135,38 @@ export function defineRuntimeShot(
     // `* V_SCALE` before the divide because the divide is integer: dividing a
     // centi-block displacement by A directly would floor most of it away. `- G` is
     // vertical only, and free (`scoreboard players add|remove` takes the literal).
-    const aim = (axis: 0 | 1 | 2) =>
+    const displacement = (axis: 0 | 1 | 2) =>
       lead
-        ? math`${v.components[axis]} + ${lv.components[axis]} * ${kTicks} - ${p.components[axis]}`
-        : math`${v.components[axis]} - ${p.components[axis]}`;
-    const dy = gFixed === 0 ? aim(1) : math`${aim(1)} - ${gFixed}`;
-    math`${aim(0)} * ${kScale} / ${kA}`.into(v.x, ctx);
-    math`${dy} * ${kScale} / ${anisotropic ? kAy : kA}`.into(v.y, ctx);
-    math`${aim(2)} * ${kScale} / ${kA}`.into(v.z, ctx);
+        ? math`${velocity.components[axis]} + ${targetVel.components[axis]} * ${ticksConst} - ${launcherPos.components[axis]}`
+        : math`${velocity.components[axis]} - ${launcherPos.components[axis]}`;
+
+    const verticalDisplacement =
+      gravityFixed === 0
+        ? displacement(1)
+        : math`${displacement(1)} - ${gravityFixed}`;
+    math`${displacement(0)} * ${scaleConst} / ${dragConst}`.into(velocity.x, ctx);
+    math`${verticalDisplacement} * ${scaleConst} / ${anisotropic ? dragConstY : dragConst}`.into(
+      velocity.y,
+      ctx,
+    );
+    math`${displacement(2)} * ${scaleConst} / ${dragConst}`.into(velocity.z, ctx);
 
     // Vanilla *zeroes* a Motion axis past +/-10 rather than clamping it, which would drop
     // the shot on the thrower's head. Bail out instead; `0` tells the caller it held fire.
     const limit = MOTION_AXIS_LIMIT * V_SCALE;
-    for (const axis of v.components) {
+    for (const axis of velocity.components) {
       ctx
         .execute()
         .unlessScoreMatches(axis, new Range(-limit, limit))
         .run((c) => c.return_(0));
     }
 
-    ctx
-      .execute()
-      .at(from)
-      .run(place);
-    v.storeEntity(shot(), Path.Entity.Motion, "double", 1 / V_SCALE, { ctx });
-    ctx.tag().remove(shot(), shotTag);
+    ctx.execute().at(from).run(spawnShell);
+    velocity.storeEntity(shotSelector(), Path.Entity.Motion, "double", 1 / V_SCALE, {
+      ctx,
+    });
+    ctx.tag().remove(shotSelector(), shotTag);
     ctx.return_(1);
   });
-  return fn;
+  return shotFn;
 }

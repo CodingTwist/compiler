@@ -66,7 +66,7 @@ export class Fixed {
   /**
    * Fixed-point **multiply** by a same-scale `other`: `(a·scale)(b·scale)` would be
    * `(ab)·scale²`, so we divide the scale back out to stay at this scale. Emits `*=
-   * other ; /= scale`. (Needs `scaleScore`.)
+   * other ; /= scale`. (`scaleScore` saves a command here; see the class note.)
    */
   mul(other: Fixed, ctx?: FunctionContext): this {
     math`${this.score} * ${other.score} / ${this.scaleScore ?? this.scale}`.into(
@@ -82,7 +82,8 @@ export class Fixed {
    * divisor` lands the quotient back at this scale instead of flooring to 0. This is
    * the operation that defuses the classic “small numerator ÷ large divisor truncates
    * to zero, the value silently vanishes” scoreboard bug. Emits `*= scale ; /=
-   * divisor`. `divisor` is any `Score`/`Fixed`. (Needs `scaleScore`.)
+   * divisor`. `divisor` is any `Score`/`Fixed`. (`scaleScore` saves a command
+   * here; see the class note.)
    */
   divide(divisor: Fixed | Score, ctx?: FunctionContext): this {
     math`${this.score} * ${this.scaleScore ?? this.scale} / ${this.operand(divisor)}`.into(

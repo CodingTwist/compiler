@@ -24,6 +24,7 @@ export const VERSION_FILES: Record<string, string> = {
   v1_20_4: "1_20_4.json",
   v1_21_4: "1_21_4.json",
   v26_2: "26_2.json",
+  v26_3_rc_2: "26_3_rc_2.json",
 };
 
 const profileCache = new Map<string, VersionProfile>();

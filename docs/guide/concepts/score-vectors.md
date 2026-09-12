@@ -55,16 +55,26 @@ step.build((ctx) => {
 One `pos.add(vel, ctx)` expands to the three `scoreboard players operation` lines above -
 that's the whole point.
 
+These methods are **mutations**, applied one after another: `v.assign(a).sub(b).scale(k)`
+emits each step as its own commands. For a multi-term *formula* over vectors, write it as
+one expression with `` math`…` `` instead - it takes `ScoreVec3` holes directly, broadcasts
+per axis, and lowers the whole thing to a single `/compute` on 26.3+. See
+[Math and `/compute`](/guide/concepts/math-and-compute).
+
 ## Dot products and length
 
-`dot` and `lengthSquared` need scratch cells because the cross-terms can't share a slot
-with the accumulator. Both take caller-owned scalar `Score`s (`out`, `scratch`) distinct
-from the vector's own components, and return `out`:
+`dot` and `lengthSquared` collapse a vector to a scalar. Both take a caller-owned `out`
+cell (distinct from the vector's own components) and return it:
 
 ```
-out = x·o.x + y·o.y + z·o.z        v.dot(o, out, scratch, ctx)
-|v|² = v·v                          v.lengthSquared(out, scratch, ctx)
+out = x·o.x + y·o.y + z·o.z        v.dot(o, out, ctx)
+|v|² = v·v                          v.lengthSquared(out, ctx)
 ```
+
+Unlike the component-wise methods, these two aren't a fan-out of per-axis commands - they
+emit **one expression**, which becomes a single `/compute` on 26.3+ and the equivalent
+operation chain below it. The cross terms go in an internal temp, so you don't hand over a
+scratch cell for them. See [Math and `/compute`](/guide/concepts/math-and-compute).
 
 ## Integer-only, floors toward −∞
 

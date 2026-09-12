@@ -69,8 +69,8 @@ export function vectorToAnchor(d: Pick<PhysicsDeps, "repo">, scratch: SwingScrat
  * `dot = v · r` (sign of the radial motion). Both via integer dot products - no sqrt.
  */
 function measureRadial(scratch: SwingScratch): void {
-  scratch.toAnchor.lengthSquared(scratch.distSq, scratch.cross);
-  scratch.velocity.dot(scratch.toAnchor, scratch.dot, scratch.cross);
+  scratch.toAnchor.lengthSquared(scratch.distSq);
+  scratch.velocity.dot(scratch.toAnchor, scratch.dot);
 }
 
 /**
@@ -81,7 +81,7 @@ function measureRadial(scratch: SwingScratch): void {
 export function fixRopeLength(d: Pick<PhysicsDeps, "repo">, scratch: SwingScratch): void {
   d.repo.prevVec().assign(scratch.pos);
   vectorToAnchor(d, scratch);
-  scratch.toAnchor.lengthSquared(d.repo.ropeLenSqOf(), scratch.cross);
+  scratch.toAnchor.lengthSquared(d.repo.ropeLenSqOf());
 }
 
 // ── 2. CONSTRAIN ──────────────────────────────────────────────────────────────
@@ -233,8 +233,8 @@ export function releaseKick(d: PhysicsDeps, scratch: SwingScratch, ctx: Function
   const consts = d.consts;
 
   // speed² = v·v (dm²) of the swing velocity drive stored last tick, into the spare `frac`
-  // scalar (cross is its dot-product scratch). Not a fresh pos−prev (see docstring: races drive).
-  d.repo.velVec().lengthSquared(scratch.frac, scratch.cross);
+  // scalar. Not a fresh pos−prev (see docstring: races drive).
+  d.repo.velVec().lengthSquared(scratch.frac);
 
   // Local launch: forward (line of sight) = speed² · RELEASE_KICK, capped; no sideways / up.
   const launch = d.repo.launchVec();

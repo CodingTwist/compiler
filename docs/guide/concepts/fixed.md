@@ -6,13 +6,12 @@ scale` - and every multiply squares the scale while every divide floors the frac
 names, instead of a comment you have to keep in your head. It sits on top of the same
 [`Score`](/guide/concepts/scores) primitive - read that page first.
 
-## The scale, and the scale score
+## The scale, and the optional scale score
 
 A `Fixed` wraps one `Score` and a `scale` number (the factor, e.g. `1000` for three decimal
 places). Two of its operations - `mul` and `divide` - need to multiply/divide *by the scale
-itself*, and a `scoreboard players operation` operand must be a score, not a literal. So a
-`Fixed` that will multiply or divide carries a third argument: a `scaleScore` slot you seed
-once at load.
+itself*, and a `scoreboard players operation` operand must be a score, not a literal. So
+`Fixed` takes an optional third argument: a `scaleScore` slot you seed once at load.
 
 ```ts
 const work = dp.objective("work");
@@ -21,8 +20,11 @@ const x = new Fixed(work.score(ScoreTarget("x")), 1000, scaleScore);
 // at load: ctx.scoreSet(scaleScore.set(1000));
 ```
 
-Operations that don't touch the scale (`assign`, `add`, `sub`, `negate`, `clamp`, and the
-unitless `gain`/`reduce`) need no `scaleScore`.
+It's a **hint, not a requirement**. Omit it and the arithmetic is identical - one command
+longer on ≤26.2 (a `set <temp> 1000` before the multiply) and byte-for-byte the same on
+26.3+, where the whole formula compiles to a single `/compute` and literals are free. The
+same goes for `negate`'s `-1` slot. Operations that don't touch the scale (`assign`, `add`,
+`sub`, `clamp`, and the unitless `gain`/`reduce`) never look at it.
 
 ## The operations, and what they do to the scale
 
@@ -32,7 +34,7 @@ unitless `gain`/`reduce`) need no `scaleScore`.
 | `.mul(other)` | fixed-point multiply | rebalanced (`*= other; /= scale`) |
 | `.divide(divisor)` | **precision-preserving** divide | rebalanced (`*= scale; /= divisor`) |
 | `.gain(k)` / `.reduce(k)` | multiply / divide by a *unitless* factor | unchanged |
-| `.negate(negOne)` | `*= -1` | unchanged |
+| `.negate(negOne?)` | `*= -1` | unchanged |
 | `.clamp(lo, hi)` | clamp into `[lo, hi]` | unchanged |
 
 `.divide` is the one that earns its keep: it pre-multiplies by the scale so a small
@@ -67,3 +69,8 @@ Like `Score` and [`ScoreVec3`](/guide/concepts/score-vectors), a `Fixed` holds a
 and allocates nothing, emits into the ambient context (pass `ctx` to be explicit), and
 chains by returning `this`. For fractional *vectors*, back each `ScoreVec3` component with a
 `Fixed`-scaled cell and scale before you divide.
+
+Every scale-rebalancing method here is itself written as one `` math`…` `` expression -
+that's why `mul` and `divide` are a single `/compute` on 26.3+ rather than the two-command
+rebalance the table describes. See [Math and `/compute`](/guide/concepts/math-and-compute)
+for the expression syntax, and for the `sqrt`/trig that `Fixed` deliberately doesn't fake.

@@ -178,7 +178,6 @@ export type Scratch = ReturnType<typeof createScratch>;
  *   tangVec  #tang_*      the tangential slice of velocity, as a vector
  *   distSq   #dist_sq     |r|²
  *   dot      #dot         v · r
- *   cross    #cross       cross-term temp for the dot products
  *   coef/baum/frac/fracRad the constraint's intermediate scalars
  */
 export function swingScratch(scratch: Scratch) {
@@ -190,7 +189,6 @@ export function swingScratch(scratch: Scratch) {
     tangVec: scratch.vector("tang"),
     distSq: scratch.scalar("dist_sq"),
     dot: scratch.scalar("dot"),
-    cross: scratch.scalar("cross"),
     coef: scratch.scalar("coef"),
     baum: scratch.scalar("baum"),
     frac: scratch.scalar("frac"),
