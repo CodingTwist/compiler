@@ -42,9 +42,6 @@ export function defineRuntimeShot(
     throw new Error(
       `ballistics: A(${ticks}) is not positive - no shot exists.`,
     );
-  // Isotropic drag (everything but a living entity) makes the two responses the same
-  // number, so the emitted function keeps its single divisor and its single constant.
-  const anisotropic = dragFixedY !== dragFixed;
 
   const objective = dp.objective(OBJECTIVE);
   const scoreFor = (holder: string): Score => objective.score(ScoreTarget(holder));
@@ -52,10 +49,6 @@ export function defineRuntimeShot(
   const velocity = ScoreVec3.from((a) => scoreFor(`#v${a}`));
   const launcherPos = ScoreVec3.from((a) => scoreFor(`#p${a}`));
   const targetVel = ScoreVec3.from((a) => scoreFor(`#l${a}`));
-  const scaleConst = scoreFor("#v_scale");
-  const dragConst = scoreFor("#a");
-  const dragConstY = scoreFor("#ay");
-  const ticksConst = scoreFor("#ticks");
 
   // Velocity objectives read against the *target* - one row per tracked player.
   const tracker = opts.lead ? targetVelocity(dp) : undefined;
@@ -93,14 +86,7 @@ export function defineRuntimeShot(
 
   const shotFn = dp.createFunction(name);
   shotFn.build((ctx) => {
-    scaleConst.set(V_SCALE, ctx);
-    dragConst.set(dragFixed, ctx);
-    if (anisotropic) dragConstY.set(dragFixedY, ctx);
     if (tracker) {
-      ticksConst.set(ticks, ctx);
-      // The lead is `vel x kTicks`, so scaling the tick constant by the caller's score
-      // is the whole runtime switch - 0 there means no lead, with no second arc baked.
-      if (typeof opts.lead === "object") ticksConst.times(opts.lead, ctx);
       // Shooting at someone is what enrols them, so the tick loop only pays for players
       // actually under fire. `at from` first so `to` resolves from the thrower.
       // ponytail: the opening shell of an engagement is therefore unled - the sample is
@@ -134,22 +120,23 @@ export function defineRuntimeShot(
     //
     // `* V_SCALE` before the divide because the divide is integer: dividing a
     // centi-block displacement by A directly would floor most of it away. `- G` is
-    // vertical only, and free (`scoreboard players add|remove` takes the literal).
+    // vertical only. Every constant is a literal in the formula - the tick count, the
+    // drag responses, the scale - so nothing needs a `#const` slot seeded first.
+    // `ticks` is the lead arm: multiplied by the caller's score it becomes the runtime
+    // switch, 0 there meaning no lead, with no second arc baked.
+    const leadTicks =
+      typeof opts.lead === "object" ? math`${ticks} * ${opts.lead}` : ticks;
     const displacement = (axis: 0 | 1 | 2) =>
       lead
-        ? math`${velocity.components[axis]} + ${targetVel.components[axis]} * ${ticksConst} - ${launcherPos.components[axis]}`
+        ? math`${velocity.components[axis]} + ${targetVel.components[axis]} * ${leadTicks} - ${launcherPos.components[axis]}`
         : math`${velocity.components[axis]} - ${launcherPos.components[axis]}`;
 
-    const verticalDisplacement =
-      gravityFixed === 0
-        ? displacement(1)
-        : math`${displacement(1)} - ${gravityFixed}`;
-    math`${displacement(0)} * ${scaleConst} / ${dragConst}`.into(velocity.x, ctx);
-    math`${verticalDisplacement} * ${scaleConst} / ${anisotropic ? dragConstY : dragConst}`.into(
-      velocity.y,
-      ctx,
-    );
-    math`${displacement(2)} * ${scaleConst} / ${dragConst}`.into(velocity.z, ctx);
+    const drop = gravityFixed
+      ? math`${displacement(1)} - ${gravityFixed}`
+      : displacement(1);
+    math`${displacement(0)} * ${V_SCALE} / ${dragFixed}`.into(velocity.x, ctx);
+    math`${drop} * ${V_SCALE} / ${dragFixedY}`.into(velocity.y, ctx);
+    math`${displacement(2)} * ${V_SCALE} / ${dragFixed}`.into(velocity.z, ctx);
 
     // Vanilla *zeroes* a Motion axis past +/-10 rather than clamping it, which would drop
     // the shot on the thrower's head. Bail out instead; `0` tells the caller it held fire.

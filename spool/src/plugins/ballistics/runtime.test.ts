@@ -43,10 +43,14 @@ function scoreboardVelocity(from: Vec3, to: Vec3, ticks: number): Vec3 {
 describe("runtime ballistics", () => {
   it("emits one solve: read six coords, scale, divide, write Motion", () => {
     const lines = fire("fire/live", { ticks: 40 });
-    // A(40) = 27.6, so the constants baked in are the basis at exactly that tick.
+    // A(40) = 27.6, so the constants baked into the formula are the basis at exactly
+    // that tick - literals, materialised into a scratch slot only where the pre-26.3
+    // `operation` chain needs a score operand (on 26.3+ they are just numbers in the
+    // one `/compute` argument).
     const { A, G } = trajectoryBasis(TNT, 40);
-    expect(lines).toContain(`scoreboard players set #a ballistics ${Math.round(A[40] * 100)}`);
-    expect(lines).toContain("scoreboard players set #v_scale ballistics 10000");
+    expect(lines).toContain(`scoreboard players set #_t0 ballistics ${Math.round(A[40] * 100)}`);
+    expect(lines).toContain("scoreboard players operation #vx ballistics /= #_t0 ballistics");
+    expect(lines).toContain("scoreboard players set #_t0 ballistics 10000");
     // Gravity comes out of the vertical axis before the divide; G(40) is negative.
     expect(G[40]).toBeLessThan(0);
     expect(lines).toContain(`scoreboard players add #vy ballistics ${-Math.round(G[40] * 100)}`);
@@ -125,12 +129,12 @@ describe("runtime ballistics", () => {
       "scoreboard players operation @s ballistics.vx -= @s ballistics.px",
     );
     // Target point is displaced by velocity x flight time inside the solve.
-    expect(lines).toContain("scoreboard players set #ticks ballistics 30");
     expect(lines).toContain(
       "execute at @s run scoreboard players operation #lx ballistics = @p ballistics.vx",
     );
     expect(lines).toContain("scoreboard players operation #_t0 ballistics = #lx ballistics");
-    expect(lines).toContain("scoreboard players operation #_t0 ballistics *= #ticks ballistics");
+    expect(lines).toContain("scoreboard players set #_t1 ballistics 30");
+    expect(lines).toContain("scoreboard players operation #_t0 ballistics *= #_t1 ballistics");
     expect(lines).toContain("scoreboard players operation #vx ballistics += #_t0 ballistics");
   });
 
