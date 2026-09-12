@@ -76,6 +76,11 @@ emit **one expression**, which becomes a single `/compute` on 26.3+ and the equi
 operation chain below it. The cross terms go in an internal temp, so you don't hand over a
 scratch cell for them. See [Math and `/compute`](/guide/concepts/math-and-compute).
 
+It's *squared* length because integer scoreboards have no square root - and that's usually
+where to stay, comparing squared distances against squared thresholds. If you do need the
+real length and target 26.3+, `` math`len(${v})`.into(out) `` is one command (scale inside
+the formula - `` math`len(${v}) * 100` `` - to keep decimals in an integer cell).
+
 ## Integer-only, floors toward −∞
 
 Scores are integers, so `divide` and `scale` are integer ops - `divide` floors toward

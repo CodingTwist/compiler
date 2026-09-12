@@ -6,7 +6,10 @@ import { Score } from "./score";
 import { ScoreVec3 } from "./score_vec3";
 import { math } from "./math";
 import { ScoreTarget } from "../../values/score_target";
+import { ContextFloat } from "../../values/context-provider";
 import { VersionProfile } from "../../../versions/profile";
+import { Selector } from "./selector";
+import { currentContext } from "../context/ambient";
 
 const work = new Objective("work");
 const sc = (n: string) => work.score(ScoreTarget(`#${n}`));
@@ -126,8 +129,8 @@ describe("math`` rejections", () => {
   });
 
   it("names an unknown function and lists the real ones", () => {
-    expect(bad(() => math`sqrt(${sc("a")})`)).toContain(
-      "min, max, abs, dot, len2, vec",
+    expect(bad(() => math`atan2(${sc("a")}, 2)`)).toContain(
+      "min, max, abs, avg, pow, sqrt, sin, cos, round, floor, ceil, len, dot, len2, vec",
     );
   });
 
@@ -155,6 +158,15 @@ describe("math`` rejections", () => {
     expect(bad(() => math`x + 1`)).toContain("${} holes");
   });
 });
+
+const bad2 = (f: () => void) => {
+  try {
+    f();
+  } catch (e) {
+    return (e as Error).message;
+  }
+  throw new Error("expected math`` to reject this");
+};
 
 describe("math`` backends", () => {
   // grapple's rope constraint, the formula this whole layer exists for:
@@ -189,6 +201,150 @@ describe("math`` backends", () => {
         '{"type":"score","target":{"type":"fixed","name":"#baum_div"},"score":"work"}},' +
         '{"type":"score","target":{"type":"fixed","name":"#baum_max"},"score":"work"}]}]}',
     );
+  });
+
+  it("crosses to the float side and back for sqrt on 26.3", () => {
+    const [line, ...rest] = emit(
+      () => math`sqrt(len2(${vec("v")}))`.into(sc("speed")),
+      v26_3_rc_2,
+    );
+    expect(rest).toEqual([]);
+    expect(line).toContain(
+      'compute default integer {"type":"from_float","input":' +
+        '{"type":"sqrt","input":{"type":"from_int","input":{"type":"add","inputs":[{"type":"mul"',
+    );
+  });
+
+  it("keeps a float subexpression in floats until the destination", () => {
+    // `/` after a sqrt is real division, not floor_div, and `from_float`
+    // truncates exactly once - at the outside.
+    const [line] = emit(
+      () => math`sqrt(${sc("a")}) / 2`.into(sc("d")),
+      v26_3_rc_2,
+    );
+    expect(line).toContain(
+      'compute default integer {"type":"from_float","input":' +
+        '{"type":"div","left":{"type":"sqrt","input":' +
+        '{"type":"from_int","input":{"type":"score"',
+    );
+    expect(line).not.toContain("floor_div");
+  });
+
+  it("keeps an int-only formula off the float side entirely", () => {
+    const [line] = emit(
+      () => math`${sc("a")} / 2 + ${sc("b")}`.into(sc("d")),
+      v26_3_rc_2,
+    );
+    expect(line).toContain("floor_div");
+    expect(line).not.toContain("from_int");
+    expect(line).not.toContain("from_float");
+  });
+
+  it("lowers len(v) to one `length` node", () => {
+    const [line] = emit(() => math`len(${vec("v")})`.into(sc("d")), v26_3_rc_2);
+    expect(line).toContain('{"type":"length","inputs":[{"type":"from_int"');
+  });
+
+  it("takes scalar legs in len(), as the hypotenuse", () => {
+    const [line] = emit(
+      () => math`len(${sc("a")}, ${sc("b")})`.into(sc("d")),
+      v26_3_rc_2,
+    );
+    expect(line).toContain('{"type":"length","inputs":[{"type":"from_int"');
+    expect(bad2(() => math`len(${vec("v")}, ${sc("a")})`)).toContain(
+      "argument 1 is a vector",
+    );
+  });
+
+  it("splices a provider hole in as a leaf", () => {
+    const [line] = emit(
+      () =>
+        math`round(${ContextFloat.uniform(0, 1)} * ${sc("k")})`.into(sc("d")),
+      v26_3_rc_2,
+    );
+    expect(line).toContain(
+      '{"type":"round","input":{"type":"mul","inputs":' +
+        '[{"type":"uniform","min":0,"max":1},{"type":"from_int"',
+    );
+  });
+
+  it("makes a fractional literal float, so the coefficient survives", () => {
+    // `* 0.5` used to emit `0.5` as an integer constant - a provider the server
+    // rejects, and `scoreboard players set … 0.5` below 26.3.
+    const [line] = emit(
+      () => math`${sc("a")} * 0.5 + 1`.into(sc("d")),
+      v26_3_rc_2,
+    );
+    expect(line).toContain(
+      'compute default integer {"type":"from_float","input":' +
+        '{"type":"add","inputs":[{"type":"mul","inputs":' +
+        '[{"type":"from_int","input":{"type":"score"',
+    );
+    expect(line).toContain("0.5");
+    // A whole-number literal still never forces a crossing.
+    const [intOnly] = emit(
+      () => math`${sc("a")} * 2 + 1`.into(sc("d")),
+      v26_3_rc_2,
+    );
+    expect(intOnly).not.toContain("from_int");
+    expect(intOnly).not.toContain("from_float");
+  });
+
+  it("hands a formula to a non-score destination as a provider", () => {
+    const lines = emit(
+      () =>
+        currentContext()!
+          .compute()
+          .entityFloat(
+            Selector.self(),
+            math`len(${vec("v")}) * 0.05`.floatProvider,
+          ),
+      v26_3_rc_2,
+    );
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("compute entity @s float");
+    expect(lines[0]).toContain('{"type":"mul","inputs":[{"type":"length"');
+    expect(bad2(() => math`vec(1, 2, 3)`.floatProvider)).toContain(
+      "this formula is a vector",
+    );
+  });
+
+  it("throws below 26.3, naming the op and the target version", () => {
+    const msg = (f: () => void) => {
+      try {
+        f();
+      } catch (e) {
+        return (e as Error).message;
+      }
+      throw new Error("expected this to be rejected on 1.21.4");
+    };
+    const sqrtMsg = msg(() =>
+      emit(() => math`sqrt(${sc("a")})`.into(sc("d")), v1_21_4),
+    );
+    expect(sqrtMsg).toContain("sqrt()");
+    expect(sqrtMsg).toContain("26.3");
+    expect(sqrtMsg).toContain(v1_21_4.id);
+    expect(
+      msg(() => emit(() => math`sin(${sc("a")})`.into(sc("d")), v1_21_4)),
+    ).toContain("sin()");
+    expect(
+      msg(() =>
+        emit(
+          () => math`${ContextFloat.uniform(0, 1)} + 1`.into(sc("d")),
+          v1_21_4,
+        ),
+      ),
+    ).toContain("provider leaf");
+    const litMsg = msg(() =>
+      emit(() => math`${sc("a")} * 0.5`.into(sc("d")), v1_21_4),
+    );
+    expect(litMsg).toContain("0.5");
+    expect(litMsg).toContain(v1_21_4.id);
+    // The `+`/`-` literal shortcut is the other path into `scoreboard players
+    // add`, and it has to refuse a fraction too.
+    expect(
+      msg(() => emit(() => math`${sc("a")} + 0.5`.into(sc("d")), v1_21_4)),
+    ).toContain("0.5");
   });
 
   it("takes the scoreboard branch for a profile with no command tree", () => {

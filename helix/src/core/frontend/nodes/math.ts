@@ -1,8 +1,16 @@
 import jsep from "jsep";
 import { Score } from "./score";
 import { ScoreVec3 } from "./score_vec3";
-import { ExprNode, litE, opE, scoreE } from "./expr";
-import { emitScoreExpr } from "../../commands/score-expr";
+import { ExprNode, ExprOp, litE, opE, providerE, scoreE } from "./expr";
+import {
+  ContextFloatProvider,
+  ContextIntProvider,
+} from "../../values/context-provider";
+import {
+  emitScoreExpr,
+  toFloatProvider,
+  toProvider,
+} from "../../commands/score-expr";
 import type { FunctionContext } from "../context";
 
 // `·` as a dot-product operator, at multiplication precedence, so a formula can
@@ -11,7 +19,13 @@ import type { FunctionContext } from "../context";
 jsep.addBinaryOp("·", 10);
 
 /** Anything that can be interpolated into a {@link math} formula. */
-export type Operand = number | Score | ScoreVec3 | MathExpr;
+export type Operand =
+  | number
+  | Score
+  | ScoreVec3
+  | MathExpr
+  | ContextIntProvider
+  | ContextFloatProvider;
 
 /** A parsed formula: either one integer expression or three (a vector). */
 type Val =
@@ -35,14 +49,32 @@ type Val =
  * language pays for itself: the "typed concepts, not strings" rule exists because
  * *Minecraft* changes version to version, and `a + b * min(c, d)` does not.
  *
- * **Scores are integers.** `/` is floor division (toward −∞) and `%` is
- * floor-modulo, matching `scoreboard players operation`, which is the side that
- * can't be changed. Vector-valued holes broadcast per axis; `·` (or `dot(a, b)`)
- * and `len2(v)` collapse a vector to a scalar, and `vec(a, b, c)` builds one.
+ * **Scores are integers**, so `/` is floor division (toward −∞) and `%` is
+ * floor-modulo, matching `scoreboard players operation` - the side that can't be
+ * changed. Vector-valued holes broadcast per axis; `·` (or `dot(a, b)`) and
+ * `len2(v)` collapse a vector to a scalar, and `vec(a, b, c)` builds one.
  *
- * Available: `+ - * / %`, unary `-`, `min`, `max`, `abs`, `dot`, `len2`, `vec`.
- * Float math (`sqrt`, `sin`, …) has no pre-26.3 lowering, so it stays on
- * `ContextFloat` + `ctx.compute()` and simply requires 26.3+.
+ * Available everywhere: `+ - * / %`, unary `-`, `min`, `max`, `abs`, `dot`,
+ * `len2`, `vec`.
+ *
+ * **26.3+ only** (no scoreboard lowering exists, so a lower target throws at
+ * codegen with the version named): `sqrt`, `sin`, `cos`, `pow`, `avg`, `round`,
+ * `floor`, `ceil`, `len`; any **fractional literal** (`0.5`); and any
+ * `ContextInt`/`ContextFloat` provider interpolated as a hole, which is how
+ * `uniform`, `storage` and `conditional` reach a formula:
+ *
+ * ```ts
+ * math`round(${ContextFloat.uniform(0, 1)} * ${spread}) + ${base}`.into(out);
+ * ```
+ *
+ * Those three things evaluate on `/compute`'s **float** side, and float-ness
+ * spreads up the expression and is truncated **once**, at the destination - so
+ * `` math`sqrt(${x}) / 2` `` really halves the root instead of flooring it
+ * first, and `` math`${a} / 2.0` `` is real division where `` math`${a} / 2` ``
+ * floors. Wrap in `round()` if truncating toward 0 isn't what you want. One
+ * semantic catch: `%` is floor-modulo on the integer side but **truncated** on
+ * the float side, so `-5 % 2` is `1` in an int formula and `-1` once the
+ * expression is float - `/compute` has no float floor-modulo to match it with.
  */
 export function math(
   strings: TemplateStringsArray,
@@ -81,6 +113,28 @@ export class MathExpr {
         "math``: this formula is a scalar - `into()` needs a single Score destination, not a ScoreVec3.",
       );
     emitScoreExpr(dest, this.val.e, ctx);
+  }
+
+  /**
+   * The formula as a `/compute` argument, for the destinations `.into()` can't
+   * reach - `ctx.compute().entityFloat(target, math`…`.floatProvider)`. 26.3+ by
+   * construction: there is no `/compute` below it.
+   */
+  get provider(): ContextIntProvider {
+    return toProvider(this.scalar("provider"));
+  }
+
+  /** {@link provider}, left on the float side - for a `float` store target. */
+  get floatProvider(): ContextFloatProvider {
+    return toFloatProvider(this.scalar("floatProvider"));
+  }
+
+  private scalar(what: string): ExprNode {
+    if (this.val.vec)
+      throw new Error(
+        `math\`\`: this formula is a vector - \`${what}\` is one expression (use \`·\`/\`dot()\`/\`len()\` to reduce it to a scalar, or take an axis).`,
+      );
+    return this.val.e;
   }
 }
 
@@ -145,8 +199,40 @@ function convert(node: jsep.Expression, src: string, holes: Operand[]): Val {
             arity(2);
             return zip(name, args[0], args[1], src, show(n));
           case "abs":
+          case "sqrt":
+          case "sin":
+          case "cos":
+          case "round":
+          case "floor":
+          case "ceil":
             arity(1);
-            return map(args[0], (e) => opE("abs", e));
+            return map(args[0], (e) => opE(name, e));
+          case "pow":
+            arity(2);
+            return zip("pow", args[0], args[1], src, show(n));
+          case "avg":
+            if (!args.length) fail("`avg()` takes at least one argument", src);
+            return nary("avg", args);
+          // `len(v)` is one `length` node, not `sqrt(len2(v))` - same value,
+          // fewer nodes. One vector, or any number of scalar legs (`len(a, b)`
+          // is the Pythagorean hypotenuse).
+          case "len":
+            if (!args.length) fail("`len()` takes at least one argument", src);
+            if (args.length === 1 && args[0].vec)
+              return scalar(opE("len", ...args[0].e));
+            return scalar(
+              opE(
+                "len",
+                ...args.map((a, idx) => {
+                  if (a.vec)
+                    fail(
+                      `\`len()\` takes one vector or a list of scalars; argument ${idx + 1} is a vector`,
+                      src,
+                    );
+                  return a.e;
+                }),
+              ),
+            );
           case "dot":
             arity(2);
             return dot(args[0], args[1], src);
@@ -168,7 +254,8 @@ function convert(node: jsep.Expression, src: string, holes: Operand[]): Val {
             };
           default:
             return fail(
-              `unknown function \`${name}()\` - available: min, max, abs, dot, len2, vec`,
+              `unknown function \`${name}()\` - available: min, max, abs, avg, pow, sqrt, ` +
+                `sin, cos, round, floor, ceil, len, dot, len2, vec`,
               src,
             );
         }
@@ -187,14 +274,20 @@ const map = (v: Val, f: (e: ExprNode) => ExprNode): Val =>
     ? { vec: true, e: v.e.map(f) as [ExprNode, ExprNode, ExprNode] }
     : scalar(f(v.e));
 
+/** A variadic op over any mix of scalars and vectors, broadcasting per axis. */
+function nary(op: ExprOp, args: Val[]): Val {
+  if (!args.some((a) => a.vec))
+    return scalar(opE(op, ...args.map((a) => a.e as ExprNode)));
+  return {
+    vec: true,
+    e: axes((idx) =>
+      opE(op, ...args.map((a) => (a.vec ? a.e[idx] : (a.e as ExprNode)))),
+    ),
+  };
+}
+
 /** Per-axis when either side is a vector; vector-by-vector arithmetic is an error. */
-function zip(
-  op: "add" | "sub" | "mul" | "div" | "mod" | "min" | "max",
-  l: Val,
-  r: Val,
-  src: string,
-  text: string,
-): Val {
+function zip(op: ExprOp, l: Val, r: Val, src: string, text: string): Val {
   if (!l.vec && !r.vec) return scalar(opE(op, l.e, r.e));
   if (l.vec && r.vec && op !== "add" && op !== "sub")
     fail(
@@ -222,8 +315,10 @@ function operand(o: Operand | undefined, src: string): Val {
   if (o instanceof ScoreVec3)
     return { vec: true, e: axes((i) => scoreE(o.components[i])) };
   if (o instanceof MathExpr) return o.val;
+  if (o instanceof ContextIntProvider || o instanceof ContextFloatProvider)
+    return scalar(providerE(o));
   fail(
-    `a \${} hole must be a number, Score, ScoreVec3 or another math\`\` expression (got ${typeof o})`,
+    `a \${} hole must be a number, Score, ScoreVec3, a /compute provider or another math\`\` expression (got ${typeof o})`,
     src,
   );
 }

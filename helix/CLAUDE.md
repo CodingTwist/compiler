@@ -89,7 +89,19 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
      jsep-parsed infix → the `ExprNode` tree in `frontend/nodes/expr.ts`) emits one `ScoreExprNode`
      per destination slot; the handler lowers it to a single `/compute` on 26.3+ and to the
      equivalent `scoreboard players operation` chain below it. Both lowerings live in `score-expr.ts`
-     (`toProvider` / `toScoreOps`) so an op is written once, not once per version. `Fixed` and
+     (`toProvider` / `toScoreOps`) so an op is written once, not once per version. `COMPUTE_ONLY_OPS`
+     in expr.ts (`sqrt`, `sin`, `cos`, `pow`, `avg`, `round`, `floor`, `ceil`, `len`) and the
+     `provider` leaf kind (a `ContextInt`/`ContextFloat` tree interpolated as a `${}` hole - how
+     `uniform`/`storage`/`conditional` reach a formula) and a **non-integer `lit`**
+     have no scoreboard lowering: `toScoreOps` calls `reject()` for all three, naming the target
+     version. Deliberate - they're in the
+     formula syntax, and a pre-26.3 target is an author error caught at build time. `FLOAT_OPS`,
+     a `ContextFloatProvider` leaf and a fractional literal are the three things that put a node on
+     `/compute`'s float side; `toProvider` propagates float-ness up the tree
+     and inserts `from_int`/`from_float` at the boundaries only, so an int-only formula renders
+     exactly as before and a float one truncates once, at the destination (`toFloatProvider` is the
+     variant that skips that last truncation, behind `MathExpr.provider`/`.floatProvider` for a
+     non-score `/compute` destination). `Fixed` and
      `ScoreVec3.dot` route through it, so every pack gets `/compute` on 26.3 without opting in.
      Temps are `#_t<depth>` fake players on the destination's own objective - a **reserved prefix**.
 - **Function macros.** `Macro<T>("name")` (`values/macro.ts`) is a `CommandValue` rendering

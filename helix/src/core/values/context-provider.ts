@@ -1,6 +1,6 @@
 import { VersionProfile } from "../../versions/profile";
 import { CommandValue } from "./value";
-import { EntityTarget, PredicateRef } from "./predicate";
+import { PredicateRef } from "./predicate";
 import { Id } from "./id";
 import { NbtPath } from "./nbt";
 import type { Score } from "../frontend/nodes/score";
@@ -133,15 +133,6 @@ function sharedOps<P extends ProviderBase, R extends number | P>(
         type: "score",
         target: { type: "fixed", name: score.target.render(v) },
         score: score.objective.getName(),
-        ...(fallback === undefined ? {} : { fallback: jsonOf(fallback)(v) }),
-      })),
-
-    /** Read a score off an entity in the evaluation context (`this`, `attacker`, …). */
-    contextScore: (who: EntityTarget, objective: string, fallback?: R): P =>
-      wrap((v) => ({
-        type: "score",
-        target: { type: "context", target: who },
-        score: objective,
         ...(fallback === undefined ? {} : { fallback: jsonOf(fallback)(v) }),
       })),
 

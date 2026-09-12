@@ -70,7 +70,15 @@ and allocates nothing, emits into the ambient context (pass `ctx` to be explicit
 chains by returning `this`. For fractional *vectors*, back each `ScoreVec3` component with a
 `Fixed`-scaled cell and scale before you divide.
 
+On 26.3+, a `math` formula can use real floats (`sqrt`, `len`, `sin`, `pow`, …) - which is
+*not* a replacement for `Fixed`. That precision is **transient**: it lives inside the one
+`/compute` command and the result still truncates into an integer cell on the way out. A
+score is an integer on every version. So keep using `Fixed` for a fraction you **store**
+across ticks, and use the float ops for precision you need *within* one formula - the two
+compose, since a `Fixed`'s cell is an ordinary `Score` hole.
+
 Every scale-rebalancing method here is itself written as one `` math`…` `` expression -
 that's why `mul` and `divide` are a single `/compute` on 26.3+ rather than the two-command
 rebalance the table describes. See [Math and `/compute`](/guide/concepts/math-and-compute)
-for the expression syntax, and for the `sqrt`/trig that `Fixed` deliberately doesn't fake.
+for the expression syntax - including the real float math `Fixed` deliberately doesn't fake
+(`sqrt`, `len`, trig, rounding - available in a formula, 26.3+ only).

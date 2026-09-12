@@ -111,8 +111,13 @@ reward.build((ctx) => {
 ```
 
 Notice the emitted `reward.mcfunction` calls into a generated child function - the `if`
-body - instead of inlining. That's the AST → IR lowering doing its job. For runtime math
-beyond integers, [`Fixed`](/api/helix/classes/Fixed) (scale-tracked fixed-point) and
+body - instead of inlining. That's the AST → IR lowering doing its job.
+
+Stepping a counter is what `Score`'s methods are for; a *formula* goes in
+`` math`…` ``, which takes the algebra as infix text and lowers it to one `/compute`
+command on 26.3+ or the equivalent `scoreboard players operation` chain below - see
+[Math and `/compute`](/guide/concepts/math-and-compute).
+[`Fixed`](/api/helix/classes/Fixed) (scale-tracked fixed-point) and
 [`ScoreVec3`](/api/helix/classes/ScoreVec3) build on the same `Score` primitive.
 
 ## Data resources
