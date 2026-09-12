@@ -122,16 +122,19 @@ describe("dp.grapple (kit)", () => {
   it("constrain assigns the full radial cancel, a Baumgarte trim, and a tangential sustain into the launch input", () => {
     const { dp } = build();
     const c = dp.files.get("grapple/constrain")!;
+    // One formula per destination now, so the Baumgarte trim is a subexpression in the
+    // backend's own temp (`#_t0`) rather than a named `#baum` slot - the arithmetic below is
+    // the pre-26.3 chain it lowers to, command for command.
     // coef = -dot (cancel the radial velocity in either direction - rigid rope) ...
-    expect(c).toContain("scoreboard players operation #coef grapple.work = #dot grapple.work");
-    expect(c).toContain("scoreboard players operation #coef grapple.work *= #neg_one grapple.const");
+    expect(c).toContain("scoreboard players set #coef grapple.work 0");
+    expect(c).toContain("scoreboard players operation #coef grapple.work -= #dot grapple.work");
     // ... + (dist_sq - rope_len_sq)/BAUMGARTE_DIV (Baumgarte position trim); no `max(0)` floor
-    expect(c).toContain("scoreboard players operation #baum grapple.work = #dist_sq grapple.work");
-    expect(c).toContain("scoreboard players operation #baum grapple.work -= @s grapple.rope_len_sq");
-    expect(c).toContain("scoreboard players operation #baum grapple.work /= #baum_div grapple.const");
+    expect(c).toContain("scoreboard players operation #_t0 grapple.work = #dist_sq grapple.work");
+    expect(c).toContain("scoreboard players operation #_t0 grapple.work -= @s grapple.rope_len_sq");
+    expect(c).toContain("scoreboard players operation #_t0 grapple.work /= #baum_div grapple.const");
     // ... capped at baumMax (the anti-fling bounce killer) before folding into coef
-    expect(c).toContain("scoreboard players operation #baum grapple.work < #baum_max grapple.const");
-    expect(c).toContain("scoreboard players operation #coef grapple.work += #baum grapple.work");
+    expect(c).toContain("scoreboard players operation #_t0 grapple.work < #baum_max grapple.const");
+    expect(c).toContain("scoreboard players operation #coef grapple.work += #_t0 grapple.work");
     expect(c).not.toContain("#zero");
     // frac = coef * FRAC_SCALE / dist_sq
     expect(c).toContain("scoreboard players operation #frac grapple.work = #coef grapple.work");
@@ -146,10 +149,11 @@ describe("dp.grapple (kit)", () => {
     expect(c).toContain("scoreboard players operation #frac_rad grapple.work /= #dist_sq grapple.work");
     expect(c).toContain("scoreboard players operation #rad_x grapple.work = #to_anchor_x grapple.work");
     expect(c).toContain("scoreboard players operation #rad_x grapple.work *= #frac_rad grapple.work");
-    expect(c).toContain("scoreboard players operation #tang_x grapple.work = #vel_x grapple.work");
-    expect(c).toContain("scoreboard players operation #tang_x grapple.work -= #rad_x grapple.work");
-    expect(c).toContain("scoreboard players operation #tang_x grapple.work /= #sustain_div grapple.const");
-    expect(c).toContain("scoreboard players operation $x player_motion.api.launch += #tang_x grapple.work");
+    const tang = "#_t0 player_motion.api.launch"; // the temp on the launch input's objective
+    expect(c).toContain(`scoreboard players operation ${tang} = #vel_x grapple.work`);
+    expect(c).toContain(`scoreboard players operation ${tang} -= #rad_x grapple.work`);
+    expect(c).toContain(`scoreboard players operation ${tang} /= #sustain_div grapple.const`);
+    expect(c).toContain(`scoreboard players operation $x player_motion.api.launch += ${tang}`);
     // radial overdamp is a disabled rebound generator (RADIAL_DAMP_DIV=0): when off it
     // emits nothing; if ever re-enabled it bleeds an extra radVec/RADIAL_DAMP_DIV.
     if (RADIAL_DAMP_DIV > 0) {

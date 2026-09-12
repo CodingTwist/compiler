@@ -1,7 +1,7 @@
-import { Fixed } from "helix";
+import { math } from "helix";
 import type { FunctionContext, Score, ScoreVec3 } from "helix";
 import type { PlayerMotion } from "../player_motion";
-import { BAUMGARTE_DIV, SUSTAIN_DIV, RADIAL_DAMP_DIV, FRAC_SCALE, POS_PER_BLOCK } from "./tuning";
+import { BAUMGARTE_DIV, SUSTAIN_DIV, RADIAL_DAMP_DIV } from "./tuning";
 import type { Constants, GrappleSelectors, StateRepository, SwingScratch } from "./state";
 
 /**
@@ -25,9 +25,6 @@ export interface PhysicsDeps {
   selectors: GrappleSelectors;
   motion: PlayerMotion;
 }
-
-/** Squared decimetres: the scale of any dot product / squared length (`scale²`). */
-const SQUARED_SCALE = POS_PER_BLOCK * POS_PER_BLOCK;
 
 // ── 1. SENSE ────────────────────────────────────────────────────────────────
 
@@ -107,10 +104,11 @@ export function solveConstraint(d: PhysicsDeps, scratch: SwingScratch): void {
 /**
  * Project a squared-scale scalar back onto the rope: `out = (numerator / |r|²) · r`. This one
  * operation is the heart of both constraint steps - the rope correction projects `coef`, the
- * velocity split projects `dot` - so it's named once here. `gain = numerator · FRAC_SCALE /
- * dist²` is carried in the `gainSlot` at FRAC_SCALE; the divide is the precision-critical step -
- * `Fixed.divide` applies the scale *before* the integer `/=`, so it can't truncate to zero (the
- * free-fall bug). Then `out = gain · r`.
+ * velocity split projects `dot` - so it's named once here. `gain` is carried in the `gainSlot`
+ * at FRAC_SCALE, and the `· FRAC_SCALE` **precedes** the divide - that ordering is the
+ * precision-critical part, since a bare `numerator / dist²` floors to zero (the free-fall bug).
+ * The scale is held in `consts.fracScale` rather than written as a literal so the pre-26.3
+ * chain multiplies against a seeded slot instead of materialising the number every axis.
  */
 function projectOntoRope(
   d: PhysicsDeps,
@@ -119,9 +117,8 @@ function projectOntoRope(
   gainSlot: Score,
   out: ScoreVec3,
 ): void {
-  const gain = new Fixed(gainSlot, FRAC_SCALE, d.consts.fracScale);
-  gain.assign(numerator).divide(scratch.distSq); // gain = numerator · FRAC_SCALE / dist²
-  out.assign(scratch.toAnchor).scale(gainSlot); //  out  = gain · r
+  math`${numerator} * ${d.consts.fracScale} / ${scratch.distSq}`.into(gainSlot);
+  math`${scratch.toAnchor} * ${gainSlot}`.into(out); // out = gain · r (broadcast per axis)
 }
 
 /**
@@ -142,26 +139,20 @@ function projectOntoRope(
 function pullOntoRope(d: PhysicsDeps, scratch: SwingScratch): void {
   const consts = d.consts;
 
-  // `coef`/`baum` are squared quantities (dot, dist²), so scale = POS_PER_BLOCK². `negate`/
-  // `reduce` make the −1 and the unitless Baumgarte divisor read as intent. The final
-  // divide-by-dist² and projection onto the rope is `projectOntoRope`.
-  const coef = new Fixed(scratch.coef, SQUARED_SCALE);
-  const baum = new Fixed(scratch.baum, SQUARED_SCALE);
-
-  // coef = −dot [+ (dist² − ropeLen²)/BAUMGARTE_DIV]. The velocity-cancel (−dot) is the
-  // stable, critically-damping part; the Baumgarte trim is the optional anti-droop nudge
-  // (a proven bounce source if too stiff - see tuning.ts), skipped entirely when disabled.
-  coef.assign(scratch.dot).negate(consts.negOne);
-  if (BAUMGARTE_DIV > 0) {
-    // baum = (dist² − ropeLen²)/BAUMGARTE_DIV, then **capped** at baumMax. The clamp is the
-    // bounce killer: an uncapped trim, proportional to overshoot, accelerated the player off
-    // the rope into slack at a deep late catch (see BAUMGARTE_MAX). Capped, a deep overshoot
-    // recovers gently while the `−dot` cancel still holds the rope; a small drift overshoot is
-    // under the cap and corrected at full strength. No floor needed: overshoot ≥ 0 while taut.
-    baum.assign(scratch.distSq).sub(d.repo.ropeLenSqOf()).reduce(consts.baumDiv);
-    baum.score.min(consts.baumMax);
-    coef.add(baum);
-  }
+  // The coefficient is the docstring's formula, written as itself: everything in it is a
+  // squared quantity (dot, dist²), so it stays at scale POS_PER_BLOCK² with no rebalancing,
+  // and the Baumgarte trim is simply absent from the expression when disabled.
+  //
+  // The cap is the bounce killer: an uncapped trim, proportional to overshoot, accelerated
+  // the player off the rope into slack at a deep late catch (see BAUMGARTE_MAX). Capped, a
+  // deep overshoot recovers gently while the `−dot` cancel still holds the rope; a small
+  // drift overshoot is under the cap and corrected at full strength. No floor needed:
+  // overshoot ≥ 0 while taut.
+  if (BAUMGARTE_DIV > 0)
+    math`-${scratch.dot} + min((${scratch.distSq} - ${d.repo.ropeLenSqOf()}) / ${consts.baumDiv}, ${consts.baumMax})`.into(
+      scratch.coef,
+    );
+  else math`-${scratch.dot}`.into(scratch.coef);
 
   // impulse = (coef / |r|²) · r - the coefficient projected onto the rope, straight into
   // launchInput (swing clamps + sustains).
@@ -194,16 +185,17 @@ function sustainTangentialMomentum(d: PhysicsDeps, scratch: SwingScratch): void 
   projectOntoRope(d, scratch, scratch.dot, scratch.fracRad, scratch.radVec);
 
   if (SUSTAIN_DIV > 0) {
-    // tangVec = v·FRAC_SCALE − radVec (radial removed), then re-add a SUSTAIN_DIV slice of it.
-    scratch.tangVec.assign(scratch.velocity).scale(consts.fracScale).sub(scratch.radVec);
-    scratch.tangVec.divide(consts.sustainDiv);
-    impulse.add(scratch.tangVec);
+    // impulse += (v·FRAC_SCALE − radVec) / SUSTAIN_DIV - the tangential slice (radial removed),
+    // re-added at a SUSTAIN_DIV fraction. One formula per axis, so the tangential vector never
+    // needs a scratch triple of its own.
+    math`${impulse} + (${scratch.velocity} * ${consts.fracScale} - ${scratch.radVec}) / ${consts.sustainDiv}`.into(
+      impulse,
+    );
   }
   if (RADIAL_DAMP_DIV > 0) {
     // radVec still holds the full radial velocity (the sustain only read it); scale it down and
     // subtract for the extra damping. Off by default - it adds restitution, not damping.
-    scratch.radVec.divide(consts.radialDampDiv);
-    impulse.sub(scratch.radVec);
+    math`${impulse} - ${scratch.radVec} / ${consts.radialDampDiv}`.into(impulse);
   }
 }
 
@@ -240,6 +232,6 @@ export function releaseKick(d: PhysicsDeps, scratch: SwingScratch, ctx: Function
   const launch = d.repo.launchVec();
   ctx.scoreSet(launch.x.set(0));
   ctx.scoreSet(launch.y.set(0));
-  launch.z.assign(scratch.frac).times(consts.releaseKick).min(consts.releaseKickMax);
+  math`min(${scratch.frac} * ${consts.releaseKick}, ${consts.releaseKickMax})`.into(launch.z, ctx);
   d.motion.applyLocal(ctx);
 }

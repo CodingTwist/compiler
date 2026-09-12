@@ -175,10 +175,12 @@ export type Scratch = ReturnType<typeof createScratch>;
  *   velocity #vel_*       pos − prev (the player's real displacement last tick)
  *   toAnchor #to_anchor_* r = anchor − pos
  *   radVec   #rad_*       the radial slice of velocity, as a vector
- *   tangVec  #tang_*      the tangential slice of velocity, as a vector
  *   distSq   #dist_sq     |r|²
  *   dot      #dot         v · r
- *   coef/baum/frac/fracRad the constraint's intermediate scalars
+ *   coef/frac/fracRad     the constraint's intermediate scalars
+ *
+ * The tangential vector and the Baumgarte trim have no slot: each is a subexpression of
+ * one `math` formula now, so they live in the backend's own temporaries.
  */
 export function swingScratch(scratch: Scratch) {
   return {
@@ -186,11 +188,9 @@ export function swingScratch(scratch: Scratch) {
     velocity: scratch.vector("vel"),
     toAnchor: scratch.vector("to_anchor"),
     radVec: scratch.vector("rad"),
-    tangVec: scratch.vector("tang"),
     distSq: scratch.scalar("dist_sq"),
     dot: scratch.scalar("dot"),
     coef: scratch.scalar("coef"),
-    baum: scratch.scalar("baum"),
     frac: scratch.scalar("frac"),
     fracRad: scratch.scalar("frac_rad"),
   };
@@ -210,7 +210,6 @@ export function createConstants() {
   const objective = new Objective("grapple.const");
   const score = (name: string): Score => objective.score(ScoreTarget(`#${name}`));
 
-  const negOne = score("neg_one");
   const fracScale = score("frac_scale");
   const nextId = score("next_id");
   const baumDiv = score("baum_div");
@@ -225,7 +224,6 @@ export function createConstants() {
   // Seed order is the order `grapple/init` emits (kept stable so the rendered init is
   // predictable). `nextId` is omitted - init seeds it conditionally, not in this loop.
   const seeds: readonly [Score, number][] = [
-    [negOne, -1],
     [fracScale, FRAC_SCALE],
     [baumDiv, BAUMGARTE_DIV],
     [baumMax, BAUMGARTE_MAX],
@@ -240,7 +238,7 @@ export function createConstants() {
   return {
     objective,
     seeds,
-    negOne, fracScale, nextId, baumDiv, baumMax, sustainDiv,
+    fracScale, nextId, baumDiv, baumMax, sustainDiv,
     radialDampDiv, releaseKick, releaseKickMax, impulseMax, impulseMin,
   };
 }
