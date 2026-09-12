@@ -76,9 +76,9 @@ execute store result score #pos_z grapple.work run data get entity @s Pos[2] 10
 scoreboard players operation #vel_x grapple.work = #pos_x grapple.work
 scoreboard players operation #vel_y grapple.work = #pos_y grapple.work
 scoreboard players operation #vel_z grapple.work = #pos_z grapple.work
-scoreboard players operation #vel_x grapple.work -= @s grapple.prev_x
-scoreboard players operation #vel_y grapple.work -= @s grapple.prev_y
-scoreboard players operation #vel_z grapple.work -= @s grapple.prev_z
+execute store result score #vel_x grapple.work run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"#vel_x"},"score":"grapple.work"},"right":{"type":"score","target":{"type":"fixed","name":"@s"},"score":"grapple.prev_x"}}
+execute store result score #vel_y grapple.work run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"#vel_y"},"score":"grapple.work"},"right":{"type":"score","target":{"type":"fixed","name":"@s"},"score":"grapple.prev_y"}}
+execute store result score #vel_z grapple.work run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"#vel_z"},"score":"grapple.work"},"right":{"type":"score","target":{"type":"fixed","name":"@s"},"score":"grapple.prev_z"}}
 scoreboard players operation @s grapple.vel_x = #vel_x grapple.work
 scoreboard players operation @s grapple.vel_y = #vel_y grapple.work
 scoreboard players operation @s grapple.vel_z = #vel_z grapple.work
@@ -88,9 +88,9 @@ scoreboard players operation @s grapple.prev_z = #pos_z grapple.work
 scoreboard players operation #to_anchor_x grapple.work = @s grapple.anchor_x
 scoreboard players operation #to_anchor_y grapple.work = @s grapple.anchor_y
 scoreboard players operation #to_anchor_z grapple.work = @s grapple.anchor_z
-scoreboard players operation #to_anchor_x grapple.work -= #pos_x grapple.work
-scoreboard players operation #to_anchor_y grapple.work -= #pos_y grapple.work
-scoreboard players operation #to_anchor_z grapple.work -= #pos_z grapple.work
+execute store result score #to_anchor_x grapple.work run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"#to_anchor_x"},"score":"grapple.work"},"right":{"type":"score","target":{"type":"fixed","name":"#pos_x"},"score":"grapple.work"}}
+execute store result score #to_anchor_y grapple.work run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"#to_anchor_y"},"score":"grapple.work"},"right":{"type":"score","target":{"type":"fixed","name":"#pos_y"},"score":"grapple.work"}}
+execute store result score #to_anchor_z grapple.work run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"#to_anchor_z"},"score":"grapple.work"},"right":{"type":"score","target":{"type":"fixed","name":"#pos_z"},"score":"grapple.work"}}
 execute store result score #dist_sq grapple.work run compute default integer {"type":"add","inputs":[{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#to_anchor_x"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_x"},"score":"grapple.work"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#to_anchor_y"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_y"},"score":"grapple.work"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#to_anchor_z"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_z"},"score":"grapple.work"}]}]}
 execute store result score #dot grapple.work run compute default integer {"type":"add","inputs":[{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#vel_x"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_x"},"score":"grapple.work"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#vel_y"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_y"},"score":"grapple.work"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#vel_z"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_z"},"score":"grapple.work"}]}]}
 execute store result score #face_yaw grapple.work run data get entity @s Rotation[0] 100
@@ -104,12 +104,9 @@ scoreboard players set $x player_motion.api.launch 0
 scoreboard players set $y player_motion.api.launch 0
 scoreboard players set $z player_motion.api.launch 0
 execute if score #dist_sq grapple.work >= @s grapple.rope_len_sq run function test:grapple/constrain
-scoreboard players operation $x player_motion.api.launch < #impulse_max grapple.const
-scoreboard players operation $x player_motion.api.launch > #impulse_min grapple.const
-scoreboard players operation $y player_motion.api.launch < #impulse_max grapple.const
-scoreboard players operation $y player_motion.api.launch > #impulse_min grapple.const
-scoreboard players operation $z player_motion.api.launch < #impulse_max grapple.const
-scoreboard players operation $z player_motion.api.launch > #impulse_min grapple.const
+execute store result score $x player_motion.api.launch run compute default integer {"type":"max","inputs":[{"type":"min","inputs":[{"type":"score","target":{"type":"fixed","name":"$x"},"score":"player_motion.api.launch"},{"type":"score","target":{"type":"fixed","name":"#impulse_max"},"score":"grapple.const"}]},{"type":"score","target":{"type":"fixed","name":"#impulse_min"},"score":"grapple.const"}]}
+execute store result score $y player_motion.api.launch run compute default integer {"type":"max","inputs":[{"type":"min","inputs":[{"type":"score","target":{"type":"fixed","name":"$y"},"score":"player_motion.api.launch"},{"type":"score","target":{"type":"fixed","name":"#impulse_max"},"score":"grapple.const"}]},{"type":"score","target":{"type":"fixed","name":"#impulse_min"},"score":"grapple.const"}]}
+execute store result score $z player_motion.api.launch run compute default integer {"type":"max","inputs":[{"type":"min","inputs":[{"type":"score","target":{"type":"fixed","name":"$z"},"score":"player_motion.api.launch"},{"type":"score","target":{"type":"fixed","name":"#impulse_max"},"score":"grapple.const"}]},{"type":"score","target":{"type":"fixed","name":"#impulse_min"},"score":"grapple.const"}]}
 scoreboard players set #sustain player_motion.internal.dummy 1
 function test:api/launch_global_xyz
 scoreboard players operation #rope_id grapple.work = @s grapple.id
@@ -189,8 +186,8 @@ summon minecraft:marker 0.0 0.0 0.0 {UUID:[I;-725781337,1317161479,-2007965756,-
 execute if score #x player_motion.internal.dummy matches 0 if score #y player_motion.internal.dummy matches 0 run return run function test:internal/launch/main
 scoreboard players operation #y player_motion.internal.dummy >< #z player_motion.internal.dummy
 scoreboard players set #y_abs_within_90 player_motion.internal.dummy 0
-execute if entity @s[y_rotation=90..-90] store success score #y_abs_within_90 player_motion.internal.dummy run scoreboard players operation #x player_motion.internal.dummy *= #constant.-1 player_motion.internal.const
-execute if score #y_abs_within_90 player_motion.internal.dummy matches 0 run scoreboard players operation #y player_motion.internal.dummy *= #constant.-1 player_motion.internal.const
+execute if entity @s[y_rotation=90..-90] store success score #y_abs_within_90 player_motion.internal.dummy run execute store result score #x player_motion.internal.dummy run compute default integer {"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#x"},"score":"player_motion.internal.dummy"},{"type":"score","target":{"type":"fixed","name":"#constant.-1"},"score":"player_motion.internal.const"}]}
+execute if score #y_abs_within_90 player_motion.internal.dummy matches 0 run execute store result score #y player_motion.internal.dummy run compute default integer {"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#y"},"score":"player_motion.internal.dummy"},{"type":"score","target":{"type":"fixed","name":"#constant.-1"},"score":"player_motion.internal.const"}]}
 return run function test:internal/launch/main
 === internal/launch/main
 item replace entity @s saddle with minecraft:saddle[enchantments={"test:internal/apply_impulse":1},equippable={slot: "saddle", equip_sound: "intentionally_empty"}]
@@ -368,9 +365,9 @@ scoreboard players operation @s grapple.prev_z = #pos_z grapple.work
 scoreboard players operation #to_anchor_x grapple.work = @s grapple.anchor_x
 scoreboard players operation #to_anchor_y grapple.work = @s grapple.anchor_y
 scoreboard players operation #to_anchor_z grapple.work = @s grapple.anchor_z
-scoreboard players operation #to_anchor_x grapple.work -= #pos_x grapple.work
-scoreboard players operation #to_anchor_y grapple.work -= #pos_y grapple.work
-scoreboard players operation #to_anchor_z grapple.work -= #pos_z grapple.work
+execute store result score #to_anchor_x grapple.work run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"#to_anchor_x"},"score":"grapple.work"},"right":{"type":"score","target":{"type":"fixed","name":"#pos_x"},"score":"grapple.work"}}
+execute store result score #to_anchor_y grapple.work run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"#to_anchor_y"},"score":"grapple.work"},"right":{"type":"score","target":{"type":"fixed","name":"#pos_y"},"score":"grapple.work"}}
+execute store result score #to_anchor_z grapple.work run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"#to_anchor_z"},"score":"grapple.work"},"right":{"type":"score","target":{"type":"fixed","name":"#pos_z"},"score":"grapple.work"}}
 execute store result score @s grapple.rope_len_sq run compute default integer {"type":"add","inputs":[{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#to_anchor_x"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_x"},"score":"grapple.work"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#to_anchor_y"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_y"},"score":"grapple.work"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#to_anchor_z"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_z"},"score":"grapple.work"}]}]}
 scoreboard players add #next_id grapple.const 1
 scoreboard players operation @s grapple.id = #next_id grapple.const
@@ -409,9 +406,9 @@ scoreboard players set @s ballistics.vz 0
 execute store result score @s ballistics.vx run data get entity @s Pos[0] 100
 execute store result score @s ballistics.vy run data get entity @s Pos[1] 100
 execute store result score @s ballistics.vz run data get entity @s Pos[2] 100
-scoreboard players operation @s ballistics.vx -= @s ballistics.px
-scoreboard players operation @s ballistics.vy -= @s ballistics.py
-scoreboard players operation @s ballistics.vz -= @s ballistics.pz
+execute store result score @s ballistics.vx run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"@s"},"score":"ballistics.vx"},"right":{"type":"score","target":{"type":"fixed","name":"@s"},"score":"ballistics.px"}}
+execute store result score @s ballistics.vy run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"@s"},"score":"ballistics.vy"},"right":{"type":"score","target":{"type":"fixed","name":"@s"},"score":"ballistics.py"}}
+execute store result score @s ballistics.vz run compute default integer {"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"@s"},"score":"ballistics.vz"},"right":{"type":"score","target":{"type":"fixed","name":"@s"},"score":"ballistics.pz"}}
 execute store result score @s ballistics.px run data get entity @s Pos[0] 100
 execute store result score @s ballistics.py run data get entity @s Pos[1] 100
 execute store result score @s ballistics.pz run data get entity @s Pos[2] 100

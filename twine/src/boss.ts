@@ -378,7 +378,7 @@ class BossModule implements DatapackModule {
       .execute()
       .storeResultScore(hp)
       .run((b) => b.entity(this.boss).get(Path.Entity.Health, 100));
-    hp.divide(this.score("max"), ctx);
+    math`${hp} / ${this.score("max")}`.into(hp, ctx);
     if (this.opts.bar) {
       ctx
         .execute()

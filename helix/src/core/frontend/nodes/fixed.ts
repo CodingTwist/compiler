@@ -42,13 +42,13 @@ export class Fixed {
 
   /** `this += other` - same-scale addition is just integer `+=`. */
   add(other: Fixed | Score, ctx?: FunctionContext): this {
-    this.score.plus(this.operand(other), ctx);
+    math`${this.score} + ${this.operand(other)}`.into(this.score, ctx);
     return this;
   }
 
   /** `this -= other` - same-scale subtraction is just integer `-=`. */
   sub(other: Fixed | Score, ctx?: FunctionContext): this {
-    this.score.minus(this.operand(other), ctx);
+    math`${this.score} - ${this.operand(other)}`.into(this.score, ctx);
     return this;
   }
 
@@ -95,7 +95,7 @@ export class Fixed {
 
   /** Multiply by a **unitless** factor `k` (`*= k`); the scale is unchanged. */
   gain(k: Score, ctx?: FunctionContext): this {
-    this.score.times(k, ctx);
+    math`${this.score} * ${k}`.into(this.score, ctx);
     return this;
   }
 
@@ -105,7 +105,7 @@ export class Fixed {
    * constant (e.g. a stiffness divisor), not for dividing by another measured value.
    */
   reduce(k: Score, ctx?: FunctionContext): this {
-    this.score.divide(k, ctx);
+    math`${this.score} / ${k}`.into(this.score, ctx);
     return this;
   }
 

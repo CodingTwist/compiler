@@ -1,4 +1,4 @@
-import { Item, Id, Range } from "helix";
+import { Item, Id, Range, math } from "helix";
 import type { PlayerMotionInternals } from "./context";
 
 /**
@@ -90,11 +90,11 @@ export function defineLaunch(I: PlayerMotionInternals): void {
       .execute()
       .ifEntity(self().yRotation(new Range(90, -90)))
       .storeSuccessScore(dummyScore("#y_abs_within_90"))
-      .run(() => workX.times(constant("#constant.-1")));
+      .run(() => math`${workX} * ${constant("#constant.-1")}`.into(workX));
     ctx
       .execute()
       .ifScoreMatches(dummyScore("#y_abs_within_90"), new Range(0, 0))
-      .run(() => workY.times(constant("#constant.-1")));
+      .run(() => math`${workY} * ${constant("#constant.-1")}`.into(workY));
     ctx.returnRun((r) => r.call(fLaunchMain));
   });
 }

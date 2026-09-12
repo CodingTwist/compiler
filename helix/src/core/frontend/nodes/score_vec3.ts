@@ -1,6 +1,7 @@
 import { Score } from "./score";
-import { opE, scoreE } from "./expr";
+import { opE, scoreE, type ExprOp } from "./expr";
 import { emitScoreExpr } from "../../commands/score-expr";
+import { clampScore } from "./fixed";
 import { currentContext } from "../context/ambient";
 import type { FunctionContext } from "../context";
 import type { Selector } from "./selector";
@@ -30,9 +31,11 @@ export interface ScoreVec3NbtOptions {
 /**
  * Three scoreboard slots treated as a single vector, so vector algebra over scores
  * reads as algebra instead of three near-identical `scoreboard players operation`
- * lines per axis per step. Every method delegates to {@link Score}'s typed ops and
- * emits into the **ambient** context (the `build`/`run`/`if` callback you are
- * inside); pass `ctx` to override it, exactly like {@link Score}.
+ * lines per axis per step. Every arithmetic method is an **expression** per axis
+ * rather than a mutation, so the score-expr backend picks `/compute` on 26.3+ and
+ * the identical `operation` line below it - only {@link assign}, a plain copy,
+ * stays a raw `=`. They emit into the **ambient** context (the `build`/`run`/`if`
+ * callback you are inside); pass `ctx` to override it, exactly like {@link Score}.
  *
  * It holds *references* to three existing `Score` slots and allocates nothing - the
  * caller owns where each component lives. That makes one class serve both roles a
@@ -74,43 +77,48 @@ export class ScoreVec3 {
     return this;
   }
 
+  /**
+   * Per axis, `dest = f(dest, operand)` as one expression - so the backend picks
+   * `/compute` or `operation` for it, like every other formula in the codebase.
+   */
+  private each(
+    op: ExprOp,
+    rhs: (axis: 0 | 1 | 2) => Score,
+    ctx?: FunctionContext,
+  ): this {
+    this.components.forEach((c, axis) =>
+      emitScoreExpr(
+        c,
+        opE(op, scoreE(c), scoreE(rhs(axis as 0 | 1 | 2))),
+        ctx,
+      ),
+    );
+    return this;
+  }
+
   /** `this += other`. */
   add(other: ScoreVec3, ctx?: FunctionContext): this {
-    this.x.plus(other.x, ctx);
-    this.y.plus(other.y, ctx);
-    this.z.plus(other.z, ctx);
-    return this;
+    return this.each("add", (axis) => other.components[axis], ctx);
   }
 
   /** `this -= other`. */
   sub(other: ScoreVec3, ctx?: FunctionContext): this {
-    this.x.minus(other.x, ctx);
-    this.y.minus(other.y, ctx);
-    this.z.minus(other.z, ctx);
-    return this;
+    return this.each("sub", (axis) => other.components[axis], ctx);
   }
 
   /** Scale every axis by the scalar score `k` (`*=`). */
   scale(k: Score, ctx?: FunctionContext): this {
-    this.x.times(k, ctx);
-    this.y.times(k, ctx);
-    this.z.times(k, ctx);
-    return this;
+    return this.each("mul", () => k, ctx);
   }
 
   /** Divide every axis by the scalar score `k` (`/=`, integer floor). */
   divide(k: Score, ctx?: FunctionContext): this {
-    this.x.divide(k, ctx);
-    this.y.divide(k, ctx);
-    this.z.divide(k, ctx);
-    return this;
+    return this.each("div", () => k, ctx);
   }
 
   /** Clamp every axis into `[lo, hi]` (`< hi` then `> lo`). */
   clamp(lo: Score, hi: Score, ctx?: FunctionContext): this {
-    this.x.min(hi, ctx).max(lo, ctx);
-    this.y.min(hi, ctx).max(lo, ctx);
-    this.z.min(hi, ctx).max(lo, ctx);
+    for (const c of this.components) clampScore(c, lo, hi, ctx);
     return this;
   }
 
