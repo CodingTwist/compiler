@@ -128,6 +128,7 @@ export async function validateDatapack(
   fs.mkdirSync(cacheDir, { recursive: true });
 
   const files = buildDatapack(dp);
+  const declared = declaredSymbols(files);
   const relPaths: string[] = [];
   const contents = new Map<string, string>();
   for (const [rel, content] of files) {
@@ -174,6 +175,7 @@ export async function validateDatapack(
       const checked = await project.ensureClientManagedChecked(fileUri);
       if (!checked) continue;
       for (const err of core.FileNode.getErrors(checked.node)) {
+        if (isDeclaredByPack(err.message, declared)) continue;
         const offset =
           typeof err.range?.start === "number" ? err.range.start : 0;
         const { line, column } = offsetToLineCol(content, offset);
@@ -192,6 +194,28 @@ export async function validateDatapack(
   }
 
   return diagnostics;
+}
+
+// Only JSON is handed to Spyglass (checking every .mcfunction is minutes on a
+// real pack), so it can't see the functions/objectives the pack itself defines
+// and flags every reference to them. Collect those from the rendered output.
+function declaredSymbols(files: Map<string, string>): Set<string> {
+  const declared = new Set<string>();
+  for (const [rel, content] of files) {
+    const fn = /^data\/([^/]+)\/functions?\/(.+)\.mcfunction$/.exec(rel);
+    if (!fn) continue;
+    declared.add(`function ${fn[1]}:${fn[2]}`);
+    for (const m of content.matchAll(/scoreboard objectives add (\S+)/g)) {
+      declared.add(`objective ${m[1]}`);
+    }
+  }
+  return declared;
+}
+
+/** Is this an undeclared-symbol diagnostic for something the pack defines? */
+function isDeclaredByPack(message: string, declared: Set<string>): boolean {
+  const m = /Cannot find (function|objective) “(.+?)”/.exec(message);
+  return !!m && declared.has(`${m[1]} ${m[2]}`);
 }
 
 /** Is `rel` one of the pack's `dp.registryFile(...)` resources? */
