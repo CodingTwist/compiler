@@ -38,7 +38,7 @@ describe("Clip: baked spin", () => {
 
   it("frame_1 rotates +90° about Z: member offset [1,0,0] -> [0,1,0]", () => {
     expect(fn(files, "zzz/cog/frame_1")).toContain(
-      "data merge entity @e[tag=cog_0,limit=1] {transformation:{left_rotation:[0.0f,0.0f,0.707107f,0.707107f],right_rotation:[0.0f,0.0f,0.0f,1.0f],scale:[1.0f,1.0f,1.0f],translation:[0.0f,1.0f,0.0f]},start_interpolation:0,interpolation_duration:1}",
+      "data merge entity @e[type=minecraft:block_display,tag=cog_0,limit=1] {transformation:{left_rotation:[0.0f,0.0f,0.707107f,0.707107f],right_rotation:[0.0f,0.0f,0.0f,1.0f],scale:[1.0f,1.0f,1.0f],translation:[0.0f,1.0f,0.0f]},start_interpolation:0,interpolation_duration:1}",
     );
   });
 
@@ -83,7 +83,7 @@ describe("Clip: smooth move (native tween)", () => {
     const play = fn(files, "zzz/door/play");
     // root [0,0,0] + [0,-16,0] = [0,-16,0]; child [0,1,0] + delta = [0,-15,0]
     expect(play).toContain(
-      "data merge entity @e[tag=door_0,limit=1] {transformation:{left_rotation:[0.0f,0.0f,0.0f,1.0f],right_rotation:[0.0f,0.0f,0.0f,1.0f],scale:[1.0f,1.0f,1.0f],translation:[0.0f,-16.0f,0.0f]},start_interpolation:0,interpolation_duration:100}",
+      "data merge entity @e[type=minecraft:block_display,tag=door_0,limit=1] {transformation:{left_rotation:[0.0f,0.0f,0.0f,1.0f],right_rotation:[0.0f,0.0f,0.0f,1.0f],scale:[1.0f,1.0f,1.0f],translation:[0.0f,-16.0f,0.0f]},start_interpolation:0,interpolation_duration:100}",
     );
     expect(play).toContain("translation:[0.0f,-15.0f,0.0f]");
     expect(files.has("data/anim/function/zzz/door/frame_0.mcfunction")).toBe(false);

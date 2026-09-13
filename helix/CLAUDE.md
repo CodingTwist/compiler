@@ -138,6 +138,14 @@ suffix for non-vanilla; `debug` only in dev). Commands (`cli/run.ts`, flags via 
   with a `dp.allow`, and forking bodies (`as`/`at`/`on`/`summon`) under `return run`, which
   stops after the first branch. Public functions are never touched. Dropped names go in
   `dp.inlined` so a rebuild doesn't regenerate them.
+- **Execute-prefix grouping** (`codegen/group.ts`, right after inlining): consecutive lines
+  sharing leading context clauses (`at`/`as`/`positioned`/`rotated`/`facing`/`in`/`align`/
+  `anchored`/`on`) become `execute <prefix> run function <fn>/zzz/group_<n>`. Only when sound:
+  every prefix selector picks one entity (no reordering), no `return`/macro lines, and no line
+  before the last can change what the prefix resolves to - `at @s`-style clauses block on
+  anything that moves an entity (calls checked through their bodies), other selectors allow
+  only fake-player scoreboard / `data get` / storage lines. Needs ≥3 lines, or ≥2 when the
+  prefix scans. Declined runs still show up as the `group-execute` lint.
 - **Entity-test limit** (`commands/selector.ts` `renderExistence`): every `if`/`unless entity`
   rendered by the execute chain, `if` links, and the entity/near guards gives an unbounded
   `@e`/`@a` `limit=1`, so the engine stops at the first match instead of scanning every entity.
@@ -200,9 +208,13 @@ It also runs the Minecraft Wiki's *Optimizing a data pack* checks as `lints` (`W
 identical findings in one function collapsed into `count`). **Exact** rules flag a line that has
 an equivalent cheaper form and check every function: `vacuous-execute`, `fold-into-selector`
 (`as <sel> if score|entity @s…` right after `as`, skipped across `limit`/`sort`),
-`redundant-as` (an allowlist of multi-target commands), and `macro-score-set`. **Tick-only**
+`redundant-as` (an allowlist of multi-target commands), `macro-score-set`, `missing-type`
+(bare `@e` in tick code is an unbounded scan instead), `constant-condition` (a `matches` check
+on a fake player set earlier in the function; any call or other mention forgets the value) and
+`group-execute` (consecutive lines sharing an `if`/`unless`-free execute prefix). The last three
+mirror the datapack-optimization VS Code extension. **Tick-only**
 rules: `nbt-write` (only fields a command can set: item/Rotation/Pos/Tags/effects/attributes),
-`missing-type`, `repeated-selector` (positional selectors are keyed by their execute context),
+`repeated-selector` (positional selectors are keyed by their execute context),
 and `poll-trigger` (stat objectives polled per player, `as @a[…]` in a fixed area, and
 inventory-slot polls). Presence checks (`if/unless entity @a[…]`) and `weapon.*` are
 deliberately left out, since no trigger replaces them. Keep it precise: a false positive means

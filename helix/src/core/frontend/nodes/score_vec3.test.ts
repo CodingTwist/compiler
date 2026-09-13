@@ -21,7 +21,7 @@ function emit(build: (vec: (p: string) => ScoreVec3, sc: (n: string) => any) => 
   const sc = (n: string) => work.score(ScoreTarget(`#${n}`));
   dp.createFunction("f").build(() => build(vec, sc));
   dp.report();
-  return dp.files.get("f")!;
+  return [...dp.files.values()].join("\n");
 }
 
 describe("ScoreVec3", () => {
@@ -73,9 +73,10 @@ describe("ScoreVec3", () => {
     expect(out).toContain(
       "execute store result score #p_z work run data get entity @p Pos[2] 100",
     );
-    // `at` rides the same chain, so the read stays one command per axis.
+    // `at` rides the same chain, and the three `at @s` reads are grouped into one call.
+    expect(out).toContain("execute at @s run function test:zzz/f/group_0");
     expect(out).toContain(
-      "execute at @s store result score #q_y work run data get entity @p Pos[1] 100",
+      "execute store result score #q_y work run data get entity @p Pos[1] 100",
     );
   });
 

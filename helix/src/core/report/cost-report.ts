@@ -370,7 +370,9 @@ export type LintRule =
   | "missing-type"
   | "repeated-selector"
   | "macro-score-set"
-  | "poll-trigger";
+  | "poll-trigger"
+  | "constant-condition"
+  | "group-execute";
 
 export interface Lint {
   rule: LintRule;
@@ -521,6 +523,12 @@ const NBT_WRITE_COMMANDS: [RegExp, string][] = [
 const LOCATION_HINT =
   "players entering a fixed area: Trigger.location - matches a box (not a radius), checked about once a second, and the reward must revoke the advancement to re-arm";
 
+/** Whether a score value falls in a `matches` range (`1`, `1..`, `..5`, `1..5`). */
+function inRange(value: number, range: string): boolean {
+  const [lo, hi = lo] = range.split("..");
+  return (lo === "" || value >= Number(lo)) && (hi === "" || value <= Number(hi));
+}
+
 /** Position-dependent selector arguments: the same text scans a different set elsewhere. */
 const POSITIONAL = new Set(["distance", "x", "y", "z", "dx", "dy", "dz"]);
 
@@ -585,11 +593,53 @@ function lint(
     };
     const unbounded = new Set(costs.get(fn)?.unboundedScans ?? []);
     const scans = new Map<string, { sel: string; line: string; lines: Set<number> }>();
+    // Fake-player scores set to a constant earlier in this function, keyed `holder objective`.
+    const known = new Map<string, number>();
+    // Consecutive `execute <prefix> run|store` lines sharing a condition-free prefix.
+    let group: { prefix: string; line: string; i: number; count: number } | undefined;
+    const flushGroup = () => {
+      if (group && group.count > 1) {
+        add(
+          "group-execute",
+          group.line,
+          group.i,
+          `${group.count} lines in a row start \`execute ${group.prefix}\` - run it once: \`execute ${group.prefix} run function …\` (keep them apart if an earlier line changes who or where the prefix picks)`,
+        );
+      }
+      group = undefined;
+    };
 
     for (const [line, i] of indexedCommandLines(text)) {
       const sels = selectorsIn(line);
 
       // --- exact rewrites, every function ---
+      const checks = /\b(if|unless) score ([^@\s$]\S*) (\S+) matches ([-\d.]+)(?=\s|$)/g;
+      for (const m of line.matchAll(checks)) {
+        const value = known.get(`${m[2]} ${m[3]}`);
+        if (value === undefined) continue;
+        const passes = inRange(value, m[4]) === (m[1] === "if");
+        add(
+          "constant-condition",
+          line,
+          i,
+          passes
+            ? `\`${m[2]} ${m[3]}\` is ${value} here (set earlier in this function), so \`${m[0]}\` always passes - drop it`
+            : `\`${m[2]} ${m[3]}\` is ${value} here (set earlier in this function), so \`${m[0]}\` never passes - this line never runs`,
+        );
+      }
+      // Any call may change a score; any mention besides a `matches` check may write it.
+      if (/\bfunction /.test(line)) known.clear();
+      const writes = line.replace(checks, "");
+      for (const key of known.keys()) if (writes.includes(` ${key}`)) known.delete(key);
+      const set = /^scoreboard players set ([^@\s$]\S*) (\S+) (-?\d+)$/.exec(line);
+      if (set) known.set(`${set[1]} ${set[2]}`, Number(set[3]));
+
+      const prefix = /^execute (.+?) (?:run|store) /.exec(line)?.[1];
+      const groupable = prefix && !/\b(if|unless)\b/.test(prefix) && !/ run return\b/.test(line) && prefix;
+      if (!groupable || groupable !== group?.prefix) flushGroup();
+      if (groupable) group ??= { prefix: groupable, line, i, count: 0 };
+      if (group) group.count++;
+
       if (/^\$?execute run /.test(line)) {
         add("vacuous-execute", line, i, "`execute run <cmd>` with no subcommands is just `<cmd>`");
       }
@@ -632,6 +682,13 @@ function lint(
         );
       }
 
+      // Outside tick, bare `@e` isn't in the unbounded-scan list, so it's flagged here.
+      for (const s of sels) {
+        if (/@[en]/.test(s.kind) && !hasArg(s, "type") && !(tick && unbounded.has(s.text))) {
+          add("missing-type", line, i, "add `type=` to `@e`/`@n` selectors - the type filter skips every other entity cheaply");
+        }
+      }
+
       if (!tick) continue;
 
       // --- tick-reachable only ---
@@ -643,9 +700,6 @@ function lint(
 
       for (const s of sels) {
         if (!/@[en]/.test(s.kind) || s.args.length === 0) continue;
-        if (!hasArg(s, "type") && !unbounded.has(s.text)) {
-          add("missing-type", line, i, `add \`type=\` to \`${s.text}\` - the type filter skips every other entity cheaply`);
-        }
         const args = s.args.filter(([k]) => k !== "limit" && k !== "sort").map(([k, v]) => `${k}=${v}`).sort();
         const where = s.args.some(([k]) => POSITIONAL.has(k))
           ? line.slice(0, s.start).replace(/\s*(as|at|if entity|unless entity)\s*$/, "")
@@ -691,6 +745,8 @@ function lint(
         add("poll-trigger", line, i, "Trigger.inventoryChanged() fires when a player's inventory changes (a `weapon.*` selection change has no trigger)");
       }
     }
+
+    flushGroup();
 
     for (const { sel, line, lines } of scans.values()) {
       if (lines.size < 2) continue;

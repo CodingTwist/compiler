@@ -35,13 +35,7 @@ execute positioned ^ ^ ^1 rotated as @s positioned ^ ^ ^-1 if entity @s[distance
 execute if score #equal_context player_motion.internal.dummy matches 1 unless entity @s[x_rotation=-90] run return run function test:internal/launch/main
 return fail
 === fire
-execute at @s as @p run function test:zzz/track_enroll
-execute at @s store result score #vx ballistics run data get entity @p Pos[0] 100
-execute at @s store result score #vy ballistics run data get entity @p Pos[1] 100
-execute at @s store result score #vz ballistics run data get entity @p Pos[2] 100
-execute at @s run scoreboard players operation #lx ballistics = @p ballistics.vx
-execute at @s run scoreboard players operation #ly ballistics = @p ballistics.vy
-execute at @s run scoreboard players operation #lz ballistics = @p ballistics.vz
+execute at @s run function test:zzz/fire/group_0
 execute store result score #px ballistics run data get entity @s Pos[0] 100
 execute store result score #py ballistics run data get entity @s Pos[1] 100
 execute store result score #pz ballistics run data get entity @s Pos[2] 100
@@ -478,6 +472,14 @@ execute store result score @s grapple.anchor_z run data get entity @e[type=minec
 scoreboard objectives add raycast.work dummy
 === tick
 execute as @a[tag=ballistics.tracked] run function test:zzz/track_targets
+=== zzz/fire/group_0
+execute as @p run function test:zzz/track_enroll
+execute store result score #vx ballistics run data get entity @p Pos[0] 100
+execute store result score #vy ballistics run data get entity @p Pos[1] 100
+execute store result score #vz ballistics run data get entity @p Pos[2] 100
+scoreboard players operation #lx ballistics = @p ballistics.vx
+scoreboard players operation #ly ballistics = @p ballistics.vy
+scoreboard players operation #lz ballistics = @p ballistics.vz
 === zzz/init_objectives
 scoreboard objectives add ballistics dummy
 scoreboard objectives add ballistics.vx dummy

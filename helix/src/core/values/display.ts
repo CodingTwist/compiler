@@ -262,7 +262,14 @@ export class DisplayValue implements CommandValue {
 
   /** `@e[type=<root type>,tag=<name>_0]` - the root member, typed so the scan skips other entities. */
   rootSelector(): Selector {
-    return Selector.allEntities().type(this.toNbt().entity).tag(`${this.getName()}_0`);
+    return this.memberSelector(0);
+  }
+
+  /** Typed selector for member `i` (`@e[type=<its display>,tag=<name>_<i>]`), in {@link members} order. */
+  memberSelector(i: number): Selector {
+    const kind = i === 0 ? this.content.kind : this.children[i - 1].content.kind;
+    const entity = kind === "block" ? ROOT_ENTITY : ItemDisplay({}).entity;
+    return Selector.allEntities().type(entity).tag(`${this.getName()}_${i}`);
   }
 
   /** Remove every member of the group: one typed scan for the root, the rest ride it. */

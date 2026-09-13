@@ -190,10 +190,40 @@ describe("cost report", () => {
       expect(rules({ tick: "execute as @a run scoreboard players operation @s a += @s b" })).toEqual([]);
     });
 
-    it("missing-type: @e narrowed by tag but no type, in tick code", () => {
+    it("missing-type: @e without type, in every function", () => {
       expect(rules({ tick: "kill @e[tag=altar]" })).toEqual(["missing-type"]);
       expect(rules({ tick: "kill @e[type=marker,tag=altar]" })).toEqual([]);
-      expect(rules({ tick: "say hi", other: "kill @e[tag=altar]" })).toEqual([]);
+      expect(rules({ tick: "say hi", other: "kill @e[tag=altar]" })).toEqual(["missing-type"]);
+      expect(rules({ tick: "say hi", other: "kill @e" })).toEqual(["missing-type"]);
+      expect(rules({ tick: "kill @e" })).toEqual([]); // reported as an unbounded scan instead
+    });
+
+    it("constant-condition: a fake-player score set earlier in the function", () => {
+      const r = lintsOf({
+        tick: "say hi",
+        other: ["scoreboard players set #done q 0", "execute if score #done q matches 0 run say a", "execute unless score #done q matches ..-1 run say b", "execute if score #done q matches 1.. run say c"].join("\n"),
+      });
+      expect(r.lints.map((l) => l.rule)).toEqual(["constant-condition", "constant-condition", "constant-condition"]);
+      expect(r.lints.map((l) => l.hint.includes("always passes"))).toEqual([true, true, false]);
+    });
+
+    it("constant-condition: forgets the value after a write or a call", () => {
+      const r = (second: string) => rules({ tick: "say hi", other: `scoreboard players set #a q 0\n${second}\nexecute if score #a q matches 0 run say x` });
+      expect(r("scoreboard players add #a q 1")).toEqual([]);
+      expect(r("function p:elsewhere")).toEqual([]);
+      expect(r("execute store result score #a q run time query gametime")).toEqual([]);
+      expect(rules({ tick: "say hi", other: "scoreboard players set @s q 0\nexecute if score @s q matches 0 run say x" })).toEqual([]);
+    });
+
+    it("group-execute: consecutive lines sharing a condition-free prefix", () => {
+      const r = lintsOf({
+        tick: "say hi",
+        other: ["# comment", "execute on passengers run tag @s add a", "# comment", "execute on passengers store result score @s q run data get entity @s Air", "say break", "execute on passengers run say x"].join("\n"),
+      });
+      expect(r.lints.map((l) => l.rule)).toEqual(["group-execute"]);
+      expect(r.lints[0].hint).toContain("2 lines");
+      expect(rules({ tick: "say hi", other: "execute if score #a q matches 1 run say 1\nexecute if score #a q matches 1 run say 2" })).toEqual([]);
+      expect(rules({ tick: "say hi", other: "execute at @s run return run say 1\nexecute at @s run say 2" })).toEqual([]);
     });
 
     it("repeated-selector: the same scan on two lines, compiler limit=1 ignored", () => {

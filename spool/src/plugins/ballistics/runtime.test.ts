@@ -53,9 +53,9 @@ describe("runtime ballistics", () => {
 
     for (const axis of [0, 1, 2]) {
       const v = ["#vx", "#vy", "#vz"][axis];
+      // The three `at` reads are grouped under one `at`.
       expect(lines).toContain(
-        `execute at @e[tag=gun,limit=1] store result score ${v} ballistics ` +
-          `run data get entity @e[tag=mark,limit=1] Pos[${axis}] 100`,
+        `execute store result score ${v} ballistics run data get entity @e[tag=mark,limit=1] Pos[${axis}] 100`,
       );
       const p = ["#px", "#py", "#pz"][axis];
       expect(lines).toContain(
@@ -84,9 +84,10 @@ describe("runtime ballistics", () => {
     const lines = [...buildDatapack(dp)]
       .flatMap(([, body]) => body.split("\n"))
       .filter((l) => l.length > 0);
-    // `at @s` first, so `@p` is the *thrower's* nearest player.
+    // `at @s` first, so `@p` is the *thrower's* nearest player. The reads share one `at`.
+    expect(lines).toContain("execute at @s run function art:zzz/throw/group_0");
     expect(lines).toContain(
-      "execute at @s store result score #vx ballistics run data get entity @p Pos[0] 100",
+      "execute store result score #vx ballistics run data get entity @p Pos[0] 100",
     );
     expect(lines.some((l) => l.startsWith("execute at @s run summon"))).toBe(true);
   });
@@ -105,7 +106,7 @@ describe("runtime ballistics", () => {
     expect(lines).toContain(
       "execute as @a[tag=ballistics.tracked] run function art:zzz/track_targets",
     );
-    expect(lines).toContain("execute at @s as @p run function art:zzz/track_enroll");
+    expect(lines).toContain("execute as @p run function art:zzz/track_enroll");
     expect(lines).toContain("tag @s add ballistics.tracked");
     // Enrolling reseeds the previous position, so the first diff isn't against stale data.
     expect(lines).toContain(
@@ -124,7 +125,7 @@ describe("runtime ballistics", () => {
     );
     // Target point is displaced by velocity x flight time inside the solve.
     expect(lines).toContain(
-      "execute at @s run scoreboard players operation #lx ballistics = @p ballistics.vx",
+      "scoreboard players operation #lx ballistics = @p ballistics.vx",
     );
     expect(lines).toContain("scoreboard players operation #_t0 ballistics = #lx ballistics");
     expect(lines).toContain("scoreboard players set #_t1 ballistics 30");
