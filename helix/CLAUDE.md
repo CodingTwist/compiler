@@ -52,6 +52,23 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
   (`AttributeInstance({ id: Attribute.MAX_HEALTH })`, not an id string) - the pairing is
   read off `resource.generated.ts`, so a registry with no concept stays a string.
 
+## The `helix` CLI (`bin/helix.mjs`, `src/cli/`)
+
+Packs don't create or write a Datapack themselves. A pack has a `helix.config.ts`
+(`defineConfig({ name, version, entry, targets?, out: { datapack, resourcePack? }, world?, debug? })`)
+and an entry whose default export is `definePack((dp, build) => …)`. `loadPack` (`cli/load.ts`) loads
+`.env` beside the config, imports both, and creates one `Datapack` per target (`-<target>` output
+suffix for non-vanilla; `debug` only in dev). Commands (`cli/run.ts`, flags via `util.parseArgs`):
+`build [--prod]`, `dev` (build under `tsx watch`), `report [--strict]`, `profile [dump.json]`
+(newest `<world>/helix-profile/profile-*.json` via `latestProfile`; world defaults to two above
+`out.datapack`), `validate`. Builds print only the output path - reporting is opt-in.
+
+- The bin **re-execs itself under tsx's CLI** (`HELIX_CLI_CHILD`). Don't swap that for
+  `tsx/esm/api` `register()`/`tsImport` in-process: on Node 20 in a CJS package, `register()` hits
+  `ERR_REQUIRE_CYCLE_MODULE` and a second namespaced `tsImport` breaks. `tsx` is a runtime dependency.
+- `loadPack` itself is a plain `import()`, so it only works under a TS-capable loader (the bin, vitest).
+- Node-only: exported from `index.ts`, never `browser.ts`.
+
 ## Architecture
 
 - **No `src/core/ast/` folder.** Every node lives **with its handler** in `src/core/commands/<cmd>.ts`.
@@ -248,6 +265,10 @@ rebuild the handler map per version.
 - `scripts/versions.mjs sync` fetches Mojang-derived data from misode/mcmeta into
   `src/versions/data/*.json` - **gitignored, NOT committed/shipped.** `sync` runs before every build
   and test, and skips versions already present (so a normal build needs no network).
+- **`helix data [--force]`** is the consumer-facing wrapper: `versions.mjs sync` + `copy-data.mjs`,
+  run from the helix package root. The bin handles it *before* importing `dist` (importing helix
+  eagerly loads every profile, which throws while data is missing). The npm `files` list excludes
+  `dist/versions/data` and ships just the scripts it needs.
 - It also generates `src/versions/data/ids.ts` (the `Blocks`/`Items`/`Effects`/… const namespaces)
   - also gitignored, regenerated on every `sync`.
 - **Consequence:** a fresh checkout shows IDE squiggles on `versions/data/*` imports until the first

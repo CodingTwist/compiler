@@ -95,6 +95,15 @@ export class DatapackFactory {
     const dp = new Datapack(opts.name, opts.version ?? v1_20_4, opts.target, {
       debug: opts.debug,
     });
+    return DatapackFactory.mount(dp, root, opts);
+  }
+
+  /**
+   * Wire the module tree rooted at `root` into an existing `dp` - the one the
+   * `helix` CLI created from `helix.config.ts` (name, version, target and debug
+   * are the pack's, not twine's). {@link create} is this over a fresh Datapack.
+   */
+  static mount(dp: Datapack, root: ModuleClass, opts: { env?: BuildEnv } = {}): Datapack {
     const flags = new ActiveFlags(dp);
     const latches = new EventLatches(dp);
     // Resolved once and published, so `isDev()` inside a module body can't

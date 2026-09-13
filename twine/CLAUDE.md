@@ -29,7 +29,8 @@ constructed and emits nothing** - that is the compile-time disable.
   contract and the metadata/area types (`ModuleMetadata`, `ConfiguredModule`, `Zone`,
   `AreaTrigger`, `BuildEnv`, `Vec3`).
 - [src/factory.ts](src/factory.ts) - `DatapackFactory`: instantiate the tree, run the
-  lifecycle, produce the `Datapack`.
+  lifecycle. `mount(dp, Root, { env })` wires it into a Datapack the `helix` CLI created
+  from `helix.config.ts` (how lab builds); `create(Root, opts)` is `mount` over a fresh one.
 - [src/graph.ts](src/graph.ts) / [src/regions.ts](src/regions.ts) /
   [src/state-machine.ts](src/state-machine.ts) / [src/tick-wiring.ts](src/tick-wiring.ts) /
   [src/flags.ts](src/flags.ts) - module-graph resolution, area/zone geometry, the
@@ -186,7 +187,7 @@ single owned entry: `consolidateTick(dp)` (run automatically at the end of
 `DatapackFactory.create`) untags every *other* member and `function`-calls it from the root
 `<ns>:tick` body, so the whole pack's per-tick work is one traceable, gateable list. It's
 **idempotent and exported** - if a consumer adds more `tick`-tagged functions *imperatively
-after* `create` (raw helix/spool calls, as `lab/src/main.ts` does for grapple), call
+after* `create` (raw helix/spool calls, as `lab/src/pack.ts` does for grapple), call
 `consolidateTick(datapack)` again just before `writeDatapack` to sweep those too. Backed by
 helix's `dp.untag(name, tag)` / `dp.functionRef(name)` mechanism primitives.
 
@@ -199,7 +200,7 @@ an existing function throws. Tests reading "the tick" should join every
 `*/tick.mcfunction`, not only the root file.
 
 **Debug source tracking.** Pass `DatapackFactory.create(Root, { …, debug: { sources, comments } })`.
-It's off by default; lab turns it on for `MODE=dev`. Each command then maps to the TS line that
+It's off by default; lab turns it on for dev builds via `helix.config.ts`. Each command then maps to the TS line that
 emitted it:
 - report `↳`
 - `# loc` comments in the pack
@@ -218,7 +219,9 @@ See helix/CLAUDE.md.
 ## Shipped build tooling: `twine-stage-assets` (bin)
 
 [bin/stage-assets.mjs](bin/stage-assets.mjs) is a `bin` a consumer runs after `tsc` in its
-own `build` script (`tsc && twine-stage-assets`). `tsc` emits only `.js`; it drops every
+own `build` script (`tsc && twine-stage-assets`). Only needed by a pack that runs from
+`dist/`; one built with the `helix` CLI runs from source through tsx and needs no staging
+(lab no longer uses it). `tsc` emits only `.js`; it drops every
 non-source file, so a prod `node dist/main.js` can't find the structure `.nbt` templates
 (`dp.addStructures`) or resource-pack `.png` textures (`dp.addAssets`) it registers by
 `__dirname`. The bin mirrors them `src/` → `dist/`, preserving paths. It's a **denylist**

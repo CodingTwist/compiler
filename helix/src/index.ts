@@ -13,6 +13,21 @@ export { v1_20_1, v1_20_4, v1_21_4, v26_1_2, v26_2, v26_3_rc_2 } from "./version
 // against what actually gets copied. Reads from disk, so Node-only.
 export { shippedStructureNames } from "./core/codegen/write";
 
+// The newest helix-profiler dump for a world, for `dp.printProfileReport`. Reads
+// from disk, so Node-only.
+export { latestProfile, PROFILE_DIR } from "./core/report/profile-file";
+
+// The `helix` CLI's pack contract: `helix.config.ts` + a pack entry function.
+export {
+  defineConfig,
+  definePack,
+  type HelixConfig,
+  type PackEntry,
+  type BuildInfo,
+  type BuildMode,
+} from "./cli/config";
+export { loadPack, type LoadResult, type LoadedPack } from "./cli/load";
+
 // Opt-in build-time validation of emitted JSON resources against the vanilla
 // schema for the target version (via Spyglass's mcdoc runtime). The Spyglass
 // packages are optional deps, loaded lazily - importing these symbols does not

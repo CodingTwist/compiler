@@ -16,7 +16,13 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "!dist/versions/data",
+    "bin",
+    "scripts/versions.mjs",
+    "scripts/concept-registries.mjs",
+    "scripts/copy-data.mjs",
+    "scripts/supported-versions.json"
   ],
   "scripts": {
     "build": "node scripts/versions.mjs sync && rm -rf dist && tsc && node scripts/copy-data.mjs",
@@ -42,7 +48,6 @@
     "jiti": "^2.6.1",
     "prettier": "^3.7.4",
     "ts-node": "^10.9.2",
-    "tsx": "^4.22.4",
     "typedoc": "^0.28.0",
     "typedoc-plugin-markdown": "^4.3.0",
     "typedoc-vitepress-theme": "^1.1.3",
@@ -56,6 +61,10 @@
     "@spyglassmc/mcdoc": "^0.3.54"
   },
   "dependencies": {
-    "jsep": "^1.4.0"
+    "jsep": "^1.4.0",
+    "tsx": "^4.22.4"
+  },
+  "bin": {
+    "helix": "bin/helix.mjs"
   }
 }
