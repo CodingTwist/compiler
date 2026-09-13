@@ -435,7 +435,7 @@ class MobModule<S extends string> implements DatapackModule {
     const states = this;
     this.handle = {
       enter: (ctx, s) => ctx.call(states.fnRef(`enter/${s}`)),
-      leave: (ctx) => states.stateObj.score(Selector.self()).set(0, ctx),
+      leave: (ctx) => states.stateObj.score(Selector.self()).set(0),
       get clock() {
         if (!states.stateClockObj) throw new Error(`Mob "${mobName}" has no states - declare them with .states() to use the clock.`);
         return states.stateClockObj.score(Selector.self());
@@ -533,7 +533,7 @@ class MobModule<S extends string> implements DatapackModule {
         scope.fn(`${this.name}/${gname}`, (ctx) => {
           ctx.tag().add(Selector.self(), this.gestureTag(gname));
           if (g.cooldown !== 0) {
-            this.cooldown(Selector.self(), gname).set(g.cooldown ?? 20, ctx);
+            this.cooldown(Selector.self(), gname).set(g.cooldown ?? 20);
           }
           this.poseMembers(ctx, undefined, g, poses(g)[0], g.rise ?? 0);
           if (!g.fireAfter) g.onFire?.(ctx, dp, this.handle);
@@ -579,9 +579,9 @@ class MobModule<S extends string> implements DatapackModule {
     const cases = [...this.stateDefs].map(([s, def], i) => {
       const idx = i + 1;
       this.fns.get(`enter/${s}`)!.build((ctx) => {
-        state.set(idx, ctx);
+        state.set(idx);
         // Zeroed for an untimed state too, or a stale count would keep the mob awake in it.
-        clock.set(def.polls ?? 0, ctx);
+        clock.set(def.polls ?? 0);
         def.onEnter?.(ctx, dp, this.handle);
       });
       const done =
@@ -593,7 +593,7 @@ class MobModule<S extends string> implements DatapackModule {
               else this.handle.leave(ctx);
             });
       const body = this.internal(`state/${s}`, (ctx) => {
-        if (done) clock.remove(1, ctx);
+        if (done) clock.remove(1);
         def.tick?.(ctx, dp, this.handle);
         // Still in this state: a tick that already switched keeps its switch.
         if (done) {
@@ -698,7 +698,7 @@ class MobModule<S extends string> implements DatapackModule {
   /** `<mob>/<gesture>_clock`: one mob's countdown and everything timed off it. As the mob, at it. */
   private clockGesture(ctx: FunctionContext, gname: string, g: Gesture<S>): void {
     const tag = this.gestureTag(gname);
-    this.cooldown(Selector.self(), gname).remove(1, ctx);
+    this.cooldown(Selector.self(), gname).remove(1);
     // A beat on the clock: this mob, exactly `after` polls past its raise.
     const onBeat = (after: number, fn: string) =>
       ctx
@@ -737,7 +737,7 @@ class MobModule<S extends string> implements DatapackModule {
    */
   onTick(ctx: FunctionContext): void {
     const wake = this.awakeObj.score(ScoreTarget("#wake"));
-    wake.add(1, ctx);
+    wake.add(1);
     ctx
       .execute()
       .ifScoreMatches(wake, new Range(Math.ceil(20 / this.tickEvery), undefined))
@@ -788,7 +788,7 @@ class MobModule<S extends string> implements DatapackModule {
       .ifEntity(this.mobs.tag(this.awakeTag))
       .done();
     this.sweepOrphans(ctx);
-    this.awakeObj.score(ScoreTarget("#wake")).set(0, ctx);
+    this.awakeObj.score(ScoreTarget("#wake")).set(0);
   }
 
   /** `<mob>/tick_one`: everything one awake mob does per poll, as it, at it. */

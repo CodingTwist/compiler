@@ -51,7 +51,7 @@ export function targetVelocity(dp: Datapack): Tracker {
   const init = dp.createFunction("zzz/track_init");
   init.build((ctx) => {
     vec(prev).readEntity(me(), Path.Entity.Pos, POS_SCALE, { ctx });
-    for (const axis of vec(vel).components) axis.set(0, ctx);
+    for (const axis of vec(vel).components) axis.set(0);
   });
 
   const enroll = dp.createFunction("zzz/track_enroll");
@@ -61,7 +61,7 @@ export function targetVelocity(dp: Datapack): Tracker {
       .unlessEntity(me().tag(TRACK_TAG))
       .run((c) => c.call(init));
     ctx.tag().add(me(), TRACK_TAG);
-    ttl.score(me()).set(TRACK_TTL, ctx);
+    ttl.score(me()).set(TRACK_TTL);
   });
 
   const track = dp.createFunction("zzz/track_targets");
@@ -74,7 +74,7 @@ export function targetVelocity(dp: Datapack): Tracker {
     then.readEntity(me(), Path.Entity.Pos, POS_SCALE, { ctx });
     // Nobody has shot at them in a while - stop paying for them.
     const left = ttl.score(me());
-    left.remove(1, ctx);
+    left.remove(1);
     ctx
       .execute()
       .ifScoreMatches(left, new Range(undefined, 0))

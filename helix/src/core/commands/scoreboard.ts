@@ -81,7 +81,7 @@ export const scoreLitNode = (
  * `scoreboard players <verb> <target> <objective> [<value>]`. The holder slot is
  * named `targets` everywhere except `get`, which takes a single `target`.
  */
-const players = (
+export const playersNode = (
   verb: string,
   score: Score,
   withValue = false,
@@ -125,23 +125,23 @@ FunctionContext.prototype.scoreInit = function (objective: Objective) {
 };
 
 FunctionContext.prototype.scoreSet = function (score: Score) {
-  this.emit(players("set", score, true));
+  this.emit(playersNode("set", score, true));
 };
 
 FunctionContext.prototype.scoreAdd = function (score: Score) {
-  this.emit(players("add", score, true));
+  this.emit(playersNode("add", score, true));
 };
 
 FunctionContext.prototype.scoreRemove = function (score: Score) {
-  this.emit(players("remove", score, true));
+  this.emit(playersNode("remove", score, true));
 };
 
 FunctionContext.prototype.scoreReset = function (score: Score) {
-  this.emit(players("reset", score));
+  this.emit(playersNode("reset", score));
 };
 
 FunctionContext.prototype.scoreGet = function (score: Score) {
-  this.emit(players("get", score));
+  this.emit(playersNode("get", score));
 };
 
 FunctionContext.prototype.scoreOp = function (

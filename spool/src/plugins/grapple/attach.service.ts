@@ -34,7 +34,7 @@ export function createAttachService(d: AttachDeps) {
       fixRopeLength(d, scratch);
 
       // Stamp a fresh shared id on the player and its anchor.
-      ctx.scoreAdd(d.consts.nextId.add(1));
+      d.consts.nextId.add(1);
       d.repo.id.score(d.selectors.self()).assign(d.consts.nextId);
       ctx
         .execute()

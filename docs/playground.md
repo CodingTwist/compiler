@@ -18,13 +18,13 @@ const game = dp.objective("game");
 const load = dp.createFunction("load");
 load.build((ctx) => {
   ctx.scoreInit(game);                       // scoreboard objectives add game dummy
-  game.score(ScoreTarget("#round")).set(0, ctx);
+  game.score(ScoreTarget("#round")).set(0);
 });
 
 const tick = dp.createFunction("tick");
 tick.build((ctx) => {
   // every player, once per tick
-  game.score(Selector.allPlayers()).add(1, ctx);
+  game.score(Selector.allPlayers()).add(1);
   ctx.execute()
     .as(Selector.allPlayers())
     .at(Selector.self())

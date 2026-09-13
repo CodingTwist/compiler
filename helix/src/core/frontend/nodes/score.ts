@@ -2,8 +2,8 @@ import { TellrawPart } from "./tellraw_part";
 
 import { ExpressionNode, Range } from "../../ir/node";
 import { ScoreRangeNode } from "../../commands/if";
-import { scoreOpNode, ScoreOperator } from "../../commands/scoreboard";
-import { currentContext } from "../context/ambient";
+import { scoreOpNode, scoreLitNode, playersNode, ScoreOperator } from "../../commands/scoreboard";
+import { currentContext, type EmitContext } from "../context/ambient";
 import { Objective } from "./objective";
 import { FunctionContext } from "../context";
 import { ScoreTarget } from "../../values/score_target";
@@ -60,27 +60,43 @@ export class Score extends TellrawPart implements ExpressionNode {
     );
   }
 
+  /**
+   * The context a mutating verb emits into: the explicit `ctx` if given, else
+   * the ambient one (the `build`/`run`/`if` callback you are inside).
+   */
+  private emitter(ctx?: FunctionContext): EmitContext {
+    const target = ctx ?? currentContext();
+    if (!target)
+      throw new Error(
+        "Score mutation has no active context: call it inside a build()/run()/if() callback, or pass ctx explicitly.",
+      );
+    return target;
+  }
+
+  /** `scoreboard players set <this> <value>`. */
   set(value: number, ctx?: FunctionContext): this {
     this.value = value;
-    if (ctx) ctx.scoreSet(this);
+    this.emitter(ctx).emit(scoreLitNode("set", this, value));
     return this;
   }
 
+  /** `scoreboard players add <this> <value>`. */
   add(value: number, ctx?: FunctionContext): this {
     this.value = value;
-    if (ctx) ctx.scoreAdd(this);
+    this.emitter(ctx).emit(scoreLitNode("add", this, value));
     return this;
   }
 
+  /** `scoreboard players remove <this> <value>`. */
   remove(value: number, ctx?: FunctionContext): this {
     this.value = value;
-    if (ctx) ctx.scoreRemove(this);
+    this.emitter(ctx).emit(scoreLitNode("remove", this, value));
     return this;
   }
 
   /** `scoreboard players reset <this>` - un-set this holder's score entirely. */
-  reset(ctx: FunctionContext): this {
-    ctx.scoreReset(this);
+  reset(ctx?: FunctionContext): this {
+    this.emitter(ctx).emit(playersNode("reset", this));
     return this;
   }
 
@@ -99,12 +115,7 @@ export class Score extends TellrawPart implements ExpressionNode {
    * contexts are in scope and you mean the outer one. See {@link currentContext}.
    */
   operation(op: ScoreOperator, other: Score, ctx?: FunctionContext): this {
-    const target = ctx ?? currentContext();
-    if (!target)
-      throw new Error(
-        "Score arithmetic has no active context: call it inside a build()/run()/if() callback, or pass ctx explicitly.",
-      );
-    target.emit(scoreOpNode(this, op, other));
+    this.emitter(ctx).emit(scoreOpNode(this, op, other));
     return this;
   }
 
@@ -145,16 +156,4 @@ export class Score extends TellrawPart implements ExpressionNode {
     return this.operation("><", other, ctx);
   }
 
-  applySet(ctx: FunctionContext): this {
-    if (this.value === undefined)
-      throw new Error("Score value not set. Use set(value) first.");
-    ctx.scoreSet(this);
-    return this;
-  }
-
-  // toJson(): TextJson {
-  //   return this.applyFormatting({
-  //     score: { name: this.target, objective: this.objective.getName() },
-  //   });
-  // }
 }

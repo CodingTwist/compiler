@@ -59,14 +59,14 @@ export function defineApi(I: PlayerMotionInternals): void {
     workZ.assign(inputZ);
 
     // Detect whether the viewport angle equals the position/rotation context.
-    ctx.scoreSet(dummyScore("#equal_context").set(0));
+    dummyScore("#equal_context").set(0);
     ctx
       .execute()
       .positioned(Pos.local(0, 0, 1))
       .rotatedAs(self())
       .positioned(Pos.local(0, 0, -1))
       .ifEntity(self().distance(new Range(undefined, 0.00001)))
-      .run((b) => b.scoreSet(dummyScore("#equal_context").set(1)));
+      .run((b) => dummyScore("#equal_context").set(1));
 
     // Common fast path: context matches and not looking straight up - launch directly.
     ctx

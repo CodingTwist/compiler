@@ -40,11 +40,11 @@ export class ScoreboardTiming {
   private firesInstalled = new Set<string>();
 
   start(ctx: FunctionContext, c: Countdown, ticks: number): void {
-    c.objective.score(ScoreTarget(c.holder)).set(ticks, ctx);
+    c.objective.score(ScoreTarget(c.holder)).set(ticks);
   }
 
   stop(ctx: FunctionContext, c: Countdown): void {
-    c.objective.score(ScoreTarget(c.holder)).set(0, ctx);
+    c.objective.score(ScoreTarget(c.holder)).set(0);
   }
 
   active(c: Countdown): ExpressionNode {
@@ -57,7 +57,7 @@ export class ScoreboardTiming {
 
   advance(ctx: FunctionContext, c: Countdown): void {
     // `scoreboard players add` rejects negatives - decrement with `remove`.
-    c.objective.score(ScoreTarget(c.holder)).remove(1, ctx);
+    c.objective.score(ScoreTarget(c.holder)).remove(1);
   }
 
   everyTicks(
@@ -106,13 +106,13 @@ export class ScoreboardTiming {
     if (!this.installed.has(periodTicks)) {
       this.installed.add(periodTicks);
       dp.getOrCreateFunction(CLOCK, "tick").build((ctx) => {
-        clock.score(ScoreTarget(holder)).add(1, ctx);
+        clock.score(ScoreTarget(holder)).add(1);
         const wrap = new ScoreRangeNode(
           ScoreTarget(holder),
           clock,
           new Range(periodTicks, undefined),
         );
-        ctx.if(wrap, (c) => clock.score(ScoreTarget(holder)).set(0, c));
+        ctx.if(wrap, (c) => clock.score(ScoreTarget(holder)).set(0));
       });
     }
     // Normalise phase into [0, periodTicks); negatives wrap forwards.

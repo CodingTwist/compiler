@@ -128,7 +128,7 @@ export class Suite {
 
     const entry = this.dp.createFunction(`${this.root}/run`);
     entry.build((ctx) => {
-      passed.set(0, ctx);
+      passed.set(0);
       ctx.call(fns[0].setup);
     });
     return entry;
@@ -137,7 +137,7 @@ export class Suite {
   private result(ctx: FunctionContext, ok: Score, passed: Score, name: string): void {
     detect(ctx, Detect.score(ok, Range.exactly(1)), (c) => {
       c.tellraw(Selector.allPlayers(), [text("[PASS] ").color(Color.GREEN), text(name)]);
-      passed.add(1, c);
+      passed.add(1);
     });
     detect(ctx, Detect.score(ok, Range.exactly(0)), (c) => {
       c.tellraw(Selector.allPlayers(), [text("[FAIL] ").color(Color.RED), text(name)]);

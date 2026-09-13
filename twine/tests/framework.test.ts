@@ -431,7 +431,7 @@ describe("env gating (dev/prod builds)", () => {
       this.obj = dp.objective("debug_marker");
     }
     onLoad(ctx: any) {
-      this.obj.score("#x").set(1, ctx);
+      this.obj.score("#x").set(1);
     }
   }
   @Module({ name: "keep", area: true })

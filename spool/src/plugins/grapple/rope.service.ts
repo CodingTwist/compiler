@@ -33,7 +33,7 @@ export function createRopeService(d: RopeDeps) {
   // 1-block spacing keeps the rope readable without flooding the view. The step guard bounds
   // the recursion to the rope's max length even if the aim is slightly off.
   d.fn.rope.build((ctx) => {
-    ctx.scoreRemove(ropeStep.remove(1));
+    ropeStep.remove(1);
     ctx.particle(ROPE_PARTICLE, Pos.here(), Pos(0, 0, 0), 0, 1);
     ctx
       .execute()
@@ -60,7 +60,7 @@ export function createRopeService(d: RopeDeps) {
         .ifScore(d.repo.id.score(Selector.self()), "=", ropeId)
         .run((b) => b.tag().add(Selector.self(), "grapple._aim"));
 
-      ctx.scoreSet(ropeStep.set(d.config.maxSteps));
+      ropeStep.set(d.config.maxSteps);
       // Start at the *hand*, not the eyes: offset down-right and a block forward
       // (`^-0.4 ^-0.4 ^1`) so the near end clears the first-person camera instead of
       // smearing particles across the view. Then re-aim ^ at the anchor and hand off.

@@ -38,7 +38,7 @@ describe("ctx.execute() chain builder", () => {
         .execute()
         .storeSuccessScore(D("#x.30"))
         .ifScoreMatches(D("#x"), new Range(1073741824, undefined))
-        .run((b: any) => b.scoreRemove(D("#x").remove(1073741824))),
+        .run((b: any) => D("#x").remove(1073741824)),
     );
     expect(line).toBe(
       "execute store success score #x.30 d if score #x d matches 1073741824.. run scoreboard players remove #x d 1073741824",
@@ -70,7 +70,7 @@ describe("ctx.execute() chain builder", () => {
         .anchored("eyes")
         .positioned(Pos.local(0, 0, 0.5))
         .unlessBlock(Pos.here(), Block("#minecraft:air"))
-        .run((b: any) => b.scoreSet(D("#hit").set(1))),
+        .run((b: any) => D("#hit").set(1)),
     );
     expect(line).toBe(
       "execute anchored eyes positioned ^ ^ ^0.5 unless block ~ ~ ~ #minecraft:air run scoreboard players set #hit d 1",
@@ -84,7 +84,7 @@ describe("ctx.execute() chain builder", () => {
         .anchored("eyes")
         .facingEntity(Selector.allEntities().tag("anchor").limit(1), "feet")
         .facing(Pos.here())
-        .run((b: any) => b.scoreSet(D("#x").set(1))),
+        .run((b: any) => D("#x").set(1)),
     );
     expect(line).toBe(
       "execute anchored eyes facing entity @e[tag=anchor,limit=1] feet facing ~ ~ ~ run scoreboard players set #x d 1",

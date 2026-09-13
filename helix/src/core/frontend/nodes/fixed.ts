@@ -14,7 +14,7 @@ import { math } from "./math";
  * operand must itself be a score - you can't `*= 1000` against a literal - so on a
  * pre-26.3 target a literal scale costs one extra `scoreboard players set <temp>
  * 1000` before every multiply. `scaleScore` is a slot seeded once at load to
- * `scale` (e.g. `ctx.scoreSet(scaleScore.set(1000))`) that removes that command.
+ * `scale` (e.g. `scaleScore.set(1000)`) that removes that command.
  * It is a **hint, not a requirement**: omit it and the math is identical, one
  * command longer on ≤26.2 and exactly the same on 26.3+, where the whole formula
  * is one `/compute` and literals are free.

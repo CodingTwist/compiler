@@ -35,11 +35,11 @@ export function defineLaunch(I: PlayerMotionInternals): void {
     ctx
       .execute()
       .ifScoreMatches(sustain, new Range(1, 1))
-      .run((b) => b.returnRun((r) => r.scoreSet(sustain.set(0))));
+      .run((b) => b.returnRun((r) => sustain.set(0)));
 
     // Trigger location_changed by a gamemode swap, then restore the gamemode.
-    ctx.execute().ifEntity(self().gamemode("survival")).run((b) => b.scoreSet(gamemodeScore("#mode").set(2)));
-    ctx.execute().ifEntity(self().gamemode("adventure")).run((b) => b.scoreSet(gamemodeScore("#mode").set(3)));
+    ctx.execute().ifEntity(self().gamemode("survival")).run((b) => gamemodeScore("#mode").set(2));
+    ctx.execute().ifEntity(self().gamemode("adventure")).run((b) => gamemodeScore("#mode").set(3));
     ctx.execute().ifScoreMatches(gamemodeScore("#mode"), new Range(2, 3)).run((b) => b.gamemode("spectator"));
     ctx
       .execute()
@@ -53,7 +53,7 @@ export function defineLaunch(I: PlayerMotionInternals): void {
       .run((b) => b.returnRun((r) => r.gamemode("adventure")));
 
     // Creative players: pick spectator or (when falling) adventure for the swap.
-    ctx.scoreSet(gamemodeScore("#falling").set(0));
+    gamemodeScore("#falling").set(0);
     ctx
       .execute()
       .ifPredicate(fallingCreative)
@@ -85,7 +85,7 @@ export function defineLaunch(I: PlayerMotionInternals): void {
       .ifScoreMatches(workY, new Range(0, 0))
       .run((b) => b.returnRun((r) => r.call(fLaunchMain)));
     workY.swap(workZ);
-    ctx.scoreSet(dummyScore("#y_abs_within_90").set(0));
+    dummyScore("#y_abs_within_90").set(0);
     ctx
       .execute()
       .ifEntity(self().yRotation(new Range(90, -90)))

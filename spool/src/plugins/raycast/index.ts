@@ -97,7 +97,7 @@ function defineRaycast(dp: Datapack, opts: RaycastOptions): RaycastRef {
   return {
     cast: fn,
     fire(ctx: FunctionContext): void {
-      ctx.scoreSet(steps.set(opts.maxSteps));
+      steps.set(opts.maxSteps);
       ctx.call(fn);
     },
   };

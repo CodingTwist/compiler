@@ -59,9 +59,9 @@ export function createSwingService(d: SwingDeps) {
   function applyRopeImpulse(ctx: FunctionContext): void {
     const launch = d.repo.launchVec();
 
-    ctx.scoreSet(launch.x.set(0));
-    ctx.scoreSet(launch.y.set(0));
-    ctx.scoreSet(launch.z.set(0));
+    launch.x.set(0);
+    launch.y.set(0);
+    launch.z.set(0);
 
     ctx
       .execute()

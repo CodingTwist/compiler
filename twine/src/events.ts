@@ -258,7 +258,7 @@ export function emitHandler(
   if (latch) chain.unlessScoreMatches(latch, FIRED);
   handler.detector(chain);
   chain.runOrInline((c) => {
-    latch?.set(1, c);
+    latch?.set(1);
     body(c);
   });
 }
@@ -283,7 +283,7 @@ export function rearmEvents(
   for (const h of getEventHandlers(instance)) {
     if (h.opts.once === false) continue;
     if (methods && !methods.includes(h.method)) continue;
-    latches.score(moduleName, h.method).set(0, ctx);
+    latches.score(moduleName, h.method).set(0);
   }
 }
 
@@ -360,7 +360,7 @@ export abstract class HandlerGroup {
     for (const h of this.handlers) {
       if (h.opts.once === false) continue;
       if (keys && !keys.includes(h.method)) continue;
-      latches.score(moduleName, `${this.ns}/${h.method}`).set(0, ctx);
+      latches.score(moduleName, `${this.ns}/${h.method}`).set(0);
     }
   }
 

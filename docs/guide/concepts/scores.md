@@ -43,19 +43,18 @@ tick.build((ctx) => {
   const score = game.score(ScoreTarget("score"));
   const bonus = game.score(ScoreTarget("bonus"));
 
-  score.add(1, ctx);        // literal:        scoreboard players add … 1
-  score.plus(bonus, ctx);   // score-to-score: score += bonus
+  score.add(1);        // literal:        scoreboard players add … 1
+  score.plus(bonus);   // score-to-score: score += bonus
 });
 ```
 
 ## The context argument
 
-Every mutating method takes an optional trailing `ctx`. That's *where the command is
-emitted*. Inside a `.build()`, `.run()`, or `.if()` callback there is an **ambient
-context**, so the `operation` verbs (`plus`, `times`, …) can find it themselves - but the
-literal `set`/`add`/`remove` only emit when you pass `ctx` explicitly (without it they
-just record the pending value). The habit that always works: **pass `ctx`**. Pass it
-explicitly too when two contexts are in scope and you mean the outer one.
+Every mutating method (`set`/`add`/`remove`/`reset` and the `operation` verbs `plus`,
+`times`, ...) emits into the **ambient context** - the `.build()`, `.run()`, or `.if()`
+callback you are inside - so you never pass it. Outside any callback there is no ambient
+context and the call throws. Pass `ctx` explicitly only when two contexts are in scope
+and you mean the outer one.
 
 ## Comparisons drive control flow
 
@@ -73,7 +72,7 @@ const tick = dp.createFunction("tick");
 tick.build((ctx) => {
   const score = game.score(ScoreTarget("score"));
   ctx.if(score.greaterThan(100), (ctx) => {
-    score.set(0, ctx);   // reset once we cross the threshold
+    score.set(0);   // reset once we cross the threshold
   });
 });
 ```

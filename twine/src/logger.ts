@@ -99,7 +99,7 @@ export class Logger {
 
   private setLevel(ctx: FunctionContext, level: LogLevel | "off") {
     const rank = level === "off" ? OFF_RANK : SEVERITY[level];
-    this.objective!.score(ScoreTarget(Selector.self())).set(rank, ctx);
+    this.objective!.score(ScoreTarget(Selector.self())).set(rank);
     ctx.tellraw(
       Selector.self(),
       text(level === "off" ? "Logging disabled" : `Log level set to ${level.toUpperCase()}`).color(Color.GRAY),

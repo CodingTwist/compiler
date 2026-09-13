@@ -17,7 +17,7 @@ export function defineInit(I: PlayerMotionInternals): void {
     for (const o of [api, dummy, math, konst]) ctx.scoreInit(o);
     // Seed the constant fake-players the math divides/multiplies by.
     const constants = [-1, 2, 10, 12, 100, 1000, 2000, 8000, 100000, 1000000];
-    for (const n of constants) ctx.scoreSet(constant(`#constant.${n}`).set(n));
+    for (const n of constants) constant(`#constant.${n}`).set(n);
     for (const o of [gm, prevVecK, prevXin, prevYin, prevZin, prevX, prevY, prevZ, prevMethod, store])
       ctx.scoreInit(o);
 

@@ -326,7 +326,7 @@ class BossModule implements DatapackModule {
       .execute()
       .storeResultScore(this.score("max"))
       .run((b) => b.entity(this.boss).get(Path.Entity.Health, 1));
-    this.score("live").set(1, ctx);
+    this.score("live").set(1);
     ctx.execute().as(this.boss).at(Selector.self()).run((b) => b.call(this.enterFirst));
   }
 
@@ -434,7 +434,7 @@ class BossModule implements DatapackModule {
    */
   private rollAbility(ctx: FunctionContext, phase: Phase, pick: FunctionRef): void {
     const total = this.score("total");
-    total.set(0, ctx);
+    total.set(0);
     for (const a of phase.abilities) {
       ctx.if(this.cooldown(phase, a).matches(new Range(undefined, 0)), (ready) =>
         total.add(a.weight ?? 1, ready),
@@ -458,12 +458,12 @@ class BossModule implements DatapackModule {
 
     const tries = phase.abilities.map((a) => {
       const fire = scope.fn(`${this.name}/${phase.label}/${a.name}`, (ctx) => {
-        picked.set(1, ctx);
-        this.cooldown(phase, a).set(a.cooldown, ctx);
+        picked.set(1);
+        this.cooldown(phase, a).set(a.cooldown);
         a.body(ctx);
       });
       return scope.fn(`${this.name}/${phase.label}/try_${a.name}`, (ctx) => {
-        roll.remove(a.weight ?? 1, ctx);
+        roll.remove(a.weight ?? 1);
         ctx.if(roll.matches(new Range(undefined, 0)), (hit) => hit.call(fire));
       });
     });
@@ -476,7 +476,7 @@ class BossModule implements DatapackModule {
       // 1..total, the weights' own range - each ability then subtracts its weight
       // in `try_*` until one takes the roll to zero.
       math`${roll} % ${this.score("total")} + 1`.into(roll, ctx);
-      picked.set(0, ctx);
+      picked.set(0);
       phase.abilities.forEach((a, i) => {
         ctx
           .execute()
@@ -496,9 +496,9 @@ class BossModule implements DatapackModule {
   private cleanup(ctx: FunctionContext): void {
     ctx.kill(this.allBosses);
     if (this.opts.bar) ctx.bossbar().remove(this.barId);
-    this.score("live").set(0, ctx);
+    this.score("live").set(0);
     for (const phase of this.opts.phases) {
-      for (const a of phase.abilities) this.cooldown(phase, a).set(0, ctx);
+      for (const a of phase.abilities) this.cooldown(phase, a).set(0);
     }
     ctx.tag().remove(this.participants, `${this.name}.p`);
     rearmEvents(ctx, this.dp, this.name, this);

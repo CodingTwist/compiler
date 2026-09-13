@@ -39,7 +39,7 @@ export function buildMarcher(state: RaycastState, fn: FunctionRef, opts: Raycast
     }
 
     // 1. Spend a step of this marcher's reach budget.
-    ctx.scoreRemove(steps.remove(1));
+    steps.remove(1);
 
     // 2. Air ahead and budget remaining: step a stride along ^ and recurse (carry
     //    the marched-to position through `positioned`). `return run` tail-calls so a

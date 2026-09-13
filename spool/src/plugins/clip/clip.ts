@@ -342,7 +342,7 @@ export class Clip {
     const timing = this.dp.timing;
 
     this.dp.createFunction(`${name}/start`).build((ctx) => {
-      frame.set(0, ctx);
+      frame.set(0);
       timing.start(ctx, life, runTicks);
     });
     this.dp.createFunction(`${name}/stop`).build((ctx) => {
@@ -352,8 +352,8 @@ export class Clip {
       for (let k = 0; k < P; k++) {
         ctx.if(frame.equal(k), (c) => c.emit(new FunctionNode(`${name}/frame_${k}`)));
       }
-      frame.add(1, ctx);
-      ctx.if(frame.equal(P), (c) => frame.set(0, c));
+      frame.add(1);
+      ctx.if(frame.equal(P), (c) => frame.set(0));
       timing.advance(ctx, life);
     });
     this.dp.createFunction(`${name}/tick`, "tick").build((ctx) => {

@@ -23,6 +23,6 @@ export class ActiveFlags {
 
   /** Set an area's initial flag value in `load`. */
   setDefault(ctx: FunctionContext, name: string, active: boolean): void {
-    this.score(name).set(active ? 1 : 0, ctx);
+    this.score(name).set(active ? 1 : 0);
   }
 }

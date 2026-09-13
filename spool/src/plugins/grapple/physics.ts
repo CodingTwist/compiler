@@ -230,8 +230,8 @@ export function releaseKick(d: PhysicsDeps, scratch: SwingScratch, ctx: Function
 
   // Local launch: forward (line of sight) = speed² · RELEASE_KICK, capped; no sideways / up.
   const launch = d.repo.launchVec();
-  ctx.scoreSet(launch.x.set(0));
-  ctx.scoreSet(launch.y.set(0));
+  launch.x.set(0);
+  launch.y.set(0);
   math`min(${scratch.frac} * ${consts.releaseKick}, ${consts.releaseKickMax})`.into(launch.z, ctx);
   d.motion.applyLocal(ctx);
 }

@@ -130,14 +130,14 @@ function definePlayerMotion(dp: Datapack): PlayerMotion {
   defineApi(I);
   // Write the three input scores from a local/global velocity (block/tick floats).
   const setLocal = (ctx: FunctionContext, v: LocalVelocity): void => {
-    ctx.scoreSet(I.inputX.set(toFixedPoint(v.sideways ?? 0)));
-    ctx.scoreSet(I.inputY.set(toFixedPoint(v.up ?? 0)));
-    ctx.scoreSet(I.inputZ.set(toFixedPoint(v.forward ?? 0)));
+    I.inputX.set(toFixedPoint(v.sideways ?? 0));
+    I.inputY.set(toFixedPoint(v.up ?? 0));
+    I.inputZ.set(toFixedPoint(v.forward ?? 0));
   };
   const setGlobal = (ctx: FunctionContext, v: GlobalVelocity): void => {
-    ctx.scoreSet(I.inputX.set(toFixedPoint(v.x ?? 0)));
-    ctx.scoreSet(I.inputY.set(toFixedPoint(v.y ?? 0)));
-    ctx.scoreSet(I.inputZ.set(toFixedPoint(v.z ?? 0)));
+    I.inputX.set(toFixedPoint(v.x ?? 0));
+    I.inputY.set(toFixedPoint(v.y ?? 0));
+    I.inputZ.set(toFixedPoint(v.z ?? 0));
   };
 
   return {
@@ -150,12 +150,12 @@ function definePlayerMotion(dp: Datapack): PlayerMotion {
       ctx.call(I.fLaunchGlobal);
     },
     applyLocal(ctx: FunctionContext, v?: LocalVelocity): void {
-      ctx.scoreSet(I.sustain.set(1));
+      I.sustain.set(1);
       if (v) setLocal(ctx, v);
       ctx.call(I.fLaunchLocal);
     },
     applyGlobal(ctx: FunctionContext, v?: GlobalVelocity): void {
-      ctx.scoreSet(I.sustain.set(1));
+      I.sustain.set(1);
       if (v) setGlobal(ctx, v);
       ctx.call(I.fLaunchGlobal);
     },

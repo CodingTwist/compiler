@@ -69,7 +69,7 @@ export function createDebugService(d: DebugDeps) {
      */
     log(scratch: SwingScratch, ctx: FunctionContext): void {
       const frame = d.scratch.scalar("log_frame");
-      ctx.scoreAdd(frame.add(1));
+      frame.add(1);
       const { yaw, pitch } = readFacing(ctx);
       ctx.tellraw(d.selectors.self(), [
         "[g] f=", frame,

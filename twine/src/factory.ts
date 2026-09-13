@@ -144,14 +144,14 @@ export class DatapackFactory {
       const { instance, meta } = graph.nodes.get(ref)!;
       const activate = dp.createFunction(`${meta.name}/activate`);
       activate.build((ctx) => {
-        flags.score(meta.name).set(1, ctx);
+        flags.score(meta.name).set(1);
         if (instance.onActivate) inDimension(ref, ctx, (c) => instance.onActivate!(c));
       });
       activateOf.set(ref, activate);
       const deactivate = dp.createFunction(`${meta.name}/deactivate`);
       deactivate.build((ctx) => {
         if (instance.onDeactivate) inDimension(ref, ctx, (c) => instance.onDeactivate!(c));
-        flags.score(meta.name).set(0, ctx);
+        flags.score(meta.name).set(0);
       });
       deactivateOf.set(ref, deactivate);
     }
@@ -169,7 +169,7 @@ export class DatapackFactory {
       const latched = getEventHandlers(instance).filter((h) => h.opts.once !== false);
       if (latched.length === 0) continue;
       dp.createFunction(`${meta.name}/rearm`).build((ctx) => {
-        for (const h of latched) latches.score(meta.name, h.method).set(0, ctx);
+        for (const h of latched) latches.score(meta.name, h.method).set(0);
       });
     }
 

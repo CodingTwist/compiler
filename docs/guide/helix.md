@@ -105,7 +105,7 @@ reward.build((ctx) => {
   const points = score.score(ScoreTarget("total"));
   ctx.if(points.greaterThan(9), (ctx) => {
     ctx.say("high score!");
-    points.set(0, ctx);
+    points.set(0);
   });
 });
 ```

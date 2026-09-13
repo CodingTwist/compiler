@@ -30,7 +30,7 @@ export function defineStore(I: PlayerMotionInternals): void {
       // Clear bits 0..30, set bit 31 = 0 (as the run target so it's one execute).
       const clear = ctx.execute();
       for (let bit = 0; bit <= 30; bit++) clear.storeResultScore(storeBit(`#${axis}.${bit}`));
-      clear.run((b) => b.scoreSet(storeBit(`#${axis}.31`).set(0)));
+      clear.run((b) => storeBit(`#${axis}.31`).set(0));
 
       ctx.execute().ifScoreMatches(value, new Range(0, 0)).run((b) => b.return_(1));
 
@@ -39,7 +39,7 @@ export function defineStore(I: PlayerMotionInternals): void {
         .execute()
         .storeSuccessScore(storeBit(`#${axis}.31`))
         .ifScoreMatches(value, new Range(undefined, -1))
-        .run((b) => b.scoreAdd(value.add(2147483647)));
+        .run((b) => value.add(2147483647));
 
       // Bits 30..1: subtract the power of two when present, recording the bit.
       for (let bit = 30; bit >= 1; bit--) {
@@ -48,13 +48,13 @@ export function defineStore(I: PlayerMotionInternals): void {
           .execute()
           .storeSuccessScore(storeBit(`#${axis}.${bit}`))
           .ifScoreMatches(value, new Range(pow, undefined))
-          .run((b) => b.scoreRemove(value.remove(pow)));
+          .run((b) => value.remove(pow));
       }
       // Bit 0: whatever remains (1) is the lowest bit.
       ctx
         .execute()
         .ifScoreMatches(value, new Range(1, undefined))
-        .run((b) => b.scoreSet(storeBit(`#${axis}.0`).set(1)));
+        .run((b) => storeBit(`#${axis}.0`).set(1));
     });
   };
 

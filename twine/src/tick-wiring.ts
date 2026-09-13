@@ -282,7 +282,7 @@ function emitPresence(w: Wiring, ref: ModuleRef, ctx: FunctionContext): void {
   }
   const present = w.flags.score(`${meta.name}.in`); // recomputed each tick while active
   const deactivate = w.deactivateOf.get(ref)!;
-  present.set(0, ctx);
+  present.set(0);
   whenPlayerInZones(ctx, triggerZones(trigger), (inside) => present.set(1, inside));
   ctx.if(present.equal(0), (gone) => gone.call(deactivate));
 }

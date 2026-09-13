@@ -178,7 +178,7 @@ export function globalConversionTail(
     .run((b) => b.returnRun((r) => r.call(fUsePrevious)));
 
   prevVecK.score(self()).assign(dummyScore("#vec_k_combined"));
-  ctx.scoreSet(prevMethod.score(self()).set(method));
+  prevMethod.score(self()).set(method);
 
   // Large-vector conversion needs macros; unsupported in this build.
   ctx

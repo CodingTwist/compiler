@@ -134,7 +134,7 @@ export class ItemModule implements DatapackModule {
       // Reset every player (cheap) so a use registered this tick can't linger and
       // re-fire next tick. `set 0` behaves like `reset` here: the stat re-mirrors
       // its (>=1) total on the next use.
-      ctx.scoreSet(rc.score(Selector.allPlayers()).set(0));
+      rc.score(Selector.allPlayers()).set(0);
     });
   }
 

@@ -387,7 +387,7 @@ export function defineInit(d: InitDeps): void {
     const objectives = [d.scratch.work, d.consts.objective, ...d.repo.objectives];
     for (const o of objectives) ctx.scoreInit(o);
 
-    for (const [score, value] of d.consts.seeds) ctx.scoreSet(score.set(value));
+    for (const [score, value] of d.consts.seeds) score.set(value);
 
     // The grapple-id counter persists across the run; only seed it if unset (load runs on
     // every reload, and we must not reset live anchors' ids to 0). A score compared to itself
@@ -395,6 +395,6 @@ export function defineInit(d: InitDeps): void {
     ctx
       .execute()
       .unlessScore(d.consts.nextId, "=", d.consts.nextId)
-      .run((b) => b.scoreSet(d.consts.nextId.set(0)));
+      .run((b) => d.consts.nextId.set(0));
   });
 }

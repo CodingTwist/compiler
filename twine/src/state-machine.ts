@@ -105,7 +105,7 @@ export class StateMachine {
 
   /** Set the state to `label` and run its `onEnter` (the shared "become this state" step). */
   private enter(ctx: FunctionContext, label: string): void {
-    this.cur.set(this.id(label), ctx);
+    this.cur.set(this.id(label));
     this.states.get(label)!.onEnter?.(ctx);
   }
 
@@ -140,7 +140,7 @@ export class StateMachine {
   /** Per-tick body: freeze the state, clear the guard, then run the matching state. */
   private dispatch(ctx: FunctionContext): void {
     this.snap.copy(ctx, this.cur);
-    this.done.set(0, ctx);
+    this.done.set(0);
     for (const from of this.order) {
       ctx.if(this.snap.equal(this.id(from)), (sc) => this.runState(sc, from));
     }
