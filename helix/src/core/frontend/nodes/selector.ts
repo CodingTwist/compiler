@@ -24,11 +24,11 @@ export class SelectorScore {
   }
 }
 
-/** An axis-aligned volume in selector terms: `x/y/z` lower corner + `dx/dy/dz` span. */
+/** An axis-aligned volume in selector terms: `x/y/z` lower corner (omitted: the execution position) + `dx/dy/dz` span. */
 export interface SelectorVolume {
-  x: number;
-  y: number;
-  z: number;
+  x?: number;
+  y?: number;
+  z?: number;
   dx: number;
   dy: number;
   dz: number;
@@ -117,6 +117,16 @@ export class Selector {
       dy: Math.abs(to[1] - from[1]),
       dz: Math.abs(to[2] - from[2]),
     };
+    return this;
+  }
+
+  /**
+   * Restrict to entities whose hitbox overlaps a box spanning `dx/dy/dz` from the
+   * **execution position** - {@link volume} without a fixed corner, so it moves with
+   * `positioned`/`at`. Vanilla adds 1 to each span, so `span(0, 0, 0)` is a 1-block cube.
+   */
+  span(dx: number, dy: number, dz: number): this {
+    this.volumeBox = { dx, dy, dz };
     return this;
   }
 

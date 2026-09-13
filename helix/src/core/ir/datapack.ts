@@ -78,6 +78,19 @@ export class Datapack extends DatapackResources {
     return analyzeCost(this);
   }
 
+  /** Functions whose fast NBT reads are intentional, with why - see {@link allowNbtRead}. */
+  readonly nbtReadAllowed = new Map<string, string>();
+
+  /**
+   * Mark `fn`'s NBT reads as intentional, so {@link report} stops warning that they
+   * run faster than the t5 clock. Covers what `fn` calls too (its `execute … run`
+   * bodies included), so keep the allowed reads in a function of their own - a new
+   * read elsewhere still warns.
+   */
+  allowNbtRead(fn: FunctionRef | string, reason: string): void {
+    this.nbtReadAllowed.set(typeof fn === "string" ? fn : fn.getName(), reason);
+  }
+
   /** Convenience: run {@link report} and print the formatted summary. */
   printReport(): CostReport {
     const report = this.report();

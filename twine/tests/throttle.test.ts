@@ -9,7 +9,9 @@ function compile(root: new () => object): { tick: string; clock: string } {
   const files = buildDatapack(dp);
   const find = (suffix: string) =>
     [...files].find(([p]) => p.endsWith(suffix))?.[1] ?? "";
-  return { tick: find("/tick.mcfunction"), clock: find("zzz/clock.mcfunction") };
+  // root tick + each module's own `<name>/tick`
+  const tick = [...files].filter(([p]) => p.endsWith("/tick.mcfunction")).map(([, b]) => b).join("\n");
+  return { tick, clock: find("zzz/clock.mcfunction") };
 }
 
 describe("tick throttling + staggering", () => {

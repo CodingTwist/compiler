@@ -16,7 +16,8 @@ function compile(root: new () => object): {
 } {
   const dp = DatapackFactory.create(root as never, { name: "test", env: "dev" });
   const files = buildDatapack(dp);
-  const tick = [...files].find(([p]) => p.endsWith("/tick.mcfunction"))?.[1] ?? "";
+  // root tick + each module's own `<name>/tick`
+  const tick = [...files].filter(([p]) => p.endsWith("/tick.mcfunction")).map(([, b]) => b).join("\n");
   const file = (suffix: string) => [...files].find(([p]) => p.endsWith(suffix))?.[1];
   return { files, all: [...files.values()].join("\n"), tick, file };
 }

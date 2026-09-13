@@ -150,6 +150,16 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
   are the block-side file mechanism (blockstate files *override an existing block's* appearance -
   there is no vanilla "new block", so the custom-block *technique* is spool policy, not core).
 
+### Cost report NBT-read warnings (`src/core/report/cost-report.ts`)
+
+`dp.report()` also lists every entity/block NBT read (`nbt=`, `data get`, `if data`,
+`from entity|block`) reachable from `tick`, with its cadence read off helix's own clock
+gates (`if score t<N> clock matches <k>`, nested gates by lcm). Faster than t5
+(`NBT_READ_MIN_PERIOD`) → `warnings`, unless `dp.allowNbtRead(fn, reason)` covers it; an
+allow inherits down the call tree (so it covers `execute … run` child functions). Static:
+an event-driven function called from the tick tree looks per-tick - allow it where the
+caller knows better.
+
 ### JSON validation (`src/validate/mcdoc.ts`) - optional
 
 `validateDatapack(dp, opts?)` checks the pack's emitted JSON resources against the *vanilla

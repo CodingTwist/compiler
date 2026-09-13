@@ -17,12 +17,13 @@ function bodyOf(dp: Datapack, name: string): string {
 function compileRoot(
   root: new () => object,
   env: "dev" | "prod" = "dev",
-): { files: Map<string, string>; all: string; tick: string } {
+): { files: Map<string, string>; all: string; tick: string; root: string } {
   const dp = DatapackFactory.create(root as never, { name: "test", env });
   const files = buildDatapack(dp);
-  const tick =
-    [...files].find(([p]) => p.endsWith("/tick.mcfunction"))?.[1] ?? "";
-  return { files, all: [...files.values()].join("\n"), tick };
+  // root tick + each module's own `<name>/tick`
+  const tick = [...files].filter(([p]) => p.endsWith("/tick.mcfunction")).map(([, b]) => b).join("\n");
+  const rootTick = [...files].find(([p]) => /^data\/[^/]+\/[^/]+\/tick\.mcfunction$/.test(p))?.[1] ?? "";
+  return { files, all: [...files.values()].join("\n"), tick, root: rootTick };
 }
 
 describe("area gating", () => {
@@ -317,7 +318,7 @@ describe("triggers", () => {
     @Module({ name: "root", imports: [Outer] })
     class Root {}
 
-    const { tick, all } = compileRoot(Root);
+    const { root: tick, all } = compileRoot(Root);
 
     // The outer (top-level) area's detector runs unconditionally...
     expect(tick).toContain("if score #outer active matches 0");
@@ -325,6 +326,7 @@ describe("triggers", () => {
     // it only exists inside the outer-active subtree.
     expect(tick).not.toContain("distance=..3");
     expect(tick).not.toContain("if score #inner active");
+    expect(tick).toContain("if score #outer active matches 1 run function test:outer/tick");
     // It does exist downstream, reachable only once #outer is live.
     expect(all).toContain("distance=..3");
     expect(all).toContain("function test:inner/activate");
@@ -543,7 +545,7 @@ describe("root areas", () => {
       }
     }
 
-    const { tick, all, files } = compileRoot(Tunnel);
+    const { root: tick, all, files } = compileRoot(Tunnel);
 
     // Same shape a child area gets: arm while off, work while on, disarm empty.
     expect(tick).toContain("if score #tunnel active matches 0");

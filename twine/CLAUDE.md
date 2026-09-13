@@ -61,6 +61,18 @@ constructed and emits nothing** - that is the compile-time disable.
   *dismounts* its passengers, so orphans are found by mark-and-sweep (there is no "has a
   vehicle" check; only the vehicle knows its passengers). A rig that rides sits at the
   mount point (`height * 0.75` up), which is what `Display.offset(...)` exists to cancel.
+  **Idle cost is a score check.** No per-tick line scans `@e`: `<name>/wake` runs once a
+  second (a poll counter, not a clock gate), tags mobs within `wakeRange` (default 48) of
+  a player `<name>.awake`, keeps mid-gesture mobs awake as `<name>.finishing` (they
+  finish, but no `when` fires - a looping idle gesture would otherwise never sleep),
+  stores the count in `#awake`, and does the orphan sweep. The poll is
+  `execute if score #awake … as @e[type=…,tag=<name>.awake] run function <name>/tick_one`,
+  and everything per-mob is written against `@s` there: the author's `.onTick` hook
+  (`<name>/on_tick`, first, so its tags/yaw are what the gestures see), each gesture's
+  trigger and its `<gesture>_clock` (only called while that clock runs), the yaw copy,
+  and the hit relay - whose test is `if function <name>/attacked` (`on attacker`), not an
+  `nbt={attack:{}}` read. twine `dp.allowNbtRead`s `face_one` and cooldown-capped gesture
+  bodies so the cost report doesn't warn on them.
   `toModule` returns the `ConfiguredModule` **plus handles** (`.summon`, `.spawn`,
   `.gestures.x`) to the functions it generated, so a consumer never looks a name up on
   the datapack - and it emits `<name>/spawn` (summon one at the nearest player) itself,
@@ -161,6 +173,14 @@ single owned entry: `consolidateTick(dp)` (run automatically at the end of
 after* `create` (raw helix/spool calls, as `lab/src/main.ts` does for grapple), call
 `consolidateTick(datapack)` again just before `writeDatapack` to sweep those too. Backed by
 helix's `dp.untag(name, tag)` / `dp.functionRef(name)` mechanism primitives.
+
+**One call per module, never inlined.** Each ticking module's subtree (its `onTick`, `@On`
+polls, child modules, area presence checks) lands in its own `<name>/tick`
+(`moduleTick` in `tick-wiring.ts`). The root tick and each area's `active == 1` gate just
+call it, so `tick.mcfunction` stays a short list and each module's cost sits under its own
+name. A module imported by several parents is built once. A `<name>/tick` that clashes with
+an existing function throws. Tests reading "the tick" should join every
+`*/tick.mcfunction`, not only the root file.
 
 ## Commands
 

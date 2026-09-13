@@ -60,7 +60,36 @@ export interface CostReport {
   unboundedScanners: FunctionCost[];
   /** Every analysed function by bare name. */
   perFunction: Map<string, FunctionCost>;
+  /** Entity/block NBT reads reachable from `tick`, with how often they run. */
+  nbtReads: NbtRead[];
+  /** The {@link nbtReads} faster than {@link NBT_READ_MIN_PERIOD} that nobody allowed. */
+  warnings: NbtRead[];
 }
+
+/** One NBT read in a tick-reachable function. */
+export interface NbtRead {
+  fn: string;
+  /** Fastest cadence the function is reached at, in ticks (1 = every tick). */
+  period: number;
+  line: string;
+  /** Why it's fine, when allowed via `dp.allowNbtRead`. */
+  allowed?: string;
+}
+
+/** Reads at this period or slower (the t5 clock) aren't warned about. */
+export const NBT_READ_MIN_PERIOD = 5;
+
+/**
+ * Entity/block NBT reads: each one serializes the whole entity (or block entity).
+ * `storage` is a plain compound lookup, so it isn't counted.
+ */
+const NBT_READ = /nbt=|data get (entity|block)|(if|unless) data (entity|block)|from (entity|block)/;
+
+/** A helix clock gate (`timing.phaseGate`): an exact residue, not the `N..` wrap. */
+const CLOCK_GATE = /if score t(\d+) clock matches \d+(?![.\d])/g;
+
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+const lcm = (a: number, b: number) => (a * b) / gcd(a, b);
 
 /** A selector narrowed by any of these is treated as bounded (a small scan). */
 const BOUNDED_PREDICATES = ["limit=", "type=", "tag=", "name="];
@@ -226,6 +255,36 @@ export function analyzeCost(dp: Datapack): CostReport {
     });
   }
 
+  // Cadence: walk from the roots carrying a period, raised by every clock gate a
+  // call sits behind. A function keeps the fastest period it is reached at.
+  // An allow covers everything the allowed function calls (its `execute … run`
+  // bodies included), unless that callee is also reached some other, faster way.
+  const period = new Map<string, number>();
+  const allowedBy = new Map<string, string | undefined>();
+  const work: [string, number, string | undefined][] = tickRoots.map((r) => [r, 1, undefined]);
+  while (work.length > 0) {
+    const [name, p, inherited] = work.pop()!;
+    const allowed = dp.nbtReadAllowed.get(name) ?? inherited;
+    const seen = period.get(name);
+    // Revisit only for a faster period, or the same one without an allow.
+    if (seen !== undefined && (seen < p || (seen === p && (!allowedBy.get(name) || allowed)))) continue;
+    period.set(name, p);
+    allowedBy.set(name, allowed);
+    for (const { callee, guard } of directCallSites(dp.files.get(name) ?? "", dp.name)) {
+      const gated = [...guard.matchAll(CLOCK_GATE)].reduce((acc, m) => lcm(acc, Number(m[1])), p);
+      work.push([callee, gated, allowed]);
+    }
+  }
+  const nbtReads: NbtRead[] = [];
+  for (const [fn, p] of [...period].sort(([a], [b]) => a.localeCompare(b))) {
+    for (const line of commandLines(dp.files.get(fn) ?? "")) {
+      if (!NBT_READ.test(line)) continue;
+      // A gate on the read's own line (`execute if score t20 … run data get …`) counts too.
+      const lp = [...line.matchAll(CLOCK_GATE)].reduce((acc, m) => lcm(acc, Number(m[1])), p);
+      nbtReads.push({ fn, period: lp, line, allowed: allowedBy.get(fn) });
+    }
+  }
+
   const unboundedScanners: FunctionCost[] = [];
   for (const name of reachableFromTick) {
     const cost = costs.get(name);
@@ -241,6 +300,8 @@ export function analyzeCost(dp: Datapack): CostReport {
     ),
     unboundedScanners,
     perFunction: costs,
+    nbtReads,
+    warnings: nbtReads.filter((r) => r.period < NBT_READ_MIN_PERIOD && !r.allowed),
   };
 }
 
@@ -278,6 +339,18 @@ export function formatCostReport(report: CostReport): string {
     for (const fn of report.unboundedScanners) {
       out.push(`    ${fn.name}: ${fn.unboundedScans.join(", ")}`);
     }
+  }
+  for (const w of report.warnings) {
+    const line = w.line.length > 120 ? `${w.line.slice(0, 117)}...` : w.line;
+    out.push(
+      `  WARN nbt read every ${w.period} tick(s) in ${w.fn}: ${line}\n` +
+        `       → move it to a t5/t10/t20 clock, or dp.allowNbtRead("${w.fn}", why)`,
+    );
+  }
+  const allowed = report.nbtReads.filter((r) => r.allowed && r.period < NBT_READ_MIN_PERIOD);
+  if (allowed.length > 0) {
+    const why = [...new Set(allowed.map((r) => `${r.fn} (${r.allowed})`))];
+    out.push(`  ${allowed.length} allowed fast nbt read(s): ${why.join(", ")}`);
   }
   return out.join("\n");
 }

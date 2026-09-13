@@ -38,6 +38,8 @@ export {
   type TickRootCost,
   type CallSiteCost,
   type FunctionCost,
+  type NbtRead,
+  NBT_READ_MIN_PERIOD,
 } from "./core/report/cost-report";
 // Command-node factory consumers need for click events etc. (no `new` in consumers).
 // Command-file named exports aren't at the package root by default (the index only

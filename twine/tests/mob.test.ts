@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { describe, it, expect } from "vitest";
 // From the "helix" barrel, not a deep dist path - see the note in boss.test.ts.
-import { Block, buildDatapack, Display, Husk, Range, Selector, quat, quatFromTo } from "helix";
+import { Block, buildDatapack, Display, Husk, Item, Range, Selector, quat, quatFromTo } from "helix";
 import { Module } from "../src/module.decorator";
 import { DatapackFactory } from "../src/factory";
 import { defineMob } from "../src/mob";
@@ -30,12 +30,12 @@ describe("defineMob", () => {
 
   it("sweeps rigs whose mob died - a killed vehicle only dismounts its riders", () => {
     const all = build();
-    expect(all).toContain("tag @e[tag=sentinel_rig_0] add sentinel.orphan");
+    expect(all).toContain("tag @e[type=minecraft:block_display,tag=sentinel_rig_0] add sentinel.orphan");
     expect(all).toContain(
-      "execute as @e[tag=sentinel] on passengers run tag @s remove sentinel.orphan",
+      "execute as @e[type=minecraft:husk,tag=sentinel] on passengers run tag @s remove sentinel.orphan",
     );
     expect(all).toContain(
-      "execute as @e[tag=sentinel_rig_0,tag=sentinel.orphan] run function test:sentinel/kill_rig",
+      "execute as @e[type=minecraft:block_display,tag=sentinel_rig_0,tag=sentinel.orphan] run function test:sentinel/kill_rig",
     );
     // The rig root's own passengers (children + hitbox) have to be killed first.
     expect(all).toContain("execute on passengers run kill @s");
@@ -43,11 +43,15 @@ describe("defineMob", () => {
 
   it("relays a hit on the hitbox down onto the mob, and copies the mob's yaw up", () => {
     const all = build();
+    // `on attacker` is the hit test, so no NBT is read until there is a hit.
     expect(all).toContain(
-      "execute as @e[tag=sentinel_rig_hitbox,nbt={attack:{}}] on vehicle on vehicle run damage @s 4",
+      "execute on passengers on passengers if entity @s[tag=sentinel_rig_hitbox] if function test:sentinel/attacked run function test:sentinel/relay_hit",
     );
+    expect(all).toContain("execute on attacker run return 1");
+    expect(all).toContain("execute on vehicle on vehicle run damage @s 4\ndata remove entity @s attack");
+    expect(all).not.toContain("nbt=");
     // Exactly the rig's own vehicle, and yaw only - a copied pitch tilts the model.
-    expect(all).toContain("execute as @e[tag=sentinel_rig_0] run function test:sentinel/face_one");
+    expect(all).toContain("execute on passengers if entity @s[tag=sentinel_rig_0] run function test:sentinel/face_one");
     expect(all).toContain(
       "execute on vehicle run data modify entity @e[tag=sentinel.cur,limit=1] Rotation[0] set from entity @s Rotation[0]",
     );
@@ -88,11 +92,10 @@ describe("defineMob", () => {
     );
     // Gated on its own cooldown, which only counts down for mobs that have one.
     expect(all).toContain(
-      "execute as @e[tag=sentinel] at @s unless score @s sentinel.swing matches 1.. if entity @a[distance=..3] run function test:sentinel/swing",
+      "execute unless entity @s[tag=sentinel.finishing] unless score @s sentinel.swing matches 1.. if entity @a[distance=..3] run function test:sentinel/swing",
     );
-    expect(all).toContain(
-      "scoreboard players remove @e[scores={sentinel.swing=1..},tag=sentinel] sentinel.swing 1",
-    );
+    expect(all).toContain("execute if score @s sentinel.swing matches 1.. run function test:sentinel/swing_clock");
+    expect(all).toContain("scoreboard players remove @s sentinel.swing 1");
   });
 
   it("eases a rise in and holds it, pushing the sequence's step clock back", () => {
@@ -119,10 +122,10 @@ describe("defineMob", () => {
       "run data merge entity @s[tag=sentinel_rig_1] {transformation:{left_rotation:[-0.5f,0.5f,0.5f,0.5f],right_rotation:[0.0f,0.0f,0.0f,1.0f],scale:[1.0f,1.0f,1.0f],translation:[1.0f,0.0f,0.0f]},start_interpolation:0,interpolation_duration:3}",
     );
     // Step 1 waits out the 2-poll hold: 20 - 2 - 1, not 20 - 1.
-    expect(all).toContain("@e[scores={sentinel.whirl=17},tag=sentinel]");
+    expect(all).toContain("@s[scores={sentinel.whirl=17}]");
     expect(all).not.toContain("sentinel.whirl=19}");
     // ...and so does the fall home, at 20 - 2 - 2.
-    expect(all).toContain("@e[scores={sentinel.whirl=16},tag=sentinel]");
+    expect(all).toContain("@s[scores={sentinel.whirl=16}]");
   });
 
   it("lands a delayed hit partway through the swing, off the mob's own clock", () => {
@@ -146,7 +149,7 @@ describe("defineMob", () => {
     // The hit moved out of the gesture function into its own, called from the poll
     // by whichever mobs are exactly 6 ticks past their raise.
     expect(all).toContain(
-      "execute as @e[scores={sentinel.whirl=14},tag=sentinel] at @s run function test:sentinel/whirl_hit",
+      "execute if score @s sentinel.whirl matches 14 run function test:sentinel/whirl_hit",
     );
     expect([...files.keys()].find((k) => k.endsWith("whirl.mcfunction"))).toBeDefined();
     expect(files.get([...files.keys()].find((k) => k.endsWith("whirl.mcfunction"))!)).not.toContain(
@@ -196,11 +199,38 @@ describe("defineMob", () => {
     const all = [...files.values()].join("\n");
 
     expect(all).toContain(
-      "execute as @e[scores={sentinel.fire=6},tag=sentinel] at @s run function test:sentinel/fire_recover",
+      "execute if score @s sentinel.fire matches 6 run function test:sentinel/fire_recover",
     );
     expect(files.get([...files.keys()].find((k) => k.endsWith("fire_recover.mcfunction"))!)).toContain(
       "say reloaded",
     );
+  });
+
+  it("costs a counter and a score check per poll until a player is near", () => {
+    const dp = DatapackFactory.create(
+      (() => {
+        const mob = defineMob(Husk({}), Display(Block.STONE)).onTick((c) => c.say("mine")).toModule("sentinel", { tickEvery: 1, wakeRange: 30 });
+        @Module({ name: "root", imports: [mob] })
+        class Root {}
+        return Root;
+      })() as never,
+      { name: "test", env: "dev" },
+    );
+    const files = buildDatapack(dp);
+    const fn = (n: string) => files.get([...files.keys()].find((k) => k.endsWith(`/${n}.mcfunction`))!)!;
+    expect(fn("sentinel/tick")).toBe(
+      [
+        "scoreboard players add #wake sentinel.awake 1",
+        "execute if score #wake sentinel.awake matches 20.. run function test:sentinel/wake",
+        "execute if score #awake sentinel.awake matches 1.. as @e[type=minecraft:husk,tag=sentinel,tag=sentinel.awake] at @s run function test:sentinel/tick_one",
+      ].join("\n"),
+    );
+    expect(fn("wake")).toContain("execute at @a run tag @e[distance=..30,type=minecraft:husk,tag=sentinel] add sentinel.awake");
+    expect(fn("tick_one")).not.toContain("@e");
+    // Walked away mid-gesture: kept awake to finish it, but a looping one can't re-fire.
+    expect(fn("wake")).toContain("execute at @a run tag @e[distance=..30,type=minecraft:husk,tag=sentinel] remove sentinel.finishing");
+    expect(fn("tick_one")).toContain("function test:sentinel/on_tick");
+    expect(fn("on_tick")).toContain("say mine");
   });
 
   it("rejects a sequence whose cooldown can't fit its rise as well as its steps", () => {
@@ -223,5 +253,32 @@ describe("defineMob", () => {
     // Two steps inside a cooldown of 3 is fine until the rise wants polls too.
     expect(build3(0)).not.toThrow();
     expect(build3(4)).toThrow(/rise hold/);
+  });
+});
+
+describe("mob preview", () => {
+  it("times a sequence's writes: rise, held steps, then home", () => {
+    const mob = defineMob(Husk({}), Display.item(Item.MACE))
+      .gesture("smash", { members: [0], pivot: [0, 0, 0], rotate: [quat("x", -60), quat("x", 30), quat("x", 110)], rise: 10, fall: 6, cooldown: 30 })
+      .toModule("m", { tickEvery: 2 });
+    const [g] = mob.preview().gestures;
+    // hold = rise - 1 = 9 polls, so step 1 lands on poll 10 (tick 20).
+    expect(g.writes.map((w) => [w.tick, w.duration])).toEqual([[0, 10], [20, 2], [22, 2], [24, 6]]);
+    expect(g.writes[3].poses[0]).toEqual({});
+  });
+
+  it("drops a one-step gesture on the next poll", () => {
+    const mob = defineMob(Husk({}), Display.item(Item.MACE))
+      .gesture("jab", { members: [0], pivot: [0, 0, 0], rotate: quat("x", 45) })
+      .toModule("m", { tickEvery: 2 });
+    expect(mob.preview().gestures[0].writes.map((w) => [w.tick, w.duration])).toEqual([[0, 0], [2, 4]]);
+  });
+
+  it("holds the last pose for a linger before the fall", () => {
+    const mob = defineMob(Husk({}), Display.item(Item.MACE))
+      .gesture("slam", { members: [0], pivot: [0, 0, 0], rotate: quat("z", 90), rise: 5, linger: 10, fall: 3, cooldown: 30 })
+      .toModule("m", { tickEvery: 1 });
+    // hold 4 + 1 step + linger 10: home on poll 15.
+    expect(mob.preview().gestures[0].writes.map((w) => [w.tick, w.duration])).toEqual([[0, 5], [15, 3]]);
   });
 });

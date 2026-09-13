@@ -176,6 +176,7 @@ export class DatapackFactory {
       deactivateOf,
       dims,
       phaseOf: makePhaseAllocator(),
+      ticks: new Map(),
     };
     // A root that is itself an `area` gets the same treatment a child area does
     // - trigger, `active` gate, presence disarm - rather than an ungated tick.

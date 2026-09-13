@@ -23,6 +23,8 @@ export interface Wiring {
   dims: Map<ModuleRef, Id | undefined>;
   /** Resolve a throttled module's fire phase within its `tickEvery` period. */
   phaseOf: (node: Node) => number;
+  /** Each module's `<name>/tick`, built once however many parents call it. */
+  ticks: Map<ModuleRef, { fn: FunctionRef; dim?: Id }>;
 }
 
 /**
@@ -114,6 +116,31 @@ function resolveMethodBody(
 }
 
 /**
+ * A module's whole per-tick subtree lands in its own `<name>/tick`, so the root
+ * `tick.mcfunction` reads as one call per top-level module and each module's cost
+ * sits under its own name instead of interleaved inline with its siblings'.
+ */
+function moduleTick(w: Wiring, ref: ModuleRef, dim: Id | undefined, body: Emit): FunctionRef {
+  const name = `${w.graph.nodes.get(ref)!.meta.name}/tick`;
+  // A module imported by several parents (e.g. an item shared by some areas) is
+  // built once and called from each.
+  const built = w.ticks.get(ref);
+  if (built) {
+    if (built.dim !== dim) {
+      throw new Error(`Module "${name}" is imported under two different dimensions - give it its own dimension`);
+    }
+    return built.fn;
+  }
+  if (w.dp.functionRef(name)) {
+    throw new Error(`Module tick "${name}" collides with an existing function - rename the module or that function`);
+  }
+  const fn = w.dp.createFunction(name);
+  w.ticks.set(ref, { fn, dim });
+  fn.build(body);
+  return fn;
+}
+
+/**
  * Append a module's tick body, then recurse. Each area child contributes, *at its
  * parent's already-gated level*:
  *   - an arm detector behind `active == 0` (skip once live), and
@@ -129,7 +156,8 @@ export function wireTick(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: 
     if (!w.needsTick(childRef)) continue; // nothing to run below → emit nothing
     const child = w.graph.nodes.get(childRef)!;
     if (!child.meta.area) {
-      wireTick(w, childRef, ctx, dim); // inline, gated by (and in the dimension of) ancestors
+      // gated by (and in the dimension of) ancestors
+      ctx.call(moduleTick(w, childRef, dim, (c) => wireTick(w, childRef, c, dim)));
       continue;
     }
     emitArea(w, childRef, ctx, dim);
@@ -158,10 +186,11 @@ export function emitArea(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: 
   const areaDim = w.dims.get(ref) ?? dim;
   const body = (host: FunctionContext) => {
     if (node.meta.trigger) emitArm(w, ref, host); // only fires while inactive
-    host.if(w.flags.score(node.meta.name).equal(1), (inner) => {
+    const tick = moduleTick(w, ref, areaDim, (inner) => {
       wireTick(w, ref, inner, areaDim);
       if (node.meta.trigger) emitPresence(w, ref, inner);
     });
+    host.if(w.flags.score(node.meta.name).equal(1), (inner) => inner.call(tick));
   };
   if (areaDim && areaDim !== dim) ctx.execute().in(areaDim).run(body);
   else body(ctx);

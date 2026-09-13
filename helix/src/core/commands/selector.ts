@@ -47,7 +47,8 @@ export function renderSelector(node: SelectorNode, version?: VersionProfile): st
 
   if (node.volume) {
     const v = node.volume;
-    args.push(`x=${v.x}`, `y=${v.y}`, `z=${v.z}`, `dx=${v.dx}`, `dy=${v.dy}`, `dz=${v.dz}`);
+    if (v.x !== undefined) args.push(`x=${v.x}`, `y=${v.y}`, `z=${v.z}`);
+    args.push(`dx=${v.dx}`, `dy=${v.dy}`, `dz=${v.dz}`);
   }
 
   if (node.distance) args.push(`distance=${node.distance}`);

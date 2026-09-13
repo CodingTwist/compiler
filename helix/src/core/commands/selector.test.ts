@@ -35,6 +35,7 @@ describe("Selector rendering", () => {
 
   it("renders a partial vertical band (y/dy, no x/z)", () => {
     expect(Selector.self().yBand(-30, -100).toString()).toBe("@s[y=-30,dy=-100]");
+    expect(Selector.allPlayers().span(0, 16, 0).toString()).toBe("@a[dx=0,dy=16,dz=0]");
   });
 
   it("ANDs negated game modes onto a selector", () => {
