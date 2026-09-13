@@ -49,11 +49,17 @@ export async function loadPack(opts: {
     throw new Error(`helix: ${config.entry} must default-export a pack function (dp, build) => void`);
   }
 
+  if (entry.version && config.version) {
+    throw new Error(`helix: version is set in both ${CONFIG_FILE} and ${config.entry} - keep one`);
+  }
+  const version = entry.version ?? config.version;
+  if (!version) throw new Error(`helix: no version - set it in ${CONFIG_FILE} or definePack({ version }, ...)`);
+
   const targets = opts.target ? [opts.target] : (config.targets ?? ["vanilla"]);
   const packs: LoadedPack[] = [];
   for (const target of targets) {
     const suffix = target === "vanilla" ? "" : `-${target}`;
-    const dp = new Datapack(config.name, config.version, target, {
+    const dp = new Datapack(config.name, version, target, {
       debug: opts.mode === "dev" ? config.debug : undefined,
     });
     await entry(dp, { mode: opts.mode, target });

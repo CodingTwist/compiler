@@ -12,13 +12,13 @@ import { v1_21_4 } from "../versions/profiles";
 const roots: string[] = [];
 afterAll(() => roots.forEach((r) => fs.rmSync(r, { recursive: true, force: true })));
 
-function fixture(): string {
+function fixture(versionIn: "config" | "entry" | "both" = "config"): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "helix-cli-"));
   roots.push(root);
   fs.writeFileSync(
     path.join(root, "helix.config.ts"),
     `export default {
-  name: "Fixture", version: (globalThis as any).__fixtureVersion, entry: "src/pack.ts",
+  name: "Fixture", ${versionIn === "entry" ? "" : "version: (globalThis as any).__fixtureVersion,"} entry: "src/pack.ts",
   targets: ["vanilla", "paper"],
   out: { datapack: "saves/w/datapacks/fixture" },
   debug: { comments: true },
@@ -27,7 +27,8 @@ function fixture(): string {
   fs.mkdirSync(path.join(root, "src"));
   fs.writeFileSync(
     path.join(root, "src/pack.ts"),
-    `export default (dp: any, build: any) => dp.createFunction("hi").build((c: any) => c.say(build.mode + " " + build.target));`,
+    `export default Object.assign((dp: any, build: any) => dp.createFunction("hi").build((c: any) => c.say(build.mode + " " + build.target)),
+  ${versionIn === "config" ? "{}" : "{ version: (globalThis as any).__fixtureVersion }"});`,
   );
   return root;
 }
@@ -49,5 +50,11 @@ describe("loadPack", () => {
     const { packs } = await loadPack({ root: fixture(), mode: "prod", target: "vanilla" });
     expect(packs.map((p) => p.target)).toEqual(["vanilla"]);
     expect(packs[0].dp.debug).toEqual({});
+  });
+
+  it("takes the version from the entry, and refuses it in both places", async () => {
+    const { packs } = await loadPack({ root: fixture("entry"), mode: "prod" });
+    expect(packs[0].dp.version).toBe(v1_21_4);
+    await expect(loadPack({ root: fixture("both"), mode: "prod" })).rejects.toThrow(/both/);
   });
 });

@@ -23,6 +23,7 @@ export {
   definePack,
   type HelixConfig,
   type PackEntry,
+  type PackOptions,
   type BuildInfo,
   type BuildMode,
 } from "./cli/config";
