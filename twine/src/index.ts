@@ -21,6 +21,8 @@ export {
 } from "./core/events";
 export type { OnOptions, EventHandler } from "./core/events";
 export { buildEnv, isDev, setBuildEnv } from "./core/env";
+export { defineDifficulty, setDifficulty } from "./core/difficulty";
+export type { Difficulty, DifficultyConfig, MobScaling } from "./core/difficulty";
 export { defineItem, ItemBuilder } from "./item/builder";
 export { defineBoss, BossBuilder } from "./boss/builder";
 export { defineMob, MobBuilder } from "./mob/builder";

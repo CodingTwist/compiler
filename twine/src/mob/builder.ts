@@ -1,6 +1,7 @@
 import type { DamageType, Datapack, DisplayValue, FunctionContext, FunctionRef, Id, IdentifiedEntityNbt, Score } from "helix";
 import type { ConfiguredModule } from "../core/module.interface";
 import { defineModule } from "../core/module.decorator";
+import type { DifficultyConfig } from "../core/difficulty";
 import { mobPreview, resolveGesture, type Gesture, type MobPreview } from "./gesture";
 import { MobModule, type Relay } from "./module";
 
@@ -68,6 +69,7 @@ export class MobBuilder<S extends string = never> {
   private readonly gestures = new Map<string, Gesture<S>>();
   private tick?: MobTick<S>;
   private stateDefs = new Map<string, MobState<S>>();
+  private scaling?: DifficultyConfig;
 
   constructor(
     private readonly nbt: IdentifiedEntityNbt,
@@ -77,6 +79,12 @@ export class MobBuilder<S extends string = never> {
   /** Turns hits on the model's hitbox into `damage` on the mob. The model needs a hitbox. */
   relayHits(damage: number, type?: DamageType): this {
     this.relay = { damage, type };
+    return this;
+  }
+
+  /** Overrides the pack's difficulty config for this mob, per level and field. */
+  difficulty(scaling: DifficultyConfig): this {
+    this.scaling = scaling;
     return this;
   }
 
@@ -118,6 +126,7 @@ export class MobBuilder<S extends string = never> {
       gestures,
       tick: this.tick,
       states: this.stateDefs,
+      scaling: this.scaling,
     });
     const mod = defineModule({ name, tickEvery, dimension: opts.dimension }, mob) as MobModuleRef;
     const refs = (keys: string[], short: (k: string) => string) => Object.fromEntries(keys.map((k) => [k, mob.fnRef(short(k))]));

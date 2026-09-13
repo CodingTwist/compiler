@@ -105,6 +105,12 @@ can't drift from what was summoned. An array `rotate` is a sequence stepped off 
 `Detector`. One cooldown **per gesture**, so an idle gesture can't gate the others.
 `resolveGesture` fills defaults and rejects timings that don't fit inside the cooldown.
 
+**Difficulty** is read from the world at summon (`difficulty` query into `#difficulty`, then a
+`dispatchScore` into `<name>/zzz/scale/<level>`), so one pack follows the world setting. The
+pack-wide table comes from `mount(..., { difficulty })` (usually a `difficulty.config.ts`);
+`.difficulty(...)` overrides it per level and field. Scaling is attribute modifiers keyed
+`twine:difficulty`, so it needs 1.21+.
+
 `toModule` returns the module **plus handles** (`.summon`, `.spawn`, `.gestures.x`,
 `.states.x`, `.onTickFn`), so a consumer never looks a function name up. twine
 `dp.allowNbtRead`s `face_one` and cooldown-capped gesture bodies so the report doesn't warn.

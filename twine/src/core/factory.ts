@@ -4,6 +4,7 @@ import { Datapack, ignoreSourceFrames, v1_20_4 } from "helix";
 import type { DebugOptions, FunctionContext, Id, VersionProfile, FunctionRef, RuntimeTarget } from "helix";
 import type { BuildEnv, ModuleClass, ModuleRef, ModuleScope } from "./module.interface";
 import { buildEnv, setBuildEnv } from "./env";
+import { setDifficulty, type DifficultyConfig } from "./difficulty";
 import { ActiveFlags } from "./flags";
 import { EventLatches, getEventHandlers } from "./events";
 import { buildGraph, needsTickMemo, resolveDimensions, type Node } from "./graph";
@@ -67,6 +68,8 @@ export interface FactoryOptions {
    * `comments` also writes them into the pack.
    */
   debug?: DebugOptions;
+  /** Mob scaling per difficulty level, usually imported from a `difficulty.config.ts`. */
+  difficulty?: DifficultyConfig;
 }
 
 /**
@@ -87,12 +90,13 @@ export class DatapackFactory {
    * Wires the module tree into an existing `dp`, e.g. the one the `helix` CLI created.
    * {@link create} does this on a new Datapack.
    */
-  static mount(dp: Datapack, root: ModuleClass, opts: { env?: BuildEnv } = {}): Datapack {
+  static mount(dp: Datapack, root: ModuleClass, opts: { env?: BuildEnv; difficulty?: DifficultyConfig } = {}): Datapack {
     const flags = new ActiveFlags(dp);
     const latches = new EventLatches(dp);
     // Resolved once and published, so `isDev()` agrees with how the graph was pruned.
     const env = opts.env ?? buildEnv();
     setBuildEnv(env);
+    setDifficulty(opts.difficulty ?? {});
 
     const graph = buildGraph(root, env);
 

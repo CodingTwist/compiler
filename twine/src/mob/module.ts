@@ -1,4 +1,4 @@
-import { NbtPath, Pos, Range, Relation, ScoreTarget, Selector, atLeast, displayPose, privateName } from "helix";
+import { Attribute, Id, NbtPath, Pos, Range, Relation, ScoreTarget, Selector, atLeast, displayPose, privateName } from "helix";
 import type {
   DamageType,
   Datapack,
@@ -11,8 +11,12 @@ import type {
   Score,
 } from "helix";
 import type { DatapackModule, ModuleScope } from "../core/module.interface";
+import { DIFFICULTY_IDS, difficultyFor, type Difficulty, type DifficultyConfig } from "../core/difficulty";
 import type { MobState, MobStates, MobTick } from "./builder";
 import { memberPose, type ResolvedGesture } from "./gesture";
+
+/** Keys every difficulty modifier, so a mob summoned twice can't stack them. */
+const DIFFICULTY_MODIFIER = Id("twine:difficulty");
 
 /** The yaw half of `Rotation` - index 1 is the pitch, which a rig must not copy. */
 const YAW = NbtPath("Rotation[0]");
@@ -30,6 +34,8 @@ export interface MobDef<S extends string> {
   gestures: ResolvedGesture<S>[];
   tick?: MobTick<S>;
   states: ReadonlyMap<string, MobState<S>>;
+  /** This mob's override of the pack's difficulty config. */
+  scaling?: DifficultyConfig;
 }
 
 /** The {@link DatapackModule} a {@link MobBuilder} compiles to. */
@@ -125,6 +131,7 @@ export class MobModule<S extends string> implements DatapackModule {
       },
     };
 
+    this.awakeObj = dp.objective(`${this.name}.awake`);
     this.registerSummon(scope);
     this.faceByRotate = atLeast(dp.version, "1.21.2");
     for (const g of gestures) this.registerGesture(dp, scope, g);
@@ -134,12 +141,11 @@ export class MobModule<S extends string> implements DatapackModule {
     }
     this.registerStates(dp);
 
-    this.awakeObj = dp.objective(`${this.name}.awake`);
     this.add("wake", scope.fn(privateName(`${this.name}/wake`), (ctx) => this.wakeBody(ctx, scope)));
     this.add("tick_one", this.internal("tick_one", (ctx) => this.tickOneBody(ctx, scope)));
   }
 
-  /** Emits `<mob>/summon` and `<mob>/spawn`. */
+  /** Emits `<mob>/summon` */
   private registerSummon(scope: ModuleScope): void {
     const fresh = `${this.name}.new`;
     const summon = this.add(
@@ -152,13 +158,35 @@ export class MobModule<S extends string> implements DatapackModule {
           .execute()
           .as(Selector.allEntities().tag(`${this.rig}_0`).tag(fresh))
           .run((b) => b.ride().mount(Selector.self(), Selector.allEntities().tag(this.name).tag(fresh).limit(1)));
+        const scale = this.scaleFn();
+        if (scale) ctx.execute().as(Selector.allEntities().tag(this.name).tag(fresh).limit(1)).run((b) => b.call(scale));
         ctx.tag().remove(Selector.allEntities().tag(fresh), fresh);
       }),
     );
-    this.add(
-      "spawn",
-      scope.fn(`${this.name}/spawn`, (ctx) => ctx.execute().at(Selector.nearest()).run((b) => b.call(summon))),
-    );
+  }
+
+  /** `<mob>/scale`: applies this world's difficulty scaling to `@s`, or `undefined` if nothing scales. */
+  private scaleFn(): FunctionRef | undefined {
+    const config = difficultyFor(this.def.scaling);
+    const levels = Object.keys(config) as Difficulty[];
+    if (!levels.length) return undefined;
+    const self = Selector.self();
+    const cases = levels.map((level) => {
+      const { speed, damage, knockback } = config[level]!;
+      return {
+        range: Range.exactly(DIFFICULTY_IDS[level]),
+        fn: this.internal(`scale/${level}`, (c) => {
+          if (speed !== undefined) c.attribute().modifierAddAddMultipliedBase(self, Attribute.MOVEMENT_SPEED, DIFFICULTY_MODIFIER, speed - 1);
+          if (damage !== undefined) c.attribute().modifierAddAddMultipliedBase(self, Attribute.ATTACK_DAMAGE, DIFFICULTY_MODIFIER, damage - 1);
+          if (knockback !== undefined) c.attribute().modifierAddAddValue(self, Attribute.ATTACK_KNOCKBACK, DIFFICULTY_MODIFIER, knockback);
+        }),
+      };
+    });
+    const current = this.awakeObj.score(ScoreTarget("#difficulty"));
+    return this.internal("scale", (c) => {
+      c.execute().storeResultScore(current).run((b) => b.difficulty());
+      c.dispatchScore(current, cases);
+    });
   }
 
   /** Emits a gesture's raise function, its delayed bodies, and its clock. */

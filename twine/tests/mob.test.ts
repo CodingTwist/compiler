@@ -363,3 +363,27 @@ describe("mob checks written once", () => {
     expect(fn("wake_one")).toContain("execute if score @s sentinel.state_t matches 1.. run function test:sentinel/zzz/wake_finish");
   });
 });
+
+describe("difficulty", () => {
+  function scaled(version?: VersionProfile) {
+    const rig = Display(Block.STONE);
+    const mob = defineMob(Husk({}), rig).difficulty({ hard: { damage: 2 } }).toModule("brute");
+    @Module({ name: "root", imports: [mob] })
+    class Root {}
+    const dp = DatapackFactory.create(Root as never, {
+      name: "test",
+      version,
+      difficulty: { easy: { speed: 0.5 }, hard: { knockback: 1 } },
+    });
+    return [...buildDatapack(dp).values()].join("\n");
+  }
+
+  it("reads the world's difficulty at summon and scales per level, mob over pack", () => {
+    const all = scaled(v26_2);
+    expect(all).toContain("execute as @e[tag=brute,tag=brute.new,limit=1] run function test:brute/zzz/scale");
+    expect(all).toContain("execute store result score #difficulty brute.awake run difficulty");
+    expect(all).toContain("attribute @s minecraft:movement_speed modifier add twine:difficulty -0.5 add_multiplied_base");
+    expect(all).toContain("attribute @s minecraft:attack_damage modifier add twine:difficulty 1 add_multiplied_base");
+    expect(all).toContain("attribute @s minecraft:attack_knockback modifier add twine:difficulty 1 add_value");
+  });
+});
