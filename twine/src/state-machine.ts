@@ -27,9 +27,8 @@ interface Transition {
 /**
  * A scoreboard state machine for quests, dialogue, puzzles and story flow.
  *
- * The dispatch reads a snapshot of the state, so a transition doesn't also run the new
- * state
- * in the same tick. Call the returned dispatch from a module's `onTick`.
+ * The dispatch reads a snapshot of the state, so a transition doesn't also run the new state in the
+ * same tick. Call the returned dispatch from a module's `onTick`.
  */
 export class StateMachine {
   private readonly states = new Map<string, StateConfig>();
@@ -105,9 +104,8 @@ export class StateMachine {
   }
 
   /**
-   * Jumps to `label` now: runs the current `onExit`, sets the state, runs `label`'s
-   * `onEnter`.
-   * For event-driven jumps outside the dispatch.
+   * Jumps to `label` now: runs the current `onExit`, sets the state, runs `label`'s `onEnter`. For
+   * event-driven jumps outside the dispatch.
    */
   go(ctx: FunctionContext, label: string): void {
     for (const from of this.order) {

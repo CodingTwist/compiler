@@ -22,103 +22,92 @@ constructed and emits nothing** - that is the compile-time disable.
 
 ## Layout
 
-- [src/module.decorator.ts](src/module.decorator.ts) - the `@Module({...})` decorator
-  (stores `ModuleMetadata` via `reflect-metadata`), `getModuleMetadata`, and
-  `defineModule` / `isConfiguredModule` for the `forFeature`-style configured modules.
-- [src/module.interface.ts](src/module.interface.ts) - the `DatapackModule` lifecycle
-  contract and the metadata/area types (`ModuleMetadata`, `ConfiguredModule`, `Zone`,
-  `AreaTrigger`, `BuildEnv`, `Vec3`).
-- [src/factory.ts](src/factory.ts) - `DatapackFactory`: instantiate the tree, run the
-  lifecycle. `mount(dp, Root, { env })` wires it into a Datapack the `helix` CLI created
-  from `helix.config.ts` (how lab builds); `create(Root, opts)` is `mount` over a fresh one.
-- [src/graph.ts](src/graph.ts) / [src/regions.ts](src/regions.ts) /
-  [src/state-machine.ts](src/state-machine.ts) / [src/tick-wiring.ts](src/tick-wiring.ts) /
-  [src/flags.ts](src/flags.ts) - module-graph resolution, area/zone geometry, the
-  `StateMachine` helper, shared tick/load wiring, and the active-flag objective.
-- [src/events.ts](src/events.ts) - the `@On` / `@Every` method decorators, the
-  per-handler latch objective (`EventLatches`), and `rearmEvents`.
-- [src/item.ts](src/item.ts) - `defineItem` / `ItemBuilder`: custom behavioural items.
-- [src/boss.ts](src/boss.ts) - `defineBoss` / `BossBuilder`: a boss fight compiled to a
-  `ConfiguredModule`. Composes what already exists rather than adding concepts: the arena
-  is a plain `area` trigger (so entering starts it and the region emptying is the loss
-  condition), phases are a `StateMachine` whose transitions are health-percentage
-  thresholds, and cooldowns are scores on the boss's own objective. A real mob is the
-  source of truth - its `Health` is mirrored to a 0..100 score each poll (divided by a max
-  read once at spawn, so no config field can disagree with the NBT) which drives both the
-  phase guards and the bar. Abilities are picked by rolling the full int range **modulo**
-  the summed weight of whatever is off cooldown (`random value` needs a build-time literal
-  range, so the live total can only enter via the modulo), then walking cumulative
-  thresholds. Death is the entity being *gone*, not health 0. `cleanup` calls
-  `rearmEvents`, which is what makes a fight repeatable.
-- [src/mob.ts](src/mob.ts) - `defineMob` / `MobBuilder`: a **custom mob** compiled to a
-  `ConfiguredModule` - a real vanilla mob (AI, damage, death) wearing a helix `Display`
-  rig. The two are summoned separately and joined with `ride mount` (so neither value has
-  to know about the other), and the module owns the three things riding doesn't give you:
-  the rig's yaw (each rig tags itself, then `on vehicle` copies *its own* mob's
-  `Rotation[0]` back onto it *and on down to its own passengers*, since every member is
-  its own display entity that keeps its own rotation - not the nearest rig, which made two
-  mobs standing in each other share a model, and yaw only, since a copied pitch tilts it), hit relay from the model's `interaction`
-  hitbox onto the mob, and killing rigs whose mob is gone - a killed vehicle only
-  *dismounts* its passengers, so orphans are found by mark-and-sweep (there is no "has a
-  vehicle" check; only the vehicle knows its passengers). A rig that rides sits at the
-  mount point (`height * 0.75` up), which is what `Display.offset(...)` exists to cancel.
-  **Idle cost is a score check.** No per-tick line scans `@e`: `<name>/wake` runs once a
-  second (a poll counter, not a clock gate), tags mobs within `wakeRange` (default 48) of
-  a player `<name>.awake`, keeps mid-gesture mobs awake as `<name>.finishing` (they
-  finish, but no `when` fires - a looping idle gesture would otherwise never sleep),
-  stores the count in `#awake`, and does the orphan sweep. The poll is
-  `execute if score #awake … as @e[type=…,tag=<name>.awake] run function <name>/tick_one`,
-  and everything per-mob is written against `@s` there: the author's `.onTick` hook
-  (`<name>/on_tick`, first, so its tags/yaw are what the gestures see), each gesture's
-  trigger and its `<gesture>_clock` (only called while that clock runs), the yaw copy,
-  and the hit relay - whose test is `if function <name>/attacked` (`on attacker`), not an
-  `nbt={attack:{}}` read. twine `dp.allowNbtRead`s `face_one` and cooldown-capped gesture
-  bodies so the cost report doesn't warn on them.
-  **Every check is written once, by the framework.** This is a rule for mob codegen, and for authors:
-  - **wake:** one `as <mobs>` scan into `wake_one`, then one `at @a as <mobs>[distance]` scan into
-    `wake_near`.
-  - **triggers:** all gesture triggers sit behind one `unless finishing` check (`<name>/triggers`).
-  - **animation steps:** a sequence's steps are one `dispatchScore` on the clock (`<g>_pose` →
-    `<g>_step_<k>`), with no per-member `as @s[scores=…]`.
-  - **states:** a multi-phase mob uses `.states({ name: { polls?, onEnter?, tick?, onDone?, then? } })`,
-    never hand-rolled tags that each line re-checks.
-    - A mob's state index lives in `<name>.state`, and `tick_one` checks it once
-      (`matches 1..` → `<name>/state`).
-    - `<name>/state` dispatches on a `#<name>_state` copy, so a state that enters a later state
-      can't also run that state in the same poll.
-    - A timed state counts `<name>.state_t` down (the hook arg `mob.clock`) and keeps the mob
-      awake to finish it.
-    - Every body (`onTick`, `onFire`, `onRecover`, state hooks) gets `mob.enter/leave`, and state
-      names are typed when `.states()` is declared first.
-  `toModule` returns the `ConfiguredModule` **plus handles** (`.summon`, `.spawn`,
-  `.gestures.x`) to the functions it generated, so a consumer never looks a name up on
-  the datapack - and it emits `<name>/spawn` (summon one at the nearest player) itself,
-  which every pack used to hand-write.
-  `.gesture(name, {...})` is the member-animation primitive: vanilla has no per-mob
-  animation state, so a gesture snaps the named members to a rotation about a pivot
-  (`helix` `displayPose` + `rotateAboutPivot`) and lets the display's own interpolation
-  carry them back to the model's rest pose - rest comes from `model.members()`, so a
-  pose can't drift from what was summoned. `rotate` may be an **array**, which makes the
-  gesture a sequence - one pose per poll, stepped off the mob's own `<mob>.<gesture>`
-  countdown (so each mob animates independently), then the fall home; that's how a
-  rotation bigger than a snap-and-slerp-back is expressed (a spin attack). `tilt` is a
-  constant rotation held for the gesture that touches the members' *orientation* only -
-  an axis change in `rotate` would swing their translations out of the orbit plane too.
-  `onFire`
-  emits the author's own commands into the gesture function, as the mob - the hit that
-  goes with the swing, since vanilla gives no contact event. Cooldown is a score on `<mob>.<gesture>` - one clock **per gesture**, so an idle
-  gesture's countdown can't gate the others; the
-  trigger is the author's `Detector` (vanilla has no attack event - the nearest thing,
-  a nearby player's `HurtTime` hitting 10, never fires in creative).
-- [src/item-registry.ts](src/item-registry.ts) - `registerItem(name, item)` /
-  `registerItemGiveCommands(dp)`: dev-only `debug/give/<name>` functions for plain
-  (non-behavioural) `ItemValue`s a pack declares.
-- [src/env.ts](src/env.ts) - the build's **one** resolved `BuildEnv`. `currentEnv()`
-  reads `TWINE_ENV`, `DatapackFactory.create` publishes what it actually pruned by
-  (`setBuildEnv`), and module bodies gate emission on `isDev()` - so "which modules
-  survive" and "which commands they emit" can never disagree. Never re-read
-  `process.env.TWINE_ENV` in a pack; call `isDev()`.
-- [src/index.ts](src/index.ts) - the public barrel.
+Folders group by feature. Each feature is a **builder** (the fluent API an author calls) that
+compiles to a **module** (the `DatapackModule` that emits commands).
+
+- [src/core/](src/core/) - the framework itself.
+  - `module.decorator.ts` / `module.interface.ts` - `@Module`, `defineModule`, the
+    `DatapackModule` lifecycle contract and metadata types.
+  - `factory.ts` - `DatapackFactory`. `mount(dp, Root, { env })` wires the tree into a Datapack
+    the `helix` CLI created (how lab builds); `create(Root, opts)` is `mount` over a fresh one.
+  - `graph.ts` / `tick-wiring.ts` / `flags.ts` - module-graph resolution, the tick tree, and
+    the `active` flag objective.
+  - `area.ts` / `regions.ts` - area triggers and zone geometry.
+  - `events.ts` - `@On` / `@Every`, `EventLatches`, `rearmEvents`, `HandlerGroup`.
+  - `env.ts` - the build's one resolved `BuildEnv`. `buildEnv()` falls back to `TWINE_ENV`,
+    the factory publishes what it pruned by (`setBuildEnv`), and module bodies gate on `isDev()`,
+    so "which modules survive" and "which commands they emit" can't disagree. Never re-read
+    `process.env.TWINE_ENV` in a pack.
+- [src/mob/](src/mob/) - `defineMob`: custom mobs (see below). `builder.ts`, `module.ts`,
+  `gesture.ts` (gesture defaults, pose timeline, preview data - pure, no commands) and
+  `preview.ts` (`writeMobPreview`, the HTML rig viewer).
+- [src/boss/](src/boss/) - `defineBoss`: boss fights (see below).
+- [src/item/](src/item/) - `defineItem` behavioural items (`builder.ts`, `module.ts`), and
+  `registry.ts`: dev-only `debug/give/<name>` functions for plain `ItemValue`s.
+- [src/state-machine.ts](src/state-machine.ts) / [src/logger.ts](src/logger.ts) - the
+  `StateMachine` helper and the per-player `Logger`.
+- [src/index.ts](src/index.ts) - the public barrel. Tests import from source paths, so moving a
+  file means updating `tests/` too.
+
+### Boss fights (`src/boss/`)
+
+Composes what already exists: the arena is a plain `area` trigger (entering starts it, the
+region emptying is the loss), phases are a `StateMachine` with health-percentage transitions,
+and cooldowns are scores on the boss's objective.
+
+- The real mob is the source of truth: its `Health` is mirrored to a 0..100 score each poll
+  (divided by a max read at spawn), driving both phase guards and the bar.
+- Abilities roll the full int range **modulo** the summed weight of what's off cooldown, since
+  `random value` needs a build-time range.
+- Death is the entity being *gone*, not health 0. `cleanup` calls `rearmEvents`, which is what
+  makes a fight repeatable.
+
+### Custom mobs (`src/mob/`)
+
+A real vanilla mob (AI, damage, death) wearing a helix `Display` rig, summoned separately and
+joined with `ride mount`. The module owns what riding doesn't give you:
+
+- **Yaw:** every rig member keeps its own rotation, so each is turned from *its own* mob, yaw
+  only (a copied pitch tilts the model). 1.21.2+ uses `rotate`; older versions copy
+  `Rotation[0]` through NBT.
+- **Hit relay:** hits on the model's `interaction` hitbox become damage on the mob, tested with
+  `if function <name>/attacked` (`on attacker`), not an NBT read.
+- **Orphans:** a killed vehicle only *dismounts* its passengers and nothing can test "has a
+  vehicle", so rigs are found by mark-and-sweep in `wake`.
+- A riding rig sits at the mount point (`height * 0.75` up); `Display.offset(...)` cancels it.
+
+**Idle cost is a score check.** `<name>/wake` runs once a second: it tags mobs within
+`wakeRange` (default 48) of a player `<name>.awake`, keeps mid-gesture or mid-state mobs awake
+as `<name>.finishing` (they finish, but no `when` fires), stores the count in `#awake`, and
+sweeps orphans. The per-tick poll is one `if score #awake` into `<name>/tick_one`, where
+everything is written against `@s`: the author's `.onTick`, the state dispatch, each gesture's
+fall and `<gesture>_clock`, the triggers, the yaw copy, and the hit relay.
+
+**Every check is written once, by the framework.** A rule for mob codegen, and for authors:
+
+- **wake:** one `as <mobs>` scan into `wake_one`, then one `at @a as <mobs>[distance]` scan into
+  `wake_near`.
+- **triggers:** all gesture triggers sit behind one `unless finishing` check (`<name>/triggers`).
+- **animation steps:** a sequence's steps are one `dispatchScore` on the clock (`<g>_pose` →
+  `<g>_step_<k>`), with no per-member `as @s[scores=…]`.
+- **states:** a multi-phase mob uses `.states({ name: { polls?, onEnter?, tick?, onDone?, then? } })`,
+  never hand-rolled tags that each line re-checks. The index lives in `<name>.state` and
+  `tick_one` checks it once; `<name>/state` dispatches on a `#<name>_state` copy so entering a
+  later state can't also run it this poll; a timed state counts `<name>.state_t` down
+  (`mob.clock`). Every body gets `mob.enter/leave`; state names are typed when `.states()` is
+  declared first.
+
+**Gestures** (`.gesture(name, {...})`) snap members to a rotation about a pivot and let the
+display's interpolation carry them back to rest, which comes from `model.members()` so a pose
+can't drift from what was summoned. An array `rotate` is a sequence stepped off the mob's own
+`<mob>.<gesture>` cooldown (so each mob animates independently). `tilt` turns orientation only.
+`onFire` is the author's hit (vanilla has no contact event); the trigger is the author's
+`Detector`. One cooldown **per gesture**, so an idle gesture can't gate the others.
+`resolveGesture` fills defaults and rejects timings that don't fit inside the cooldown.
+
+`toModule` returns the module **plus handles** (`.summon`, `.spawn`, `.gestures.x`,
+`.states.x`, `.onTickFn`), so a consumer never looks a function name up. twine
+`dp.allowNbtRead`s `face_one` and cooldown-capped gesture bodies so the report doesn't warn.
 
 ## The module lifecycle (the contract authors implement)
 
@@ -145,7 +134,7 @@ A `DatapackModule` may implement any of:
 **root** may be an area itself - it gets the same trigger / `active` gate / presence
 disarm a child area does, so a pack that is one gated area needs no wrapper module.
 
-### Event handlers: `@On` / `@Every` ([src/events.ts](src/events.ts))
+### Event handlers: `@On` / `@Every` ([src/core/events.ts](src/core/events.ts))
 
 `@On(detector, opts?)` marks a method as the body that runs when a condition holds.
 Vanilla has no change hook, so this compiles to **poll + latch**: one `execute` per
@@ -193,7 +182,7 @@ helix's `dp.untag(name, tag)` / `dp.functionRef(name)` mechanism primitives.
 
 **One call per module, never inlined.** Each ticking module's subtree (its `onTick`, `@On`
 polls, child modules, area presence checks) lands in its own `<name>/tick`
-(`moduleTick` in `tick-wiring.ts`). The root tick and each area's `active == 1` gate just
+(`moduleTick` in `core/tick-wiring.ts`). The root tick and each area's `active == 1` gate just
 call it, so `tick.mcfunction` stays a short list and each module's cost sits under its own
 name. A module imported by several parents is built once. A `<name>/tick` that clashes with
 an existing function throws. Tests reading "the tick" should join every
@@ -206,7 +195,7 @@ emitted it:
 - `# loc` comments in the pack
 - `helix-sources.json`
 
-`factory.ts` registers twine with `ignoreSourceFrames(root, { framework: true })`, so framework
+`core/factory.ts` registers twine (root found as `__dirname/../..`, so moving that file means updating it) with `ignoreSourceFrames(root, { framework: true })`, so framework
 plumbing (tick wiring, mob internals) points at `twine/src/*.ts`, and module bodies point at the
 author's module. `sourceMap: true` in tsconfig is what turns the dist frames back into `.ts` lines.
 See helix/CLAUDE.md.

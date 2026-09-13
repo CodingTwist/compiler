@@ -7,9 +7,8 @@ export type { AreaTrigger, Vec3, Zone } from "./area";
 /**
  * What a module knows about itself in {@link DatapackModule.register}.
  *
- * Functions the module creates itself don't get its dimension automatically. A block check
- * in
- * the wrong dimension silently never matches, so create them with {@link fn}.
+ * Functions the module creates itself don't get its dimension automatically. A block check in the
+ * wrong dimension silently never matches, so create them with {@link fn}.
  */
 export interface ModuleScope {
   /** This module's `name` from its {@link ModuleMetadata}. */
@@ -21,8 +20,7 @@ export interface ModuleScope {
   /**
    * Creates a function whose body runs in {@link dimension}.
    *
-   * Use it for functions called from outside the tick tree: admin commands, schedules,
-   * rewards.
+   * Use it for functions called from outside the tick tree: admin commands, schedules, rewards.
    */
   fn(name: string, body: (ctx: FunctionContext) => void): FunctionRef;
 }
@@ -53,8 +51,7 @@ export interface DatapackModule {
   onActivate?(ctx: FunctionContext): void;
 
   /**
-   * Creates the function for an `@On({ name })` body. Override to apply your pack's
-   * function
+   * Creates the function for an `@On({ name })` body. Override to apply your pack's function
    * conventions. Defaults to `dp.createFunction`.
    */
   defineFunction?(
@@ -99,17 +96,16 @@ export interface ModuleMetadata {
   /**
    * Child modules to include. Removing one leaves it out of the build.
    *
-   * Deduplicated by identity: a shared class is built once, but two `Door(...)` calls are
-   * two doors.
+   * Deduplicated by identity: a shared class is built once, but two `Door(...)` calls are two
+   * doors.
    */
   imports?: ModuleRef[];
 
   /**
-   * Makes this module an area: its tick and whole import subtree only run while its
-   * `active` flag is `1`.
+   * Makes this module an area: its tick and whole import subtree only run while its `active` flag
+   * is `1`.
    *
-   * A dormant area costs one check per tick. Flip it with `<name>/activate` /
-   * `<name>/deactivate`
+   * A dormant area costs one check per tick. Flip it with `<name>/activate` / `<name>/deactivate`
    * or a {@link trigger}.
    */
   area?: boolean;
@@ -125,8 +121,7 @@ export interface ModuleMetadata {
   /**
    * The dimension this area lives in. Its lifecycle, ticks and triggers all run in it.
    *
-   * Saves adding `.in(...)` to every handler, where one missed call silently checks the
-   * wrong
+   * Saves adding `.in(...)` to every handler, where one missed call silently checks the wrong
    * dimension. Child areas inherit it.
    */
   dimension?: Id;
@@ -135,14 +130,13 @@ export interface ModuleMetadata {
   env?: BuildEnv[];
 
   /**
-   * Runs this module's `onTick` every `tickEvery` ticks instead of every tick. Still inside
-   * area gating.
+   * Runs this module's `onTick` every `tickEvery` ticks instead of every tick. Still inside area
+   * gating.
    */
   tickEvery?: number;
 
   /**
-   * Tick offset (`0..tickEvery-1`) for the throttled `onTick`. Omit to have modules sharing
-   * a
+   * Tick offset (`0..tickEvery-1`) for the throttled `onTick`. Omit to have modules sharing a
    * `tickEvery` spread across ticks automatically.
    */
   tickPhase?: number;

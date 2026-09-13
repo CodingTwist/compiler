@@ -5,8 +5,7 @@ import type { Datapack, Detector, FunctionContext, Score } from "helix";
 /**
  * `@On(detector)` runs a method when a condition becomes true.
  *
- * Datapack events are really a poll plus a latch. `@On` writes both, so you only write the
- * body.
+ * Datapack events are really a poll plus a latch. `@On` writes both, so you only write the body.
  * The detector is yours, so you choose what detection costs.
  */
 
@@ -24,8 +23,8 @@ export interface OnOptions {
   /**
    * Check the detector every `every` ticks. Defaults to the module's `tickEvery`.
    *
-   * This is the main cost setting: the detector runs at this rate while the module's area
-   * is active.
+   * This is the main cost setting: the detector runs at this rate while the module's area is
+   * active.
    */
   every?: number;
 
@@ -33,8 +32,7 @@ export interface OnOptions {
   phase?: number;
 
   /**
-   * Put the body in its own `<name>.mcfunction` instead of inlining it. Useful for long
-   * bodies.
+   * Put the body in its own `<name>.mcfunction` instead of inlining it. Useful for long bodies.
    */
   name?: string;
 }
@@ -65,9 +63,8 @@ export interface EventHandler {
  * }
  * ```
  *
- * The method runs once at build time and emits commands, like other lifecycle hooks.
- * For bodies on a helper object rather than the module class, use {@link on} / {@link
- * every}.
+ * The method runs once at build time and emits commands, like other lifecycle hooks. For bodies on
+ * a helper object rather than the module class, use {@link on} / {@link every}.
  */
 export function On(detector: Detector, opts: OnOptions = {}): MethodDecorator {
   return (target, key) => {
@@ -98,8 +95,7 @@ const INSTANCE_HANDLERS = Symbol("datapack:instance-event-handlers");
 /**
  * Registers a handler on `instance` without a decorated method.
  *
- * Prefer {@link on} / {@link every}. The key must be unique in the module, since it names
- * the
+ * Prefer {@link on} / {@link every}. The key must be unique in the module, since it names the
  * latch; a duplicate throws.
  */
 export function addEventHandler(instance: object, handler: EventHandler): void {
@@ -160,8 +156,7 @@ export const EVENT_OBJECTIVE = "events";
 /**
  * Latch flags for `once` handlers: one `#<module>.<method>` score each.
  *
- * A separate objective from `ActiveFlags`, which the tick reads every tick and should stay
- * small.
+ * A separate objective from `ActiveFlags`, which the tick reads every tick and should stay small.
  */
 export class EventLatches {
   private readonly objective;
@@ -177,15 +172,13 @@ export class EventLatches {
 }
 
 /** `matches 1` - the "already fired" test, hoisted so both sites agree. */
-const FIRED = new Range(1, 1);
+const FIRED = Range.exactly(1);
 
 /**
  * Emits one handler: latch check, detector, flag set, then the body.
  *
- * The latch check goes first on the same `execute`, so a spent handler only costs a score
- * check.
- * The flag is set before the body so a body that changes its own condition can't
- * re-trigger.
+ * The latch check goes first on the same `execute`, so a spent handler only costs a score check.
+ * The flag is set before the body so a body that changes its own condition can't re-trigger.
  */
 export function emitHandler(
   ctx: FunctionContext,
@@ -203,8 +196,7 @@ export function emitHandler(
 }
 
 /**
- * Re-arms `once` handlers on `module` so they can fire again. Omit `methods` for all of
- * them.
+ * Re-arms `once` handlers on `module` so they can fire again. Omit `methods` for all of them.
  *
  * Nothing re-arms by itself; the pack decides when (e.g. when a puzzle room is rebuilt).
  */
@@ -226,8 +218,7 @@ export function rearmEvents(
 /**
  * A set of event handlers on a helper object the module holds as a field.
  *
- * The module finds groups by type, runs their {@link registerHandlers} once, and namespaces
- * their
+ * The module finds groups by type, runs their {@link registerHandlers} once, and namespaces their
  * keys by {@link ns}. The group needs no reference to the module.
  */
 export abstract class HandlerGroup {
@@ -235,8 +226,7 @@ export abstract class HandlerGroup {
   abstract readonly ns: string;
 
   /**
-   * Declares this group's handlers with {@link on}/{@link every}. Called once by the
-   * framework.
+   * Declares this group's handlers with {@link on}/{@link every}. Called once by the framework.
    *
    * Runs after the subclass constructor, so fields are set.
    */

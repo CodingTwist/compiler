@@ -29,8 +29,7 @@ export interface Wiring {
 
 /** Emits a module's `onTick`, throttled by `tickEvery` if set. Nested inside area gating. */
 function emitTick(w: Wiring, node: Node, ctx: FunctionContext): void {
-  // Everything this module runs per tick, grouped by period. Each period shares one
-  // throttle check.
+  // Everything this module runs per tick, grouped by period. Each period shares one throttle check.
   const modulePeriod = node.meta.tickEvery ?? 1;
   const modulePhase = w.phaseOf(node);
   const buckets = new Map<string, { period: number; phase: number; bodies: Emit[] }>();
@@ -108,8 +107,8 @@ function resolveMethodBody(
 }
 
 /**
- * A module's tick subtree goes in its own `<name>/tick`, so each module's cost shows under
- * its name.
+ * A module's tick subtree goes in its own `<name>/tick`, so each module's cost shows under its
+ * name.
  */
 function moduleTick(w: Wiring, ref: ModuleRef, dim: Id | undefined, body: Emit): FunctionRef {
   const name = `${w.graph.nodes.get(ref)!.meta.name}/tick`;
@@ -161,8 +160,8 @@ export function wireTick(
 }
 
 /**
- * Emits one area's tick: its trigger (while inactive), then its subtree and leave check
- * (while active).
+ * Emits one area's tick: its trigger (while inactive), then its subtree and leave check (while
+ * active).
  *
  * Used for child areas and for a root area, so both are gated the same way.
  */
@@ -174,8 +173,7 @@ export function emitArea(
   gates: Score[] = [],
 ): void {
   const node = w.graph.nodes.get(ref)!;
-  // Wrap in `execute in` only if the area's dimension differs from the one already in
-  // effect.
+  // Wrap in `execute in` only if the area's dimension differs from the one already in effect.
   const areaDim = w.dims.get(ref) ?? dim;
   const body = (host: FunctionContext) => {
     if (node.meta.trigger) emitArm(w, ref, host, areaDim, gates); // only fires while inactive
@@ -213,7 +211,7 @@ function emitArm(
   }
   ctx.if(w.flags.score(meta.name).equal(0), (off) => {
     if (trigger.kind === "score") {
-      off.if(scoreCondition(w, trigger), (hit) => hit.call(activate));
+      off.if(scoreOf(w, trigger).matches(scoreRange(trigger)), (hit) => hit.call(activate));
     } else if (trigger.kind === "players") {
       off.whenEntity(trigger.selector, (any) => any.call(activate));
     }
@@ -221,11 +219,10 @@ function emitArm(
 }
 
 /**
- * Arms a geometric area with `minecraft:location` advancements, so a dormant area costs
- * nothing per tick.
+ * Arms a geometric area with `minecraft:location` advancements, so a dormant area costs nothing per
+ * tick.
  *
- * Vanilla checks `location` about once a second, so entry can lag up to 1s, and it tests
- * the
+ * Vanilla checks `location` about once a second, so entry can lag up to 1s, and it tests the
  * player's feet. Leaving can't be a trigger, so {@link emitPresence} still polls.
  */
 function armByAdvancement(
@@ -264,11 +261,6 @@ function armByAdvancement(
   });
 }
 
-/** The area's score condition, from `equals` or `matches`. */
-function scoreCondition(w: Wiring, trigger: ScoreTrigger) {
-  return scoreOf(w, trigger).matches(scoreRange(trigger));
-}
-
 /** The trigger's score cell. */
 function scoreOf(w: Wiring, trigger: ScoreTrigger) {
   return w.dp.objective(trigger.objective).score(ScoreTarget(trigger.target));
@@ -282,21 +274,21 @@ function scoreRange(trigger: ScoreTrigger): Range {
       `Score trigger on "${trigger.objective}" needs either \`equals\` or \`matches\``,
     );
   }
-  return new Range(trigger.equals, trigger.equals);
+  return Range.exactly(trigger.equals);
 }
 
 /**
- * The leave check for a presence area, inside its `active == 1` block: deactivate once
- * nobody matches.
+ * The leave check for a presence area, inside its `active == 1` block: deactivate once nobody
+ * matches.
  *
  * `score` triggers only get one with `latch: false`; `players` triggers get one by default.
  */
 function emitPresence(w: Wiring, ref: ModuleRef, ctx: FunctionContext): void {
   const { meta } = w.graph.nodes.get(ref)!;
   const trigger = meta.trigger!;
+  const deactivate = w.deactivateOf.get(ref)!;
   if (trigger.kind === "score") {
     if (trigger.latch !== false) return;
-    const deactivate = w.deactivateOf.get(ref)!;
     ctx.execute()
       .unlessScoreMatches(scoreOf(w, trigger), scoreRange(trigger))
       .run((gone) => gone.call(deactivate));
@@ -305,12 +297,10 @@ function emitPresence(w: Wiring, ref: ModuleRef, ctx: FunctionContext): void {
   if (trigger.kind === "players") {
     if (trigger.latch === true) return;
     // No flag needed: emptiness is one `unless entity` test on the same selector.
-    const deactivate = w.deactivateOf.get(ref)!;
     ctx.whenEntity(trigger.selector, (gone) => gone.call(deactivate), "unless");
     return;
   }
   const present = w.flags.score(`${meta.name}.in`); // recomputed each tick while active
-  const deactivate = w.deactivateOf.get(ref)!;
   present.set(0);
   whenPlayerInZones(ctx, triggerZones(trigger), (inside) => present.set(1, inside));
   ctx.if(present.equal(0), (gone) => gone.call(deactivate));

@@ -1,8 +1,8 @@
 import "reflect-metadata";
 import { describe, it, expect } from "vitest";
 import { buildDatapack, Selector } from "helix";
-import { Module } from "../src/module.decorator";
-import { DatapackFactory } from "../src/factory";
+import { Module } from "../src/core/module.decorator";
+import { DatapackFactory } from "../src/core/factory";
 
 function compile(root: new () => object): { tick: string; clock: string } {
   const dp = DatapackFactory.create(root as never, { name: "test", env: "dev" });

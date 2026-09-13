@@ -3,9 +3,9 @@ import { describe, it, expect } from "vitest";
 // From the "helix" barrel, not a deep dist path - see the note in boss.test.ts.
 import { Block, buildDatapack, Display, Husk, Item, Range, Selector, quat, quatFromTo, v26_2 } from "helix";
 import type { VersionProfile } from "helix";
-import { Module } from "../src/module.decorator";
-import { DatapackFactory } from "../src/factory";
-import { defineMob } from "../src/mob";
+import { Module } from "../src/core/module.decorator";
+import { DatapackFactory } from "../src/core/factory";
+import { defineMob } from "../src/mob/builder";
 import type { Detector } from "helix";
 
 function build(version?: VersionProfile) {

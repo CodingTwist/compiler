@@ -51,9 +51,8 @@ export interface PlayersTrigger {
 /**
  * Activates an area from a score. Give exactly one of {@link equals} or {@link matches}.
  *
- * Latches on until `<name>/deactivate` by default; `latch: false` turns it off when the
- * score
- * stops matching.
+ * Latches on until `<name>/deactivate` by default; `latch: false` turns it off when the score stops
+ * matching.
  */
 export interface ScoreTrigger {
   kind: "score";

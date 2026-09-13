@@ -4,9 +4,9 @@ import { describe, it, expect } from "vitest";
 // so test-built Items share one class identity with the give handler (vitest loads
 // a deep `helix/dist/...` path as a separate copy, breaking `instanceof ItemValue`).
 import { buildDatapack, Selector, Item } from "helix";
-import { Module } from "../src/module.decorator";
-import { DatapackFactory } from "../src/factory";
-import { defineItem } from "../src/item";
+import { Module } from "../src/core/module.decorator";
+import { DatapackFactory } from "../src/core/factory";
+import { defineItem } from "../src/item/builder";
 
 function compile(root: new () => object): {
   files: Map<string, string>;

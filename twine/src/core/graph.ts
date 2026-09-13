@@ -70,9 +70,8 @@ export function resolveDimensions(graph: Graph): Map<ModuleRef, Id | undefined> 
 }
 
 /**
- * Memoized: does `ref` need any tick output? True for `onTick`, `@On` handlers, triggered
- * areas,
- * or any descendant that does. Lets empty subtrees be skipped.
+ * Memoized: does `ref` need any tick output? True for `onTick`, `@On` handlers, triggered areas, or
+ * any descendant that does. Lets empty subtrees be skipped.
  */
 export function needsTickMemo(graph: Graph): (ref: ModuleRef) => boolean {
   const cache = new Map<ModuleRef, boolean>();

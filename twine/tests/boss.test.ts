@@ -4,9 +4,9 @@ import { describe, it, expect } from "vitest";
 // entity concepts built here share one class identity with the summon handler
 // (a deep `helix/dist/...` path loads a second copy and breaks `instanceof`).
 import { buildDatapack, Component, Pos, Wither } from "helix";
-import { Module } from "../src/module.decorator";
-import { DatapackFactory } from "../src/factory";
-import { defineBoss } from "../src/boss";
+import { Module } from "../src/core/module.decorator";
+import { DatapackFactory } from "../src/core/factory";
+import { defineBoss } from "../src/boss/builder";
 
 function compile(root: new () => object) {
   const dp = DatapackFactory.create(root as never, { name: "test", env: "dev" });

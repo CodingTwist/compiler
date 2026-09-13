@@ -1,71 +1,10 @@
-import { Id, Path, Pos, Range, Selector, math } from "helix";
-import type {
-  Component,
-  Datapack,
-  FunctionContext,
-  FunctionRef,
-  IdentifiedEntityNbt,
-  Objective,
-  Score,
-} from "helix";
-import { ScoreTarget } from "helix";
-import type { AreaTrigger, ConfiguredModule, DatapackModule, ModuleScope, Vec3 } from "./module.interface";
-import { defineModule } from "./module.decorator";
-import { rearmEvents } from "./events";
-import { triggerZones } from "./regions";
-import { StateMachine } from "./state-machine";
-
-/** Commands emitted into a generated function. */
-export type BossBody = (ctx: FunctionContext) => void;
-
-/** The seven vanilla bossbar colours. */
-export type BossbarColor = "pink" | "blue" | "red" | "green" | "yellow" | "purple" | "white";
-
-/** How the bar looks - set once at the start, and overridable per phase. */
-export interface BarStyle {
-  name: Component;
-  color?: BossbarColor;
-}
-
-/**
- * One boss attack. The framework handles cooldown and selection; `body` runs as and at the
- * boss.
- */
-export interface AbilityOpts {
-  /** Ticks before this ability can be picked again. */
-  cooldown: number;
-  /** Relative likelihood against the other *off-cooldown* abilities. Default `1`. */
-  weight?: number;
-  body: BossBody;
-}
-
-/** One stage of the fight. */
-export interface PhaseOpts {
-  /** Health percentage at or below which this phase starts. Omit on the first phase. */
-  at?: number;
-  /** Re-style the bar on entering this phase (a new name, a new colour, or both). */
-  bar?: BarStyle;
-  /** Run once on entering / every poll while here / once on leaving. `@s` is the boss. */
-  onEnter?: BossBody;
-  onTick?: BossBody;
-  onExit?: BossBody;
-}
-
-/** Extra module metadata `toModule` passes straight through. */
-export interface BossModuleOpts {
-  /** Poll period in ticks (default `5`). Cooldowns are measured against it. */
-  tickEvery?: number;
-  dimension?: Id;
-}
-
-interface Ability extends AbilityOpts {
-  name: string;
-}
-
-interface Phase extends PhaseOpts {
-  label: string;
-  abilities: Ability[];
-}
+import { Id, Path, Pos, Range, ScoreTarget, Selector, math } from "helix";
+import type { Datapack, FunctionContext, FunctionRef, IdentifiedEntityNbt, Objective, Score } from "helix";
+import type { AreaTrigger, DatapackModule, ModuleScope, Vec3 } from "../core/module.interface";
+import { rearmEvents } from "../core/events";
+import { triggerZones } from "../core/regions";
+import { StateMachine } from "../state-machine";
+import type { Ability, BarStyle, BossBody, BossbarColor, Phase } from "./builder";
 
 const MAX_INT = 2147483647;
 
@@ -82,110 +21,7 @@ const COLOR: Record<BossbarColor, (b: Bossbar, id: Id) => unknown> = {
   white: (b, id) => b.setColorWhite(id),
 };
 
-/**
- * Builds a boss fight: a mob with health-based phases, weighted abilities on cooldowns, and
- * a bossbar.
- *
- *   const king = defineBoss(Wither({ customName: "Bone King" }), Pos(0, 70, 0))
- *     .arena({ kind: "region", center: [0, 70, 0], radius: 30 })
- *     .bossbar(Component("Bone King"), "purple")
- *     .phase("one")
- *       .ability("slam", { cooldown: 60, weight: 3, body: (ctx) => ... })
- *     .phase("two", { at: 50, bar: { color: "red", name: Component("Enraged") } })
- *       .ability("beam", { cooldown: 40, body: (ctx) => ... })
- *     .onVictory((ctx) => ctx.loot().giveLoot(Selector.self(), reward));
- *
- *   @Module({ name: "keep", imports: [king.toModule("bone_king")] })
- *
- * The arena is a normal area trigger: entering starts the fight, and the arena emptying is
- * a loss.
- */
-export class BossBuilder {
-  private readonly phases: Phase[] = [];
-  private trigger?: AreaTrigger;
-  private bar?: BarStyle;
-  private victory?: BossBody;
-  private defeat?: BossBody;
-
-  constructor(
-    private readonly nbt: IdentifiedEntityNbt,
-    private readonly spawn: Pos,
-  ) {}
-
-  /** Where the fight happens - the same {@link AreaTrigger} any area module takes. */
-  arena(trigger: AreaTrigger): this {
-    this.trigger = trigger;
-    return this;
-  }
-
-  /** Show a bar while the fight runs, tracking the boss's health. */
-  bossbar(name: Component, color?: BossbarColor): this {
-    this.bar = { name, color };
-    return this;
-  }
-
-  /** Declares a phase. The first one declared is where the fight starts. */
-  phase(label: string, opts: PhaseOpts = {}): this {
-    if (this.phases.some((p) => p.label === label)) {
-      throw new Error(`Duplicate boss phase "${label}"`);
-    }
-    if (this.phases.length > 0 && opts.at === undefined) {
-      throw new Error(`Boss phase "${label}" needs an \`at\` health % threshold to enter it`);
-    }
-    this.phases.push({ ...opts, label, abilities: [] });
-    return this;
-  }
-
-  /**
-   * Adds an ability to the last declared phase. To reuse one, add it to each phase with a
-   * shared `body`.
-   */
-  ability(name: string, opts: AbilityOpts): this {
-    const phase = this.phases[this.phases.length - 1];
-    if (!phase) throw new Error(`Boss ability "${name}" declared before any phase`);
-    if (phase.abilities.some((a) => a.name === name)) {
-      throw new Error(`Duplicate ability "${name}" in boss phase "${phase.label}"`);
-    }
-    phase.abilities.push({ ...opts, name });
-    return this;
-  }
-
-  /** Runs when the boss dies, as each participant. */
-  onVictory(body: BossBody): this {
-    this.victory = body;
-    return this;
-  }
-
-  /** The arena emptied with the boss still alive. Runs as each participant. */
-  onDefeat(body: BossBody): this {
-    this.defeat = body;
-    return this;
-  }
-
-  /** Compile to a drop-in {@link ConfiguredModule} (name = module / objective / tag id). */
-  toModule(name: string, opts: BossModuleOpts = {}): ConfiguredModule {
-    if (this.phases.length === 0) throw new Error(`Boss "${name}" declares no phases`);
-    if (!this.trigger) throw new Error(`Boss "${name}" has no arena - call .arena(trigger)`);
-    if (this.trigger.kind === "score") {
-      throw new Error(
-        `Boss "${name}" cannot use a \`score\` arena trigger: it has no geometry, so the fight cannot tell who is participating. Use a region/cuboid/zones or players trigger.`,
-      );
-    }
-    const tickEvery = opts.tickEvery ?? 5;
-    const module = new BossModule(name, this.nbt, this.spawn, this.trigger, tickEvery, {
-      phases: this.phases,
-      bar: this.bar,
-      victory: this.victory,
-      defeat: this.defeat,
-    });
-    return defineModule(
-      { name, area: true, trigger: this.trigger, tickEvery, dimension: opts.dimension },
-      module,
-    );
-  }
-}
-
-interface BossOpts {
+export interface BossOpts {
   phases: Phase[];
   bar?: BarStyle;
   victory?: BossBody;
@@ -193,7 +29,7 @@ interface BossOpts {
 }
 
 /** The module a {@link BossBuilder} compiles to. */
-class BossModule implements DatapackModule {
+export class BossModule implements DatapackModule {
   private dp!: Datapack;
   private obj!: Objective;
   private dispatch!: FunctionRef;
@@ -216,8 +52,7 @@ class BossModule implements DatapackModule {
     return Selector.allEntities().tag(this.name).limit(1);
   }
   /**
-   * Every entity with the boss tag, for cleanup. No `limit=1`, so duplicate bosses get
-   * killed too.
+   * Every entity with the boss tag, for cleanup. No `limit=1`, so duplicate bosses get killed too.
    */
   private get allBosses(): Selector {
     return Selector.allEntities().tag(this.name);
@@ -269,7 +104,7 @@ class BossModule implements DatapackModule {
       sm.transition(
         this.opts.phases[i - 1].label,
         to.label,
-        this.score("hp").matches(new Range(undefined, to.at!)),
+        this.score("hp").matches(Range.atMost(to.at!)),
       );
     }
     this.dispatch = sm.build();
@@ -294,8 +129,7 @@ class BossModule implements DatapackModule {
   onActivate(ctx: FunctionContext): void {
     ctx.call(this.cleanupFn); // a fresh fight, whatever the last one left behind
     if (this.opts.bar) {
-      // ponytail: a /reload mid-fight logs one "bossbar already exists" error on the next
-      // start.
+      // ponytail: a /reload mid-fight logs one "bossbar already exists" error on the next start.
       ctx.bossbar().add(this.barId, this.opts.bar.name);
       ctx.bossbar().setMax(this.barId, 100);
       this.styleBar(ctx, this.opts.bar);
@@ -322,15 +156,14 @@ class BossModule implements DatapackModule {
           this.mirrorHealth(alive);
           for (const phase of this.opts.phases) {
             for (const a of phase.abilities) {
-              // ponytail: decay goes negative unguarded; `matches ..0` doesn't care and
-              // cleanup resets it.
+              // ponytail: decay goes negative unguarded; `matches ..0` doesn't care and cleanup
+              // resets it.
               this.cooldown(phase, a).remove(this.tickEvery, alive);
             }
           }
           alive.execute().as(this.boss).at(Selector.self()).run((b) => b.call(this.dispatch));
         });
-      // Death means the entity is gone, not health 0: a 5-tick poll can miss the health-0
-      // tick.
+      // Death means the entity is gone, not health 0: a 5-tick poll can miss the health-0 tick.
       live
         .execute()
         .unlessEntity(this.boss)
@@ -340,12 +173,8 @@ class BossModule implements DatapackModule {
 
   onDeactivate(ctx: FunctionContext): void {
     // `live == 0` here means the boss already died; players are just leaving.
-    if (this.defeatFn) {
-      const fn = this.defeatFn;
-      ctx.if(this.score("live").equal(1), (lost) => lost.call(fn));
-    } else {
-      ctx.if(this.score("live").equal(1), (lost) => lost.call(this.cleanupFn));
-    }
+    const lost = this.defeatFn ?? this.cleanupFn;
+    ctx.if(this.score("live").equal(1), (c) => c.call(lost));
   }
 
   /** Mirror the mob's real health into a 0..100 percentage, and onto the bar. */
@@ -380,7 +209,7 @@ class BossModule implements DatapackModule {
             .execute()
             .positioned(Pos(...zone.center))
             .run((at) =>
-              at.tag().add(Selector.allPlayers().distance(new Range(undefined, zone.radius)), tag),
+              at.tag().add(Selector.allPlayers().distance(Range.atMost(zone.radius)), tag),
             );
         } else {
           ctx.tag().add(Selector.allPlayers().volume(zone.from as Vec3, zone.to as Vec3), tag);
@@ -407,19 +236,18 @@ class BossModule implements DatapackModule {
     const total = this.score("total");
     total.set(0);
     for (const a of phase.abilities) {
-      ctx.if(this.cooldown(phase, a).matches(new Range(undefined, 0)), (ready) =>
+      ctx.if(this.cooldown(phase, a).matches(Range.atMost(0)), (ready) =>
         total.add(a.weight ?? 1, ready),
       );
     }
-    ctx.if(total.matches(new Range(1, undefined)), (any) => any.call(pick));
+    ctx.if(total.matches(Range.atLeast(1)), (any) => any.call(pick));
   }
 
   /**
    * Picks a ready ability by weight.
    *
-   * `random value` needs a build-time range, so roll the full int range and take it modulo
-   * the
-   * live total. The bias is negligible.
+   * `random value` needs a build-time range, so roll the full int range and take it modulo the live
+   * total. The bias is negligible.
    */
   private picker(scope: ModuleScope, phase: Phase): FunctionRef {
     const roll = this.score("roll");
@@ -433,7 +261,7 @@ class BossModule implements DatapackModule {
       });
       return scope.fn(`${this.name}/${phase.label}/try_${a.name}`, (ctx) => {
         roll.remove(a.weight ?? 1);
-        ctx.if(roll.matches(new Range(undefined, 0)), (hit) => hit.call(fire));
+        ctx.if(roll.matches(Range.atMost(0)), (hit) => hit.call(fire));
       });
     });
 
@@ -448,19 +276,18 @@ class BossModule implements DatapackModule {
       phase.abilities.forEach((a, i) => {
         ctx
           .execute()
-          .ifScoreMatches(picked, new Range(0, 0))
-          .ifScoreMatches(this.cooldown(phase, a), new Range(undefined, 0))
+          .ifScoreMatches(picked, Range.exactly(0))
+          .ifScoreMatches(this.cooldown(phase, a), Range.atMost(0))
           .run((b) => b.call(tries[i]));
       });
     });
   }
 
   /**
-   * Resets the fight: no boss, no bar, no participants, cooldowns cleared, and `@On`
-   * latches re-armed.
+   * Resets the fight: no boss, no bar, no participants, cooldowns cleared, and `@On` latches
+   * re-armed.
    *
-   * Latches are scores that survive /reload, so without re-arming they'd block the next
-   * fight.
+   * Latches are scores that survive /reload, so without re-arming they'd block the next fight.
    */
   private cleanup(ctx: FunctionContext): void {
     ctx.kill(this.allBosses);
@@ -472,9 +299,4 @@ class BossModule implements DatapackModule {
     ctx.tag().remove(this.participants, `${this.name}.p`);
     rearmEvents(ctx, this.dp, this.name, this);
   }
-}
-
-/** Start a boss-fight definition from the mob it spawns and where it spawns. */
-export function defineBoss(nbt: IdentifiedEntityNbt, spawn: Pos): BossBuilder {
-  return new BossBuilder(nbt, spawn);
 }

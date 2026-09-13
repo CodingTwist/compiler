@@ -1,5 +1,5 @@
 import type { Datapack, FunctionRef, Item, Selector } from "helix";
-import type { ConfiguredModule } from "./module.interface";
+import type { ConfiguredModule } from "../core/module.interface";
 import {
   ItemModule,
   itemGiveFunction,
@@ -7,9 +7,9 @@ import {
   itemSlug,
   type ItemBehaviour,
   type ItemOpts,
-} from "./item-runtime";
+} from "./module";
 
-export type { ItemBehaviour } from "./item-runtime";
+export type { ItemBehaviour } from "./module";
 
 /**
  * Builds a custom item with behaviours. Only attached behaviours emit anything.
@@ -62,8 +62,8 @@ export class ItemBuilder {
   /**
    * Runs `body` as the player when they use the item (`minecraft:using_item`).
    *
-   * Only fires for items with a use action (food, bow, shield...). For others use {@link
-   * onRightClick}.
+   * Only fires for items with a use action (food, bow, shield...). For others use
+   * {@link onRightClick}.
    */
   onUse(body: ItemBehaviour): this {
     this.useFn = body;
@@ -92,11 +92,10 @@ export class ItemBuilder {
   }
 
   /**
-   * Emits the give function and `onUse`/`onAttack` advancements directly into `dp`, without
-   * a module.
+   * Emits the give function and `onUse`/`onAttack` advancements directly into `dp`, without a
+   * module.
    *
-   * Returns the give function if `give()` was set. Throws if `onHeldTick` is set, since
-   * that needs
+   * Returns the give function if `give()` was set. Throws if `onHeldTick` is set, since that needs
    * {@link toModule}.
    */
   register(dp: Datapack): FunctionRef | undefined {

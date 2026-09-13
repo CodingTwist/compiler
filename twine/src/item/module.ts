@@ -13,8 +13,8 @@ import type {
   HoldingOptions,
   Item,
 } from "helix";
-import type { ConfiguredModule, DatapackModule } from "./module.interface";
-import { defineModule } from "./module.decorator";
+import type { ConfiguredModule, DatapackModule } from "../core/module.interface";
+import { defineModule } from "../core/module.decorator";
 
 /** A behaviour body: commands emitted into a generated function. */
 export type ItemBehaviour = (ctx: FunctionContext) => void;
@@ -77,10 +77,10 @@ export class ItemModule implements DatapackModule {
     if (this.opts.give) itemGiveFunction(dp, this.item, this.slug);
 
     if (this.opts.attack) {
-      this.event(dp, `${base}/on_attack`, Trigger.playerHurtEntity(this.item), this.opts.attack);
+      dp.event(`${base}/on_attack`, Trigger.playerHurtEntity(this.item), this.opts.attack);
     }
     if (this.opts.use) {
-      this.event(dp, `${base}/on_use`, Trigger.usingItem(this.item), this.opts.use);
+      dp.event(`${base}/on_use`, Trigger.usingItem(this.item), this.opts.use);
     }
     if (this.opts.rightClick) {
       this.rightClick(dp, base, this.opts.rightClick);
@@ -98,13 +98,11 @@ export class ItemModule implements DatapackModule {
   }
 
   /**
-   * Wires right-click detection with the `used:<item>` statistic (the carrot-on-a-stick
-   * trick).
+   * Wires right-click detection with the `used:<item>` statistic (the carrot-on-a-stick trick).
    *
-   * Each tick, runs the body as holders whose count went up, then resets it. Gated by the
-   * holding
-   * predicate so plain items don't fire. Makes its own load and tick functions; idempotent
-   * per item.
+   * Each tick, runs the body as holders whose count went up, then resets it. Gated by the holding
+   * predicate so plain items don't fire. Makes its own load and tick functions; idempotent per
+   * item.
    */
   private rightClick(dp: Datapack, base: string, body: ItemBehaviour): void {
     const tickName = `${base}/rc_tick`;
@@ -112,7 +110,7 @@ export class ItemModule implements DatapackModule {
 
     const rc = new Objective(`rc_${this.slug}`, usedStatCriteria(this.item));
     const holder = holdingPredicate(dp, this.item, { exact: this.opts.exact });
-    const clicked = Selector.allPlayers().score(rc, new Range(1, undefined)).predicate(holder);
+    const clicked = Selector.allPlayers().score(rc, Range.atLeast(1)).predicate(holder);
 
     dp.createFunction(`${base}/rc_load`, "load").build((ctx) => ctx.scoreInit(rc));
     dp.createFunction(tickName, "tick").build((ctx) => {
@@ -120,10 +118,5 @@ export class ItemModule implements DatapackModule {
       // Reset every player so this tick's use doesn't fire again next tick.
       rc.score(Selector.allPlayers()).set(0);
     });
-  }
-
-  /** Wires one event behaviour through `dp.event` (a self-revoking advancement). */
-  private event(dp: Datapack, name: string, trigger: Trigger, body: ItemBehaviour): void {
-    dp.event(name, trigger, (ctx) => body(ctx));
   }
 }

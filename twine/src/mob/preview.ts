@@ -1,12 +1,11 @@
 import { execFileSync } from "child_process";
 import { mkdirSync, writeFileSync } from "fs";
 import { dirname } from "path";
-import type { MobModuleRef, MobPreview } from "./mob";
+import type { MobModuleRef, MobPreview } from "./builder";
 
 export interface MobPreviewOpts {
   /**
-   * A vanilla client jar to take real textures from. Without one, members render as flat
-   * colour.
+   * A vanilla client jar to take real textures from. Without one, members render as flat colour.
    */
   clientJar?: string;
 }
@@ -27,9 +26,8 @@ function textures(data: MobPreview, jar?: string): Record<string, string> {
   for (const { kind, id } of data.members) {
     const [ns, path] = id.includes(":") ? id.split(":") : ["minecraft", id];
     try {
-      // ponytail: only textures named after the id; resource-pack models and per-face
-      // blocks
-      // render as flat colour.
+      // ponytail: only textures named after the id; resource-pack models and per-face blocks render
+      // as flat colour.
       const png = execFileSync("unzip", ["-p", jar, `assets/${ns}/textures/${kind}/${path}.png`], {
         stdio: ["ignore", "pipe", "ignore"],
       });

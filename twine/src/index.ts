@@ -3,10 +3,10 @@ export {
   getModuleMetadata,
   defineModule,
   isConfiguredModule,
-} from "./module.decorator";
-export { DatapackFactory, consolidateTick } from "./factory";
-export type { FactoryOptions } from "./factory";
-export { ActiveFlags, ACTIVE_OBJECTIVE } from "./flags";
+} from "./core/module.decorator";
+export { DatapackFactory, consolidateTick } from "./core/factory";
+export type { FactoryOptions } from "./core/factory";
+export { ActiveFlags, ACTIVE_OBJECTIVE } from "./core/flags";
 export {
   On,
   Every,
@@ -18,15 +18,15 @@ export {
   HandlerGroup,
   EventLatches,
   EVENT_OBJECTIVE,
-} from "./events";
-export type { OnOptions, EventHandler } from "./events";
-export { buildEnv, isDev, setBuildEnv } from "./env";
-export { defineItem, ItemBuilder } from "./item";
-export { defineBoss, BossBuilder } from "./boss";
-export { defineMob, MobBuilder } from "./mob";
-export { writeMobPreview } from "./preview";
-export type { MobPreviewOpts } from "./preview";
-export type { MobModuleOpts, MobModuleRef, MobPreview } from "./mob";
+} from "./core/events";
+export type { OnOptions, EventHandler } from "./core/events";
+export { buildEnv, isDev, setBuildEnv } from "./core/env";
+export { defineItem, ItemBuilder } from "./item/builder";
+export { defineBoss, BossBuilder } from "./boss/builder";
+export { defineMob, MobBuilder } from "./mob/builder";
+export { writeMobPreview } from "./mob/preview";
+export type { MobPreviewOpts } from "./mob/preview";
+export type { MobModuleOpts, MobModuleRef, MobPreview } from "./mob/builder";
 export type {
   AbilityOpts,
   BarStyle,
@@ -34,9 +34,9 @@ export type {
   BossModuleOpts,
   BossbarColor,
   PhaseOpts,
-} from "./boss";
-export { registerItem, registerItemGiveCommands } from "./item-registry";
-export type { ItemBehaviour } from "./item";
+} from "./boss/builder";
+export { registerItem, registerItemGiveCommands } from "./item/registry";
+export type { ItemBehaviour } from "./item/builder";
 export { StateMachine } from "./state-machine";
 export type { StateBody, StateConfig } from "./state-machine";
 export type {
@@ -47,7 +47,7 @@ export type {
   ModuleMetadata,
   ModuleRef,
   ModuleScope,
-} from "./module.interface";
-export type { AreaTrigger, PlayersTrigger, ScoreTrigger, Vec3, Zone } from "./area";
+} from "./core/module.interface";
+export type { AreaTrigger, PlayersTrigger, ScoreTrigger, Vec3, Zone } from "./core/area";
 export { Logger } from "./logger";
 export type { LogLevel, NamespaceLogger } from "./logger";

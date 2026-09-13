@@ -2,9 +2,9 @@ import "reflect-metadata";
 import { describe, it, expect } from "vitest";
 import { Block, Datapack, Detect, Pos, Selector, buildDatapack } from "helix";
 import type { Detector, FunctionContext } from "helix";
-import { Module } from "../src/module.decorator";
-import { DatapackFactory } from "../src/factory";
-import { HandlerGroup, On, rearmEvents } from "../src/events";
+import { Module } from "../src/core/module.decorator";
+import { DatapackFactory } from "../src/core/factory";
+import { HandlerGroup, On, rearmEvents } from "../src/core/events";
 
 const AT = Pos(1, 2, 3);
 const PRESSED = Block.STONE_BUTTON.state({ powered: true });

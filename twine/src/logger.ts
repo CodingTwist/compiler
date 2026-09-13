@@ -23,8 +23,7 @@ export interface NamespaceLogger {
 /**
  * A per-player logger with severity levels.
  *
- * Players pick a level with `debug/log/{debug,info,warn,off}` and see messages at or above
- * it.
+ * Players pick a level with `debug/log/{debug,info,warn,off}` and see messages at or above it.
  * Players who never set one see nothing. The namespace is just a label, not a filter.
  * `TWINE_LOG=off` removes all log commands at build time.
  */
@@ -42,8 +41,7 @@ export class Logger {
   /**
    * Sets the instance {@link Logger.for} handles use. Call once, before anything logs.
    *
-   * Handles look it up when called, so `Logger.for` at module scope is safe before this
-   * runs.
+   * Handles look it up when called, so `Logger.for` at module scope is safe before this runs.
    */
   static attach(instance: Logger) {
     Logger.current = instance;
@@ -51,20 +49,18 @@ export class Logger {
 
   /** A namespaced log handle usable at module scope. */
   static for(namespace: string): NamespaceLogger {
-    return {
-      debug: (ctx, message) => Logger.current?.emit(ctx, "debug", namespace, message),
-      info: (ctx, message) => Logger.current?.emit(ctx, "info", namespace, message),
-      warn: (ctx, message) => Logger.current?.emit(ctx, "warn", namespace, message),
-    };
+    return Logger.handle(namespace, () => Logger.current);
   }
 
   /** Instance form of {@link Logger.for}, for callers already holding a `Logger`. */
   for(namespace: string): NamespaceLogger {
-    return {
-      debug: (ctx, message) => this.emit(ctx, "debug", namespace, message),
-      info: (ctx, message) => this.emit(ctx, "info", namespace, message),
-      warn: (ctx, message) => this.emit(ctx, "warn", namespace, message),
-    };
+    return Logger.handle(namespace, () => this);
+  }
+
+  /** A {@link NamespaceLogger} that emits through whichever logger `get` returns when called. */
+  private static handle(namespace: string, get: () => Logger | undefined): NamespaceLogger {
+    const at = (level: LogLevel) => (ctx: FunctionContext, message: string) => get()?.emit(ctx, level, namespace, message);
+    return { debug: at("debug"), info: at("info"), warn: at("warn") };
   }
 
   /** Builds the `debug/log/{debug,info,warn,off}` commands. Call once. */

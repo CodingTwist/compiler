@@ -1,6 +1,6 @@
 import type { FunctionContext } from "helix";
 import { Pos, Selector } from "helix";
-import type { AreaTrigger, Vec3, Zone } from "./area";
+import type { AreaTrigger, Zone } from "./area";
 
 /** The zones of a geometric trigger. `score` and `players` triggers have none. */
 export function triggerZones(trigger: AreaTrigger): Zone[] {
@@ -31,17 +31,7 @@ export function whenPlayerInZones(
     if (zone.shape === "sphere") {
       ctx.whenPlayerNear(Pos(...zone.center), zone.radius, body);
     } else {
-      whenPlayerInBox(ctx, zone.from, zone.to, body);
+      ctx.whenEntity(Selector.allPlayers().volume(zone.from, zone.to), body);
     }
   }
-}
-
-/** Runs `body` guarded by `execute if entity @a[<box>]` for the box between two corners. */
-function whenPlayerInBox(
-  ctx: FunctionContext,
-  from: Vec3,
-  to: Vec3,
-  body: (ctx: FunctionContext) => void,
-): void {
-  ctx.whenEntity(Selector.allPlayers().volume(from, to), body);
 }

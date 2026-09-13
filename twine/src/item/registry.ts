@@ -1,17 +1,16 @@
 import { Datapack, FunctionContext, ItemValue, Selector } from "helix";
-import { isDev } from "./env";
+import { isDev } from "../core/env";
 
 /**
  * Dev-only give commands for named items.
  *
- * Plain {@link ItemValue} items have no give function, so testing means retyping their
- * data.
+ * Plain {@link ItemValue} items have no give function, so testing means retyping their data.
  * {@link registerItem} names one, and {@link registerItemGiveCommands} emits
  * `/function <ns>:debug/give/<name>` for each.
  */
 
-// ponytail: process-global, so two packs built in one run would share it. Key it by
-// Datapack if that happens.
+// ponytail: process-global, so two packs built in one run would share it. Key it by Datapack if
+// that happens.
 const REGISTRY: { name: string; item: ItemValue }[] = [];
 
 /** Registers `item` under `name` for the give commands, and returns it unchanged. */

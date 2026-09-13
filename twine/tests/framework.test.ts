@@ -1,9 +1,9 @@
 import "reflect-metadata";
 import { describe, it, expect } from "vitest";
 import { Block, buildDatapack, Id, Pos, Selector, Datapack, v1_20_4 } from "helix";
-import { Module, defineModule } from "../src/module.decorator";
-import { DatapackFactory, consolidateTick } from "../src/factory";
-import { isDev, setBuildEnv } from "../src/env";
+import { Module, defineModule } from "../src/core/module.decorator";
+import { DatapackFactory, consolidateTick } from "../src/core/factory";
+import { isDev, setBuildEnv } from "../src/core/env";
 
 /** Render a function node's body to joined command text. */
 function bodyOf(dp: Datapack, name: string): string {

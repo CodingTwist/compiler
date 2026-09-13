@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import path from "path";
 import { Datapack, ignoreSourceFrames, v1_20_4 } from "helix";
 import type { DebugOptions, FunctionContext, Id, VersionProfile, FunctionRef, RuntimeTarget } from "helix";
 import type { BuildEnv, ModuleClass, ModuleRef, ModuleScope } from "./module.interface";
@@ -9,11 +10,11 @@ import { buildGraph, needsTickMemo, resolveDimensions, type Node } from "./graph
 import { emitArea, wireTick, type Wiring } from "./tick-wiring";
 
 // Debug source tracking: lines twine emits itself point at twine, not the user's code.
-ignoreSourceFrames(__dirname.replace(/[\\/][^\\/]+$/, ""), { framework: true });
+// `../..` is the package root from `dist/core/`; update it if this file moves.
+ignoreSourceFrames(path.resolve(__dirname, "../.."), { framework: true });
 
 /**
- * The {@link ModuleScope} passed to `register`: its dimension and a `createFunction` that
- * uses it.
+ * The {@link ModuleScope} passed to `register`: its dimension and a `createFunction` that uses it.
  */
 function scopeFor(dp: Datapack, name: string, dimension: Id | undefined): ModuleScope {
   return {
@@ -31,9 +32,8 @@ function scopeFor(dp: Datapack, name: string, dimension: Id | undefined): Module
 }
 
 /**
- * Picks each throttled module's tick phase. Modules sharing a `tickEvery` are spread
- * round-robin
- * so they don't all run on the same tick. An explicit `tickPhase` wins.
+ * Picks each throttled module's tick phase. Modules sharing a `tickEvery` are spread round-robin so
+ * they don't all run on the same tick. An explicit `tickPhase` wins.
  */
 function makePhaseAllocator(): (node: Node) => number {
   const nextPerPeriod = new Map<number, number>();
@@ -72,10 +72,8 @@ export interface FactoryOptions {
 /**
  * Builds a {@link Datapack} from a root module, like NestJS's `NestFactory.create`.
  *
- * `area` modules gate their subtree: its ticks only run while the area's `active` flag is
- * `1`,
- * so a dormant area costs one check per tick. Areas get `<name>/activate` and
- * `<name>/deactivate`.
+ * `area` modules gate their subtree: its ticks only run while the area's `active` flag is `1`, so a
+ * dormant area costs one check per tick. Areas get `<name>/activate` and `<name>/deactivate`.
  */
 export class DatapackFactory {
   static create(root: ModuleClass, opts: FactoryOptions): Datapack {
@@ -98,8 +96,7 @@ export class DatapackFactory {
 
     const graph = buildGraph(root, env);
 
-    // Each module's dimension, so its lifecycle, ticks and functions run where the module
-    // is.
+    // Each module's dimension, so its lifecycle, ticks and functions run where the module is.
     const dims = resolveDimensions(graph);
 
     // register: arbitrary one-off setup, children-first.
@@ -158,9 +155,8 @@ export class DatapackFactory {
       });
     }
 
-    // tick: one tree walk. An area's ticks, its children's ticks, and its children's
-    // triggers
-    // are all behind its `active` flag, so a dormant area costs one check.
+    // tick: one tree walk. An area's ticks, its children's ticks, and its children's triggers are
+    // all behind its `active` flag, so a dormant area costs one check.
     const w: Wiring = {
       graph,
       flags,
@@ -173,8 +169,8 @@ export class DatapackFactory {
       phaseOf: makePhaseAllocator(),
       ticks: new Map(),
     };
-    // A root that is an area gets the same gating as a child area, so it doesn't need a
-    // wrapper module.
+    // A root that is an area gets the same gating as a child area, so it doesn't need a wrapper
+    // module.
     if (w.needsTick(graph.root)) {
       const rootIsArea = graph.nodes.get(graph.root)!.meta.area;
       dp.tick((ctx) =>
@@ -191,9 +187,8 @@ export class DatapackFactory {
 /**
  * Moves every `minecraft:tick` function under the pack's own `<ns>:tick`.
  *
- * helix tags tick functions straight into `minecraft:tick`. Under twine the tick should be
- * one
- * list you own, so the whole pack's tick cost is visible in one place.
+ * helix tags tick functions straight into `minecraft:tick`. Under twine the tick should be one list
+ * you own, so the whole pack's tick cost is visible in one place.
  *
  * Safe to run again: call it before writing if you add tick functions after `create`.
  */
