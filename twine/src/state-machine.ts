@@ -25,16 +25,11 @@ interface Transition {
 }
 
 /**
- * A scoreboard-backed finite state machine - the shared primitive behind quests,
- * dialogue trees, puzzles and story flow, so each isn't re-hand-rolled from raw
- * score latches. One {@link Objective} holds the machine; a fake-player holder is
- * one instance (run several instances of the same machine by varying the holder).
+ * A scoreboard state machine for quests, dialogue, puzzles and story flow.
  *
- * The per-tick dispatch reads a **snapshot** of the current state and carries a
- * "transitioned this tick" guard, which avoids the classic datapack footgun where
- * a transition lands in a state whose block then also runs in the same tick.
- * Build it, then drive it by calling the returned dispatch ref from a module's
- * `onTick` (so it composes with area gating and tick throttling).
+ * The dispatch reads a snapshot of the state, so a transition doesn't also run the new
+ * state
+ * in the same tick. Call the returned dispatch from a module's `onTick`.
  */
 export class StateMachine {
   private readonly states = new Map<string, StateConfig>();
@@ -110,9 +105,9 @@ export class StateMachine {
   }
 
   /**
-   * Force a transition to `label` now: runs the current state's `onExit` (whichever
-   * it is), sets the state, then runs `label`'s `onEnter`. Use for event-driven
-   * jumps (a player click, a command) outside the guard-evaluated dispatch.
+   * Jumps to `label` now: runs the current `onExit`, sets the state, runs `label`'s
+   * `onEnter`.
+   * For event-driven jumps outside the dispatch.
    */
   go(ctx: FunctionContext, label: string): void {
     for (const from of this.order) {
@@ -123,9 +118,8 @@ export class StateMachine {
   }
 
   /**
-   * Emit the machine: the `load` seeding of the initial state and the per-tick
-   * dispatch function. Returns the dispatch {@link FunctionRef} - call it from a
-   * module's `onTick` (optionally throttled) to run the machine.
+   * Emits the machine's load setup and tick dispatch, and returns the dispatch to call from
+   * `onTick`.
    */
   build(): FunctionRef {
     if (this.initialState) {

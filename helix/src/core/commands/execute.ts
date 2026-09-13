@@ -1,19 +1,10 @@
-// HAND-WRITTEN. A general, typed `execute` chain builder.
+// HAND-WRITTEN. A general typed `execute` chain builder.
 //
-// The other execute-family handlers (`execute_as`, `at_entity`, `execute_store`,
-// the `if` chain, the entity/near guards) each model one narrow shape. Some packs
-// need the full grammar: several `as/at/in/positioned/rotated` context shifts, one
-// or more `store result/success`, any number of `if/unless` guards, then a single
-// `run`. This builder composes those clauses in author order and renders them as
-// one `execute … run <command>` line.
-//
-// Per the repo rule, every domain value in a clause (selector, position, score,
-// id, path, range, predicate) is rendered through its typed class - only the
-// execute *keywords* (`as`, `if`, `store`, `run`, …) are literals. The leading
-// `execute` is tree-validated; the clause tail rides as `raw` exactly like the
-// existing `if`/`at_entity` handlers (the validator can't follow execute's
-// argument-redirects past the first sub-command anyway). Registered via
-// EXTRA_HANDLERS in scripts/gen-commands.mjs, never regenerated.
+// Composes context shifts, stores and `if/unless` guards in author order, then one `run`.
+// Values render through their typed classes; only keywords are literal. Everything after
+// the
+// leading `execute` is `raw`, because the validator can't follow execute's redirects.
+// Registered via EXTRA_HANDLERS in scripts/gen-commands.mjs, never regenerated.
 import { ASTNode, FunctionNode, Range } from "../ir/node";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { generateRunTarget, runClause } from "../ir/generate";
@@ -99,8 +90,7 @@ function predicateId(ref: PredicateLike): string {
 }
 
 /**
- * Fluent builder for {@link ExecuteNode}. Each method appends one clause (in call
- * order); the chain is terminated by {@link run}, which captures the run body.
+ * Builder for {@link ExecuteNode}. Each method adds a clause; {@link run} ends the chain.
  */
 export class ExecuteBuilder {
   constructor(
@@ -109,9 +99,8 @@ export class ExecuteBuilder {
   ) {}
 
   /**
-   * How many clauses have been appended so far. Lets a caller that *composes*
-   * chains (see `Detect`) tell "no conditions at all" from "some", and skip
-   * emitting a bare `execute run <cmd>` in the former case.
+   * Number of clauses added so far, so composed chains can tell "no conditions" from
+   * "some".
    */
   get clauseCount(): number {
     return this.node.clauses.length;
@@ -162,10 +151,11 @@ export class ExecuteBuilder {
     return this;
   }
   /**
-   * `on <relation>` - become an entity related to the current executor (its
-   * {@link Relation.TARGET}, vehicle, owner, …). Position is *not* moved, only the
-   * executor. If there is no such entity the chain silently does nothing, which makes
-   * `on target` both the "is this mob actually fighting?" test and the way to get at who.
+   * `on <relation>`: switch the executor to a related entity (target, vehicle, owner…)
+   * without moving.
+   *
+   * If there's no such entity the chain does nothing, so `on target` also tests "is it
+   * fighting?".
    */
   on(relation: Relation): this {
     this.node.clauses.push({ k: "on", relation });
@@ -196,11 +186,8 @@ export class ExecuteBuilder {
     return this;
   }
   /**
-   * `if function <fn>` - run `fn` and branch on what it **returns** (`return <n>`):
-   * non-zero passes, `0` and `return fail` do not. The composable way to consume a
-   * function's result, as opposed to parking it in a score first.
-   *
-   * Note it *executes* the function to find out - this is a call, not a lookup.
+   * `if function <fn>`: runs `fn` and passes if it returns non-zero.
+   * Note this calls the function.
    */
   ifFunction(fn: FunctionRef): this {
     this.node.clauses.push({ k: "callFunction", mode: "if", fn });
@@ -216,11 +203,9 @@ export class ExecuteBuilder {
     return this;
   }
   /**
-   * `if items entity <sel> <slot> <item_predicate>` - the only vanilla way to
-   * test one *specific* inventory slot's contents (equipment predicates cover
-   * just the 6 worn slots). `item` is matched as an item predicate built from
-   * the same {@link ItemValue} you'd `give`, so the check sees the exact
-   * components (name/lore/model) the item was granted with.
+   * `if items entity <sel> <slot> <item>`: tests one specific inventory slot.
+   * The item predicate is built from the same {@link ItemValue} you give, so components
+   * match exactly.
    */
   ifItems(sel: Selector, slot: ItemSlot, item: ItemValue): this {
     this.node.clauses.push({ k: "items", mode: "if", sel, slot, item });
@@ -256,10 +241,9 @@ export class ExecuteBuilder {
     return this;
   }
   /**
-   * `store <result|success> entity <sel> <path> <type> <scale>` - write the value
-   * straight into an entity's NBT. The direct route for score-computed `Motion` /
-   * `Rotation` / attribute values: no storage round-trip, and the `scale` turns an
-   * integer score into the fractional double the field wants.
+   * `store <result|success> entity <sel> <path> <type> <scale>`: writes straight into
+   * entity NBT.
+   * `scale` turns an integer score into the fractional value the field needs.
    */
   storeResultEntity(sel: Selector, path: NbtPath, type: StoreNumType, scale: number): this {
     this.node.clauses.push({ k: "storeEntity", mode: "result", sel, path, type, scale });
@@ -278,10 +262,8 @@ export class ExecuteBuilder {
     return this;
   }
   /**
-   * `store <result|success> bossbar <id> <value|max>` - drive a bossbar from a
-   * computed number. `bossbar set … value` takes a literal only, so this store
-   * clause is the *only* way a bar tracks something that changes at runtime (a
-   * boss's health, a timer, a capture progress).
+   * `store <result|success> bossbar <id> <value|max>`. The only way to drive a bar from a
+   * runtime value.
    */
   storeResultBossbar(id: Id, field: BossbarField): this {
     this.node.clauses.push({ k: "storeBossbar", mode: "result", id, field });
@@ -293,21 +275,14 @@ export class ExecuteBuilder {
   }
 
   /**
-   * Terminate the chain with **no** `run` - the conditions themselves are the
-   * command. `execute store result score <s> if entity <sel>` stores how many
-   * entities matched; there is nothing to run, and adding a `run` would change
-   * what is counted.
+   * Ends the chain with no `run`; the conditions are the command.
    *
-   * Purely declarative (the node is already emitted), but stating it is what
-   * separates "this chain is finished" from a chain whose `run` was forgotten.
+   * E.g. `execute store result score <s> if entity <sel>` counts matches; a `run` would
+   * change the count.
    */
   done(): void {}
 
-  /**
-   * Terminate the chain with `run <body>`. The body is captured into a child
-   * function; a single-command body inlines into the `run` clause (no file), a
-   * multi-command one commits to its own function - exactly like `if`/`atEntity`.
-   */
+  /** Ends the chain with `run <body>`. One command inlines; more go in a child function. */
   run(build: (ctx: FunctionContext) => void): void {
     const body = this.ctx.createChildFunction("exec");
     runInContext(new FunctionContext(body, this.ctx.version), build);
@@ -315,12 +290,8 @@ export class ExecuteBuilder {
   }
 
   /**
-   * {@link run}, unless no clauses were ever appended - in which case the chain
-   * withdraws itself and `build` is emitted where it would have been.
-   *
-   * For chains assembled from *composed* conditions (see `Detect`), where "no
-   * condition at all" is a legitimate composition and `execute run <cmd>` would
-   * be a vacuous wrapper around it.
+   * {@link run}, or if no clauses were added, emits `build` directly instead of `execute
+   * run …`.
    */
   runOrInline(build: (ctx: FunctionContext) => void): void {
     if (this.clauseCount > 0) return this.run(build);
@@ -334,9 +305,8 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
 
   generate(node: ExecuteNode, ctx: CodegenContext): void {
     const v = ctx.version;
-    // A bare chain's result is observable (`store result … if entity @e[…]` is
-    // the entity-count idiom), so only a chain that goes on to `run` may clip its
-    // entity tests to one match.
+    // A bare chain's result can be a count, so only chains that `run` may limit entity
+    // tests to one.
     const existence = !!node.runBody;
     const parts = node.clauses.map((c) => this.clause(c, v, ctx.datapack.name, existence));
     if (node.runBody) {
@@ -408,10 +378,8 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
 }
 
 // ---------------------------------------------------------------------------
-// `return run <command>` - the `return` command's run form. The generated
-// `return.ts` only models `return` / `return <value>` / `return fail`; this adds
-// the variant that runs a command and returns its result, used both standalone
-// and as an `execute … run return run …` terminal.
+// `return run <command>`: runs a command and returns its result. Not in the generated
+// `return.ts`.
 // ---------------------------------------------------------------------------
 
 export class ReturnRunNode extends ASTNode {
@@ -434,14 +402,12 @@ declare module "../frontend/context" {
     /** A general `execute … run …` chain. See {@link ExecuteBuilder}. */
     execute(): ExecuteBuilder;
     /**
-     * Run the commands emitted in `build` anchored at `selector`'s position with
-     * one `execute at <selector> [align <axes>] run …`. A single command inlines
-     * into the `run` clause; multiple commands commit to one child function and
-     * the wrapper runs `… run function <child>` - so the selector is evaluated
-     * **once**, not re-scanned per command (important when it's an expensive
-     * `@a[…,nbt={…}]` filter). Pass `align` (e.g. "xyz") to snap the anchor to the
-     * block grid first - needed when block ops (fill/place) ride an entity at a
-     * fractional position.
+     * Runs the commands from `build` at `selector` with one `execute at <selector> [align]
+     * run …`.
+     *
+     * Multiple commands go in one child function, so the selector is evaluated once.
+     * `align` (e.g. "xyz") snaps to the block grid, needed for block ops at fractional
+     * positions.
      */
     atEntity(
       selector: Selector,
@@ -449,9 +415,8 @@ declare module "../frontend/context" {
       align?: Swizzle,
     ): void;
     /**
-     * Run the commands emitted in `build` only when `target`'s `slot` holds an
-     * item matching `item` (`mode` defaults to `"if"`). See
-     * {@link ExecuteBuilder.ifItems}.
+     * Runs the commands from `build` only when `target`'s `slot` holds `item`. See {@link
+     * ExecuteBuilder.ifItems}.
      */
     whenItems(
       target: Selector,
@@ -463,11 +428,8 @@ declare module "../frontend/context" {
     /** `return run <command>` - return the result of running `build`'s command. */
     returnRun(build: (ctx: FunctionContext) => void): void;
     /**
-     * Score-range switch: for each case in order, emit
-     * `execute if score <score> matches <range> run return run function <fn>`.
-     * The first matching range calls its function and returns its result - the
-     * same shape every hand-rolled "pick a bucket, call it, propagate the
-     * result" dispatch already uses, just without re-writing the chain per case.
+     * Score-range switch: the first matching range calls its function and returns its
+     * result.
      */
     dispatchScore(
       score: Score,

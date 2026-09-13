@@ -11,8 +11,7 @@ import type { GrappleOptions } from "./state";
 /** The public handle {@link Datapack.grapple} returns - just the two entry functions. */
 export interface Grapple {
   /**
-   * `grapple/start` - raycast an anchor, tag the player, and kick them toward it.
-   * **Must run as + at the player** (e.g. `execute as @p at @s run function …`).
+   * `grapple/start`: raycast an anchor and latch the player. Must run as and at the player.
    */
   readonly start: import("helix").FunctionRef;
   /** `grapple/stop` - release the executing player (removes the `grappling` tag). */
@@ -20,17 +19,8 @@ export interface Grapple {
 }
 
 /**
- * The grapple **module** (the NestJS composition root): construct every provider once, then
- * the services on top of them, then wire the lifecycle + controller. Each service is handed
- * only the providers its signature declares, so there is no god-object - the dependency graph
- * is spelled out right here.
- *
- * Provider layers, built bottom-up:
- *   config / selectors / scratch / constants - leaf providers (no deps between them)
- *   motion (`player_motion`) + repository     - the persistent state + the launch handle
- *   services                                  - debug / rope / anchor / attach / swing / release
- *   raycast (`raycast` plugin)                - the web ray, whose on-hit is the anchor service
- *   init + controller                         - the load seed + the three invoked routes
+ * Builds the grapple: providers, then services, then lifecycle and controller.
+ * Each service gets only the providers it declares, so dependencies are visible here.
  */
 export function defineGrapple(dp: Datapack, opts: GrappleOptions): Grapple {
   // --- Providers -------------------------------------------------------------
@@ -60,8 +50,7 @@ export function defineGrapple(dp: Datapack, opts: GrappleOptions): Grapple {
   // --- Lifecycle + controller ------------------------------------------------
   defineInit({ fn, scratch, repo, consts });
   defineController({ fn, selectors, ray, attach, swing, release });
-  // Players have no score source for position/look, so `drive` must read NBT each tick;
-  // `start` (and the raycast hit under it) reads positions once per fire, not per tick.
+  // Players have no score source for position, so `drive` must read NBT each tick.
   dp.allow("nbt-read", fn.drive, "player Pos has no command source");
   dp.allow("repeated-selector", fn.drive, "`facing entity` can't bind @s; one typed tagged marker, untagged after");
   dp.allow("nbt-read", fn.start, "once per web fire");

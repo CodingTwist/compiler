@@ -5,16 +5,11 @@ import type { VersionProfile } from "../../versions/profile";
 import { withMembers } from "./members";
 import { BLOCK_IDS } from "../../versions/data/ids";
 
-/**
- * The vanilla block *tags* (`BLOCK_TAGS.AIR = "minecraft:air"`), the newest-version
- * superset - typed, autocompleted, typo-checked ids for `Block.tag(...)` so authors
- * never hand-write `"#minecraft:air"`. Generated in versions/data/ids.ts.
- */
+/** Typed vanilla block tag ids for `Block.tag(...)`, e.g. `BLOCK_TAGS.AIR`. Generated. */
 export { BLOCK_TAGS } from "../../versions/data/ids";
 
 /**
- * A block, with optional block-state properties and block-entity data
- * (`block_state` / `block_predicate`):
+ * A block with optional state properties and block-entity data:
  *
  *   Block("stone")                        -> "minecraft:stone"
  *   Block("furnace", { facing: "north" }) -> "minecraft:furnace[facing=north]"
@@ -41,11 +36,7 @@ export class BlockValue implements CommandValue {
     return this;
   }
 
-  /**
-   * Block-entity NBT. Takes an {@link Nbt} value so the compound can be built
-   * structurally (and embedded version-aware values render correctly); a raw
-   * SNBT string is still accepted for pasted-in data.
-   */
+  /** Block-entity NBT, as an {@link Nbt} value or a raw SNBT string. */
   data(nbt: string | NbtValue): this {
     this.nbt = nbt;
     return this;
@@ -67,9 +58,7 @@ export class BlockValue implements CommandValue {
   }
 
   /**
-   * The NBT compound form used by `block_display` / `block_state` fields
-   * (`{Name, Properties}`), as opposed to the `id[state]` string form `render`
-   * produces. Property values are stringified, as the format requires.
+   * The `{Name, Properties}` compound form, for `block_display` and `block_state` fields.
    */
   toBlockState(): { Name: string; Properties?: Record<string, string> } {
     const entries = Object.entries(this.states);
@@ -97,20 +86,16 @@ function normalizeBlockId(id: string): string {
 export type Block = BlockValue;
 
 /**
- * Build a block *tag* (`#namespace:path`) - matches any block the tag contains,
- * for `if block` / `fill replace` predicate positions. Prefer the typed vanilla
- * ids: `Block.tag(BLOCK_TAGS.AIR)` -> `#minecraft:air` (autocompleted, typo-checked).
- * A raw string also works (`Block.tag("air")`); a leading `#` is optional (added
- * if absent) and the namespace defaults to `minecraft:`.
+ * A block tag (`#namespace:path`). Prefer `Block.tag(BLOCK_TAGS.AIR)`; the `#` and
+ * `minecraft:` are optional.
  */
 function blockTag(id: string): BlockValue {
   return new BlockValue(id.startsWith("#") ? id : `#${id}`);
 }
 
 /**
- * Build a block from any id (custom namespaces, `#tags`, block states), or use
- * a generated member for a known vanilla block: `Block.GRASS_BLOCK`. For a tag,
- * prefer the typed `Block.tag("air")` over the `Block("#…")` string form.
+ * A block from any id, or a generated member like `Block.GRASS_BLOCK`. Prefer
+ * `Block.tag(...)` for tags.
  */
 export const Block = Object.assign(
   withMembers(

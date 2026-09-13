@@ -1,5 +1,4 @@
-// `ctx.dispatchScore` - the "pick a bucket by score, call it, return its result"
-// pattern every hand-rolled `ifScoreMatches` + `returnRun` chain was reinventing.
+// `ctx.dispatchScore`: pick a function by score range, call it, return its result.
 import { describe, it, expect } from "vitest";
 import { Datapack, Range, ScoreTarget } from "../../index";
 import { v1_21_4 } from "../../versions/profiles";

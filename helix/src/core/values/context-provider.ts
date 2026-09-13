@@ -6,14 +6,8 @@ import { NbtPath } from "./nbt";
 import type { Score } from "../frontend/nodes/score";
 
 /**
- * `/compute`'s expression language (26.3+): the `minecraft:context_int_provider`
- * and `minecraft:context_float_provider` argument parsers.
- *
- * A provider is a whole arithmetic *tree* evaluated by the game in one command -
- * not a number and not a value source. That is what makes `/compute` different
- * in kind from `scoreboard players operation`: a formula is one command, with
- * real floats and `sqrt`, instead of a chain of mutating integer ops over
- * scratch holders.
+ * `/compute` expressions (26.3+): a whole arithmetic tree evaluated in one command, with
+ * floats and `sqrt`.
  *
  * ```ts
  * import { ContextFloat as f } from "helix";
@@ -22,16 +16,9 @@ import type { Score } from "../frontend/nodes/score";
  * ctx.execute().storeResultScore(out).run((b) => b.compute().defaultFloat(speed, 100));
  * ```
  *
- * **Int and float are separate languages**, deliberately kept as separate
- * namespaces rather than one generic builder: `sqrt`/`sin`/`cos`/`length` exist
- * only on float, `floor_div`/`floor_mod`/`binomial` only on int, and
- * {@link ContextInt.fromFloat} / {@link ContextFloat.fromInt} are the explicit
- * crossings. A shared builder would have to be either a union of every op or a
- * runtime check.
- *
- * NOT to be confused with `NumberProvider` in loot-function.ts. That is the
- * `int_provider_type` registry (`clamped`, `trapezoid`, `biased_to_bottom`, …) -
- * a *sibling* registry with a different vocabulary, unrelated to this one.
+ * Int and float are separate namespaces because their ops differ; convert with
+ * {@link ContextInt.fromFloat} / {@link ContextFloat.fromInt}.
+ * Not the same as `NumberProvider` in loot-function.ts, a different registry.
  */
 
 /** Deferred JSON: a provider's shape can depend on the target version, like {@link PredicateRef}. */
@@ -40,7 +27,7 @@ type ProviderJson = (version: VersionProfile) => unknown;
 abstract class ProviderBase implements CommandValue {
   constructor(readonly toJson: ProviderJson) {}
 
-  /** The whole tree as one command token. Rendered compactly - it goes on a command line. */
+  /** The whole tree as one compact command token. */
   render(version: VersionProfile): string {
     return JSON.stringify(this.toJson(version));
   }
@@ -48,8 +35,7 @@ abstract class ProviderBase implements CommandValue {
 
 /** An integer-valued `/compute` expression (`minecraft:context_int_provider`). */
 export class ContextIntProvider extends ProviderBase {
-  // Nominal brand: without it int and float providers are structurally identical
-  // and the compiler would happily let you pass one where the other belongs.
+  // Brand so int and float providers can't be swapped by accident.
   private declare readonly __int: void;
 }
 
@@ -124,10 +110,7 @@ function sharedOps<P extends ProviderBase, R extends number | P>(
         ...(onFalse === undefined ? {} : { on_false: jsonOf(onFalse)(v) }),
       })),
 
-    /**
-     * Read a scoreboard value straight into the expression - the leaf that makes
-     * `/compute` a replacement for score arithmetic rather than a sibling of it.
-     */
+    /** Reads a score into the expression. */
     score: (score: Score, fallback?: R): P =>
       wrap((v) => ({
         type: "score",
@@ -145,11 +128,7 @@ function sharedOps<P extends ProviderBase, R extends number | P>(
         ...(fallback === undefined ? {} : { fallback: jsonOf(fallback)(v) }),
       })),
 
-    /**
-     * Escape hatch for a provider this API doesn't model yet (`number_dispatcher`,
-     * `weighted_list`, `environment_attribute`, `enchantment_level`) or a named
-     * provider referenced by id. Same stance as `ItemModel.raw()`.
-     */
+    /** Escape hatch for providers not modelled yet, or one referenced by id. */
     raw: (json: unknown): P => wrap(() => json),
   };
 }
@@ -163,11 +142,11 @@ const float = (json: ProviderJson) => new ContextFloatProvider(json);
 const intShared = sharedOps<ContextIntProvider, IntRef>(int);
 const floatShared = sharedOps<ContextFloatProvider, FloatRef>(float);
 
-/** Integer `/compute` expressions. Alias it short at the call site: `import { ContextInt as i }`. */
+/** Integer `/compute` expressions. Alias it: `import { ContextInt as i }`. */
 export const ContextInt = {
   ...intShared,
 
-  /** Floored divide - rounds toward `-∞`. What you want for coordinates. */
+  /** Divide rounding toward −∞. Right for coordinates. */
   floorDiv: intShared.bin("floor_div"),
   /** Floored modulo - the partner of {@link floorDiv}; `floorMod(-5, 2)` is `1`, not `-1`. */
   floorMod: intShared.bin("floor_mod"),
@@ -181,7 +160,7 @@ export const ContextInt = {
     int((v) => ({ type: "from_float", input: jsonOf(input)(v) })),
 };
 
-/** Float `/compute` expressions. Alias it short at the call site: `import { ContextFloat as f }`. */
+/** Float `/compute` expressions. Alias it: `import { ContextFloat as f }`. */
 export const ContextFloat = {
   ...floatShared,
 

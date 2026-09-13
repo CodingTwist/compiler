@@ -1,7 +1,6 @@
 import { VersionProfile } from "../../versions/profile";
 import type { FunctionContext } from "../frontend/context";
-// Selector is used only inside method bodies (kill), never at module-init, so
-// this value import does not trip the frontend<->values cycle.
+// Only used inside methods, so this value import doesn't trip the frontend/values cycle.
 import { Selector } from "../frontend/nodes/selector";
 import { BlockValue } from "./block";
 import { Float, NbtInput } from "./nbt";
@@ -17,10 +16,9 @@ import { Vec3, Quat, add } from "./transform-math";
 export type { Vec3, Quat };
 
 /**
- * A pure entity condition: a selector plus whether it's tested with `if` or
- * `unless`. Produced by `display.exists` / `display.notExist` and consumed by
- * `ctx.summonIf` (and the `entity_guard` handler). Kept as plain data here so it
- * stays a leaf value with no command imports.
+ * An entity condition: a selector tested with `if` or `unless`. From `display.exists` /
+ * `notExist`,
+ * used by `ctx.summonIf`.
  */
 export interface EntityCondition {
   selector: string;
@@ -36,9 +34,8 @@ export interface Transform {
 }
 
 /**
- * What one member of a display group renders. `context` is the item model's
- * `display` section (`fixed`, `head`, …) - typed straight off the generated
- * schema's own field, so this file never restates a vocabulary mcdoc owns.
+ * What one display member renders. `context` is the item model's display section (`fixed`,
+ * `head`…).
  */
 export type DisplayContent =
   | { readonly kind: "block"; readonly block: BlockValue }
@@ -53,10 +50,7 @@ export interface DisplayChild {
   transform: Transform;
 }
 
-/**
- * The entity a group summons as, taken from the generated schema rather than spelled
- * out here. Members carry their own id via `asPassenger()`.
- */
+/** The root entity type, taken from the generated schema. */
 const ROOT_ENTITY = BlockDisplay({}).entity;
 
 const IDENTITY_QUAT: Quat = [0, 0, 0, 1];
@@ -73,12 +67,9 @@ function transformNbt(t: Transform): NbtInput {
 }
 
 /**
- * One member's whole transform as a mergeable display NBT - what animating a group
- * member is: `data merge entity <member> displayPose(t, ticks)`. `ticks` is the
- * interpolation the game plays getting there (`0` snaps).
- *
- * The same shape the summon NBT carries, so a pose built from a
- * {@link DisplayValue.members} transform lands exactly back on the summoned one.
+ * One member's transform as display NBT for `data merge`. `interpolationDuration` 0 snaps.
+ * Matches the summon NBT, so a pose from {@link DisplayValue.members} lands exactly on the
+ * original.
  */
 export function displayPose(t: Transform, interpolationDuration = 0) {
   return DisplayBase({
@@ -89,17 +80,12 @@ export function displayPose(t: Transform, interpolationDuration = 0) {
 }
 
 /**
- * A display **group**: a root member plus child members carried as `Passengers`,
- * each rendering either a block state (`block_display`) or an item stack
- * (`item_display`), and optionally an `interaction` hitbox riding the root.
- * Renders to the summon data tag - pass it as the `nbt` arg:
+ * A display group: a root plus child members as `Passengers`, each a block or item display,
+ * with an optional `interaction` hitbox.
  *
  *   const d = Display(Block.POLISHED_BASALT.state({ axis: "x" }))
  *     .add(Block.WAXED_COPPER_BLOCK, { translation: [-0.5, -3.5, -0.5] });
  *   ctx.summon("minecraft:block_display", Pos.rel(0, 10, 0), d);
- *
- * Children are kept in a mutable array, so you can build them from a loop and
- * swap blocks programmatically before rendering.
  */
 export class DisplayValue implements CommandValue {
   readonly children: DisplayChild[] = [];
@@ -138,10 +124,7 @@ export class DisplayValue implements CommandValue {
     return this;
   }
 
-  /**
-   * Append a child **item** display - a custom-modelled item is one member
-   * instead of the dozens of cubes the same shape costs in blocks.
-   */
+  /** Adds an item display child. One custom-model item replaces many block members. */
   addItem(
     item: ItemValue,
     transform: Transform = {},
@@ -152,23 +135,15 @@ export class DisplayValue implements CommandValue {
   }
 
   /**
-   * Give the group a **hitbox**. Display entities have none - nothing can hit
-   * them, and nothing can stand on them - so this rides an `interaction` entity
-   * on the root, which is the vanilla primitive that *does* have one: a cube
-   * `width` across and `height` tall that records the last attack/use in its own
-   * NBT (readable at `attack.player` / `interaction.player`).
+   * Adds a hitbox: an `interaction` entity riding the root, since displays can't be hit.
    *
-   * Both default to the model's own {@link boundsSize}. `response` (default
-   * `true`) is whether hitting it plays the hit sound / swings the arm.
-   *
-   * Relaying that recorded hit onto a real mob is deliberately *not* here: it's a
-   * gameplay convention, so it belongs a layer up. This is the mechanism.
+   * Size defaults to {@link boundsSize}. `response` controls the hit sound and arm swing.
+   * Relaying hits to a mob is left to higher layers.
    */
   hitbox(width?: number, height?: number, response = true): this {
     const [bx, by, bz] = this.boundsSize();
-    // ponytail: the box is anchored at the group origin and spans up from it,
-    // because a passenger can't be offset from its vehicle. A model whose bounds
-    // don't start at the origin wants explicit dims (or its own mounted entity).
+    // ponytail: the box starts at the group origin, since passengers can't be offset.
+    // Models not starting at the origin need explicit sizes.
     this._hitbox = { width: width ?? Math.max(bx, bz), height: height ?? by, response };
     return this;
   }
@@ -180,11 +155,8 @@ export class DisplayValue implements CommandValue {
   }
 
   /**
-   * Tween transform changes over `ticks` instead of snapping to them. Display
-   * entities don't interpolate for free: the duration is stored **on the entity**
-   * and every later update has to re-trigger it (`start_interpolation`), which is
-   * what the clip engine's transform writes already do - this sets the resting
-   * default so an ad-hoc `data merge` moves smoothly too.
+   * Default interpolation ticks for transform changes, so plain `data merge` updates move
+   * smoothly.
    */
   interpolation(ticks: number): this {
     this._interpolation = ticks;
@@ -192,10 +164,8 @@ export class DisplayValue implements CommandValue {
   }
 
   /**
-   * Glide over `ticks` when **teleported** rather than jumping. Separate from
-   * {@link interpolation} in vanilla (transform tweening and positional tweening
-   * are different fields), and the one that matters for a model being moved
-   * around by `tp` - a boss rig following its mob, say.
+   * Ticks to glide when teleported. Separate from {@link interpolation}; matters for rigs
+   * moved by `tp`.
    */
   teleportDuration(ticks: number): this {
     this._teleportDuration = ticks;
@@ -203,11 +173,8 @@ export class DisplayValue implements CommandValue {
   }
 
   /**
-   * Pin the rendered light level so the display matches surrounding blocks
-   * instead of falling back to dynamic per-entity lighting (which samples one
-   * point and usually renders darker / flickers as it moves). Both `block` and
-   * `sky` are 0–15; `sky` defaults to the same as `block`. Use `15, 15` for
-   * full-bright. Applies to every member (each passenger is its own entity).
+   * Fixes the light level (0–15) so displays match nearby blocks instead of rendering dark.
+   * `sky` defaults to `block`. Applies to every member.
    */
   brightness(block: number, sky: number = block): this {
     this._brightness = { block, sky };
@@ -215,11 +182,8 @@ export class DisplayValue implements CommandValue {
   }
 
   /**
-   * Shift **every** member by `v`. The knob for a group that doesn't sit where its
-   * entity does - chiefly a rig *riding* a mob: a passenger is planted at the
-   * vehicle's mount point (roughly `height * 0.75` up), so the model floats unless
-   * the group is pushed back down by that much. The interaction hitbox is
-   * deliberately not moved: it can't be offset from its vehicle at all.
+   * Shifts every member by `v`, e.g. to cancel a vehicle's mount point height. The hitbox
+   * doesn't move.
    */
   offset(v: Vec3): this {
     this._offset = v;
@@ -242,11 +206,8 @@ export class DisplayValue implements CommandValue {
   }
 
   /**
-   * Give the display an identity. Every member is tagged `Tags:["<name>",
-   * "<name>_<i>"]` (root is index 0), so the whole group is addressable by
-   * `@e[tag=<name>]` and each member by `@e[tag=<name>_<i>]`. Required before
-   * summoning/killing/animating. Unnamed displays render with no tags (static
-   * packs stay byte-identical).
+   * Tags every member `<name>` and `<name>_<i>` (root is 0). Required before summoning,
+   * killing or animating.
    */
   named(name: string): this {
     this._name = name;
@@ -294,7 +255,7 @@ export class DisplayValue implements CommandValue {
     ctx.summon(this.toNbt(), pos instanceof PosValue ? pos : Pos.raw(pos));
   }
 
-  /** Summon the display only when `cond` holds (e.g. `cog.notExist`). */
+  /** Summons the display only when `cond` holds, e.g. `cog.notExist`. */
   summonIf(ctx: FunctionContext, cond: EntityCondition): void {
     ctx.summonIf(cond, this);
   }
@@ -312,11 +273,7 @@ export class DisplayValue implements CommandValue {
     });
   }
 
-  /**
-   * Ordered members - root first (index 0), then the added children. The hitbox
-   * is **not** one: it carries no transform, so nothing that animates members
-   * should ever address it.
-   */
+  /** Members in order, root first. The hitbox isn't included, since it has no transform. */
   members(): DisplayChild[] {
     const all = [{ content: this.content, transform: this.rootTransform }, ...this.children];
     if (this._offset.every((n) => n === 0)) return all;
@@ -327,22 +284,15 @@ export class DisplayValue implements CommandValue {
   }
 
   /**
-   * The min corner of the model's block volume in entity-local space - the
-   * smallest member translation on each axis. A `block_display` member with
-   * translation `t` occupies the cube `[entity + t, entity + t + 1]`, so summoning
-   * at `worldCorner - boundsMin()` makes the model's lowest block land exactly on
-   * `worldCorner`. Used to overlay a display on the real blocks it stands in for.
+   * The model's lowest block corner in entity space. Summon at `worldCorner - boundsMin()`
+   * to align with real blocks.
    */
   boundsMin(): Vec3 {
     const ts = this.members().map((m) => m.transform.translation ?? [0, 0, 0]);
     return [0, 1, 2].map((a) => Math.min(...ts.map((t) => t[a]))) as Vec3;
   }
 
-  /**
-   * The model's size in whole blocks on each axis (max translation − min + 1).
-   * For a model captured from a 2×16×7 structure this returns `[2, 16, 7]`, the
-   * footprint the matching `.nbt` covers.
-   */
+  /** The model's size in whole blocks per axis, e.g. `[2, 16, 7]`. */
   boundsSize(): Vec3 {
     const ts = this.members().map((m) => m.transform.translation ?? [0, 0, 0]);
     return [0, 1, 2].map((a) => {
@@ -352,11 +302,7 @@ export class DisplayValue implements CommandValue {
     }) as Vec3;
   }
 
-  /**
-   * The typed `block_display` NBT this summons as - root first, children as
-   * `passengers`. Built through the entity's own schema, so the key spellings and
-   * SNBT suffixes are the compiler's business, not this file's.
-   */
+  /** The `block_display` NBT to summon, built through the entity schema. */
   toNbt(): IdentifiedEntityNbt {
     const tags = (suffix: string) =>
       this._name ? [this._name, `${this._name}_${suffix}`] : undefined;

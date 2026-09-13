@@ -31,10 +31,7 @@ export class TellrawNode extends ASTNode {
 /** A single tellraw piece: raw string sugar or a built part. */
 export type TellrawItem = string | TellrawPart;
 
-/**
- * Anything `tellraw` accepts: a bare string, one part (Text/Score/NbtRef), a
- * prebuilt TellrawText, or a list mixing strings and parts.
- */
+/** Anything `tellraw` accepts: a string, one part, a TellrawText, or a list of these. */
 export type TellrawContent = TellrawItem | TellrawText | TellrawItem[];
 
 const toPart = (item: TellrawItem): TellrawPart =>

@@ -5,8 +5,7 @@ import { FunctionContext } from "../frontend/context";
 import { FunctionTagRef } from "../values/function-tag";
 import { NbtValue } from "../values/nbt";
 import { NbtRef } from "../frontend/nodes/nbt_ref";
-// Type-only: function_ref.ts imports the frontend barrel, so a value import
-// here would close the command-file import cycle.
+// Type-only, or it would close the command-file import cycle.
 import type { FunctionRef } from "../function_ref";
 
 export class FunctionCommand extends CommandHandler<FunctionNode> {
@@ -40,10 +39,7 @@ export class FunctionTagCallCommand extends CommandHandler<FunctionTagCallNode> 
   }
 }
 
-/**
- * `function <ns>:<name> <args>` - call a **macro** function, passing the
- * arguments its `$(…)` placeholders are substituted with.
- */
+/** `function <ns>:<name> <args>`: calls a macro function with arguments. */
 export class MacroCallNode extends ASTNode {
   readonly type = "macro_call";
   constructor(
@@ -80,15 +76,11 @@ export class MacroCallCommand extends CommandHandler<MacroCallNode> {
 declare module "../frontend/context" {
   interface FunctionContext {
     /**
-     * `function <fn> <args>` - call a **macro** function with arguments,
-     * substituted into its `Macro("…")` placeholders.
+     * `function <fn> <args>`: calls a macro function with arguments.
      *
-     * `source` is either an inline compound (`Nbt({ pos: "1 2 3" })`) or an NBT
-     * reference to read the compound from (`ctx.storage(id).at("args")`).
-     *
-     * Macros re-parse the command on every call and can't be validated - prefer
-     * a score, a storage read, or a plain {@link ContextBase.call} where one
-     * will do.
+     * `source` is an inline compound or an NBT reference. Macros re-parse every call and
+     * can't be
+     * validated, so prefer scores, storage or {@link ContextBase.call}.
      */
     callWith(fn: FunctionRef, source: NbtValue | NbtRef): void;
   }
@@ -105,10 +97,8 @@ FunctionContext.prototype.callWith = function (
 declare module "../frontend/context" {
   interface FunctionContext {
     /**
-     * `function #<tag>` - call a **function tag**, running every member.
-     *
-     * The single-function sibling is {@link ContextBase.call}, which takes a
-     * `FunctionRef`. Build the tag with `dp.functionTag(name, { values })`.
+     * `function #<tag>`: calls every function in a tag. Build one with
+     * `dp.functionTag(name, { values })`.
      */
     callTag(tag: FunctionTagRef): void;
   }

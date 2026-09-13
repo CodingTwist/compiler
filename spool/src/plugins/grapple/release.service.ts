@@ -15,12 +15,8 @@ interface ReleaseDeps {
 }
 
 /**
- * The **release service**: let go of the rope. Flings the player along their line of sight
- * (`physics.releaseKick`, scaled by swing speed²) so releasing launches them instead of
- * stalling against air drag, then tears down the swing: drop the `grappling` tag, restore
- * gravity (remove the modifier attach added), and kill *this* player's anchor marker
- * (matched by the shared id). The fling runs first, while the player's stored velocity is
- * still intact.
+ * Releases the rope: flings the player, removes the `grappling` tag, restores gravity, and
+ * kills their anchor.
  */
 export function createReleaseService(d: ReleaseDeps) {
   const scratch = swingScratch(d.scratch);
@@ -28,9 +24,9 @@ export function createReleaseService(d: ReleaseDeps) {
   return {
     /** Release the executing player. */
     release(ctx: FunctionContext): void {
-      // Fling on release, before dropping the tag / killing the anchor: the kick reads the
-      // player's stored swing velocity, which those don't touch. Runs `at @s` for the
-      // position/rotation context `applyLocal` needs - `stop`'s callers don't all provide it.
+      // Fling first, while the stored velocity is intact. `at @s` because `applyLocal`
+      // needs the
+      // player's position and rotation.
       ctx.execute().at(d.selectors.self()).run((b) => releaseKick(d, scratch, b));
 
       ctx.tag().remove(d.selectors.self(), "grappling");
@@ -39,8 +35,8 @@ export function createReleaseService(d: ReleaseDeps) {
         ctx.attribute().modifierRemove(d.selectors.self(), Attribute.GRAVITY, GRAVITY_MODIFIER_ID);
       }
 
-      // Release this player's anchor: stage their id, then kill the anchor marker that shares
-      // it. Dropping the tag already stops drive (and the rope) for them.
+      // Kill the anchor with this player's id. Removing the tag already stops the drive and
+      // rope.
       const stopId = d.scratch.scalar("stop_id");
       stopId.assign(d.repo.id.score(d.selectors.self()));
       ctx

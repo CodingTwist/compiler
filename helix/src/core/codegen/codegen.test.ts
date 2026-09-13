@@ -8,8 +8,7 @@ import { Dispatcher, CodegenContext, CommandHandler } from "../ir/commandhandler
 import { v1_21_4 } from "../../versions/profiles";
 import fs from "fs";
 
-// Keep the real fs (loadProfile reads version data from disk at import time);
-// only spy on the write side that this suite asserts against.
+// Keep real fs, since profiles load from disk; only spy on writes.
 vi.mock("fs", async (importActual) => {
   const actual = await importActual<typeof import("fs")>();
   const mkdirSync = vi.fn();

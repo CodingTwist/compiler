@@ -1,9 +1,7 @@
-// Debug source tracking: remember which line of the author's TypeScript emitted
-// each AST node, so codegen can map every rendered command back to it (report
-// warnings, `#` comments, the sidecar map). Off unless a Datapack is built with
-// `debug: { sources }` - capturing a stack per node is far too slow to leave on.
+// Debug source tracking: records which author line emitted each node, for reports, `#`
+// comments and the source map.
 //
-// Browser-safe: no `fs`/`path`, and `__dirname` / `process` are guarded.
+// Off unless built with `debug: { sources }`; capturing stacks is slow. Browser-safe.
 import type { ASTNode, FunctionNode } from "../ir/node";
 
 /** `path/relative/to/cwd.ts:line:col` - clickable in a terminal or VS Code. */
@@ -17,8 +15,7 @@ export interface DebugOptions {
   comments?: boolean;
 }
 
-// Keyed by the function a node was pushed into: a call node is the callee's own
-// shared FunctionNode, so the same node sits at a different line in each caller.
+// Keyed by function, since a shared callee node sits at a different line in each caller.
 const locs = new WeakMap<FunctionNode, Map<ASTNode, SourceLoc>>();
 // helix's own package root first (the fallback skips only these frames).
 const helixRoot = typeof __dirname === "string" ? up(__dirname, 3) : undefined;
@@ -26,8 +23,9 @@ const helixRoot = typeof __dirname === "string" ? up(__dirname, 3) : undefined;
 const ignored: { root: string; framework: boolean }[] = helixRoot
   ? [{ root: helixRoot, framework: false }]
   : [];
-// ponytail: process-wide - once any debug pack exists, later packs capture too
-// (CPU only; output stays gated on each pack's own `debug`). Scope per pack if that bites.
+// ponytail: process-wide, so once one debug pack exists later packs capture too (output is
+// still
+// gated per pack). Scope per pack if that matters.
 let enabled = false;
 
 function up(dir: string, levels: number): string {
@@ -41,12 +39,11 @@ export function enableSourceTracking(): void {
 }
 
 /**
- * Skip stack frames under `dir` when attributing a node, so locations land in
- * the author's code - for libraries built on helix. A helper library (spool)
- * passes nothing: its lines go to whoever called it. A `framework` (twine) calls
- * *into* author code rather than being called by it, so a line it emits on its
- * own is attributed to the framework frame, not to the outer build entry point
- * (`DatapackFactory.create(...)` in main) that every such line would share.
+ * Skips stack frames under `dir` so locations land in author code.
+ *
+ * Libraries (spool) pass nothing: lines go to their caller. Frameworks (twine) pass
+ * `framework`,
+ * so lines they emit themselves point at the framework instead of the shared build entry.
  */
 export function ignoreSourceFrames(dir: string, opts: { framework?: boolean } = {}): void {
   const root = dir.replace(/\\/g, "/").replace(/\/?$/, "/");
@@ -60,15 +57,11 @@ export function sourceOf(fn: FunctionNode, node: ASTNode): SourceLoc | undefined
 
 const FRAME = /\(?(?:file:\/\/)?([^\s()]+):(\d+):(\d+)\)?$/;
 
-// Transpiled author position → its source-mapped `SourceLoc`. Formatting a stack
-// string is what costs (Node source-maps every frame of it); the structured
-// frames V8 hands `prepareStackTrace` are near free. So each push takes the
-// cheap frames, finds the author frame, and only formats a string the first
-// time that exact site is seen - a loop emitting thousands of commands from one
-// line pays once.
+// Cache of source-mapped locations per call site. Formatting stacks is expensive, so each
+// site is formatted once.
 const bySite = new Map<string, SourceLoc | null>();
 
-/** Record the author line pushing `node` into `fn`. Called by `FunctionNode.push`. */
+/** Records the author line pushing `node` into `fn`. Called by `FunctionNode.push`. */
 export function captureSource(fn: FunctionNode, node: ASTNode): void {
   if (!enabled) return;
   let byNode = locs.get(fn);

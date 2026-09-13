@@ -1,17 +1,12 @@
 /**
- * A `Clip` is a named timeline of {@link Track}s on a datapack. It compiles to a
- * set of functions and is driven by one of:
+ * A named animation timeline of {@link Track}s, compiled to functions.
  *
- *   - **`play(ctx)` / `reverse(ctx)`** - one-shot, schedule-driven, self-contained
- *     (the door open/close motion). Generalises the old `Clip.playAt` / `Slide`.
- *   - **`loop(ctx)` + `start(ctx)`/`stop(ctx)`** - a continuous, scoreboard-timed
- *     tick run (a forever-spinning cog). Generalises the old `DisplayEffect`.
+ * - `play(ctx)` / `reverse(ctx)`: one-shot, scheduled (e.g. a door opening).
+ * - `loop(ctx)` + `start(ctx)`/`stop(ctx)`: continuous, scoreboard-timed (e.g. a spinning
+ * cog).
  *
- * The clip is wholly *smooth* (one native-interpolation merge per member that
- * Minecraft tweens) or *frame* (per-tick functions the driver cycles); it picks
- * the mode from its tracks and rejects a mix (compose those as separate clips or a
- * {@link Cutscene}). Compilation is deferred to `dp.onFinalize`, so timing/snap
- * chained after the motion still applies.
+ * A clip is either smooth (one native interpolation per member) or frame-baked, never both.
+ * Compiled in `dp.onFinalize`, so settings chained after the motion still apply.
  */
 import {
   FOREVER,
@@ -46,17 +41,15 @@ export class Clip {
   private snapDeg?: number;
   private emitted = false;
 
-  // Which drivers the author wired - compile() only generates the machinery used,
-  // so a play-only clip never emits a per-tick loop driver.
+  // Which drivers were used, so unused ones aren't generated.
   private usedPlay = false;
   private usedReverse = false;
   private usedTick = false;
 
   // The author-facing label (the display's name) - used only in error messages.
   private readonly label: string;
-  // Where this clip's generated functions live: tucked under the private root so
-  // baked frames/play/reverse sort away from authored functions. The display
-  // entity is still targeted by its own tag (built from the model), not by this.
+  // Generated functions live under the private root; the entity is still found by its model
+  // tag.
   private readonly name: string;
 
   constructor(
@@ -124,10 +117,9 @@ export class Clip {
     return this;
   }
   /**
-   * Teleport `selector` along a positional path over keyframes - camera/entity
-   * dolly. `glide` teleports only on the keyframes and lets the client tween
-   * between them via `teleport_duration` (display entities only) - far fewer
-   * commands, and smoother than the per-tick default.
+   * Teleports `selector` along keyframes. `glide` only teleports on keyframes and lets the
+   * client
+   * tween between them (display entities only): fewer commands and smoother.
    */
   tp(selector: Selector, keys: readonly Keyframe<Vec3>[], glide = false): this {
     this.tracks.push(new TpTrack(selector, keys, glide));
@@ -146,9 +138,8 @@ export class Clip {
     return this.over(secondsToTicks(seconds));
   }
   /**
-   * Make a spin come to rest on a multiple of `degrees` (default 90 - never
-   * mid-tooth). Nudges the played duration so the resting frame lands on a snap
-   * angle. Pure-spin clips only; the spin speed must divide `degrees` evenly.
+   * Makes a spin stop on a multiple of `degrees` (default 90). Pure spins only; speed must
+   * divide `degrees`.
    */
   snap(degrees = 90): this {
     if (!(degrees > 0)) throw new Error(`snap degrees must be > 0 (got ${degrees}).`);
@@ -200,11 +191,7 @@ export class Clip {
     this.usedPlay = true;
   }
 
-  /**
-   * Emit this clip's whole timeline into `ctx`, offset by `baseTick` - a
-   * {@link Cutscene} calls this from its master schedule. Smooth clips kick off
-   * their single native tween at the offset; frame clips fan their frames out.
-   */
+  /** Emits the whole timeline into `ctx`, offset by `baseTick`. Used by {@link Cutscene}. */
   scheduleInto(ctx: FunctionContext, baseTick: number): void {
     const { duration, mode, period: P } = this.resolved();
     const ns = this.dp.name;
@@ -257,8 +244,7 @@ export class Clip {
       this.durationTicks ?? (maxLen > 0 ? maxLen : pureSpinRev ?? 20);
     duration = Math.max(duration, maxLen, 1);
 
-    // A pure spin can cycle one revolution's worth of frames (loop-capable);
-    // events pin absolute ticks, so they force a full, non-cycling bake.
+    // A pure spin can loop one revolution of frames; events need a full bake.
     const cycling = mode === "frame" && pureSpinRev !== undefined && this.events.size === 0;
     if (this.snapDeg !== undefined && pureSpinRev !== undefined) {
       duration = this.snapDuration(duration, pureSpinRev);
@@ -334,8 +320,7 @@ export class Clip {
   /** The continuous tick driver (loop/start/stop), timed via `dp.timing`. */
   private emitTickDriver(P: number, runTicks: number): void {
     const name = this.name; // function paths (under the private root)
-    // Scoreboard fake-player holder stays the author label - not the slashed
-    // function path - so the counter reads `cog`, not `zzz/cog`.
+    // The score holder is the label, so the counter reads `cog`, not `zzz/cog`.
     const holder = this.label;
     const frame = this.dp.objective("anim").score(ScoreTarget(holder));
     const life: Countdown = { objective: this.dp.objective("anim_life"), holder };
@@ -374,10 +359,7 @@ export class Clip {
     }
   }
 
-  /**
-   * Nudge `duration` so a spin's resting frame `(duration-1) mod N` lands on a
-   * multiple of `snapDeg`. Ported from the old `Clip.snapDuration`.
-   */
+  /** Adjusts `duration` so a spin's last frame lands on a multiple of `snapDeg`. */
   private snapDuration(duration: number, N: number): number {
     const framesPerSnap = (this.snapDeg! * N) / 360;
     if (!Number.isInteger(framesPerSnap) || framesPerSnap <= 0 || N % framesPerSnap !== 0) {

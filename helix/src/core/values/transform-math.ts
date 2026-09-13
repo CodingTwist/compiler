@@ -1,12 +1,8 @@
-// Pure compile-time vector / quaternion math. No Minecraft/version coupling -
-// just numbers, vectors and quaternions, evaluated at build time (the runtime
-// score-vector equivalents are `Fixed`/`ScoreVec3`). Two concerns share the file:
-//   - interpolation (`lerp`/`lerpVec3`) - the value tweening animation bakes with;
-//   - rigid-body rotation (`quat`/`rotateVec`/`rotateAboutPivot`) - Minecraft
-//     display entities have no transform inheritance, so a multi-block model is
-//     spun by transforming each member independently: its world translation is
-//     `pivot + rotate(offset - pivot, q)` and its orientation is the same `q`.
-// See animated-display.ts.
+// Build-time vector and quaternion maths: interpolation, and rotation for display models.
+//
+// Display entities don't inherit transforms, so a model is rotated per member:
+// position `pivot + rotate(offset - pivot, q)`, orientation `q`. Runtime equivalents are
+// `Fixed`/`ScoreVec3`.
 
 /** A 3-component vector (translation / scale / offset). */
 export type Vec3 = [number, number, number];
@@ -56,11 +52,7 @@ export function quat(axis: Axis, angleDeg: number): Quat {
   }
 }
 
-/**
- * Compose two rotations: `b` is applied **first**, then `a` - the same order as
- * writing `a * b`. `quat` is single-axis, so this is how a transform gets a second
- * axis without burning the display's other rotation slot.
- */
+/** Composes rotations: `b` first, then `a`. */
 export function mulQuat(a: Quat, b: Quat): Quat {
   const [ax, ay, az, aw] = a;
   const [bx, by, bz, bw] = b;
@@ -87,12 +79,8 @@ function normalize(v: Vec3): Vec3 {
 }
 
 /**
- * The shortest rotation taking direction `from` onto direction `to` - a pose stated as
- * an *intent* ("aim the down-pointing blade out front") rather than a hand-derived axis
- * and angle. Neither input has to be unit length; neither may be zero.
- *
- * The antiparallel case has no shortest rotation (every half-turn about a perpendicular
- * axis works), so one perpendicular is picked.
+ * The shortest rotation from direction `from` to `to`. Neither may be zero.
+ * Opposite directions have no unique answer, so a perpendicular axis is picked.
  */
 export function quatFromTo(from: Vec3, to: Vec3): Quat {
   const a = normalize(from);
@@ -100,8 +88,7 @@ export function quatFromTo(from: Vec3, to: Vec3): Quat {
   const d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
   if (d > 1 - 1e-6) return [0, 0, 0, 1];
   if (d < -1 + 1e-6) {
-    // Any axis perpendicular to `a`: cross it with whichever principal axis it is
-    // least aligned with, which can never itself be parallel.
+    // Cross with the principal axis `a` is least aligned with, which can't be parallel.
     const least: Vec3 =
       Math.abs(a[0]) <= Math.abs(a[1]) && Math.abs(a[0]) <= Math.abs(a[2])
         ? [1, 0, 0]

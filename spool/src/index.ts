@@ -1,55 +1,35 @@
 /**
- * spool - the opt-in **convenience layer**: handy, composed helpers built on
- * helix's *public* API, the middle ground between the bare compiler (helix) and
- * the opinionated framework (twine).
+ * spool: opt-in helpers built on helix's public API.
  *
- * Each helper is a `KitPlugin`. This barrel is **type-only**: importing it gives
- * you the contract and each plugin's result *type*, but activates **nothing** at
- * runtime. You turn helpers on by installing them - pull each from its subpath and
- * hand it to the installer:
+ * This barrel only exports types; nothing is active until you install plugins:
  *
  *   import { installKit } from "spool";
  *   import { holding } from "spool/plugins/holding";
  *   import { clip } from "spool/plugins/clip";
  *   installKit([holding, clip]);
  *
- * Adding a plugin: new `src/plugins/<name>/index.ts`, export a `KitPlugin` whose
- * `install()` does the augmentation (build only on helix's public API - no
- * `dist/core/...`, no `new XxxNode`). Declare cross-plugin ordering with `deps`.
- * There is no central registry to update. See spool/CLAUDE.md.
+ * To add a plugin, see spool/CLAUDE.md.
  */
 
 export type { KitPlugin } from "./plugin";
 export { installKit } from "./kit";
 
-// The entity-set type, for typing `dp.entitySet()` results (the runtime method is
-// installed by the `entitySet` plugin). Importing this does NOT activate any
-// augmentation.
+// Type for `dp.entitySet()` results. Doesn't install the plugin.
 export { EntitySet } from "./plugins/entity_set";
 
-// The Paper native-ops facade, for typing `ctx.paper()` results (the runtime
-// method is installed by the `native` plugin). Importing this does NOT activate
-// any augmentation.
+// Type for `ctx.paper()` results. Doesn't install the plugin.
 export { PaperOps } from "./plugins/native";
 
-// The player_motion library handle, for typing `dp.playerMotion()` results (the
-// runtime method is installed by the `playerMotion` plugin). Importing this does
-// NOT activate any augmentation.
+// Type for `dp.playerMotion()` results. Doesn't install the plugin.
 export type { PlayerMotion } from "./plugins/player_motion";
 
-// The raycast handles, for typing `dp.raycast()` results (the runtime method is
-// installed by the `raycast` plugin). Importing this does NOT activate any
-// augmentation.
+// Types for `dp.raycast()` results. Doesn't install the plugin.
 export type { RaycastRef, RaycastOptions } from "./plugins/raycast";
 
-// The grapple/swing handle, for typing `dp.grapple()` results (the runtime method
-// is installed by the `grapple` plugin, which deps on `player_motion` + `raycast`).
-// Importing this does NOT activate any augmentation.
+// Types for `dp.grapple()` results. Doesn't install the plugin.
 export type { Grapple, GrappleOptions } from "./plugins/grapple";
 
-// The trajectory-solver types, for typing `ctx.ballistic()` results (the runtime method
-// is installed by the `ballistics` plugin). The solver itself (`solveLaunch`) is a pure
-// function on the `spool/plugins/ballistics` subpath and needs no install.
+// Types for `ctx.ballistic()` results. `solveLaunch` itself needs no install.
 export type {
   LaunchOptions,
   LaunchSolution,
@@ -57,14 +37,10 @@ export type {
   ProjectileProfile,
 } from "./plugins/ballistics";
 
-// The in-game test suite, for typing `dp.probe()` results (the runtime method is
-// installed by the `probe` plugin). Importing this does NOT activate any
-// augmentation.
+// Types for `dp.probe()` results. Doesn't install the plugin.
 export type { Suite, ProbeCase, ProbeOptions } from "./plugins/probe";
 
-// The clip/cutscene timeline engine, for typing animation results (the runtime
-// `dp.clip()`/`dp.cutscene()` methods are installed by the `clip` plugin).
-// Importing these does NOT activate any augmentation.
+// Types for `dp.clip()`/`dp.cutscene()` results. Doesn't install the plugin.
 export {
   Clip,
   Cutscene,
@@ -81,7 +57,5 @@ export {
   type Ease,
 } from "./plugins/clip";
 
-// The particle-shape options, for typing `ctx.particleRing()` calls (the runtime
-// method is installed by the `particles` plugin). Importing this does NOT activate
-// any augmentation.
+// Types for `ctx.particleRing()` options. Doesn't install the plugin.
 export type { RingOptions } from "./plugins/particles";

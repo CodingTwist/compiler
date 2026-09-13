@@ -7,9 +7,8 @@ export const litPart = (value: string): CommandPart => ({
 });
 
 /**
- * Build an argument part from any accepted value. The concept (or raw
- * primitive) is kept as a `CommandValue` and rendered at codegen with the
- * target version - never stringified here.
+ * Builds an argument part. The value is kept typed and rendered for the target version at
+ * codegen.
  */
 export const argPart = (value: ArgInput): CommandPart => ({
   kind: "arg",
@@ -17,15 +16,13 @@ export const argPart = (value: ArgInput): CommandPart => ({
 });
 
 /**
- * Base for a command's fluent builder. The builder wraps the command's node
- * (already emitted into the function), so each chained call mutates that node
- * by reference - no terminal call needed:
+ * Base class for command builders. The node is already emitted; chained calls edit it in
+ * place:
  *
  *     ctx.weather().clear(100);   // weather() emits the node; clear() fills it
  *
- * `$set(...)` replaces the node's parts (a builder method picks one syntax);
- * `$append(...)` adds to them. The `$` prefix keeps these from colliding with
- * generated sub-command methods (e.g. `worldborder set`, `time add`).
+ * `$set(...)` replaces the parts, `$append(...)` adds to them. The `$` avoids clashing with
+ * generated sub-command methods like `worldborder set`.
  */
 export abstract class CommandBuilder<N extends CommandNodeBase> {
   constructor(protected node: N) {}

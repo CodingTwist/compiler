@@ -4,17 +4,14 @@ import { VersionProfile } from "../../../versions/profile";
 import { privateChild } from "../../private-fn";
 
 /**
- * The core of FunctionContext: the function being authored, the target version,
- * and the shared plumbing (emit, call, child functions). Every author-facing
- * `ctx.<command>()` method is a prototype augmentation living WITH its command in
- * src/core/commands/<cmd>.ts - none are defined here.
+ * The core of FunctionContext: the function, target version, and emit/call plumbing.
+ * Each `ctx.<command>()` is added by its own file in src/core/commands/.
  */
 export class ContextBase {
   private suffixCounters = new Map<string, number>();
 
   constructor(
-    // Public so the command files' prototype augmentations (e.g. `player()`)
-    // can reach the function being authored; not part of the intended API.
+    // Public so command augmentations can reach it; not intended API.
     public fn: FunctionNode,
     protected _version: VersionProfile,
   ) {}
@@ -29,10 +26,9 @@ export class ContextBase {
   }
 
   /**
-   * Drop `node` if it is still the last thing emitted - for a builder that
-   * emitted its node up front and then found it had nothing to say (an `execute`
-   * chain composed from zero clauses, say). A no-op if anything was emitted
-   * after it, so it can never unpick someone else's work.
+   * Removes `node` if it's still the last thing emitted, e.g. an `execute` chain that ended
+   * up empty.
+   * Does nothing otherwise.
    */
   retract(node: ASTNode): boolean {
     if (this.fn.nodes[this.fn.nodes.length - 1] !== node) return false;
@@ -45,14 +41,11 @@ export class ContextBase {
   }
 
   /**
-   * A uniquely-named nested function for control-flow bodies (if/elif/else, at).
-   * Public so the `if` augmentation in commands/if.ts can build child bodies.
+   * Creates a uniquely named child function for control-flow bodies.
    *
-   * Generated helpers live under the shared `PRIVATE_ROOT` folder so they sort
-   * *away* from authored functions (a leading-underscore name sorted them to the
-   * top of the list, in the way). The name nests by parent path, inside the
-   * parent's own folder - `mace/tick` → `mace/zzz/tick/if_0` →
-   * `mace/zzz/tick/if_0/at_0`; a top-level `tick` → `zzz/tick/if_0`.
+   * Lives under `PRIVATE_ROOT` so it sorts away from authored functions, nested by parent
+   * path:
+   * `mace/tick` → `mace/zzz/tick/if_0`.
    */
   createChildFunction(suffix: string): FunctionNode {
     const count = this.suffixCounters.get(suffix) ?? 0;

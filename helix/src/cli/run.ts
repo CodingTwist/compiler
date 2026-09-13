@@ -1,5 +1,5 @@
-// `helix <command>`: build / dev / report / profile / validate a pack described by
-// `helix.config.ts` in the working directory.
+// `helix <command>`: build, dev, report, profile or validate the pack in the working
+// directory.
 import fs from "fs";
 import { parseArgs } from "util";
 import type { RuntimeTarget } from "../core/ir/target";

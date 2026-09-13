@@ -15,9 +15,8 @@ const D = (n: string) => dummy.score(ScoreTarget(n));
 
 describe("ctx.execute() chain builder", () => {
   it("renders an if-block predicate's block-entity NBT version-aware", () => {
-    // The block's data compound can embed a version-dependent value (an item
-    // stack, whose spelling changed in 1.20.5), so the clause has to render with
-    // the profile rather than without one - which used to throw.
+    // The block data can hold a version-dependent item stack, so the clause must render
+    // with a profile.
     const [line] = render((ctx) =>
       ctx
         .execute()

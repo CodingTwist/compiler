@@ -1,7 +1,5 @@
-// The AST node vocabulary: the base classes every node extends. These are the
-// IR's shared kernel (not tied to any one command), so they live in ir/ rather
-// than a folder of their own. Each command's concrete node lives WITH its
-// handler in src/core/commands/<cmd>.ts.
+// Base AST node classes. Each command's own node lives with its handler in
+// src/core/commands/.
 import { CommandValue } from "../values/value";
 import { captureSource } from "../debug/sources";
 
@@ -42,9 +40,7 @@ export class Range extends ASTNode {
     super();
   }
 
-  // Named constructors, so a call site reads as what the range *means* rather
-  // than as its punctuation. The same four {@link NumRange} already offers for
-  // the numeric-range value; these are their score-range counterparts.
+  // Named constructors, so call sites read as meaning rather than punctuation.
 
   /** `n` - exactly. */
   static exactly(n: number) {
@@ -80,13 +76,8 @@ export class Range extends ASTNode {
 }
 
 /**
- * "Nearest wins" bands over a sorted ladder of targets: one {@link Range} per
- * target, split at neighbor midpoints, open-ended at both ends. Splits the
- * number line the same way `Selector`'s nearest-of-N patterns do for scores -
- * useful for "snap this score to the nearest of these rungs" dispatch (see
- * {@link FunctionContext.dispatchScore}). Tiling with no gaps is a property of
- * the construction (each band's edges come directly from its neighbors), not
- * something to separately assert.
+ * "Nearest wins" ranges for sorted `targets`: split at midpoints, open at both ends.
+ * For snapping a score to the nearest value with {@link FunctionContext.dispatchScore}.
  */
 export function bandsFromTargets(targets: readonly number[]): Range[] {
   const mid = (a: number, b: number) => Math.floor((a + b) / 2);
@@ -97,23 +88,14 @@ export function bandsFromTargets(targets: readonly number[]): Range[] {
   });
 }
 
-/**
- * A neutral command part: either a fixed literal token or a deferred argument
- * value. A command builder fills these in as the author chains calls; the arg
- * holds a `CommandValue` concept whose rendering is deferred to codegen (so it
- * can depend on the target version). The command's handler renders the parts
- * into version-validated tokens.
- */
+/** A command part: a literal token or an argument rendered later for the target version. */
 export type CommandPart =
   | { kind: "literal"; value: string }
   | { kind: "arg"; value: CommandValue };
 
 /**
- * Base for every command's AST node. Each command has its OWN node subclass
- * (e.g. `WeatherNode`) with a distinct `type`, so a handler can be registered
- * per command and the heavy commands (give, execute, ...) can carry a richer,
- * hand-modelled shape instead of flat parts. The mechanical commands just
- * accumulate `parts` via their builder.
+ * Base for every command node. Each command has its own subclass so it can have its own
+ * handler.
  */
 export abstract class CommandNodeBase extends ASTNode {
   abstract type: string;
@@ -121,10 +103,8 @@ export abstract class CommandNodeBase extends ASTNode {
 }
 
 /**
- * The node every *mechanical* command uses: it is nothing but its command name
- * plus the literal/arg parts its builder accumulated, so one class covers all of
- * them (and one shared `TreeCommandHandler` renders them - see ir/generate).
- * Commands whose lowering is version-dependent keep their own node + handler.
+ * The node for every generated command: a name plus parts, rendered by
+ * `TreeCommandHandler`.
  */
 export class TreeCommandNode extends CommandNodeBase {
   constructor(readonly type: string) {

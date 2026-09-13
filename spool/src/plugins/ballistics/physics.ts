@@ -1,11 +1,9 @@
 import type { Vec3 } from "helix";
 
 /**
- * **The physics half of `ballistics`: Minecraft's real per-tick projectile integrator.**
+ * Minecraft's per-tick projectile physics, in vanilla's exact order.
  *
- * Nothing here is an idealised parabola. Every number below is transcribed from the
- * vanilla entity classes, and {@link stepOnce} performs the operations in the order the
- * game performs them - because that order is *observable*, not a detail:
+ * The order changes the curve, so it's copied from the game:
  *
  * ```
  * PrimedTnt.tick():                         AbstractArrow / ThrowableProjectile.tick():
@@ -21,49 +19,12 @@ import type { Vec3 } from "helix";
  *   setDeltaMovement(vec.x * f1, y * 0.98, vec.z * f1);
  * ```
  *
- * So **TNT applies gravity *before* it moves** (the very first tick of flight already
- * carries a full gravity step) and **drag *after*** (so the first tick's displacement is
- * the raw, undragged launch velocity). Arrows and throwables do the opposite - move,
- * drag, *then* gravity - which is why the same launch vector produces a different curve
- * for a snowball than for TNT. Getting that ordering backwards is a systematic ~1 tick
- * of gravity, roughly half a block over a long shot. A living entity is a third order
- * again: move, gravity, *then* drag, so its gravity step is itself dragged. All three
- * are spelled out by {@link TickOrder}.
+ * Drag is a constant scale and gravity a constant step, so position is affine in launch
+ * velocity. That's what lets `solve.ts` invert it exactly.
  *
- * Two further facts that shape the whole solver:
- *
- * - **Drag is per-axis constant.** For the projectile families it is *isotropic* -
- *   `delta.scale(0.98)` multiplies all three axes, y included - which is why TNT reaches
- *   a terminal state rather than falling forever: the stored `deltaMovement.y` converges
- *   on `-g·d/(1-d)` = `-1.96`, and since gravity is applied *before* the move, the
- *   observed fall rate settles at exactly `-2.0` blocks per tick. A living entity drags
- *   **0.91 horizontally against 0.98 vertically** ({@link ProjectileProfile.dragY}), so
- *   its two axes decay at different rates - it still terminates, at the familiar
- *   `-0.08·0.98/0.02` = `-3.92` blocks per tick.
- * - **Gravity is a constant additive step**, independent of velocity.
- *
- * Together those two make the tick map **affine in the launch velocity** - the property
- * {@link trajectoryBasis} exploits to invert the trajectory exactly. Anisotropic drag
- * costs nothing there: it only means the horizontal and vertical responses are two
- * different scalars (`A` and `Ay`) instead of one. See `solve.ts`.
- *
- * ## Coordinate system and angle conventions
- *
- * Minecraft world axes: **+X east, +Y up, +Z south**. Rotation is stored as `[yaw, pitch]`
- * in degrees:
- *
- * - **yaw** `0` faces **+Z (south)** and increases **clockwise seen from above**, so `90`
- *   faces **-X (west)**, `180` faces `-Z` (north), `-90`/`270` faces `+X` (east).
- * - **pitch** `0` is horizontal, **negative is up**, positive is down (`-90` = straight up).
- *
- * The unit look vector for a rotation is therefore
- * `(-sin y · cos p, -sin p, cos y · cos p)`, and the inverse (used by the solver) is
- * `yaw = atan2(-vx, vz)`, `pitch = atan2(-vy, hypot(vx, vz))`.
- *
- * **TNT ignores rotation entirely** - it is launched by writing the `Motion` tag, a raw
- * velocity vector. The yaw/pitch a solution reports are the spherical decomposition of
- * that vector: useful to aim a display entity, a particle, or a bow-like projectile, and
- * exactly what you would feed `/summon` for an entity that *does* read rotation.
+ * Axes: +X east, +Y up, +Z south. Yaw 0 faces south and increases clockwise; pitch is
+ * negative
+ * upward. TNT ignores rotation; yaw/pitch are just the direction of its `Motion`.
  */
 export type TickOrder =
   /** `PrimedTnt`, `FallingBlockEntity`. */
@@ -78,38 +39,31 @@ export interface ProjectileProfile {
   readonly id: string;
   /** Blocks/tick² subtracted from `vy` once per tick (`Entity.getDefaultGravity()`). */
   readonly gravity: number;
-  /** Per-tick **horizontal** velocity multiplier (vanilla calls it inertia or friction). */
+  /** Per-tick horizontal velocity multiplier. */
   readonly drag: number;
   /**
-   * Per-tick **vertical** multiplier, when it differs from {@link drag}. Omit for the
-   * projectile families, whose `delta.scale(inertia)` is isotropic; set it for a living
-   * entity, which drags y by `0.98` while x/z get `0.91`.
+   * Per-tick vertical multiplier, if different from {@link drag} (living entities use
+   * 0.98).
    */
   readonly dragY?: number;
-  /** Where the gravity step falls relative to the move and the drag. Load-bearing; see
-   * the file docstring. */
+  /** Where gravity falls relative to the move and drag. Changes the curve. */
   readonly order: TickOrder;
   /** `fuse` ticks a `/summon`ed one starts with, where the entity has a fuse at all. */
   readonly defaultFuse?: number;
 }
 
 /**
- * The projectiles whose flight is a pure drag+gravity integration, so the solver's
- * affine inversion is exact for them. Constants from each entity's `getDefaultGravity()`
- * and its `tick()`'s inertia scale.
+ * Projectiles that only feel drag and gravity, so the solver is exact for them.
  *
- * **Deliberately absent:** fireballs / wither skulls / dragon fireballs. Those are
- * *self-accelerating* (`AbstractHurtingProjectile` re-adds a `power` vector every tick
- * and has no gravity), so they are not a ballistic problem at all - they fly straight.
- * Wind charges and shulker bullets are likewise homing/steered. Adding one of those here
- * would be modelling it wrongly, so they are omitted rather than approximated.
+ * Fireballs, wind charges and shulker bullets are left out: they accelerate or steer
+ * themselves.
  */
 export const PROJECTILES = {
-  /** `PrimedTnt` - the default. Gravity **before** the move, 2 % drag on every axis. */
+  /** `PrimedTnt`, the default. Gravity before the move, 2% drag. */
   tnt: { id: "minecraft:tnt", gravity: 0.04, drag: 0.98, order: "gravity-move-drag", defaultFuse: 80 },
   /** `FallingBlockEntity` - identical integrator to TNT, no fuse. */
   falling_block: { id: "minecraft:falling_block", gravity: 0.04, drag: 0.98, order: "gravity-move-drag" },
-  /** `Arrow` - 1 % drag, gravity **after** the move. Ignores the `inGround` freeze. */
+  /** `Arrow`: 1% drag, gravity after the move. */
   arrow: { id: "minecraft:arrow", gravity: 0.05, drag: 0.99, order: "move-drag-gravity" },
   spectral_arrow: { id: "minecraft:spectral_arrow", gravity: 0.05, drag: 0.99, order: "move-drag-gravity" },
   trident: { id: "minecraft:trident", gravity: 0.05, drag: 0.99, order: "move-drag-gravity" },
@@ -121,24 +75,18 @@ export const PROJECTILES = {
   experience_bottle: { id: "minecraft:experience_bottle", gravity: 0.07, drag: 0.99, order: "move-drag-gravity" },
   llama_spit: { id: "minecraft:llama_spit", gravity: 0.06, drag: 0.99, order: "move-drag-gravity" },
   /**
-   * `LivingEntity` - **every mob, and the armor stand**. Heavier gravity than anything
-   * above, gravity between the move and the drag, and the only anisotropic drag in the
-   * table (`0.91` horizontal, `0.98` vertical). `id` is nominal: what actually gets
-   * summoned is the shell, and every living entity shares these constants.
+   * `LivingEntity`: every mob and the armor stand. The summoned entity comes from the
+   * shell.
    *
-   * The one thing this model cannot see is **AI**. A mob with a path steers in mid-air
-   * (`travel()`'s input term, ~0.02/tick of air control) and lands with a velocity of its
-   * own choosing, so it drifts from the solved arc by a little. A `no_ai: true` mob, or
-   * an armor stand, follows this exactly.
+   * Mobs with AI steer a little mid-air and land slightly off; `no_ai` mobs and armor
+   * stands are exact.
    */
   living: { id: "minecraft:armor_stand", gravity: 0.08, drag: 0.91, dragY: 0.98, order: "move-gravity-drag" },
 } as const satisfies Record<string, ProjectileProfile>;
 
 /**
- * `Entity.load()` reads the `Motion` tag as
- * `Math.abs(component) > 10 ? 0 : component` - **per axis**. A launch vector with any
- * component past 10 blocks/tick doesn't get clamped, it gets *silently zeroed*, which
- * would drop the projectile straight down. The solver rejects such candidates.
+ * Max Motion per axis. Vanilla zeroes (not clamps) larger values, so the solver rejects
+ * them.
  */
 export const MOTION_AXIS_LIMIT = 10;
 
@@ -149,13 +97,9 @@ export interface Motion {
 }
 
 /**
- * **One vanilla tick**, in vanilla's order. `gravity` is overridable so the basis
- * extraction can run the same integrator with gravity switched off - the trajectory
- * decomposition must come from *this* function, not a parallel re-derivation of it.
+ * Runs one vanilla tick. `gravity` can be overridden so the basis uses this same function.
  *
- * Airborne only: the `onGround` branch (`multiply(0.7, -0.5, 0.7)` for TNT) and block
- * collision are not modelled, because a compile-time solver has no world to collide
- * with. See the accuracy notes in `solve.ts`.
+ * Airborne only: no ground bounce or block collision.
  */
 export function stepOnce(m: Motion, profile: ProjectileProfile, gravity = profile.gravity): void {
   if (profile.order === "gravity-move-drag") m.v[1] -= gravity;
@@ -181,28 +125,15 @@ export function simulate(from: Vec3, velocity: Vec3, profile: ProjectileProfile,
 }
 
 /**
- * **The trajectory basis** - the one idea that makes an exact solver possible.
- *
- * Because drag is a constant isotropic scale and gravity a constant additive step, one
- * tick is an *affine* map of `(p, v)`. Composing `n` of them keeps it affine, so the
- * position after `n` ticks separates completely into a launch-velocity term and a
- * gravity term:
+ * How position after `n` ticks depends on launch velocity and gravity.
  *
  * ```
  *   p(n) = p₀ + (v₀ ∘ [A(n), Ay(n), A(n)]) + ĵ·G(n)
  * ```
  *
- * where `A(n)` is the **horizontal** response, `Ay(n)` the vertical one (identical to `A`
- * whenever drag is isotropic, which is every profile but `living`), and `G(n)` is the
- * purely vertical drop a *dropped* projectile accumulates. Concretely `A(n) = Σ dᵏ`, but
- * we don't hard-code that series: `A`/`Ay` are measured by running {@link stepOnce} with
- * unit velocity and gravity disabled, and `G` by running it from rest with gravity
- * enabled. That keeps the basis honest by construction - if the tick
- * order or a constant changes, the basis changes with it, and the test asserts the
- * decomposition reproduces a directly-simulated trajectory to floating-point precision.
- *
- * Inverting for a launch velocity is then division, not search:
- * `v_h = R / A(n)`, `v_y = (Δy − G(n)) / Ay(n)`.
+ * Measured by running {@link stepOnce}, not a formula, so it stays correct if the physics
+ * change.
+ * Solving for velocity is then division: `v_h = R / A(n)`, `v_y = (Δy − G(n)) / Ay(n)`.
  */
 export interface TrajectoryBasis {
   /** `A[n]`: blocks travelled **horizontally** per 1 block/tick of launch velocity. */
@@ -232,10 +163,8 @@ export function trajectoryBasis(profile: ProjectileProfile, ticks: number): Traj
 }
 
 /**
- * Sample a basis series at a **fractional** tick. Within one tick the entity travels the
- * straight segment `p(n) → p(n+1)` in a single `move()` call, so linear interpolation of
- * the basis is not an approximation of the path - it *is* the path the game sweeps, which
- * is what makes sub-tick aiming and sub-tick crossing detection exact rather than fitted.
+ * Samples a basis series at a fractional tick. Linear is exact: the game moves in a
+ * straight line within a tick.
  */
 export function sampleAt(series: readonly number[], t: number): number {
   const n = Math.floor(t);
@@ -244,15 +173,10 @@ export function sampleAt(series: readonly number[], t: number): number {
 }
 
 /**
- * **Closest approach of the swept path to a point** - the verification pass, and the
- * reason a solution's reported error is trustworthy.
+ * Closest approach of the flight path to a point, measured per segment.
  *
- * Checking only the discrete tick positions would miss the common case: a fast projectile
- * steps *past* the target between two ticks, so the nearest tick sample can be half a
- * launch-speed away while the actual flight path passed through the target exactly. This
- * walks the real simulated polyline and takes the true point-to-**segment** distance on
- * every tick interval, returning a fractional tick index. Roughly: for segment
- * `a → b`, project `target − a` onto `b − a`, clamp the parameter to `[0, 1]`, measure.
+ * Checking only tick positions would miss fast projectiles that pass the target between
+ * ticks.
  */
 export interface Approach {
   /** Fractional tick of closest approach. */

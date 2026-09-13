@@ -1,20 +1,10 @@
-// Optional build-time validation of a pack's emitted JSON resources against the
-// vanilla schema for its target version, via Spyglass's mcdoc runtime.
+// Optional validation of a pack's emitted JSON against the vanilla schema, using Spyglass.
 //
-// This is deliberately OFF to the side of the core: it validates *rendered JSON*
-// (loot tables, predicates, advancements, tags, and - the main motivation -
-// `dp.registryFile(...)` escape-hatch resources), the one authoring seam where
-// helix hands out raw JSON instead of typed values. It reads rendered output,
-// the same stance as `dp.report()` - never the AST.
-//
-// The Spyglass packages (`@spyglassmc/core`, `mcdoc`, `java-edition`) are
-// OPTIONAL peer tooling: they are declared in `optionalDependencies` and pulled
-// in lazily by `import()` below, so the core compiler and every consumer that
-// only calls `writeDatapack`/`report` never loads them. `validateDatapack`
-// throws a clear install hint if they're absent.
-//
-// On first run for a version, java-edition fetches vanilla-mcdoc + the mcmeta
-// summary and caches them under `cacheRoot`; subsequent runs are offline.
+// Mainly for `dp.registryFile(...)` resources, where helix hands out raw JSON. Reads
+// rendered output.
+// Spyglass packages are optional and loaded lazily; `validateDatapack` explains how to
+// install them.
+// The first run per version downloads schemas into the cache; later runs are offline.
 
 import os from "os";
 import fs from "fs";
@@ -35,21 +25,15 @@ export interface McdocDiagnostic {
 
 export interface ValidateOptions {
   /**
-   * Minecraft version to validate against. Defaults to the pack's target
-   * profile id (`dp.version.id`). Override when the profile id isn't a release
-   * Spyglass/mcmeta recognises (e.g. a snapshot alias).
+   * Minecraft version to validate against. Defaults to `dp.version.id`; override for
+   * snapshot aliases.
    */
   gameVersion?: string;
-  /**
-   * Where Spyglass caches vanilla-mcdoc + the mcmeta summary between runs.
-   * Defaults to `~/.cache/helix-mcdoc`. Deleting it forces a re-fetch.
-   */
+  /** Spyglass cache folder. Default `~/.cache/helix-mcdoc`; delete it to re-download. */
   cacheDir?: string;
   /**
-   * Restrict validation to the `dp.registryFile(...)` escape-hatch resources
-   * (the raw-JSON seam) rather than every emitted `.json`. Off by default:
-   * validating everything also cross-checks the typed builders' output against
-   * the vanilla schema.
+   * Only validate `dp.registryFile(...)` resources. Default false, which also checks typed
+   * builders' output.
    */
   registryFilesOnly?: boolean;
 }
@@ -75,9 +59,7 @@ function offsetToLineCol(text: string, offset: number): { line: number; column: 
   return { line, column: offset - last + 1 };
 }
 
-// The Spyglass packages are optional peer deps loaded lazily and carry no usable
-// runtime types at this boundary; `any` here is the deliberate untyped edge, kept
-// contained to this loader (callers use the returned namespaces directly).
+// Spyglass is loaded lazily with no usable types, so `any` is contained to this loader.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 async function loadSpyglass(): Promise<{
   core: any;
@@ -104,10 +86,9 @@ async function loadSpyglass(): Promise<{
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
- * Validate a pack's emitted JSON resources against the vanilla schema for its
- * target version. Returns a flat list of diagnostics (empty = clean). Does not
- * throw on validation problems - only on setup failure (missing packages, no
- * network on the first fetch for a version).
+ * Validates a pack's emitted JSON against the vanilla schema. Returns diagnostics (empty =
+ * clean).
+ * Only throws on setup problems (missing packages, no network on first run).
  *
  * @example
  *   const problems = await validateDatapack(dp);
@@ -120,8 +101,7 @@ export async function validateDatapack(
   const gameVersion = opts.gameVersion ?? dp.version.id;
   const { core, mcdoc, je, NodeJsExternals } = await loadSpyglass();
 
-  // Materialise the pack into a throwaway datapack root so Spyglass's uri-binder
-  // can dispatch each file to its schema from the on-disk path.
+  // Write the pack to a temp folder so Spyglass can pick schemas by file path.
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "helix-mcdoc-"));
   const cacheDir =
     opts.cacheDir ?? path.join(os.homedir(), ".cache", "helix-mcdoc");
@@ -196,9 +176,8 @@ export async function validateDatapack(
   return diagnostics;
 }
 
-// Only JSON is handed to Spyglass (checking every .mcfunction is minutes on a
-// real pack), so it can't see the functions/objectives the pack itself defines
-// and flags every reference to them. Collect those from the rendered output.
+// Only JSON is validated, so collect the functions and objectives the pack defines to avoid
+// false errors.
 function declaredSymbols(files: Map<string, string>): Set<string> {
   const declared = new Set<string>();
   for (const [rel, content] of files) {

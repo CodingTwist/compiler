@@ -32,26 +32,15 @@ export { solveLaunch } from "./solve";
 export type { LaunchOptions, LaunchSolution } from "./solve";
 
 /**
- * **`ballistics`** - fire a projectile from A and have it arrive at B.
+ * `ballistics`: fire a projectile from A so it lands on B.
  *
- * The maths is `physics.ts` (Minecraft's real per-tick integrator, in vanilla's own
- * operation order) and `solve.ts` (an exact inversion of it). Read those two for the
- * physics, the coordinate conventions, and the accuracy caveats. This file is only the
- * plugin wiring; the two ways to *fire* live one per file:
+ * - Static, `ctx.ballistic(from, to)`: solved at build time into one exact `/summon`. Use
+ * when
+ *   both points are known.
+ * - Runtime, `dp.ballisticRuntime(name)`: solved in game from live positions. Use when the
+ * target moves.
  *
- * | | where it solves | file | entry point | aiming knobs |
- * | --- | --- | --- | --- | --- |
- * | **static** | at build time, endpoints baked into the `/summon` | `static.ts` | `ctx.ballistic(from, to)` | all of {@link LaunchOptions} |
- * | **runtime** | in game, from two entities' live positions | `runtime.ts` | `dp.ballisticRuntime(name)` | flight time only |
- *
- * Take the static one whenever both endpoints are known at build time - it is one command
- * and exact. Take the runtime one when the target moves. Either way *what* is thrown is
- * the same vocabulary - {@link ShellOptions} in `shell.ts`, which owns the single
- * `/summon` both halves emit: `projectile` picks whose flight the maths inverts, `shell`
- * is the author's own NBT for it.
- *
- * The solver is **pure and needs no install** - import `solveLaunch` from this subpath and
- * use it anywhere, including outside a datapack.
+ * The maths is in `physics.ts` and `solve.ts`. `solveLaunch` is pure and needs no install.
  *
  * ```ts
  * installKit([ballistics]);
@@ -73,28 +62,23 @@ export type { LaunchOptions, LaunchSolution } from "./solve";
 declare module "helix" {
   interface FunctionContext {
     /**
-     * Solve a launch from `from` to `to` at build time and emit the `/summon` that fires
-     * it (installed by the `ballistics` plugin). Both points are **absolute** world
-     * coordinates, feet-level, in blocks. Returns the full solution - yaw, pitch, speed,
-     * flight time, simulated impact point and error - so the caller can log it, drive a
-     * display entity's rotation with it, or preview `solution.path` with particles.
+     * Solves a launch from `from` to `to` at build time and emits the `/summon`.
      *
-     * Throws at build time if the constraints admit no shot. See {@link solveLaunch}.
+     * Points are absolute feet positions. Returns the full solution (yaw, pitch, speed,
+     * time, error).
+     * Throws if no shot fits the constraints. See {@link solveLaunch}.
      */
     ballistic(from: Vec3, to: Vec3, opts?: BallisticOptions): LaunchSolution;
   }
 
   interface Datapack {
     /**
-     * Create a function `name` that solves the shot **in game, on every call**, from the
-     * live positions of two entities - defaulting to `@s` throwing at `@p`, so
-     * `execute as @e[type=blaze] run function <ns>:<name>` is a working mob artillery
-     * piece. Returns `1` if it fired, `0` if the target was out of reach.
-     * The build-time counterpart is {@link FunctionContext.ballistic}.
+     * Creates a function `name` that aims and fires in game from live positions. Default:
+     * `@s` at `@p`.
      *
-     * The flight time is fixed at build time (`opts.ticks`, default 40) and is the only
-     * aiming knob; see {@link RuntimeShotOptions} for why, for `lead` (hitting a *moving*
-     * player), and for the precision this trades for 32-bit scoreboard arithmetic.
+     * Returns `1` if it fired, `0` if the target was out of reach. Flight time is fixed at
+     * build time;
+     * see {@link RuntimeShotOptions}.
      */
     ballisticRuntime(name: string, opts?: RuntimeShotOptions): FunctionRef;
   }

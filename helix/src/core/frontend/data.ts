@@ -1,10 +1,8 @@
-// The code-first `data` facade: model storages/entities/blocks as NBT holders
-// you read and write, instead of mirroring the `data ...` command grammar.
+// The `data` facade: read and write NBT on storages, entities and blocks.
 //
 //   const state = ctx.storage("example:state");
 //   state.set("players", ctx.entity(Selector.self()).at("SelectedItem"));
 //   state.get("players");
-//
 import { DataOpNode, DataSourceSpec, ModifyAction, NbtTargetSpec } from "../commands/data_op";
 import { CommandValue, toCommandValue } from "../values/value";
 import { Id, Nbt, NbtPath, Pos } from "../values";
@@ -27,8 +25,8 @@ function toSource(s: DataSource): DataSourceSpec {
 }
 
 /**
- * A storage / entity / block you operate on with NBT verbs. Each verb emits a
- * `data` command into the function the holder was created from.
+ * A storage, entity or block. Each verb emits a `data` command into the function it came
+ * from.
  */
 export class NbtHolder {
   constructor(

@@ -1,6 +1,5 @@
 // HAND-WRITTEN PROTOTYPE of the grouped-builder + per-leaf-union shape.
-// (subset: get/remove complete, modify shows 2 representative leaves; the
-// generator will emit the full ~100-leaf modify set.)
+// Subset only; the generator will emit all ~100 modify leaves.
 import { CommandNodeBase } from "../ir/node";
 import { CommandHandler, CodegenContext } from "../ir/commandhandler";
 import { renderArg, buildTokens, lit, arg, Token } from "../ir/command-builder";
@@ -51,8 +50,8 @@ export class DataBuilder extends CommandBuilder<DataNode> {
 
 export class DataMergeBuilder extends CommandBuilder<DataNode> {
   entity(target: Selector, value: Nbt): void {
-    // Same trap as `summon`: raw keys are frozen to one version. The selector doesn't say
-    // which entity, so the warning can't name a factory here - it just points at the line.
+    // Raw NBT keys are tied to one version. The selector doesn't say which entity, so the
+    // warning can't suggest a factory.
     warnRawEntityNbt(value);
     this.node.args = { sub: "mergeEntity", target, value };
   }

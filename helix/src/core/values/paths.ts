@@ -1,15 +1,9 @@
-// Curated, common NBT paths as const namespaces for autocomplete - there is no
-// machine-readable NBT schema to generate from, so this is a hand-picked subset
-// covering the common cases. Each constant is a real `NbtPath` concept (not a
-// bare string), so it drops straight into the typed `data` API; any path not
-// curated here is still reachable via `NbtPath("...")`:
+// Common NBT paths as typed constants. Hand-picked; use `NbtPath("...")` for others.
 //
 //   ctx.entity(self).at(Path.Entity.Health)      // autocompletes, is an NbtPath
 //   ctx.block(here).remove(NbtPath("Items[0]"))  // free path, wrapped explicitly
 //
-// Names follow the SNBT keys the game uses. Note a few were renamed across
-// versions (e.g. ActiveEffects -> active_effects in 1.20.5+); prefer an explicit
-// `NbtPath("...")` when targeting a version where the curated name doesn't apply.
+// Some keys were renamed across versions (e.g. ActiveEffects -> active_effects in 1.20.5+).
 import { NbtPath } from "./nbt";
 
 /** Wrap a `{ key: "snbtPath" }` map into one of typed {@link NbtPath} concepts. */
@@ -77,8 +71,8 @@ const Block = {
 } as const;
 
 /**
- * Common NBT paths, grouped by holder kind:
- * `Path.Entity.Health`, `Path.Player.SelectedItem`, `Path.Block.Items`.
+ * Common NBT paths by holder: `Path.Entity.Health`, `Path.Player.SelectedItem`,
+ * `Path.Block.Items`.
  */
 export const Path = {
   Entity: paths(Entity),

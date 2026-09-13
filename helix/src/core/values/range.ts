@@ -1,7 +1,7 @@
 import { CommandValue } from "./value";
 
 /**
- * A numeric range (`int_range` / `float_range`):
+ * A numeric range:
  *
  *   NumRange(1, 5)        -> "1..5"
  *   NumRange.exactly(3)   -> "3"

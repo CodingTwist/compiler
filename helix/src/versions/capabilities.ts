@@ -2,12 +2,9 @@ import { BrigadierNode } from "../core/commandtree/tree";
 import { VersionProfile } from "./profile";
 
 /**
- * Capability queries against a version's command tree. The authoring (frontend)
- * layer uses these to reject an unsupported command EARLY - at the author call -
- * instead of waiting for codegen. It only asks "does this version express this?";
- * it never changes the author-facing API per version (that would break the
- * write-once-target-many property). Returns true when no tree is present, so
- * hand-stubbed profiles without a `commands` tree are never falsely gated.
+ * Whether a version's command tree has this command, so unsupported calls fail at the
+ * author's call.
+ * Returns true without a tree, so stub profiles aren't blocked.
  */
 export function supportsCommand(
   version: VersionProfile,

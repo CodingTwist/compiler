@@ -10,9 +10,8 @@ import { Selector } from "../frontend/nodes/selector";
 import { RuntimeTarget } from "../ir/target";
 import { v1_21_4 } from "../../versions/profiles";
 
-// Author a function that makes one native op (optionally with a fallback) and
-// run codegen, returning the rendered `.mcfunction` text - or throwing if the
-// build can't compile it (server-only op on a vanilla build).
+// Builds a function with one native op and returns its `.mcfunction` text, or throws if it
+// can't compile.
 function build(target: RuntimeTarget, withFallback: boolean): string {
   const dp = new Datapack("testpack", v1_21_4, target);
   const dispatcher = new Dispatcher(createHandlerMap());

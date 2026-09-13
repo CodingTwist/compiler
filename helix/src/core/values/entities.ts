@@ -2,11 +2,7 @@ import type { NbtValue } from "./nbt";
 import { EntityNbtValue } from "./entity-nbt";
 import { ENTITY_FACTORY_NAMES } from "./entities.generated";
 
-/**
- * The raw-NBT warning. The curated schemas themselves live in `entities.generated.ts`
- * (generated from vanilla-mcdoc by `scripts/gen-entity-nbt.mjs`); this file is just the
- * nudge from a raw compound towards them.
- */
+/** The raw-NBT warning. The schemas are generated into `entities.generated.ts`. */
 
 // --- the raw-NBT warning ------------------------------------------------------------
 
@@ -23,13 +19,11 @@ function callSite(): string {
 }
 
 /**
- * Warn that a command was handed a **raw** entity NBT compound. Raw keys are frozen to
- * one Minecraft version - an author who writes `{Fuse:40s}` gets a key 1.20.3+ silently
- * ignores - whereas the entity's factory owns the spelling, the SNBT suffix and the
- * version history. Not an error: an uncurated entity is a legitimate reason to pass raw.
+ * Warns that a command got a raw entity NBT compound.
  *
- * Called by every command that takes entity NBT (`summon`, `data merge entity`); pass
- * `entity` when the command knows which one, so the message can name the factory.
+ * Raw keys only work on one version; the entity's factory handles spelling and version
+ * changes.
+ * Not an error. Pass `entity` so the message can name the factory.
  */
 export function warnRawEntityNbt(nbt: NbtValue, entity?: string): void {
   if (nbt instanceof EntityNbtValue) return;

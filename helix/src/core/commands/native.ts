@@ -6,19 +6,12 @@ import { VersionProfile } from "../../versions/profile";
 import { FunctionContext } from "../frontend/context";
 
 /**
- * A call to a native command provided by a companion server plugin (a Paper
- * Brigadier command), used as a deliberate escape hatch when an op is too
- * expensive as command expansion or only a plugin can do it at all.
+ * A call to a companion server plugin's command, for ops too costly or impossible in
+ * vanilla.
  *
- * The op is gated on the build's {@link CodegenContext.target}:
- *  - `"paper"`  → emit `<name> <args…>` as an external line (skips vanilla
- *    Brigadier validation, since its leading keyword isn't a vanilla command).
- *  - `"vanilla"` → run the `fallback` body's commands instead; if there is no
- *    fallback the op is server-only and a vanilla build fails loudly.
- *
- * The command name is a typed {@link IdValue} and every argument a
- * {@link CommandValue}, so values still render version-aware - native calls
- * honour the "typed concepts, not strings" rule like every other command.
+ * On `"paper"` builds it emits `<name> <args…>` unvalidated. On `"vanilla"` it runs the
+ * `fallback`,
+ * or fails the build if there isn't one.
  */
 export class NativeCallNode extends ASTNode {
   type = "native";
@@ -34,9 +27,8 @@ export class NativeCallNode extends ASTNode {
 }
 
 /**
- * Builder returned by `ctx.native(...)`. The native call is already emitted;
- * `.fallback(...)` optionally authors the vanilla commands to run instead on a
- * non-`paper` build (graceful degradation, e.g. in singleplayer).
+ * Returned by `ctx.native(...)`. `.fallback(...)` sets the commands to run on non-paper
+ * builds.
  */
 export class NativeCall {
   constructor(
@@ -60,11 +52,10 @@ export class NativeCall {
 declare module "../frontend/context" {
   interface FunctionContext {
     /**
-     * Call a native server-plugin command (a Paper Brigadier command) instead
-     * of expanding to vanilla commands. Only emitted on a `"paper"` build; on a
-     * `"vanilla"` build it runs the `.fallback(...)` body, or errors if none was
-     * given. `name` is the command id (`Id("paper:pathfind")` or a bare string);
-     * `args` are typed values (`Selector`, `Pos`, …) rendered version-aware.
+     * Calls a Paper plugin command instead of vanilla commands.
+     *
+     * Only emitted on `"paper"` builds; `"vanilla"` runs `.fallback(...)`, or errors
+     * without one.
      */
     native(name: Id | string, ...args: ArgInput[]): NativeCall;
   }
@@ -94,9 +85,8 @@ export class NativeCallHandler extends CommandHandler<NativeCallNode> {
       return;
     }
 
-    // Non-paper build: run the fallback commands inline (so they validate and
-    // show up in the cost report like any other command), or fail if the op is
-    // server-only with nothing to fall back to.
+    // Vanilla build: run the fallback inline so it validates and shows in the report, or
+    // fail if there's none.
     if (!node.fallback) {
       throw new Error(
         `Native op "${node.name.render(ctx.version)}" has no vanilla fallback; ` +

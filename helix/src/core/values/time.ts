@@ -3,7 +3,7 @@ import { CommandValue } from "./value";
 type Unit = "t" | "s" | "d";
 
 /**
- * A duration (`time`): a number of ticks by default, or seconds/days.
+ * A duration in ticks, seconds or days.
  *
  *   Time(20)            -> "20"   (ticks)
  *   Time.seconds(5)     -> "5s"

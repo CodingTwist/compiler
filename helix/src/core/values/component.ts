@@ -1,9 +1,8 @@
 import { CommandValue } from "./value";
 
 /**
- * A text component (`component` / `style`). Accepts a plain string (rendered as
- * `{"text":"..."}`) or a raw JSON-serialisable object. For rich, chained text
- * (colors, click/hover, scores) use the `tellraw` builder's `TellrawText`.
+ * A text component from a string or a raw object. For rich text use `tellraw`'s
+ * `TellrawText`.
  *
  *   Component("hi")                 -> '{"text":"hi"}'
  *   Component({ text: "hi", bold: true })

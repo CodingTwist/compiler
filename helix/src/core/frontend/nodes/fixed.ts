@@ -3,25 +3,16 @@ import type { FunctionContext } from "../context";
 import { math } from "./math";
 
 /**
- * A **fixed-point scalar**: one integer {@link Score} that stands for a fractional
- * value, encoded as `realValue × scale`. Minecraft scoreboards are integer-only, so
- * fractions are carried by a fixed `scale` factor - and every multiply/divide has to
- * rebalance it. Multiply two scaled values and the scale squares; divide and the
- * fraction is floored away. `Fixed` makes that bookkeeping part of the type and the
- * method names instead of a comment you have to keep in your head.
+ * A fixed-point number: one integer {@link Score} holding `realValue × scale`.
  *
- * **Why a scale `Score` as well as a number.** A `scoreboard players operation`
- * operand must itself be a score - you can't `*= 1000` against a literal - so on a
- * pre-26.3 target a literal scale costs one extra `scoreboard players set <temp>
- * 1000` before every multiply. `scaleScore` is a slot seeded once at load to
- * `scale` (e.g. `scaleScore.set(1000)`) that removes that command.
- * It is a **hint, not a requirement**: omit it and the math is identical, one
- * command longer on ≤26.2 and exactly the same on 26.3+, where the whole formula
- * is one `/compute` and literals are free.
+ * Scoreboards are integers, so multiply and divide must rebalance the scale; the method
+ * names
+ * handle that. `scaleScore` is an optional slot holding `scale` that saves one command per
+ * multiply below 26.3 (the scoreboard can't use a literal operand).
  *
- * Like {@link Score}/{@link ScoreVec3} it holds a *reference* to an existing slot and
- * allocates nothing, emits into the **ambient** context (pass `ctx` to override), and
- * chains by returning `this`. Division floors toward −∞ (integer scoreboard divide).
+ * Holds a reference to an existing slot, emits into the ambient context (or `ctx`), and
+ * chains.
+ * Division floors toward −∞.
  */
 export class Fixed {
   constructor(
@@ -52,22 +43,13 @@ export class Fixed {
     return this;
   }
 
-  /**
-   * Negate in place (`*= -1`). Pre-26.3 scoreboards have no unary minus, so this
-   * multiplies by a caller-owned `-1` slot; on 26.3+ `/compute` negates directly
-   * and `negOne` is never read - which is why it is optional. Omit it only in a
-   * pack that targets 26.3+.
-   */
+  /** Negates in place. Below 26.3 this needs a `-1` slot in `negOne`; 26.3+ ignores it. */
   negate(negOne?: Score, ctx?: FunctionContext): this {
     math`${this.score} * ${negOne ?? -1}`.into(this.score, ctx);
     return this;
   }
 
-  /**
-   * Fixed-point **multiply** by a same-scale `other`: `(a·scale)(b·scale)` would be
-   * `(ab)·scale²`, so we divide the scale back out to stay at this scale. Emits `*=
-   * other ; /= scale`. (`scaleScore` saves a command here; see the class note.)
-   */
+  /** Multiplies by a same-scale `other`, dividing the extra scale back out. */
   mul(other: Fixed, ctx?: FunctionContext): this {
     math`${this.score} * ${other.score} / ${this.scaleScore ?? this.scale}`.into(
       this.score,
@@ -77,13 +59,8 @@ export class Fixed {
   }
 
   /**
-   * Fixed-point **divide** by `divisor`, **precision-preserving**: pre-multiplies by
-   * the scale so the integer `/=` keeps `scale` fractional bits - `(a·scale)·scale /
-   * divisor` lands the quotient back at this scale instead of flooring to 0. This is
-   * the operation that defuses the classic “small numerator ÷ large divisor truncates
-   * to zero, the value silently vanishes” scoreboard bug. Emits `*= scale ; /=
-   * divisor`. `divisor` is any `Score`/`Fixed`. (`scaleScore` saves a command
-   * here; see the class note.)
+   * Divides by `divisor`, multiplying by the scale first so small results don't floor to
+   * zero.
    */
   divide(divisor: Fixed | Score, ctx?: FunctionContext): this {
     math`${this.score} * ${this.scaleScore ?? this.scale} / ${this.operand(divisor)}`.into(
@@ -100,9 +77,8 @@ export class Fixed {
   }
 
   /**
-   * Divide by a **unitless** integer factor `k` (`/= k`); the scale is unchanged.
-   * Unlike {@link divide} this is a plain floor divide - use it for a gain/ratio
-   * constant (e.g. a stiffness divisor), not for dividing by another measured value.
+   * Divides by a unitless integer `k`; scale unchanged. A plain floor divide, for ratio
+   * constants.
    */
   reduce(k: Score, ctx?: FunctionContext): this {
     math`${this.score} / ${k}`.into(this.score, ctx);

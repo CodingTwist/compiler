@@ -3,13 +3,10 @@ import type { CommandValue } from "../../values/value";
 import type { NbtTargetSpec, DataSourceSpec } from "../../commands/data_op";
 
 /**
- * A reference to NBT at a holder (and optional path). It is both a copy
- * **source** (for `set`/`merge`/...) and a tellraw **component** - pass it to
- * `ctx.tellraw` to display the live value (`{"nbt":...,"entity":...}`).
- * `holder.at(path)` produces one; `.slice()` turns it into a string-slice source.
+ * A reference to NBT at a holder and path, usable as a copy source or a tellraw component.
  *
- * Lives in its own leaf module (not data.ts) so the tellraw handler can import
- * it without pulling in data.ts's FunctionContext.prototype augmentation.
+ * Its own module so the tellraw handler can import it without data.ts's prototype
+ * augmentation.
  */
 export class NbtRef extends TellrawPart {
   constructor(

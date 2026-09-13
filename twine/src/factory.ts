@@ -8,14 +8,12 @@ import { EventLatches, getEventHandlers } from "./events";
 import { buildGraph, needsTickMemo, resolveDimensions, type Node } from "./graph";
 import { emitArea, wireTick, type Wiring } from "./tick-wiring";
 
-// Debug source tracking: twine is a framework - lines it emits itself (tick
-// wiring, mob plumbing) point at twine, not at the `DatapackFactory.create` call
-// (this file sits in `src/` or `dist/`, one below the package root).
+// Debug source tracking: lines twine emits itself point at twine, not the user's code.
 ignoreSourceFrames(__dirname.replace(/[\\/][^\\/]+$/, ""), { framework: true });
 
 /**
- * The {@link ModuleScope} handed to a module's `register`: its resolved
- * dimension, and a `createFunction` that applies it.
+ * The {@link ModuleScope} passed to `register`: its dimension and a `createFunction` that
+ * uses it.
  */
 function scopeFor(dp: Datapack, name: string, dimension: Id | undefined): ModuleScope {
   return {
@@ -33,10 +31,9 @@ function scopeFor(dp: Datapack, name: string, dimension: Id | undefined): Module
 }
 
 /**
- * Resolve each throttled module's fire phase. An explicit `tickPhase` is honoured;
- * otherwise modules sharing a `tickEvery` are spread round-robin (`0,1,2,…` mod
- * period) so they fire on different ticks instead of bunching on the same one.
- * Memoised per module so a module wired once keeps a stable phase.
+ * Picks each throttled module's tick phase. Modules sharing a `tickEvery` are spread
+ * round-robin
+ * so they don't all run on the same tick. An explicit `tickPhase` wins.
  */
 function makePhaseAllocator(): (node: Node) => number {
   const nextPerPeriod = new Map<number, number>();
@@ -59,36 +56,26 @@ export interface FactoryOptions {
   name: string;
   /** Target version profile. Default {@link v1_20_4}. */
   version?: VersionProfile;
-  /**
-   * Build target. Modules `env`-gated to other envs are pruned, and the value is
-   * published for {@link isDev} so module bodies gate what they emit on the same
-   * answer. Default: {@link buildEnv} (`TWINE_ENV`, else `"dev"`).
-   */
+  /** Build environment. Modules for other envs are pruned. Default: {@link buildEnv}. */
   env?: BuildEnv;
   /**
-   * Runtime this build targets (`"vanilla"` | `"paper"`). Drives `ctx.native(...)`
-   * ops: `"paper"` emits the native plugin call, `"vanilla"` runs their fallback.
-   * Default `"vanilla"`. Build the same root twice to ship both packs.
+   * Runtime target (`"vanilla"` | `"paper"`), for `ctx.native(...)`. Default `"vanilla"`.
    */
   target?: RuntimeTarget;
   /**
-   * Debug-only build settings, off by default. `sources` maps every emitted
-   * command to the module line that authored it (cost-report `↳`s and
-   * `helix-sources.json`); `comments` also writes `# <file>:<line>` into the pack.
+   * Debug-only build settings, off by default. `sources` maps commands to source lines;
+   * `comments` also writes them into the pack.
    */
   debug?: DebugOptions;
 }
 
 /**
- * Bootstraps a {@link Datapack} from a root module - the NestJS-style
- * `NestFactory.create` analogue. Every module reachable through the root's
- * `imports` (and not pruned by `env`) is built once and wired into the pack.
+ * Builds a {@link Datapack} from a root module, like NestJS's `NestFactory.create`.
  *
- * `area` modules gate their whole subtree: their `onTick` and every descendant's
- * `onTick` run only while the area's `active` flag is `1`, nested so an inactive
- * area costs a single check per tick. Areas also get `<name>/activate` and
- * `<name>/deactivate` functions that flip the flag and run their
- * `onActivate`/`onDeactivate` lifecycle.
+ * `area` modules gate their subtree: its ticks only run while the area's `active` flag is
+ * `1`,
+ * so a dormant area costs one check per tick. Areas get `<name>/activate` and
+ * `<name>/deactivate`.
  */
 export class DatapackFactory {
   static create(root: ModuleClass, opts: FactoryOptions): Datapack {
@@ -99,24 +86,20 @@ export class DatapackFactory {
   }
 
   /**
-   * Wire the module tree rooted at `root` into an existing `dp` - the one the
-   * `helix` CLI created from `helix.config.ts` (name, version, target and debug
-   * are the pack's, not twine's). {@link create} is this over a fresh Datapack.
+   * Wires the module tree into an existing `dp`, e.g. the one the `helix` CLI created.
+   * {@link create} does this on a new Datapack.
    */
   static mount(dp: Datapack, root: ModuleClass, opts: { env?: BuildEnv } = {}): Datapack {
     const flags = new ActiveFlags(dp);
     const latches = new EventLatches(dp);
-    // Resolved once and published, so `isDev()` inside a module body can't
-    // disagree with what the graph was pruned by - see ./env.ts.
+    // Resolved once and published, so `isDev()` agrees with how the graph was pruned.
     const env = opts.env ?? buildEnv();
     setBuildEnv(env);
 
     const graph = buildGraph(root, env);
 
-    // Each module's effective dimension, so its lifecycle, its tick subtree and
-    // the functions it creates in `register` all run where the module actually
-    // is rather than wherever they're called from. Resolved from metadata alone,
-    // so it's available before any module body has run.
+    // Each module's dimension, so its lifecycle, ticks and functions run where the module
+    // is.
     const dims = resolveDimensions(graph);
 
     // register: arbitrary one-off setup, children-first.
@@ -138,10 +121,8 @@ export class DatapackFactory {
       });
     }
 
-    // activate / deactivate functions per area (flag flip + lifecycle). The flag
-    // is a scoreboard write, so it stays outside any dimension wrap; only the
-    // user's lifecycle body - which may read blocks or summon at world
-    // coordinates - is run in the area's dimension.
+    // activate / deactivate functions per area. Only the user's lifecycle body runs in the
+    // area's dimension; the flag write doesn't need it.
     const activateOf = new Map<ModuleRef, FunctionRef>();
     const deactivateOf = new Map<ModuleRef, FunctionRef>();
     const inDimension = (ref: ModuleRef, ctx: FunctionContext, body: (c: FunctionContext) => void) => {
@@ -165,14 +146,9 @@ export class DatapackFactory {
       deactivateOf.set(ref, deactivate);
     }
 
-    // `<name>/rearm` per module that has latched handlers: clear every `once`
-    // latch it owns, so the handlers can fire again.
+    // `<name>/rearm` for modules with latched handlers, clearing their latches.
     //
-    // A latch is a scoreboard value, so it outlives a `/reload` and a server
-    // restart - and a latch that survived is indistinguishable, in the world,
-    // from a trigger that stopped working. A pack's own `reset`/`restart` needs
-    // something correct to call, and each one shouldn't have to rediscover the
-    // hazard and hand-list its handler keys.
+    // Latches survive /reload, so a pack's reset needs something to call.
     for (const ref of graph.order) {
       const { instance, meta } = graph.nodes.get(ref)!;
       const latched = getEventHandlers(instance).filter((h) => h.opts.once !== false);
@@ -182,12 +158,9 @@ export class DatapackFactory {
       });
     }
 
-    // tick: a single tree-walk. An area's *whole* subtree - its own `onTick`, its
-    // descendants' ticks, AND its activation/presence detectors - is nested
-    // behind its `active` flag. So a dormant area, and every area beneath it,
-    // costs nothing per tick beyond its parent's single `if score … active`
-    // check: a child area's "are you near?" trigger isn't even evaluated until
-    // its parent is live. Only top-level area detectors run unconditionally.
+    // tick: one tree walk. An area's ticks, its children's ticks, and its children's
+    // triggers
+    // are all behind its `active` flag, so a dormant area costs one check.
     const w: Wiring = {
       graph,
       flags,
@@ -200,11 +173,8 @@ export class DatapackFactory {
       phaseOf: makePhaseAllocator(),
       ticks: new Map(),
     };
-    // A root that is itself an `area` gets the same treatment a child area does
-    // - trigger, `active` gate, presence disarm - rather than an ungated tick.
-    // Otherwise the one thing an area is for (the master switch) is the one
-    // thing the top-level module can't have, and every pack whose whole point is
-    // a single gated area has to wrap it in a do-nothing root to get it.
+    // A root that is an area gets the same gating as a child area, so it doesn't need a
+    // wrapper module.
     if (w.needsTick(graph.root)) {
       const rootIsArea = graph.nodes.get(graph.root)!.meta.area;
       dp.tick((ctx) =>
@@ -219,24 +189,13 @@ export class DatapackFactory {
 }
 
 /**
- * Collapse `minecraft:tick` to the single framework-owned `<ns>:tick` entry.
+ * Moves every `minecraft:tick` function under the pack's own `<ns>:tick`.
  *
- * helix auto-tags every function created with the `tick` tag straight into
- * vanilla `minecraft:tick` - spool plugins (`grapple/tick`), `defineItem` item
- * ticks, the scoreboard clock, etc. That's the right un-opinionated default for a
- * plain-helix pack, but under the framework the per-tick surface should be one
- * thing you own: a single tag member whose body lists every per-tick function, so
- * the whole pack's tick cost is traceable in one place and gateable as a unit.
+ * helix tags tick functions straight into `minecraft:tick`. Under twine the tick should be
+ * one
+ * list you own, so the whole pack's tick cost is visible in one place.
  *
- * So reparent: untag every *other* `tick` member from `minecraft:tick` and append
- * a `function` call to it onto the root `tick` body (after the module tree-walk).
- * Same work runs each tick, now dispatched from - and visible in - `<ns>:tick`.
- *
- * `DatapackFactory.create` runs this once over the module tree. It's also
- * **idempotent** and exported, so a consumer that adds more `tick`-tagged
- * functions imperatively *after* `create` (raw helix/spool calls) can re-run it
- * just before `writeDatapack` to sweep those too - already-reparented members are
- * no longer in the tag, so a re-run only collapses the new ones.
+ * Safe to run again: call it before writing if you add tick functions after `create`.
  */
 export function consolidateTick(dp: Datapack): void {
   const root = "tick";

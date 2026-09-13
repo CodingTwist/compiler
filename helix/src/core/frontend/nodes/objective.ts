@@ -5,10 +5,8 @@ import { ScoreTarget } from "../../values/score_target";
 import type { ItemValue } from "../../values/item";
 
 /**
- * An objective's tracking criterion: the two common pseudo-criteria (`dummy`,
- * `trigger`) plus any vanilla `minecraft.*` criterion (statistics, custom, etc.).
- * Build statistic criteria with the typed helpers ({@link usedStatCriteria}) so
- * the criterion string isn't hand-assembled at the call site.
+ * An objective's criterion: `dummy`, `trigger`, or any vanilla `minecraft.*` criterion.
+ * Build statistics with helpers like {@link usedStatCriteria}.
  */
 export type ObjectiveKind =
   | "dummy"
@@ -18,11 +16,7 @@ export type ObjectiveKind =
   | `killedByTeam.${string}`
   | `teamkill.${string}`;
 
-/**
- * The bare (un-namespaced) vanilla objective criteria. These aren't statistics -
- * the server mirrors a live player property into the score every tick, which is
- * how a pack reads hunger or health without an `execute store`.
- */
+/** Vanilla criteria that mirror a live player property (hunger, health…) every tick. */
 export type VanillaCriterion =
   | "deathCount"
   | "playerKillCount"
@@ -35,16 +29,11 @@ export type VanillaCriterion =
   | "level";
 
 /**
- * The `minecraft.used:<item>` statistic criterion for `item` - an objective with
- * this criterion mirrors how many times the player has *used* (e.g. right-clicked)
- * that item. The canonical right-click-detection primitive for `carrot_on_a_stick`
- * / `warped_fungus_on_a_stick` (and any usable item): reset it each tick, and a
- * value `>= 1` next tick means a use happened. Derived from the item's own
- * {@link ItemValue.baseId}, so it stays in lockstep with the item you give.
+ * The `minecraft.used:<item>` criterion for `item`, for right-click detection.
+ * Reset it each tick; `>= 1` next tick means a use.
  */
 export function usedStatCriteria(item: ItemValue): ObjectiveKind {
-  // Statistic criteria join namespace + path with a dot, not a colon
-  // (`minecraft:carrot_on_a_stick` -> `minecraft.carrot_on_a_stick`).
+  // Statistic criteria use a dot, not a colon: `minecraft.carrot_on_a_stick`.
   return `minecraft.used:${item.baseId().replace(":", ".")}` as ObjectiveKind;
 }
 
@@ -62,11 +51,7 @@ export class Objective {
     return this.objective;
   }
 
-  /**
-   * A score holder on this objective. Accepts a `Selector` directly (selectors
-   * are score holders - `@a`, `@s`, …) or a `ScoreTarget` for a fake-player name
-   * (`#count`). A `Selector` is wrapped, since it is itself a `CommandValue`.
-   */
+  /** A score holder on this objective: a `Selector` or a fake-player `ScoreTarget`. */
   score(target: ScoreTarget | Selector) {
     return new Score(this, target instanceof Selector ? ScoreTarget(target) : target);
   }

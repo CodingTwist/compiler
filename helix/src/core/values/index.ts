@@ -1,5 +1,4 @@
-// The concept value library: domain types that builder arguments accept and
-// that render themselves (version-aware) at codegen. One concept per file.
+// Typed value classes that render themselves for the target version. One per file.
 export * from "./value";
 export * from "./pos";
 export * from "./block";

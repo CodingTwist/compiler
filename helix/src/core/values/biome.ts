@@ -4,19 +4,14 @@ import { EntityType, Particle } from "./resource.generated";
 import { SoundEvent } from "./sound";
 
 // --- Version thresholds --------------------------------------------------
-// The biome format has moved three times in the range helix supports. Each
-// constant is the dataVersion of the snapshot the change LANDED in.
+// dataVersion of the snapshot each biome format change landed in.
 
-/**
- * 24w33a (1.21.2): `carvers` stopped being a per-carve-step object
- * (`{air: [...], liquid: [...]}`) and became a flat list of configured carvers.
- */
+/** 24w33a (1.21.2): `carvers` became a flat list. */
 const CARVER_LIST_DATA_VERSION = 4058;
 
 /**
- * 24w44a (1.21.4): `effects.music` became a weighted list of music entries
- * (`[{weight, data}]`) instead of a single object, and `effects.music_volume`
- * was added.
+ * 24w44a (1.21.4): `effects.music` became a weighted list, and `effects.music_volume` was
+ * added.
  */
 const MUSIC_LIST_DATA_VERSION = 4174;
 
@@ -24,25 +19,17 @@ const MUSIC_LIST_DATA_VERSION = 4174;
 const DRY_FOLIAGE_DATA_VERSION = 4316;
 
 /**
- * 25w42a (1.21.11): the big one - everything about a biome's *ambience* left
- * `effects` for the **environment attribute** map (`attributes`), keyed by
- * attribute id: `fog_color`/`sky_color`/`water_fog_color` →
- * `minecraft:visual/<name>`, `particle` → `minecraft:visual/ambient_particles`,
- * the three sound fields → one `minecraft:audio/ambient_sounds`, `music` +
- * `music_volume` → `minecraft:audio/background_music` + `.../music_volume`.
- * Only the block-tint colours (`water_color`, `grass_color`, `foliage_color`,
- * `dry_foliage_color`, `grass_color_modifier`) stayed in `effects`.
+ * 25w42a (1.21.11): ambience moved from `effects` to the `attributes` map.
  *
- * The whole point of building a biome through this class rather than
- * `dp.registryFile`: the author says `.fogColor(...)` once and it lands in the
- * right half of the file for the target version.
+ * Fog, sky and water fog colours go to `minecraft:visual/*`, particles to
+ * `visual/ambient_particles`,
+ * sounds to `audio/ambient_sounds`, music to `audio/background_music`. Only block tints
+ * stay in `effects`.
+ * Authors call `.fogColor(...)` and this class places it for the target version.
  */
 const ATTRIBUTES_DATA_VERSION = 4654;
 
-/**
- * A colour as authored: a packed `0xRRGGBB` int or a `"#RRGGBB"` hex string.
- * Both render to the packed int the biome format calls `composite_rgb`.
- */
+/** A colour: packed `0xRRGGBB` or `"#RRGGBB"`. */
 export type BiomeColor = number | `#${string}`;
 
 /** `"#7fa1ff"` | `0x7fa1ff` -> `8364543`. */
@@ -54,9 +41,8 @@ function packColor(color: BiomeColor): number {
 }
 
 /**
- * `temperature_modifier` - how the biome's temperature is post-processed.
- * Named-constant namespace + union type (declaration merging), same stance as
- * `Gamemode`: author `TemperatureModifier.FROZEN` over the bare `"frozen"`.
+ * `temperature_modifier`: how the biome's temperature is adjusted. Use
+ * `TemperatureModifier.FROZEN`.
  */
 export const TemperatureModifier = {
   NONE: "none",
@@ -88,9 +74,8 @@ export const SpawnCategory = {
 export type SpawnCategory = (typeof SpawnCategory)[keyof typeof SpawnCategory];
 
 /**
- * The 11 world-generation steps, in order. `features` is a list of lists
- * positional on this order, so the author names the step
- * (`DecorationStep.VEGETAL_DECORATION`) and never writes an index.
+ * The 11 world-generation steps, in order. `features` is indexed by step, so name the step
+ * instead.
  */
 export const DecorationStep = {
   RAW_GENERATION: 0,
@@ -163,12 +148,11 @@ interface MusicEntry extends MusicOpts {
 }
 
 /**
- * The atmosphere half of a biome: colours, ambient particle, the four sound
- * slots and the music. Built through {@link BiomeDef.effects}; you never
- * construct it directly.
+ * A biome's atmosphere: colours, particles, sounds and music. Built through {@link
+ * BiomeDef.effects}.
  *
- * Which *file* half each setter ends up in is version-dependent (see
- * {@link ATTRIBUTES_DATA_VERSION}) - the setters are the stable surface.
+ * Where each setting lands in the file depends on the version; see {@link
+ * ATTRIBUTES_DATA_VERSION}.
  */
 export class BiomeEffects {
   private colors: Partial<Record<string, number>> = {};
@@ -216,7 +200,7 @@ export class BiomeEffects {
     return this;
   }
 
-  /** Dried-foliage tint. **1.21.5+**; silently dropped on older versions. */
+  /** Dried-foliage tint. 1.21.5+; dropped on older versions. */
   dryFoliageColor(color: BiomeColor): this {
     this.colors.dry_foliage_color = packColor(color);
     return this;
@@ -234,8 +218,7 @@ export class BiomeEffects {
   }
 
   /**
-   * Escape hatch for particles that need options beyond their id (`dust`,
-   * `block`, ...): `options` is the particle object verbatim.
+   * Particle with extra options (`dust`, `block`…); `options` is the particle object as-is.
    */
   particleRaw(options: Record<string, unknown>, probability: number): this {
     this.particleSpec = { options, probability };
@@ -261,10 +244,8 @@ export class BiomeEffects {
   }
 
   /**
-   * A music track for the biome. Repeatable on 1.21.4-1.21.10, where music is a
-   * weighted list; on older versions only the first call is emitted, and on
-   * 1.21.11+ the first call becomes the attribute's `default` track (extra
-   * calls are dropped - that format picks tracks by context, not by weight).
+   * Adds a music track. Repeatable on 1.21.4–1.21.10 (weighted list).
+   * Older versions and 1.21.11+ only use the first call.
    */
   music(sound: SoundEvent, opts: MusicOpts): this {
     this.musicList.push({ sound, ...opts });
@@ -353,8 +334,8 @@ export class BiomeEffects {
   }
 
   /**
-   * The `attributes` entries this ambience contributes on 1.21.11+ (empty on
-   * older versions, where {@link toJson} carries the same settings instead).
+   * The `attributes` entries for 1.21.11+; empty on older versions, where {@link toJson}
+   * has them.
    */
   attributesJson(version: VersionProfile): Record<string, unknown> {
     if (version.dataVersion < ATTRIBUTES_DATA_VERSION) return {};
@@ -403,15 +384,8 @@ export class BiomeEffects {
 }
 
 /**
- * A registerable **biome definition** - the JSON written to
- * `data/<ns>/worldgen/biome/<name>.json` (via `Datapack.biome`) and referenced
- * as a {@link Biome} from `/fillbiome`, a dimension's biome source, or another
- * pack.
- *
- * Everything an author sets is version-agnostic; `toJson` places it in the
- * shape the target version wants (see the data-version constants at the top of
- * this file - `effects` vs `attributes`, weighted vs single music, list vs
- * per-step carvers).
+ * A biome definition, registered with `Datapack.biome`. Settings are version-agnostic;
+ * `toJson` shapes them for the target.
  *
  *   dp.biome("minecraft:plains",                 // override a vanilla biome
  *     new BiomeDef()
@@ -496,9 +470,8 @@ export class BiomeDef {
   }
 
   /**
-   * Add configured carvers (caves/canyons). `step` only matters pre-1.21.2,
-   * where carvers were split into an air and a liquid pass; from 1.21.2 the
-   * steps are merged into one list in call order.
+   * Adds configured carvers. `step` only matters before 1.21.2, when air and liquid carvers
+   * were separate.
    */
   carver(step: CarveStep, ...refs: WorldgenRef[]): this {
     const list = this.carverRefs.get(step) ?? [];
@@ -514,11 +487,8 @@ export class BiomeDef {
   }
 
   /**
-   * Set an **environment attribute** directly (1.21.11+), for the attributes
-   * that have no dedicated setter here - `visual/cloud_height`,
-   * `gameplay/monsters_burn`, a `{modifier, argument}` object, ... Merged over
-   * whatever {@link effects} contributed; ignored on older versions, which have
-   * no attribute map.
+   * Sets an environment attribute directly (1.21.11+), for ones without a setter.
+   * Merged over {@link effects}; ignored on older versions.
    */
   attribute(id: string, value: unknown): this {
     this.attributeOverrides[id] = value;

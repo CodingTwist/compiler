@@ -1,5 +1,4 @@
-// Disk side of the measured profile: finds the dump the helix-profiler mod wrote.
-// Node-only (profile-report.ts stays browser-safe and takes parsed JSON).
+// Finds the profile dump the helix-profiler mod wrote. Node-only.
 import fs from "fs";
 import path from "path";
 import type { ProfileDump } from "./profile-report";
@@ -7,10 +6,7 @@ import type { ProfileDump } from "./profile-report";
 /** Folder, under the world root, the mod's `/helixprof stop` writes into. */
 export const PROFILE_DIR = "helix-profile";
 
-/**
- * The newest `profile-<ms>.json` the mod wrote for `worldDir` (the save folder, the
- * parent of `datapacks/`), or `undefined` if none has been captured yet.
- */
+/** The newest `profile-<ms>.json` for `worldDir`, or `undefined` if none. */
 export function latestProfile(worldDir: string): { file: string; dump: ProfileDump } | undefined {
   const dir = path.join(worldDir, PROFILE_DIR);
   if (!fs.existsSync(dir)) return undefined;

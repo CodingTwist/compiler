@@ -1,19 +1,11 @@
 import { VersionProfile } from "../../versions/profile";
 
-/**
- * A domain concept that renders to a single command token (a position, a block,
- * an item, ...). Rendering is deferred to codegen and given the target version,
- * so a concept can encode itself differently per version (e.g. item data
- * components vs NBT) - the author programs with the concept, not the string.
- */
+/** A typed value that renders to one command token at codegen, for the target version. */
 export interface CommandValue {
   render(version: VersionProfile): string;
 }
 
-/**
- * What a concept-typed builder argument accepts: the concept itself, or a raw
- * primitive as an escape hatch (passed through verbatim).
- */
+/** A builder argument: a typed value, or a raw primitive passed through as-is. */
 export type ArgInput = CommandValue | string | number | boolean;
 
 function isCommandValue(x: ArgInput): x is CommandValue {

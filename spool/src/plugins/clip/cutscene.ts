@@ -1,9 +1,6 @@
 /**
- * A `Cutscene` composes {@link Clip}s on one shared timeline - each added at a
- * tick offset - plus its own timeline events (camera moves, sound, titles). It
- * compiles to a single master function: `play(ctx)` fans every sub-clip's frames
- * and every event out on the master schedule, so a whole scripted sequence fires
- * from one call.
+ * Combines {@link Clip}s and events (camera, sound, titles) on one timeline, played from
+ * one call.
  *
  *   const intro = dp.cutscene("intro")
  *     .add(doorOpen, { at: 0 })
@@ -23,8 +20,7 @@ export class Cutscene {
   private readonly entries: { clip: Clip; at: number }[] = [];
   private readonly events = new Map<number, Emit[]>();
   private camSeq = 0;
-  // Generated functions live under the private root (the child cam clips nest
-  // beneath it; their own privateName() call is idempotent so it never doubles up).
+  // Generated functions live under the private root.
   private readonly name: string;
 
   constructor(
@@ -49,9 +45,8 @@ export class Cutscene {
   }
 
   /**
-   * Dolly `viewer` (usually the spectating player) along a positional path,
-   * starting at tick `at`. Sugar for a `tp` clip added to the timeline. Assumes a
-   * spectator-style camera for the target version.
+   * Moves `viewer` along a path from tick `at`, as a `tp` clip. Assumes a spectator-style
+   * camera.
    */
   camera(viewer: Selector, keys: readonly Keyframe<Vec3>[], opts: { at?: number } = {}): this {
     const cam = new Clip(this.dp, `${this.name}/cam_${this.camSeq++}`).tp(viewer, keys);

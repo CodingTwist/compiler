@@ -1,18 +1,12 @@
 import type { BuildEnv } from "./module.interface";
 
 /**
- * The build environment, as one resolved value the whole build agrees on.
+ * The build environment, resolved once for the whole build.
  *
- * `env` gates two different things: which modules the factory *keeps* (an
- * `env: ["dev"]` module is pruned from the graph), and what a kept module
- * chooses to *emit* (a debug/admin function guarded by {@link isDev}). Those
- * must be the same answer - a pack that reads `process.env` itself for the
- * second one can disagree with what `DatapackFactory.create` was actually
- * passed for the first, and ship debug commands in a prod build.
- *
- * So the factory publishes the env it resolved ({@link setBuildEnv}) and
- * everything else reads it back ({@link buildEnv}). Before the factory runs,
- * and for consumers not using it, `TWINE_ENV` is the fallback.
+ * The factory prunes modules by env and modules check {@link isDev}; both must see the same
+ * value,
+ * or debug commands could ship in prod. `TWINE_ENV` is the fallback before the factory
+ * runs.
  */
 
 /** The env the factory resolved, or `TWINE_ENV=prod` (anything else is `"dev"`). */
@@ -27,7 +21,7 @@ export function setBuildEnv(env: BuildEnv): void {
   resolved = env;
 }
 
-/** Whether debug/admin commands should be built. Prod packs ship without them. */
+/** Whether to build debug/admin commands. Prod packs ship without them. */
 export function isDev(): boolean {
   return buildEnv() === "dev";
 }

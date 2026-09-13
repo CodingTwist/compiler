@@ -2,13 +2,9 @@ import { normalizeId } from "../../versions/registry";
 import { CommandValue } from "./value";
 
 /**
- * A resource-pack **model** definition (`assets/<ns>/models/...json`). Covers the
- * common item case out of the box - `Model.item(texture)` is the flat
- * `item/generated` sprite - with `.parent`/`.texture` for anything else and a
- * `.raw(json)` escape hatch for shapes the typed builder doesn't model yet
- * (mirrors `dp.registryFile`). Registered via {@link Datapack.model}, which also
- * emits the 1.21.4+ item-definition file and hands back a {@link ModelRef} the
- * author attaches with `Item.X.model(ref)`.
+ * A resource pack model. `Model.item(texture)` is a flat item sprite; `.parent`/`.texture`
+ * for
+ * others, `.raw(json)` as an escape hatch. Registered with {@link Datapack.model}.
  *
  *   dp.model("web_shooter", Model.item("minecraft:item/carrot_on_a_stick"))
  */
@@ -64,10 +60,8 @@ export class Model {
 }
 
 /**
- * A typed handle to a registered {@link Model} - the `<ns>:name` id of its item
- * definition, consumed by `Item.X.model(ref)`. On 1.21.4+ it lowers to the
- * `item_model` component; on older versions it needs {@link legacyModelData} (a
- * `custom_model_data` number) since `item_model` didn't exist yet.
+ * A handle to a registered {@link Model}, for `Item.X.model(ref)`.
+ * Renders as `item_model` on 1.21.4+; older versions need {@link legacyModelData}.
  */
 export class ModelRef implements CommandValue {
   constructor(

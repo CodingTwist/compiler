@@ -2,12 +2,8 @@ import { Item, Id, Range, math } from "helix";
 import type { PlayerMotionInternals } from "./context";
 
 /**
- * The launch primitives that actually move the player: `internal/launch/main`
- * (apply the enchanted saddle, decompose the vector, and trigger
- * `location_changed` via a gamemode swap), `internal/launch/reset` (strip the
- * saddle the enchantment leaves), `internal/launch/use_previous` (replay a
- * cached local vector), and `internal/launch/handle_polar/global` (the
- * straight-up degenerate-rotation case, pure scoreboard).
+ * Launch functions: `main` (apply the saddle and trigger with a gamemode swap), `reset`,
+ * `use_previous` (replay a cached vector) and `handle_polar/global` (straight-up case).
  */
 export function defineLaunch(I: PlayerMotionInternals): void {
   const {
@@ -28,10 +24,8 @@ export function defineLaunch(I: PlayerMotionInternals): void {
     ctx.call(fStoreY);
     ctx.call(fStoreZ);
 
-    // Sustained (per-tick) callers rely on the player's own movement to fire the
-    // enchantment's location_changed, so they skip the gamemode-swap trigger below.
-    // `return run` both clears the one-shot flag (so it never leaks into the next
-    // launch) and returns - one inlined command, no child function.
+    // Sustained callers skip the gamemode swap. `return run` clears the flag and returns in
+    // one command.
     ctx
       .execute()
       .ifScoreMatches(sustain, new Range(1, 1))

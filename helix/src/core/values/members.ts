@@ -1,16 +1,8 @@
 /**
- * Attach typed member accessors to a concept factory, so an author can write
- * `Block.GRASS_BLOCK` instead of `Block("grass_block")` - and a typo like
- * `Block.GRSS_BLOCK` fails to compile, which a bare string never would.
+ * Adds typed members to a factory, so `Block.GRASS_BLOCK` works and typos don't compile.
  *
- * `ids` is a generated map of `MEMBER_KEY -> "minecraft:id"` (see
- * versions/data/ids.ts). Each member is a getter that builds a FRESH concept
- * via `make`, so mutating one (`Block.FURNACE.state({...})`) never leaks into
- * the next access of the same member.
- *
- * The member set is the newest-version superset (same policy as the rest of the
- * id data); per-version correctness remains the runtime registry validation's
- * job. Custom / tagged ids stay available through the factory call form.
+ * Each member builds a fresh value, so changing one (`Block.FURNACE.state({...})`) doesn't
+ * affect the next access. Members are the newest version's ids.
  */
 export function withMembers<
   F extends object,

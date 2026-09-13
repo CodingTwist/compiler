@@ -3,17 +3,11 @@ import { CommandValue } from "./value";
 import { LootFunction } from "./loot-function";
 
 /**
- * A registerable **item modifier** - the JSON written to
- * `data/<ns>/<item_modifier folder>/<name>.json` (via `Datapack.itemModifier`) and
- * applied with `/item modify ... <ref>` or a loot `set_loot`. An item modifier *is*
- * a sequence of {@link LootFunction}s, so it shares the exact loot-function
- * vocabulary used inside loot tables rather than re-modelling it.
+ * An item modifier, registered with `Datapack.itemModifier`: a list of {@link
+ * LootFunction}s.
  *
  *   dp.itemModifier("sharpen",
  *     new ItemModifier().apply(LootFunction.of("set_name", { name: "Sharpened" })));
- *
- * A single-function modifier emits the bare function object; multiple emit the
- * JSON array form Minecraft also accepts.
  */
 export class ItemModifier {
   private readonly functions: LootFunction[] = [];

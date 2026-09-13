@@ -41,24 +41,23 @@ export interface MobModuleOpts {
   tickEvery?: number;
   dimension?: Id;
   /**
-   * How near a player has to be for a mob to run at all (default `48`). Checked once a
-   * second; a mob further than this - or unloaded - costs nothing, and a mob mid-gesture
-   * stays awake until the gesture's clock runs out. ponytail: feel knob - keep it above
-   * the mob's `FOLLOW_RANGE` so it wakes before it would aggro.
+   * How near a player must be for the mob to run at all. Default `48`, checked once a
+   * second.
+   *
+   * Keep it above the mob's `FOLLOW_RANGE` so it wakes before it aggros.
    */
   wakeRange?: number;
 }
 
 /**
- * Per-mob body: run as the mob, at it. `mob` switches this mob between its
- * {@link MobBuilder.states} (declare `.states()` first to get the names typed).
+ * Per-mob body, run as and at the mob. `mob` switches between its {@link
+ * MobBuilder.states}.
  */
 export type MobTick<S extends string = never> = (ctx: FunctionContext, dp: Datapack, mob: MobStates<S>) => void;
 
 /**
- * One phase of a mob - airborne, slamming, stunned. A mob is in at most one state,
- * held as a score, so a mob in none costs one check per poll and a mob in one runs
- * only that state's body: the phase guard is written once, by the framework.
+ * One phase of a mob, e.g. airborne or stunned. A mob is in at most one state, stored as a
+ * score.
  */
 export interface MobState<S extends string> {
   /** Polls it lasts. Omit to stay until something enters another state. */
@@ -84,10 +83,9 @@ export interface MobStates<S extends string> {
 }
 
 /**
- * A one-shot **member animation**: swing an arm, open a jaw, tilt a head. Vanilla
- * has no per-mob animation state, so a gesture is a rotation about a pivot that is
- * snapped on and then interpolated back to the model's own rest pose - two `data
- * merge`s per member, no tween to drive.
+ * A one-shot animation of rig members, e.g. a swing or a head tilt.
+ *
+ * Snaps to a rotation about a pivot, then interpolates back to rest.
  */
 export interface Gesture<S extends string = never> {
   /** Which members move, as indices into the model's `members()` (root is 0). */
@@ -95,38 +93,24 @@ export interface Gesture<S extends string = never> {
   /** What they turn about, in the model's own coordinates (the group `offset` is added for you). */
   pivot: Vec3;
   /**
-   * How far, held for the raise. Falling back to rest is the visible half.
+   * The rotation to raise to.
    *
-   * An **array** is a sequence: one pose per poll, each interpolated over the
-   * module's `tickEvery`, then the fall back to rest - which is how a rotation
-   * bigger than a snap (a spin, a wind-up) is expressed, since a single pose can
-   * only ever be somewhere the slerp home from it looks right. The steps are
-   * driven by the gesture's own cooldown score, so each mob runs its own
-   * sequence; `cooldown` must exceed the number of steps.
+   * An array is a sequence, one pose per poll, used for rotations too big for one snap (a
+   * spin).
+   * `cooldown` must be longer than the number of steps.
    */
   rotate: Quat | Quat[];
   /**
-   * A constant rotation held for the whole gesture, composed onto the members'
-   * own orientation but **not** applied to their positions - the difference
-   * between orbiting the pivot and lying flat while doing it. Put an axis change
-   * in `rotate` instead and the members' translations rotate out of the orbit
-   * plane with them.
+   * A rotation held for the whole gesture that turns members in place without moving them.
+   *
+   * Put it in `rotate` instead and the members' positions rotate too.
    */
   tilt?: Quat;
-  /**
-   * Ticks the **first** pose takes to interpolate in, and that it is held before the
-   * sequence steps on - a wind-up, and the only way a `tilt` eases in rather than
-   * snapping. Default `0`: the pose lands on the frame it fires, which is what a
-   * one-step gesture (snap out, slerp home) wants.
-   *
-   * The hold is what makes it visible: a duration alone would be overwritten by the
-   * next poll's step a tick later, so the step clock shifts with it.
-   */
+  /** Ticks the first pose takes to ease in, and how long it's held. Default `0`. */
   rise?: number;
   /**
-   * Extra polls the **last** pose is held before the fall - a mace kept raised through a
-   * leap and brought home only after it lands. Default `0`. Any linger runs the gesture
-   * on the step clock, so it needs a cooldown longer than the whole timeline.
+   * Extra polls to hold the last pose before falling back. Default `0`. Needs a long enough
+   * cooldown.
    */
   linger?: number;
   /** Ticks the fall takes (default `4`). A feel knob - shorter is snappier. */
@@ -136,28 +120,20 @@ export interface Gesture<S extends string = never> {
   /** When it fires, evaluated as the mob at its own position. Omit for manual-only. */
   when?: Detector;
   /**
-   * Extra commands emitted into the gesture's own function, i.e. run **as the mob,
-   * at it** - the hit that goes with the swing. Vanilla gives no attack event, so
-   * this fires with the gesture, not on contact. The pack is passed too, since the
-   * hit is usually where a library (a motion kick, a particle effect) is reached for.
+   * Commands run with the gesture, as and at the mob, e.g. the hit that goes with a swing.
    *
-   * See {@link fireAfter} to land it partway through the animation instead.
+   * See {@link fireAfter} to land it later in the animation.
    */
   onFire?: MobTick<S>;
   /**
-   * Ticks after the raise that {@link onFire} lands, so the hit reads as the *result*
-   * of the swing rather than its cause - the blade comes round, and a beat later you
-   * go flying. Default `0`: it fires with the raise, in the gesture's own function.
+   * Ticks after the raise that {@link onFire} runs. Default `0`.
    *
-   * Anything else moves it into the poll loop, guarded on the mob's own cooldown, so
-   * it stays per-mob; it needs a cooldown (the step clock) and must land inside it.
+   * Needs a cooldown, and must land inside it.
    */
   fireAfter?: number;
   /**
-   * A second beat, later in the same cooldown: extra commands run {@link recoverAfter}
-   * ticks after the raise, as the mob, at it. What {@link onFire} spends,
-   * {@link onRecover} puts back - a crossbow emptied on the shot and reloaded before
-   * the next one. Needs a cooldown (the clock it is counted on) and must land inside it.
+   * Commands run {@link recoverAfter} ticks after the raise, e.g. reloading a crossbow.
+   * Needs a cooldown, and must land inside it.
    */
   onRecover?: MobTick<S>;
   /** Ticks after the raise that {@link onRecover} lands. Default `0`. */
@@ -165,9 +141,7 @@ export interface Gesture<S extends string = never> {
 }
 
 /**
- * Fluent builder for a **custom mob**: a real vanilla mob doing the AI, pathing,
- * damage and death, with a display-entity model riding it. The mob is the source
- * of truth and the rig is cosmetic, carried along for free - no per-tick teleport.
+ * Builds a custom mob: a vanilla mob does the AI, with a display-entity model riding it.
  *
  *   const sentinel = defineMob(Husk({ ... }), rig())
  *     .relayHits(4)
@@ -175,18 +149,13 @@ export interface Gesture<S extends string = never> {
  *
  *   @Module({ name: "keep", imports: [sentinel] })
  *
- * Riding leaves three things to the framework, all wired here:
+ * The framework handles what riding doesn't:
  *
- * - **Yaw.** A display passenger keeps its own rotation, so it would face north
- *   forever; each mob's `Rotation` is copied onto its rig.
- * - **Reach.** The model is usually taller than the mob's own hitbox, so the top
- *   of it is unhittable. If the model carries an `interaction` hitbox
- *   (`Display.hitbox(...)`), {@link relayHits} turns a hit on it into real damage.
- * - **Death.** Killing a vehicle only *dismounts* its passengers - a rig would
- *   outlive its mob as a hovering statue. Rigs whose mob is gone are swept.
+ * - Yaw: the mob's rotation is copied to the rig.
+ * - Reach: {@link relayHits} turns hits on a `Display.hitbox(...)` into damage on the mob.
+ * - Death: rigs whose mob is gone are removed.
  *
- * The mob is summoned by the generated `<name>/summon` function, at wherever it
- * is run from ({@link summonRef} gets you a handle to call it).
+ * `<name>/summon` summons the mob where it's run; see {@link summonRef}.
  */
 export class MobBuilder<S extends string = never> {
   private relay?: { damage: number; type?: DamageType };
@@ -199,30 +168,21 @@ export class MobBuilder<S extends string = never> {
     private readonly model: DisplayValue,
   ) {}
 
-  /**
-   * Turn a hit on the model's `interaction` hitbox into `damage` real damage on
-   * the mob (default type: whatever `damage` defaults to, i.e. generic). Requires
-   * the model to have been given a hitbox.
-   */
+  /** Turns hits on the model's hitbox into `damage` on the mob. The model needs a hitbox. */
   relayHits(damage: number, type?: DamageType): this {
     this.relay = { damage, type };
     return this;
   }
 
-  /**
-   * Add a named {@link Gesture}. It becomes a `<mob>/<name>` function you can call
-   * as the mob yourself, plus - if the gesture has a `when` - a per-tick trigger.
-   */
+  /** Adds a gesture as a `<mob>/<name>` function, plus a trigger if it has `when`. */
   gesture(name: string, g: Gesture<S>): this {
     this.gestures.set(name, g);
     return this;
   }
 
   /**
-   * The mob's {@link MobState}s, by name. Declare them before the gestures and
-   * `onTick` that enter them, so those bodies get the names typed. Each state
-   * becomes `<mob>/state/<name>`, reached by one score dispatch per poll; the
-   * `states` handles on the module enter one from outside.
+   * The mob's states by name. Declare before gestures and `onTick` so state names are
+   * typed.
    */
   states<T extends string>(defs: Record<T, MobState<NoInfer<T>>>): MobBuilder<T> {
     const self = this as unknown as MobBuilder<T>;
@@ -231,10 +191,11 @@ export class MobBuilder<S extends string = never> {
   }
 
   /**
-   * Your own per-tick behaviour, **run as each awake mob, at it** - so write `@s`, never
-   * `@e[tag=…]`. Runs before the gestures and the rig's yaw copy, so what it tags or
-   * turns is what they see this poll. It lands in its own `<mob>/on_tick` function (`onTickFn` on the module),
-   * which is what to hand `dp.allowNbtRead` when a read in it is meant to be fast.
+   * Your per-tick behaviour, run as and at each awake mob, so use `@s`.
+   *
+   * Runs before gestures and the yaw copy. Emitted as `<mob>/on_tick` (`onTickFn`), which
+   * is what
+   * to pass to `dp.allowNbtRead`.
    */
   onTick(body: MobTick<S>): this {
     this.tick = body;
@@ -271,8 +232,7 @@ export class MobBuilder<S extends string = never> {
     const tickEvery = opts.tickEvery ?? 2;
     const mob = new MobModule<S>(name, this.nbt, this.model, tickEvery, opts.wakeRange ?? 48, this.relay, this.gestures, this.tick, this.stateDefs);
     const mod = defineModule({ name, tickEvery, dimension: opts.dimension }, mob) as MobModuleRef;
-    // Getters, not values: the functions don't exist until the module registers,
-    // which is after the importing module has built this.
+    // Getters, because the functions don't exist until the module registers.
     Object.defineProperties(mod, {
       summon: { get: () => mob.fnRef("summon"), enumerable: true },
       spawn: { get: () => mob.fnRef("spawn"), enumerable: true },
@@ -293,15 +253,11 @@ export class MobBuilder<S extends string = never> {
   }
 }
 
-/**
- * A configured mob module, plus handles to the functions it generated - so a
- * consumer calls `mob.summon` rather than looking a name up on the datapack.
- * Both are read *after* registration (from `onLoad`/`onTick`/a later `register`).
- */
+/** A mob module plus handles to its generated functions. Read them after registration. */
 export interface MobModuleRef extends ConfiguredModule {
   /** Summons the mob wherever it is run - `ctx.execute().at(...).run(b => b.call(mob.summon))`. */
   readonly summon: FunctionRef;
-  /** `<name>/spawn`: summons one at the nearest player, from anywhere. The command to type. */
+  /** `<name>/spawn`: summons one at the nearest player. */
   readonly spawn: FunctionRef;
   /** `<name>/on_tick`, the {@link MobBuilder.onTick} body. Throws if there isn't one. */
   readonly onTickFn: FunctionRef;
@@ -314,9 +270,8 @@ export interface MobModuleRef extends ConfiguredModule {
 }
 
 /**
- * A mob rig resolved to what the game is sent: each member's rest transform, and per
- * gesture every `data merge` it writes (tick after the raise, interpolation, and the
- * affected members' target transforms).
+ * A mob rig as the game sees it: each member's rest transform, and every write each gesture
+ * makes.
  */
 export interface MobPreview {
   tickEvery: number;
@@ -368,11 +323,7 @@ class MobModule<S extends string> implements DatapackModule {
 
   /** Each generated function by short name (`summon`, a gesture), once registered. */
   private readonly fns = new Map<string, FunctionRef>();
-  /**
-   * One clock **per gesture**, not one per mob: they share the poll but not the
-   * countdown, or a cheap idle gesture's cooldown would gate every other gesture
-   * (its `unless score … matches 1..`) and starve them.
-   */
+  /** One cooldown per gesture, so one gesture's cooldown doesn't block the others. */
   private readonly cooldowns = new Map<string, Objective>();
 
   fnRef(short: string): FunctionRef {
@@ -446,24 +397,22 @@ class MobModule<S extends string> implements DatapackModule {
       ctx.kill(Selector.self());
     });
 
-    // Run as the rig root. Yaw only: the mob pitches to look up/down at its target,
-    // and a display entity would tilt the whole model with it.
+    // Yaw only: copying pitch would tilt the whole model.
     this.faceByRotate = atLeast(dp.version, "1.21.2");
     this.faceOne = scope.fn(privateName(`${this.name}/face_one`), (ctx) => {
-      // `rotate` (1.21.2+): the caller positions us at the root, rotated to the
-      // mob's yaw with pitch levelled, so facing a point straight ahead copies the
-      // yaw - no NBT read/write, no selector scan for the mob.
+      // `rotate` (1.21.2+): facing a point straight ahead copies the yaw without reading
+      // NBT.
       const face = (b: FunctionContext) => b.rotate().facing(Selector.self(), Pos.local(0, 0, 1));
-      // Every other member rides the root, and a passenger keeps its own rotation -
-      // so turning the root alone leaves head, arms and weapon still facing north.
-      // They all sit at the root's position, so the same yaw turns the model as one.
+      // Passengers keep their own rotation, so every member must be turned, not just the
+      // root.
       if (this.faceByRotate) {
         face(ctx);
         ctx.execute().on(Relation.PASSENGERS).run(face);
         return;
       }
-      // Older versions copy Rotation[0] through NBT. The rig tags itself so that,
-      // once `on vehicle` has swapped `@s` to the mob, the rig is still nameable.
+      // Older versions copy Rotation[0] through NBT. The rig tags itself so it's still
+      // findable
+      // after `on vehicle` switches `@s`.
       const cur = `${this.name}.cur`;
       const me = Selector.allEntities().tag(cur).limit(1);
       ctx.tag().add(Selector.self(), cur);
@@ -481,8 +430,7 @@ class MobModule<S extends string> implements DatapackModule {
 
     const summon = scope.fn(`${this.name}/summon`, (ctx) => {
       const fresh = this.freshTag;
-      // Summoned separately and mounted, rather than nested in the mob's own NBT:
-      // the two typed values stay independent, so the same rig can ride any mob.
+      // Summoned separately and mounted, so the same rig can ride any mob.
       ctx.summon(this.nbt.tagged(this.name, fresh), Pos.rel(0, 0, 0));
       ctx.summon(this.model.toNbt().tagged(fresh), Pos.rel(0, 0, 0));
       ctx
@@ -496,7 +444,7 @@ class MobModule<S extends string> implements DatapackModule {
 
     this.fns.set("summon", summon);
 
-    // The command a human types. Every pack wrote this by hand; it belongs here.
+    // The spawn command you type.
     this.fns.set(
       "spawn",
       scope.fn(`${this.name}/spawn`, (ctx) => {
@@ -547,8 +495,7 @@ class MobModule<S extends string> implements DatapackModule {
           if (!g.fireAfter) g.onFire?.(ctx, dp, this.handle);
         }),
       );
-      // A cooldown caps how often the gesture's own bodies can run, which the report
-      // can't see - it only sees them called from the poll.
+      // Cooldowns cap how often the gesture's bodies run, which the report can't see.
       const cooldown = g.cooldown ?? 20;
       if (g.when && cooldown >= 5) {
         for (const fn of [gname, `${gname}_hit`, `${gname}_recover`]) {
@@ -575,8 +522,8 @@ class MobModule<S extends string> implements DatapackModule {
   }
 
   /**
-   * `<mob>/enter/<s>`, `<mob>/state/<s>` (+ `/done` for a timed one), and `<mob>/state`:
-   * the dispatch `tick_one` calls for a mob in any state.
+   * Emits `<mob>/enter/<s>`, `<mob>/state/<s>` (and `/done` if timed), and the
+   * `<mob>/state` dispatch.
    */
   private registerStates(dp: Datapack): void {
     if (!this.stateDefs.size) return;
@@ -616,8 +563,8 @@ class MobModule<S extends string> implements DatapackModule {
       this.fns.set("state", cases[0].fn);
       return;
     }
-    // Dispatched on a copy: a state body that enters a later state must not run that
-    // one too in the same poll, whether or not `return run` stops the dispatch.
+    // Dispatch on a copy, so a state that enters a later state doesn't also run it this
+    // poll.
     const current = this.stateObj.score(ScoreTarget(`#${this.name}_state`));
     this.fns.set(
       "state",
@@ -638,10 +585,11 @@ class MobModule<S extends string> implements DatapackModule {
   }
 
   /**
-   * Merge one pose onto each moving member. Run as the mob, walking `passengers`
-   * down to the member, so this only ever touches *this* mob's rig (a tag alone
-   * would hit every one of them). Member 0 **is** the rig root, i.e. one hop from
-   * the mob; every other member is a passenger of that root, so two.
+   * Merges a pose onto each moving member. Run as the mob.
+   *
+   * Walks `passengers` so only this mob's rig is touched. Member 0 is the root (one hop);
+   * others
+   * ride the root (two hops).
    */
   private poseMembers(
     ctx: FunctionContext,
@@ -670,14 +618,11 @@ class MobModule<S extends string> implements DatapackModule {
     }
   }
 
-  /**
-   * The gesture work every awake mob does each poll, as the mob: drop a one-step raise
-   * or run its clock-driven half. Firing is {@link trigger}, grouped after every clock.
-   */
+  /** One poll of gesture work for an awake mob. Firing is in {@link trigger}. */
   private tickGesture(ctx: FunctionContext, gname: string, g: Gesture<S>): void {
     const tag = this.gestureTag(gname);
-    // The fall is emitted *before* the trigger, or a gesture started this tick
-    // would be dropped again by its own end in the same function body.
+    // The fall is emitted before the trigger, or a gesture started this tick would end
+    // immediately.
     if (!sequenced(g)) {
       this.poseMembers(ctx, Selector.self().tag(tag), g, undefined, g.fall ?? 4);
       ctx.tag().remove(Selector.self().tag(tag), tag);
@@ -701,7 +646,10 @@ class MobModule<S extends string> implements DatapackModule {
     chain.run((b) => b.call(this.fnRef(gname)));
   }
 
-  /** `<mob>/<gesture>_clock`: one mob's countdown and everything timed off it. As the mob, at it. */
+  /**
+   * `<mob>/<gesture>_clock`: one mob's countdown and everything timed from it. As and at
+   * the mob.
+   */
   private clockGesture(ctx: FunctionContext, gname: string, g: Gesture<S>): void {
     const tag = this.gestureTag(gname);
     this.cooldown(Selector.self(), gname).remove(1);
@@ -717,14 +665,11 @@ class MobModule<S extends string> implements DatapackModule {
     // Same clock, a later beat: whatever `onFire` spent, put back.
     if (g.onRecover) onBeat(g.recoverAfter ?? 0, `${gname}_recover`);
 
-    // A sequence walks itself down its own cooldown: step k is k polls past the raise,
-    // so every mob runs its own animation. After the decrement, so the poll right
-    // after the raise is step 1.
+    // Sequences step down their own cooldown, so each mob animates independently.
     if (sequenced(g)) {
-      // The raise function made write 0; the last write is home again. Slerp takes the
-      // short way, so a sequence ending just short of a full turn finishes it forwards.
-      // One function per step, picked by a single dispatch on the clock rather than
-      // re-testing the score on every member's line.
+      // One function per step, picked by one dispatch on the clock.
+      // Slerp takes the short way, so a sequence just short of a full turn finishes
+      // forwards.
       const later = poseSchedule(g, this.tickEvery).slice(1);
       const cases = later.map((w, k) => ({
         range: Range.exactly((g.cooldown ?? 20) - w.poll),
@@ -738,8 +683,9 @@ class MobModule<S extends string> implements DatapackModule {
   }
 
   /**
-   * The only per-tick cost while no mob is near a player is a counter and a score
-   * check: every `@e` scan lives in {@link wakeBody}, once a second.
+   * While no mob is near a player this costs a counter and a score check; entity scans run
+   * in
+   * {@link wakeBody}, once a second.
    */
   onTick(ctx: FunctionContext): void {
     const wake = this.awakeObj.score(ScoreTarget("#wake"));
@@ -759,8 +705,7 @@ class MobModule<S extends string> implements DatapackModule {
   /** `<mob>/wake`: tag the mobs worth running, count them, and sweep orphaned rigs. */
   private wakeBody(ctx: FunctionContext): void {
     const self = Selector.self();
-    // Mid-clock stays awake, so walking off can't freeze a swing (or a leap) halfway -
-    // but only to finish it, or a looping idle gesture would keep it awake for good.
+    // Stay awake while a gesture's clock runs, so walking away can't freeze it halfway.
     const clocks = [...this.gestures].filter(([, g]) => g.cooldown !== 0).map(([gname]) => this.cooldowns.get(gname)!);
     if (this.stateClockObj) clocks.push(this.stateClockObj);
     const finish = clocks.length
@@ -769,11 +714,9 @@ class MobModule<S extends string> implements DatapackModule {
           c.tag().add(self, this.awakeTag);
         })
       : undefined;
-    // Orphaned rigs: mark-and-sweep, since there's no "has a vehicle" check - the vehicle
-    // knows its passengers, so each live mob clears its rig's mark in wake_one and whatever
-    // is still marked rode something that died, despawned or unloaded.
-    // ponytail: runs from `wake`, so a dead mob's rig can hover up to a second - about as
-    // long as the death animation. Move it back to the poll if that shows.
+    // Mark-and-sweep orphaned rigs: live mobs clear their rig's mark, and anything still
+    // marked is removed.
+    // ponytail: runs once a second, so a dead mob's rig can linger up to a second.
     ctx.tag().add(this.rigRoots, this.orphanTag);
     // One scan to reset every mob (and claim its rig), then one per player for the ones near it.
     const one = this.internal("wake_one", (c) => {
@@ -842,9 +785,9 @@ class MobModule<S extends string> implements DatapackModule {
   }
 
   /**
-   * Relay a hit on the tall interaction box down onto this mob. `on attacker` is the
-   * hit test - an interaction names whoever last hit it - so nothing reads NBT until
-   * there is a hit to clear. Hitbox -> rig root -> mob, hence two hops each way.
+   * Turns a hit on the interaction hitbox into damage on this mob.
+   *
+   * `on attacker` finds the hitter without reading NBT until there's a hit.
    */
   private relayHits(ctx: FunctionContext, relay: { damage: number; type?: DamageType }): void {
     const hit = this.relayFns ??= {
@@ -884,10 +827,8 @@ class MobModule<S extends string> implements DatapackModule {
 }
 
 /**
- * A member's rest transform, rotated about `pivot`. Display entities have no
- * transform inheritance, so turning a member is two things at once: its position
- * is the rotated offset, and the same rotation is composed onto whatever
- * orientation it already holds (`mulQuat(q, left)` applies `left` first).
+ * A member's rest transform rotated about `pivot`: moves its position and turns its
+ * orientation.
  */
 function raise(rest: Transform, pivot: Vec3, q: Quat, tilt?: Quat): Transform {
   return {
@@ -900,9 +841,8 @@ function raise(rest: Transform, pivot: Vec3, q: Quat, tilt?: Quat): Transform {
 }
 
 /**
- * Extra polls the first pose is held for. A `rise` of 1 already lands within one poll,
- * so only what's beyond that shifts the step clock - which is what keeps `rise: 0`
- * (and a plain gesture that never sets it) emitting exactly what it always did.
+ * Extra polls the first pose is held for. Only `rise` beyond 1 shifts the step clock, so
+ * `rise: 0` output is unchanged.
  */
 function hold(g: Gesture): number {
   return Math.max(0, (g.rise ?? 0) - 1);
@@ -916,10 +856,10 @@ function memberPose(model: DisplayValue, g: Gesture, i: number, q: Quat | undefi
 }
 
 /**
- * Every pose write a gesture makes, in polls after the raise: the first pose over
- * `rise`, each later step over one poll (after the rise's hold), then home over
- * `fall`. The emitter and {@link MobModuleRef.preview} both read this, so the
- * preview can't drift from what the game is sent.
+ * Every pose write a gesture makes, in polls after the raise.
+ *
+ * Both the emitter and {@link MobModuleRef.preview} use this, so the preview matches the
+ * game.
  */
 function poseSchedule(g: Gesture, tickEvery: number): { poll: number; q: Quat | undefined; duration: number }[] {
   const steps = poses(g);

@@ -3,12 +3,8 @@ import type { PlayerMotionInternals } from "./context";
 import { globalConversionTail } from "./math";
 
 /**
- * The public entry points: `api/launch_local_xyz` (launch relative to the
- * rotation context) and `api/launch_global_xyz` (launch along world axes). Both
- * take their input from the `$x/$y/$z player_motion.api.launch` scores. The
- * macro-bound branches (mismatched-context / polar-local rotation, large-vector
- * conversion) are unsupported in this build and `return fail` so a caller gets a
- * clear signal instead of silently-wrong motion.
+ * The public entry points `api/launch_local_xyz` and `api/launch_global_xyz`, reading
+ * `$x/$y/$z player_motion.api.launch`. Unsupported macro branches `return fail`.
  */
 /** The world-axis vector handed to the conversion, a `{x, y, z}` compound in `temp`. */
 const MATRIX = NbtPath("matrix");

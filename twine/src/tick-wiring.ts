@@ -27,17 +27,10 @@ export interface Wiring {
   ticks: Map<ModuleRef, { fn: FunctionRef; dim?: Id }>;
 }
 
-/**
- * Emit a module's `onTick`, throttled to every `tickEvery` ticks (offset by its
- * phase) when set. The throttle gate is nested in the *current* context, which is
- * already inside any ancestor area's `active` check, so throttling composes with
- * area gating rather than escaping it.
- */
+/** Emits a module's `onTick`, throttled by `tickEvery` if set. Nested inside area gating. */
 function emitTick(w: Wiring, node: Node, ctx: FunctionContext): void {
-  // Everything this module contributes per tick, bucketed by how often it runs:
-  // `onTick` at the module's own cadence, and each `@On` handler at its own
-  // (defaulting to the module's). Buckets share one throttle gate, so declaring a
-  // per-handler `every` costs a gate per distinct period, not per handler.
+  // Everything this module runs per tick, grouped by period. Each period shares one
+  // throttle check.
   const modulePeriod = node.meta.tickEvery ?? 1;
   const modulePhase = w.phaseOf(node);
   const buckets = new Map<string, { period: number; phase: number; bodies: Emit[] }>();
@@ -88,8 +81,7 @@ function emitHandlerOf(w: Wiring, node: Node, handler: EventHandler, ctx: Functi
   const body0 = handler.fn ?? resolveMethodBody(instance, meta, handler);
   const latch =
     handler.opts.once === false ? undefined : w.latches.score(meta.name, handler.method);
-  // A named body commits to its own function once, up front, so the guard calls
-  // it rather than re-emitting the body at each site.
+  // A named body is created once, and every guard calls it.
   let named: FunctionRef | undefined;
   if (handler.opts.name) {
     named = instance.defineFunction
@@ -116,14 +108,12 @@ function resolveMethodBody(
 }
 
 /**
- * A module's whole per-tick subtree lands in its own `<name>/tick`, so the root
- * `tick.mcfunction` reads as one call per top-level module and each module's cost
- * sits under its own name instead of interleaved inline with its siblings'.
+ * A module's tick subtree goes in its own `<name>/tick`, so each module's cost shows under
+ * its name.
  */
 function moduleTick(w: Wiring, ref: ModuleRef, dim: Id | undefined, body: Emit): FunctionRef {
   const name = `${w.graph.nodes.get(ref)!.meta.name}/tick`;
-  // A module imported by several parents (e.g. an item shared by some areas) is
-  // built once and called from each.
+  // A module imported by several parents is built once and called from each.
   const built = w.ticks.get(ref);
   if (built) {
     if (built.dim !== dim) {
@@ -141,13 +131,8 @@ function moduleTick(w: Wiring, ref: ModuleRef, dim: Id | undefined, body: Emit):
 }
 
 /**
- * Append a module's tick body, then recurse. Each area child contributes, *at its
- * parent's already-gated level*:
- *   - an arm detector behind `active == 0` (skip once live), and
- *   - an `active == 1` block holding the area's presence/deactivate check and its
- *     whole subtree.
- * Because this is emitted within the parent's `active` scope, none of it runs
- * while the parent is dormant.
+ * Appends a module's tick body, then recurses into children.
+ * Each child area adds a trigger check (while inactive) and a gated block (while active).
  */
 export function wireTick(
   w: Wiring,
@@ -162,8 +147,7 @@ export function wireTick(
     if (!w.needsTick(childRef)) continue; // nothing to run below → emit nothing
     const child = w.graph.nodes.get(childRef)!;
     if (!child.meta.area) {
-      // A pure wrapper (only imports, e.g. a dev-only `mace_demo` around `mace`)
-      // gets no `<name>/tick` - it would just forward to its children's.
+      // A module with only imports gets no `<name>/tick`; it would just forward.
       if (!child.instance.onTick && getEventHandlers(child.instance).length === 0) {
         wireTick(w, childRef, ctx, dim, gates);
         continue;
@@ -177,15 +161,10 @@ export function wireTick(
 }
 
 /**
- * Emit one area's per-tick shape: its arm detector (behind `active == 0`), then
- * its `active == 1` block holding its subtree and its presence disarm - all
- * wrapped in the area's dimension when that differs from the one already in
- * effect.
+ * Emits one area's tick: its trigger (while inactive), then its subtree and leave check
+ * (while active).
  *
- * Used for a child area within its parent's already-gated tick, and for a root
- * module that is itself an area, which the factory calls directly - the two are
- * the same shape, so an area at the top of the tree is gated exactly like one
- * anywhere else.
+ * Used for child areas and for a root area, so both are gated the same way.
  */
 export function emitArea(
   w: Wiring,
@@ -195,12 +174,8 @@ export function emitArea(
   gates: Score[] = [],
 ): void {
   const node = w.graph.nodes.get(ref)!;
-  // An area with its own dimension (differing from the one already in effect)
-  // runs its detectors and whole subtree wrapped in it; one that inherits its
-  // parent's dimension is already inside that `execute in …`, so it needs no
-  // wrap of its own - re-wrapping would just emit a redundant line. Positional
-  // triggers and block reads below then resolve against the area's dimension,
-  // not wherever the tick loop runs.
+  // Wrap in `execute in` only if the area's dimension differs from the one already in
+  // effect.
   const areaDim = w.dims.get(ref) ?? dim;
   const body = (host: FunctionContext) => {
     if (node.meta.trigger) emitArm(w, ref, host, areaDim, gates); // only fires while inactive
@@ -216,15 +191,11 @@ export function emitArea(
 }
 
 /**
- * The activation detector for an area, gated behind `active == 0` so it stops
- * once the area is live.
+ * The area's activation check, only while `active == 0`.
  *
- * - `region` / `cuboid` / `zones` are **presence-based**: a player entering any
- *   zone (the union) calls `activate`. See {@link emitPresence} for the matching
- *   leave-the-region disarm.
- * - `score` triggers activate when the score matches. By default they **latch**,
- *   staying on until something calls `<name>/deactivate`; with `latch: false`
- *   {@link emitPresence} switches them back off when the score stops matching.
+ * - Geometric triggers activate when a player enters any zone; see {@link emitPresence} for
+ * leaving.
+ * - `score` triggers activate when the score matches, and latch unless `latch: false`.
  */
 function emitArm(
   w: Wiring,
@@ -250,15 +221,12 @@ function emitArm(
 }
 
 /**
- * A geometric area arms on `minecraft:location` advancements - one per zone -
- * instead of a per-tick `@a` poll, so a dormant area costs nothing per tick.
- * The trigger matches the zone's box (a sphere's bounding box, narrowed to the
- * radius in the reward); the reward re-checks what the tick tree used to gate it
- * by - every ancestor area live, this one not yet - then revokes to re-arm.
+ * Arms a geometric area with `minecraft:location` advancements, so a dormant area costs
+ * nothing per tick.
  *
- * Tradeoffs: vanilla checks `location` about once a second per player, so entry
- * lags up to 1s, and it tests the player's feet rather than hitbox overlap.
- * Leaving is absence, which no trigger can see - {@link emitPresence} still polls.
+ * Vanilla checks `location` about once a second, so entry can lag up to 1s, and it tests
+ * the
+ * player's feet. Leaving can't be a trigger, so {@link emitPresence} still polls.
  */
 function armByAdvancement(
   w: Wiring,
@@ -296,10 +264,7 @@ function armByAdvancement(
   });
 }
 
-/**
- * The "is this area's score satisfied?" condition, from either form of
- * {@link ScoreTrigger} - a single `equals` value or a `matches` band.
- */
+/** The area's score condition, from `equals` or `matches`. */
 function scoreCondition(w: Wiring, trigger: ScoreTrigger) {
   return scoreOf(w, trigger).matches(scoreRange(trigger));
 }
@@ -321,14 +286,10 @@ function scoreRange(trigger: ScoreTrigger): Range {
 }
 
 /**
- * The leave-the-region disarm for a presence area, emitted inside its
- * `active == 1` block: recompute presence across the zone union each tick and
- * call `deactivate` once it empties.
+ * The leave check for a presence area, inside its `active == 1` block: deactivate once
+ * nobody matches.
  *
- * A `score` trigger latches by default and so has no disarm; `latch: false` opts
- * into the same both-ways tracking, deactivating once the score stops matching.
- * A `players` trigger is presence-shaped and so tracks both ways by default,
- * disarming once no player matches its selector.
+ * `score` triggers only get one with `latch: false`; `players` triggers get one by default.
  */
 function emitPresence(w: Wiring, ref: ModuleRef, ctx: FunctionContext): void {
   const { meta } = w.graph.nodes.get(ref)!;

@@ -20,10 +20,9 @@ class LootEntry {
   }
 
   /**
-   * A `minecraft:item` entry for `item`. If the item carries a stack count or data
-   * components, matching `set_count` / `set_components` functions are added
-   * automatically (single source - the same `Item` you'd `give`), ahead of any
-   * explicit `opts.functions`.
+   * A `minecraft:item` entry. Adds `set_count` / `set_components` from the item
+   * automatically,
+   * before any `opts.functions`.
    */
   static item(item: ItemValue, opts: EntryOpts = {}): LootEntry {
     return new LootEntry((v) => {
@@ -106,11 +105,8 @@ export class LootPool {
 }
 
 /**
- * A registerable **loot table** - the JSON written to
- * `data/<ns>/<loot_table folder>/<name>.json` (via `Datapack.lootTable`) and
- * referenced from `/loot ... loot <ref>`, container `set_loot`, or a block/mob
- * drop. Built from {@link LootPool}s whose item entries reuse the same
- * {@link ItemValue}s you `give`, so a dropped item is defined once.
+ * A loot table, registered with `Datapack.lootTable`. Item entries use the same items you
+ * give.
  *
  *   dp.lootTable("chests/reward",
  *     new LootTableDef("chest").pool(
@@ -121,8 +117,7 @@ export class LootTableDef {
   private readonly functionsList: LootFunction[] = [];
 
   /**
-   * @param type loot-context type id (`chest`, `block`, `entity`, `generic`, ...).
-   *   `minecraft:` is prepended to a bare id. Omit for an untyped table.
+   * @param type loot context type (`chest`, `block`, `entity`…). Omit for an untyped table.
    */
   constructor(private readonly type?: string) {}
 

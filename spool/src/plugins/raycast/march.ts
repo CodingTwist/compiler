@@ -7,30 +7,24 @@ import type { RaycastOptions } from "./index";
 const AIR = Block.tag(BLOCK_TAGS.AIR);
 
 /**
- * Build one raycast marcher into `fn`: a recursive step-and-check along the local
- * forward axis (`^`), the classic datapack ray. Reads top-down as the ray's story:
+ * Builds a recursive raycast into `fn`:
  *
- *   0. reached the target? (only with `stopAt`) → run `onReach` here and stop
- *   1. spend a step   (decrement this marcher's budget)
- *   2. air ahead + budget left → step forward and recurse (carry the position via `^`)
- *   3. otherwise this cell is the hit → run the caller's `onHit`, gated on `hitOn`
- *      when set (a non-matching block is treated as a miss: `onHit` simply doesn't fire)
- *
- * The marcher is position-agnostic: the caller supplies the origin and facing by
- * invoking `RaycastRef.cast` from an already-`positioned`/`anchored` context, so this
- * knows nothing about eyes, entities, or namespaces - only "march `^` through air."
+ *   0. target reached? (with `stopAt`) run `onReach` and stop
+ *   1. spend a step
+ *   2. air ahead and steps left: step forward and recurse
+ *   3. otherwise this is the hit: run `onHit`, if it matches `hitOn`
  */
 export function buildMarcher(state: RaycastState, fn: FunctionRef, opts: RaycastOptions): void {
   const steps = state.steps(opts.name);
   const stepBlocks = opts.stepBlocks ?? 0.5;
 
-  // The early ending, built as its own function so the marcher can `return run` it:
-  // that both stops the recursion and hands the caller its result (see `onReach`).
+  // Its own function so the marcher can `return run` it, stopping the recursion and
+  // returning its result.
   const reach = opts.stopAt ? state.dp.createFunction(`raycast/${opts.name}_reach`) : undefined;
   reach?.build((ctx) => opts.onReach?.(ctx));
 
   fn.build((ctx) => {
-    // 0. The target is in this cell: this ending is "clear line of sight", not a hit.
+    // 0. Target in this cell: clear line of sight.
     if (reach) {
       ctx
         .execute()
@@ -38,12 +32,11 @@ export function buildMarcher(state: RaycastState, fn: FunctionRef, opts: Raycast
         .run((b) => b.returnRun((r) => r.call(reach)));
     }
 
-    // 1. Spend a step of this marcher's reach budget.
+    // 1. Spend a step.
     steps.remove(1);
 
-    // 2. Air ahead and budget remaining: step a stride along ^ and recurse (carry
-    //    the marched-to position through `positioned`). `return run` tail-calls so a
-    //    hit deeper in the recursion still unwinds cleanly.
+    // 2. Air ahead and steps left: move forward and recurse. `return run` so deeper hits
+    // unwind cleanly.
     ctx
       .execute()
       .ifBlock(Pos.here(), AIR)
@@ -51,9 +44,7 @@ export function buildMarcher(state: RaycastState, fn: FunctionRef, opts: Raycast
       .positioned(Pos.local(0, 0, stepBlocks))
       .run((b) => b.returnRun((r) => r.call(fn)));
 
-    // 3. This cell is the hit. Run the caller's on-hit body here (positioned at the hit
-    //    block). With `hitOn` set, gate it: a non-matching block places nothing, so the
-    //    caller sees a clean miss.
+    // 3. The hit. With `hitOn`, a non-matching block is a miss.
     if (!opts.onHit) return;
     if (opts.hitOn) {
       ctx.execute().ifBlock(Pos.here(), opts.hitOn).run((b) => opts.onHit!(b));

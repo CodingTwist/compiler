@@ -1,21 +1,11 @@
-// Build-time transforms over Minecraft structure (`.nbt`) assets.
+// Build-time transforms over structure (`.nbt`) files.
 //
-// A structure stores only the cells it lists - unlisted cells in its bounding box
-// are left untouched by `/place template`. We exploit that to make the
-// materialize/dematerialize swap (see core/display/clip.ts) non-destructive to a
-// cog's neighbours:
+// `place template` leaves unlisted cells alone, so a derived `<name>_clear` structure
+// (solid
+// cells swapped for a fill block, air cells dropped) can hide a model's blocks without
+// touching its neighbours.
 //
-//   - restore  = `place template <name>`        - places the listed solid cells
-//                back as their real blocks; neighbours (unlisted cells) untouched.
-//   - clear    = `place template <name>_clear`   - a derived structure whose listed
-//                solid cells become the author's chosen fill block (see
-//                `Clip.clearWith`, e.g. an invisible `minecraft:barrier`) and whose
-//                air cells are dropped, so materializing replaces only the cog's own
-//                cells - leaving the neighbours the old `/fill … air` destroyed
-//                untouched.
-//
-// Only a tiny slice of the NBT format appears in structure files, but we keep a
-// faithful generic codec so re-serialised structures round-trip byte-for-byte.
+// The NBT codec is generic so re-saved structures round-trip byte for byte.
 
 import zlib from "zlib";
 
@@ -34,8 +24,7 @@ const COMPOUND = 10;
 const INT_ARRAY = 11;
 const LONG_ARRAY = 12;
 
-// A parsed tag keeps its id so it re-serialises with the exact same type. Scalars
-// hold a JS primitive; compounds an ordered Map; lists their element id + items.
+// A parsed tag keeps its type id so it re-serialises identically.
 type Tag =
   | { id: 1 | 2 | 3 | 5 | 6; v: number }
   | { id: 4; v: bigint }
@@ -281,11 +270,9 @@ function list(tag: Tag): Tag[] {
 export type ClearFill = { Name: string; Properties?: Record<string, string> };
 
 /**
- * Given a structure's raw (gzipped) bytes and the author's chosen `fill` block,
- * return the gzipped bytes of its `_clear` variant: every listed *solid* cell
- * becomes `fill`; every listed *air* cell is dropped (so those cells are left
- * untouched on placement). Per-block NBT is discarded; the fill's own block-state
- * properties (if any) are carried into the single-entry palette.
+ * Builds the gzipped `_clear` variant of a structure: solid cells become `fill`, air cells
+ * are
+ * dropped so placement leaves them alone. Per-block NBT is discarded.
  */
 export function deriveClearStructure(gz: Buffer, fill: ClearFill): Buffer {
   const { name, tag } = new Reader(zlib.gunzipSync(gz)).root();

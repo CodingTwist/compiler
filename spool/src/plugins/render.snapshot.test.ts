@@ -9,15 +9,11 @@ import { ballistics } from "./ballistics";
 installKit([playerMotion, raycast, grapple, ballistics]);
 
 /**
- * The **rendered-output golden** for the math-heavy plugins: every command the grapple
- * stack and a runtime ballistic shot emit, on both backends - the pre-26.3 `scoreboard
- * players operation` chain and 26.3's `/compute`. Its job is refactor safety: rewriting a
- * mutation chain as a `math` formula should change *how* the arithmetic is spelled, never
- * which functions exist or what they compute, and a `math`-shaped change shows up here as a
- * readable diff instead of a silently different pack.
+ * Snapshot of every command the grapple and a runtime ballistic shot emit, on both maths
+ * backends.
  *
- * Update with `npx vitest run -u` and **read the diff** - an unexpected slot or a vanished
- * line is the bug this file exists to catch.
+ * Catches refactors that change what gets computed. Update with `npx vitest run -u` and
+ * read the diff.
  */
 it.each([
   ["26.2", v26_2],

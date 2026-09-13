@@ -11,8 +11,8 @@ const TNT = PROJECTILES.tnt;
 
 describe("physics", () => {
   it("integrates TNT in vanilla's order: gravity, move, drag", () => {
-    // Launched flat at 1 block/tick east from the origin. Tick 1: gravity first
-    // (vy = -0.04), then the move, so y = -0.04 and x = 1 (drag has not applied yet).
+    // Launched flat at 1 block/tick east. Tick 1 applies gravity before moving, and drag
+    // not yet.
     const path = simulate([0, 0, 0], [1, 0, 0], TNT, 2);
     expect(path[1]).toEqual([1, -0.04, 0]);
     // Tick 2: velocity is now (0.98, -0.0392) and gravity adds another -0.04 first.
@@ -26,15 +26,14 @@ describe("physics", () => {
   });
 
   it("reaches TNT's terminal fall rate: -1.96 stored, -2.0 blocks/tick observed", () => {
-    // Drag pulls the stored velocity to -g·d/(1-d) = -1.96, but gravity is applied before
-    // the move, so each tick actually displaces that plus one more gravity step.
+    // Stored velocity settles at -1.96, but gravity applies before the move, so the fall
+    // rate is -2.
     const path = simulate([0, 0, 0], [0, 0, 0], TNT, 1200);
     expect(path[1199][1] - path[1198][1]).toBeCloseTo(-2.0, 6);
   });
 
   it("reaches a living entity's terminal fall rate: -3.92 blocks/tick", () => {
-    // 0.08 gravity dragged by 0.98, and applied *before* the drag, so the stored velocity
-    // and the observed fall rate are the same number - unlike TNT's.
+    // Living entities apply gravity before drag, so stored velocity equals the fall rate.
     const path = simulate([0, 0, 0], [0, 0, 0], PROJECTILES.living, 1200);
     expect(path[1199][1] - path[1198][1]).toBeCloseTo(-3.92, 6);
   });
@@ -76,8 +75,8 @@ describe("physics", () => {
   });
 
   it("finds a crossing between ticks, not just the nearest tick sample", () => {
-    // 4 blocks/tick east: the target at x=6 is passed mid-tick, 2 blocks from either
-    // tick sample. Segment distance must see it as a direct hit.
+    // Passes the target between two tick samples; segment distance must still count it as a
+    // hit.
     const path = simulate([0, 0, 0], [4, 0, 0], TNT, 3);
     const mid = path[1].map((c, i) => (c + path[2][i]) / 2) as [number, number, number];
     expect(mid[0]).toBeGreaterThan(path[1][0] + 1); // genuinely far from either tick sample
@@ -152,8 +151,7 @@ describe("solveLaunch", () => {
 
   it("solves a living entity exactly, anisotropic drag and all", () => {
     const mob = solveLaunch([0, 64, 0], [40, 70, -12], { projectile: PROJECTILES.living });
-    // Verified against the real integrator, so this is the whole claim: a mob handed this
-    // Motion arrives on the target rather than near it.
+    // Checked against the real integrator: a mob with this Motion lands on the target.
     expect(mob.error).toBeLessThan(1e-9);
     expect(mob.speed).not.toBeCloseTo(
       solveLaunch([0, 64, 0], [40, 70, -12], { projectile: PROJECTILES.tnt }).speed,

@@ -6,10 +6,7 @@ import { BlockValue } from "./block";
 import { ItemValue } from "./item";
 import { CommandValue } from "./value";
 
-/**
- * A scoreboard bound in an `entity_scores` predicate: an exact int, or an
- * inclusive `{min,max}` range (either end optional).
- */
+/** A score bound in `entity_scores`: an exact int or an inclusive `{min,max}`. */
 export type ScoreBound = number | { min?: number; max?: number };
 
 /** Which entity in the evaluation context a check runs against. */
@@ -74,16 +71,11 @@ export interface LocationSpec {
   position?: { x?: Bound; y?: Bound; z?: Bound };
 }
 
-/**
- * The typed shape of an `EntityPredicate` - the body of an
- * `entity_properties` check. Every field is optional and only emitted when set.
- * `nbt` is the "over NBT" hook: write the NBT condition once as a typed {@link Nbt}
- * value and it renders version-aware into the predicate's `nbt` string.
- */
+/** The body of an `entity_properties` check. Fields are only emitted when set. */
 export interface EntityPredicateSpec {
   /** Entity type id or tag, e.g. `"minecraft:zombie"` / `"#minecraft:skeletons"`. */
   type?: string | Id;
-  /** Raw NBT match (SNBT). Use a typed {@link Nbt} so embedded values render version-aware. */
+  /** NBT match. Use {@link Nbt} so embedded values render for the version. */
   nbt?: Nbt;
   /** Team name. */
   team?: string;
@@ -92,15 +84,12 @@ export interface EntityPredicateSpec {
   /** Item match per equipment slot - each built from the same {@link ItemValue} you'd `give`. */
   equipment?: EquipmentSpec;
   /**
-   * Item match per **inventory slot range** - the engine-evaluated replacement for
-   * an inline `nbt={Inventory:[{...}]}` scan, which stopped working when data
-   * components replaced item NBT.
+   * Item match per slot range, replacing `nbt={Inventory:[...]}` scans (which broke with
+   * components).
    *
-   * Keys are vanilla slot names or wildcard ranges (`"container.*"`,
-   * `"hotbar.*"`, `"player.cursor"`); the predicate passes if **any** slot in the
-   * range matches. Use {@link SLOTS} rather than writing the strings by hand -
-   * the engine rejects the whole file for an unknown slot name, and there is no
-   * `a-b` range syntax.
+   * Passes if any slot in the range matches. Use {@link SLOTS}: an unknown slot name makes
+   * the
+   * engine reject the whole file.
    */
   slots?: Partial<Record<SlotRange, ItemValue>>;
   /** Where the entity is. */
@@ -112,18 +101,10 @@ export interface EntityPredicateSpec {
 }
 
 /**
- * Every slot name the engine accepts as a {@link EntityPredicateSpec.slots} key.
+ * Every slot name accepted in {@link EntityPredicateSpec.slots}.
  *
- * Typed as a closed union rather than `string` on purpose: an unrecognised name
- * doesn't degrade, it makes Minecraft **reject the whole predicate file** at load
- * ("Unknown element name") - and the failure only shows up in the server log, so
- * a typo reads in-game as a puzzle that silently never triggers. The set is
- * vanilla's `SlotRanges`; the numeric ceilings are its, not ours.
- *
- * Slot names that came and went across versions (`horse.armor`/`armor.body`,
- * `horse.saddle`/`saddle`, `villager.n`/`mob.inventory.n`) are all included -
- * this is authoring ergonomics, and per-version membership is the engine's call,
- * the same split as `Blocks.*` vs runtime registry validation.
+ * A closed union because an unknown name makes Minecraft reject the whole predicate file,
+ * silently in game. Includes names from every version.
  */
 export type SlotRange =
   | `container.${number}`
@@ -141,10 +122,7 @@ export type SlotRange =
   | "armor.*" | "container.*" | "enderchest.*" | "horse.*" | "hotbar.*"
   | "inventory.*" | "player.crafting.*" | "weapon.*" | "mob.inventory.*";
 
-/**
- * The common slot ranges, named so a call site reads as intent rather than as a
- * vanilla spelling. Any other {@link SlotRange} is still accepted directly.
- */
+/** Common slot ranges by name. Any other {@link SlotRange} also works. */
 export const SLOTS = {
   /** Every slot of a player's inventory, hotbar included. */
   INVENTORY: "container.*",
@@ -228,14 +206,11 @@ function renderEntitySpec(spec: EntityPredicateSpec, version: VersionProfile): P
 }
 
 /**
- * A composable Minecraft predicate condition tree. Renders to the JSON written
- * into `data/<ns>/<predicate folder>/<name>.json` (via {@link Datapack.predicate})
- * and referenced by id from `@e[predicate=...]` (`Selector.predicate`) or
- * `execute if predicate ...` (`predicateCheck`).
+ * A predicate condition tree, registered with {@link Datapack.predicate}.
  *
- * The point: express an entity-state check - *including NBT* - once, as a typed,
- * referenceable, engine-evaluated predicate, instead of inlining `nbt={...}` into
- * every selector. `Predicate.entity({ nbt })` is the "over NBT" path.
+ * Write an entity check once (NBT included) and reference it from selectors or `execute if
+ * predicate`,
+ * instead of repeating `nbt={...}`.
  *
  *   const sleeping = dp.predicate("sleeping",
  *     Predicate.entity({ nbt: Nbt({ SleepTimer: Short(100) }) }));
@@ -292,11 +267,8 @@ export class Predicate {
   }
 
   /**
-   * `match_tool` - passes when the item being used/checked matches `item`. Built
-   * from the *same* {@link ItemValue} you'd `give`, via its `toPredicate(...)`, so
-   * there is exactly one definition of the item. (Note: `match_tool` is evaluated
-   * against the tool in loot/mining contexts; for held-item checks on an entity
-   * use `Selector.holding(item)`.)
+   * `match_tool`: passes when the tool matches `item`. For loot and mining; use
+   * `Selector.holding(item)` for held items.
    */
   static matchTool(item: ItemValue): Predicate {
     return new Predicate((v) => ({
@@ -306,10 +278,8 @@ export class Predicate {
   }
 
   /**
-   * `entity_properties` matching an entity carrying `item` in `slot` (default
-   * `mainhand` - a player's selected hotbar item). The engine-evaluated,
-   * referenceable replacement for an inline `nbt={SelectedItem:{id:...}}` scan;
-   * built from the same {@link ItemValue} you'd `give`, via its `toPredicate(...)`.
+   * Matches an entity holding `item` in `slot` (default main hand). Replaces
+   * `nbt={SelectedItem:…}` scans.
    */
   static holding(
     item: ItemValue,
@@ -320,9 +290,7 @@ export class Predicate {
   }
 
   /**
-   * `entity_properties` matching an entity **carrying** `item` anywhere in the
-   * given slot range (default the whole inventory). The referenceable replacement
-   * for `nbt={Inventory:[{id:...}]}`, which components made unusable.
+   * Matches an entity carrying `item` anywhere in the slot range (default whole inventory).
    */
   static carrying(
     item: ItemValue,
@@ -394,10 +362,8 @@ export class Predicate {
 }
 
 /**
- * A handle to a registered predicate file: carries its resource id (`<ns>:name`)
- * and renders to that id as a {@link CommandValue}, so it can be passed straight
- * to `Selector.predicate(...)` / `predicateCheck(...)`. Created by
- * {@link Datapack.predicate}.
+ * A handle to a registered predicate that renders as its id. Created by {@link
+ * Datapack.predicate}.
  */
 export class PredicateRef implements CommandValue {
   constructor(readonly id: string) {}

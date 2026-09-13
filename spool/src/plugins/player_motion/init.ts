@@ -2,9 +2,8 @@ import { Marker, Pos } from "helix";
 import type { PlayerMotionInternals } from "./context";
 
 /**
- * `internal/init` (load-tagged): create every objective, seed the constant
- * fake-players, forceload chunk `0 0` (where the reference-vector math happens),
- * and summon the fixed dummy marker the global path teleports around.
+ * `internal/init` (load): creates objectives, seeds constants, forceloads chunk `0 0`, and
+ * summons the dummy marker.
  */
 export function defineInit(I: PlayerMotionInternals): void {
   const {

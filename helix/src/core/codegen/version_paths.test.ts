@@ -7,8 +7,7 @@ import { VersionProfile } from "../../versions/profile";
 import { v1_21_4 } from "../../versions/profiles";
 import { v1_20_4 } from "../../versions/profiles";
 
-// A synthetic newer profile that uses the range pack-format form (no released
-// version at/below pack format 61 emits the range, so this stays hand-built).
+// A hand-built newer profile, since no released version uses the pack format range yet.
 const vRange: VersionProfile = {
   ...v1_21_4,
   id: "range-test",

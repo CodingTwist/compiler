@@ -64,9 +64,8 @@ describe("Fixed", () => {
   });
 
   it("without a scale score the literal scale is materialised into a temp", () => {
-    // `scoreboard players operation` has no literal operand, so the scale costs
-    // one extra `set`. That is the whole reason `scaleScore` exists - and on
-    // 26.3+ the formula is one `/compute` and the hint buys nothing.
+    // The scoreboard can't multiply by a literal, so the scale costs one extra `set`.
+    // That's why `scaleScore` exists.
     const out = emit((sc) => new Fixed(sc("v"), 1000).divide(sc("d")));
     expect(out).toContain("scoreboard players set #_t0 work 1000");
     expect(out).toContain("scoreboard players operation #v work *= #_t0 work");

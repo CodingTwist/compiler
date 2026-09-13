@@ -15,10 +15,9 @@ export class TriggerNode extends ASTNode {
 }
 
 /**
- * Build a `trigger <objective> [set <value>]` command node WITHOUT emitting it -
- * for embedding in a click event (`click.command(triggerCmd(obj, 1))`) or anywhere
- * a command node is needed outside a `FunctionContext`. Use `ctx.trigger(...)` to
- * emit one directly. The public factory so consumers never `new TriggerNode`.
+ * Builds a `trigger <objective> [set <value>]` node without emitting it, e.g. for click
+ * events.
+ * Use `ctx.trigger(...)` to emit one.
  */
 export const triggerCmd = (objective: Objective, value?: number): TriggerNode =>
   new TriggerNode(objective, value);

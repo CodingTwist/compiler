@@ -18,10 +18,8 @@ import { targetVelocity } from "./tracking";
 export type { RuntimeShotOptions } from "./options";
 
 /**
- * Emit the in-game solver: `v_h = (target - launcher)/A(n)`, `v_y = (Δy - G(n))/Ay(n)`
- * as scoreboard
- * arithmetic, then a `/summon` whose `Motion` is stored from it. See `options.ts` for
- * the shape of the shot and what it trades against the compile-time solver.
+ * Emits the in-game solver as scoreboard maths, then a `/summon` with that `Motion`.
+ * See `options.ts`.
  */
 export function defineRuntimeShot(
   dp: Datapack,
@@ -57,8 +55,7 @@ export function defineRuntimeShot(
 
   const fuse = shellFuse(opts, profile, ticks);
   const shotTag = `${dp.name}.shot`;
-  // Rebuilt per use: Selector builders mutate in place, so one shared instance would
-  // leak its filters into every clause it appears in.
+  // A function because selectors change in place.
   const shotSelector = () => Selector.allEntities().tag(shotTag).limit(1);
 
   const shellSpec = { motion: [0, 0, 0], fuse, tags: [shotTag] } as const;
@@ -67,9 +64,7 @@ export function defineRuntimeShot(
   let spawnShell = (c: FunctionContext) =>
     summonShell(c, Pos.here(), { shell: opts.shell, ...shellSpec });
 
-  // Lifted out of the solver so a pack can ship an editable one-line shell file, or decide
-  // for itself what appears - see `shellFunction`. The fuse in it is this shot's flight
-  // time, so a named file is this shot's alone.
+  // Custom shell, see `shellFunction`.
   if (typeof opts.shellFunction === "function") {
     const build = opts.shellFunction;
     spawnShell = (c) => build(c, shellSpec);
@@ -87,11 +82,10 @@ export function defineRuntimeShot(
   const shotFn = dp.createFunction(name);
   shotFn.build((ctx) => {
     if (tracker) {
-      // Shooting at someone is what enrols them, so the tick loop only pays for players
-      // actually under fire. `at from` first so `to` resolves from the thrower.
-      // ponytail: the opening shell of an engagement is therefore unled - the sample is
-      // one tick old at best. Call `enroll` from wherever you acquire the target if that
-      // first shot needs to lead too.
+      // Shooting at someone enrols them in tracking, so only targeted players cost
+      // anything.
+      // ponytail: the first shot of an engagement doesn't lead. Call `enroll` earlier if it
+      // must.
       ctx
         .execute()
         .at(from)
@@ -99,9 +93,7 @@ export function defineRuntimeShot(
         .run((c) => c.call(tracker.enroll));
     }
 
-    // `at from` so the *target* selector resolves from the thrower: `@p` means its
-    // nearest player, and any `limit=1` sorts from it, not from wherever the caller
-    // happened to be standing (a `tick`-tagged function runs at the world origin).
+    // `at from` so `to` resolves from the thrower, not wherever the function runs.
     velocity.readEntity(to, Path.Entity.Pos, POS_SCALE, { at: from, ctx });
     // Their current velocity, for the `+ vel * ticks` lead term below.
     if (lead)
@@ -114,16 +106,9 @@ export function defineRuntimeShot(
       );
     launcherPos.readEntity(from, Path.Entity.Pos, POS_SCALE, { ctx });
 
-    // The solve, one axis at a time:
+    // Per axis: v = (target + vel*ticks - launcher - G) * V_SCALE / A
     //
-    //   v = (target + vel*ticks - launcher - G) * V_SCALE / A
-    //
-    // `* V_SCALE` before the divide because the divide is integer: dividing a
-    // centi-block displacement by A directly would floor most of it away. `- G` is
-    // vertical only. Every constant is a literal in the formula - the tick count, the
-    // drag responses, the scale - so nothing needs a `#const` slot seeded first.
-    // `ticks` is the lead arm: multiplied by the caller's score it becomes the runtime
-    // switch, 0 there meaning no lead, with no second arc baked.
+    // Multiply before dividing, since integer division would floor most of it away.
     const leadTicks =
       typeof opts.lead === "object" ? math`${ticks} * ${opts.lead}` : ticks;
     const displacement = (axis: 0 | 1 | 2) =>
@@ -138,8 +123,8 @@ export function defineRuntimeShot(
     math`${drop} * ${V_SCALE} / ${dragFixedY}`.into(velocity.y, ctx);
     math`${displacement(2)} * ${V_SCALE} / ${dragFixed}`.into(velocity.z, ctx);
 
-    // Vanilla *zeroes* a Motion axis past +/-10 rather than clamping it, which would drop
-    // the shot on the thrower's head. Bail out instead; `0` tells the caller it held fire.
+    // Vanilla zeroes a Motion axis past ±10, which would drop the shot on the thrower.
+    // Return 0 instead.
     const limit = MOTION_AXIS_LIMIT * V_SCALE;
     for (const axis of velocity.components) {
       ctx

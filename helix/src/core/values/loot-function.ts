@@ -6,12 +6,8 @@ import { normalizeId } from "../../versions/registry";
 export type NumberProvider = number | { min: number; max: number };
 
 /**
- * One **loot function** - a transform applied to a generated item stack. The same
- * vocabulary is used inside loot-table entries/pools ({@link LootTable}) and as the
- * whole body of an {@link ItemModifier}, so it is defined once here and shared.
- *
- * Functions are built from typed concepts (an {@link ItemValue}'s own components,
- * not hand-written JSON) wherever a value object can supply them.
+ * A loot function: a transform on a generated item stack. Shared by loot tables and {@link
+ * ItemModifier}s.
  *
  *   LootFunction.setCount(4)
  *   LootFunction.setComponents(Item.DIAMOND_SWORD.named("Excalibur"))
@@ -35,12 +31,7 @@ export class LootFunction {
     }));
   }
 
-  /**
-   * `minecraft:set_components` - apply `item`'s data components to the stack, reusing
-   * the item's own component definitions ({@link ItemValue.componentsJson}) so a
-   * loot drop carries the exact components the same item would `give`. No-op JSON
-   * on pre-component versions.
-   */
+  /** `minecraft:set_components`: applies `item`'s components, the same ones `give` would. */
   static setComponents(item: ItemValue): LootFunction {
     return new LootFunction((v) => ({
       function: "minecraft:set_components",
@@ -63,9 +54,8 @@ export class LootFunction {
   }
 
   /**
-   * Escape hatch: a function by id with already-built fields, e.g.
-   * `LootFunction.of("set_name", { name: "Boss Loot" })`. `minecraft:` is added
-   * to a bare id.
+   * Escape hatch: a function by id with prebuilt fields, e.g. `LootFunction.of("set_name",
+   * { name: "Boss Loot" })`.
    */
   static of(fn: string, fields: Record<string, unknown> = {}): LootFunction {
     return new LootFunction(() => ({ function: normalizeId(fn), ...fields }));

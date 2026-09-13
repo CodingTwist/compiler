@@ -1,24 +1,21 @@
 import { ignoreSourceFrames } from "helix";
 import type { KitPlugin } from "./plugin";
 
-// Debug source tracking attributes lines to whoever called a plugin, not the
-// plugin internals (this file sits in `src/` or `dist/`, one below the package root).
+// Debug source tracking points at the plugin's caller, not plugin internals.
 ignoreSourceFrames(__dirname.replace(/[\\/][^\\/]+$/, ""));
 
 /**
- * Plugins installed process-wide. Augmentations are global (they mutate shared
- * prototypes on the one `helix` instance), so installing the same plugin twice -
- * from two modules, or two `installKit` calls - must be a no-op.
+ * Plugins installed in this process. Installs change shared prototypes, so a repeat install
+ * must be a no-op.
  */
 const installed = new Set<string>();
 
 /**
- * Install plugins: dedupe, topologically order them by `deps`, and run each
- * `install()` once.
+ * Installs plugins once each, ordered by their `deps`.
  *
  *   installKit([holding, clip]);
  *
- * Depth-first topological sort; throws on a missing dep or a cycle.
+ * Throws on a missing dep or a cycle.
  */
 export function installKit(plugins: KitPlugin[]): void {
   const pending = new Map<string, KitPlugin>();

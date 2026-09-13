@@ -1,11 +1,9 @@
 // HAND-WRITTEN. The whole `scoreboard` family in one file.
 //
-// Every one of these is the same shape - a fixed literal spine (`scoreboard
-// players add`, `scoreboard objectives add`, ...) plus a handful of NAME-KEYED
-// args - so one node + one handler covers all of them instead of a node class
-// and a handler class per command. Naming the args (rather than emitting them
-// positionally) is what lets `buildCommand` re-order them to the target
-// version's grammar; see version_breaking_change.test.ts.
+// Every command is a literal spine plus a few named args, so one node and handler covers
+// them.
+// Named args let `buildCommand` reorder them for the target version; see
+// version_breaking_change.test.ts.
 //
 // Registered via EXTRA_HANDLERS in scripts/gen-commands.mjs.
 import { ASTNode } from "../ir/node";
@@ -78,8 +76,8 @@ export const scoreLitNode = (
   });
 
 /**
- * `scoreboard players <verb> <target> <objective> [<value>]`. The holder slot is
- * named `targets` everywhere except `get`, which takes a single `target`.
+ * `scoreboard players <verb> <target> <objective> [<value>]`. The holder arg is `targets`,
+ * except `get` uses `target`.
  */
 export const playersNode = (
   verb: string,
@@ -103,10 +101,8 @@ declare module "../frontend/context" {
     /** `scoreboard players remove` - subtract from a score (value must be ≥ 0). */
     scoreRemove(score: Score): void;
     /**
-     * `scoreboard players reset <targets> <objective>` - clears every holder's
-     * score for one objective (or, given a specific target, just that holder's
-     * score - unlike `remove`, this un-sets it entirely rather than subtracting
-     * to it). `ScoreTarget("*")` targets every tracked holder at once.
+     * `scoreboard players reset <targets> <objective>`: unsets the score.
+     * `ScoreTarget("*")` resets every holder.
      */
     scoreReset(score: Score): void;
     /** `scoreboard players get <target> <objective>` - read a score. */

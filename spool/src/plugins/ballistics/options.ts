@@ -4,75 +4,48 @@ import { PROJECTILES } from "./physics";
 import type { ShellOptions, ShellSpec } from "./shell";
 
 /**
- * **The runtime half of `ballistics`: aim at a target that moves.**
+ * Options for a shot solved in game, so it can follow a moving target.
  *
- * `ctx.ballistic()` solves at build time, so both endpoints are frozen into the emitted
- * `/summon`. The runtime shot solves **in game, every shot**, off two entities' live
- * positions - move the target and the next shot follows it.
- *
- * It can do that cheaply because of the affine structure `physics.ts` describes: once a
- * flight time `n` is fixed, the launch velocity is *one division*, not a search:
+ * With flight time fixed, the launch velocity is one division, so the game only reads
+ * positions,
+ * subtracts, divides and writes `Motion`:
  *
  * ```
  *   v = (target - launcher - ĵ·G(n)) / A(n)
  * ```
  *
- * `A(n)` and `G(n)` are constants of the projectile, computed at build time and baked into
- * the function as scoreboard constants. What runs in game is only: read six coordinates,
- * subtract, scale, divide, write `Motion`. No iteration, no macros.
+ * The function returns `0` and doesn't fire when an axis would exceed vanilla's ±10 Motion
+ * limit,
+ * because vanilla zeroes it instead of clamping (the TNT would drop on the thrower).
  *
- * The defaults are the common case - **`@s` throws at `@p`** - so a mob artillery piece is
- * just `execute as @e[type=blaze] run function <ns>:throw`.
- *
- * **The function returns `1` if it fired and `0` if it refused**, so the caller can react:
- * an animation on success, a different attack on failure. It refuses when the required
- * `Motion` exceeds vanilla's +/-10 b/t per axis, which vanilla *zeroes* rather than clamps
- * - i.e. would drop live TNT on the thrower. That refusal doubles as the range check.
- *
- * **The trade against the compile-time solver:** `n` is fixed at build time, so this picks
- * the arc that arrives in exactly `ticks` ticks rather than searching the family of exact
- * solutions for the min-speed / min-time / pitch-constrained one. Every option in
- * `LaunchOptions` that *selects among flight times* therefore has no meaning here - a
- * shorter `ticks` is a flatter, faster shot, a longer one a higher lob, and that is the
- * whole aiming vocabulary. The shot is still exact for the `n` you name.
- *
- * Precision: see the scales in `constants.ts` (~0.003 blocks of landing error, plus
- * ~0.04 % of range from rounding `A(n)` to centi-precision).
+ * Unlike `ctx.ballistic()`, `ticks` is the only aiming option: shorter is flatter, longer
+ * is a lob.
  */
 export interface RuntimeShotOptions extends ShellOptions {
-  /** Who throws it. Default `@s` - so the function is called *as* the thrower. */
+  /** Who throws. Default `@s`. */
   readonly from?: Selector;
-  /** What to hit. Default `@p` - the thrower's nearest player. */
+  /** What to hit. Default `@p`. */
   readonly to?: Selector;
-  /**
-   * Flight time in ticks - the one aiming knob (see above). Default `40`. Also the TNT
-   * `fuse`, so the shot airbursts on the target.
-   */
+  /** Flight time in ticks. Default `40`. Also the TNT fuse, so it explodes on arrival. */
   readonly ticks?: number;
   /**
-   * Aim where the target *will be*, not where it is: adds `velocity × ticks` to the
-   * target point. Off by default because it costs a per-tick tracker - see
-   * `tracking.ts` for what that is and how enrolment keeps it cheap. Players only, so a
-   * non-player target simply gets no lead (its velocity scores stay 0).
+   * Aim where the target will be instead of where it is. Default off; costs a per-tick
+   * tracker.
    *
-   * Pass a **{@link Score}** instead of `true` to make it a runtime switch: the lead is
-   * multiplied by it, so `0` fires straight at where the target stands and `1` leads.
-   * (Anything else scales the lead - `2` double-leads. The tracker still runs.)
+   * Players only. Pass a {@link Score} to switch it at runtime: `0` aims straight, `1`
+   * leads.
    */
   readonly lead?: boolean | Score;
   /**
-   * Where the shell comes from, instead of an inlined `/summon`.
+   * Where the shell comes from, instead of an inline `/summon`.
    *
-   * A **string** names a function to emit the summon into and call: the shipped pack then
-   * has one file per shot holding one editable line, which is the whole editing surface
-   * for someone running the built pack without the compiler. Give each shot its own name -
-   * the fuse baked into the shell is that shot's flight time - reusing one throws.
+   * A string names a function holding the one summon line, so the built pack has an
+   * editable file
+   * per shot. Names must be unique, since each has its own fuse.
    *
-   * A **callback** hands the decision back entirely: it runs at the launch position, is
-   * given the same {@link ShellSpec} a `shell` factory gets, and must leave an entity
-   * there tagged with `spec.tags`. That is the hook for a macro-driven shell
-   * (`ctx.callWith(fn, ctx.storage(...).at(name))`), or for launching an entity that is
-   * already in the world instead of summoning one.
+   * A callback runs at the launch position and must leave an entity tagged with
+   * `spec.tags`,
+   * e.g. for a macro shell or an existing entity.
    */
   readonly shellFunction?: string | ((ctx: FunctionContext, spec: ShellSpec) => void);
   // What to throw - `projectile` (the maths) and `shell` (the NBT) - comes from

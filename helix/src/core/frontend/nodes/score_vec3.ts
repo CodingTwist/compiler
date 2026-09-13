@@ -6,9 +6,7 @@ import { currentContext } from "../context/ambient";
 import type { FunctionContext } from "../context";
 import type { Selector } from "./selector";
 import type { NbtPath } from "../../values/nbt";
-// Type-only: the `execute` chain reaches this class through the ambient
-// `FunctionContext` augmentation, never through a value import (see the
-// import-cycle rule in CLAUDE.md).
+// Type-only, to avoid the import cycle (see CLAUDE.md).
 import type { StoreNumType } from "../../commands/execute";
 
 /** Axis names, in component order. */
@@ -17,11 +15,8 @@ const AXES = ["x", "y", "z"] as const;
 /** Where a vector's NBT read/write emits, and from which position. */
 export interface ScoreVec3NbtOptions {
   /**
-   * Prefix the chain with `at <sel>`, so the entity selector resolves (and any
-   * `limit=1` sorts) from there. It has to live on the *same* execute chain as
-   * the `store`, which is why it is an option here rather than a wrapping
-   * `execute().at(...).run(...)` - that would spill three commands into a
-   * generated child function.
+   * Prefix with `at <sel>` so the selector resolves from there.
+   * An option rather than a wrapper so it stays on the same `execute` as the `store`.
    */
   readonly at?: Selector;
   /** Emit here instead of the ambient context, exactly like {@link Score}. */
@@ -29,21 +24,12 @@ export interface ScoreVec3NbtOptions {
 }
 
 /**
- * Three scoreboard slots treated as a single vector, so vector algebra over scores
- * reads as algebra instead of three near-identical `scoreboard players operation`
- * lines per axis per step. Every arithmetic method is an **expression** per axis
- * rather than a mutation, so the score-expr backend picks `/compute` on 26.3+ and
- * the identical `operation` line below it - only {@link assign}, a plain copy,
- * stays a raw `=`. They emit into the **ambient** context (the `build`/`run`/`if`
- * callback you are inside); pass `ctx` to override it, exactly like {@link Score}.
+ * Three score slots used as one vector, so vector maths reads as maths.
  *
- * It holds *references* to three existing `Score` slots and allocates nothing - the
- * caller owns where each component lives. That makes one class serve both roles a
- * score-vector takes: a **value** (three per-player objectives bound to a selector,
- * e.g. an anchor position) and a **scratch register** (three slots on a work
- * objective). Scores are integers, so {@link divide} floors toward −∞.
- *
- * Chainable like `Score`: `v.assign(a).sub(b).scale(k)`.
+ * Arithmetic lowers per axis to `/compute` or `operation`. Holds references to existing
+ * slots,
+ * emits into the ambient context (or `ctx`), and chains: `v.assign(a).sub(b).scale(k)`.
+ * Division floors toward −∞.
  */
 export class ScoreVec3 {
   constructor(
@@ -53,7 +39,7 @@ export class ScoreVec3 {
   ) {}
 
   /**
-   * Build a vector from a per-axis score, so no caller has to spell x/y/z out:
+   * Builds a vector from a per-axis score:
    *
    *   ScoreVec3.from((axis) => work.score(ScoreTarget(`#v${axis}`)))
    *   ScoreVec3.from((_, i) => objectives[i].score(self()))
@@ -77,10 +63,7 @@ export class ScoreVec3 {
     return this;
   }
 
-  /**
-   * Per axis, `dest = f(dest, operand)` as one expression - so the backend picks
-   * `/compute` or `operation` for it, like every other formula in the codebase.
-   */
+  /** Per axis, `dest = f(dest, operand)` as one expression. */
   private each(
     op: ExprOp,
     rhs: (axis: 0 | 1 | 2) => Score,
@@ -123,10 +106,8 @@ export class ScoreVec3 {
   }
 
   /**
-   * Dot product into `out` - `out = x·o.x + y·o.y + z·o.z`, as one expression:
-   * one `/compute` command on 26.3+, the equivalent `scoreboard players
-   * operation` lines below it. The cross terms live in an internal temp, so no
-   * caller-owned scratch slot is needed.
+   * Dot product into `out`, as one expression. Uses an internal temp, so no scratch slot
+   * needed.
    */
   dot(other: ScoreVec3, out: Score, ctx?: FunctionContext): Score {
     emitScoreExpr(
@@ -148,14 +129,9 @@ export class ScoreVec3 {
   }
 
   /**
-   * Read a 3-element numeric NBT list on `who` into this vector's slots, `scale`d
-   * into integers - the bridge between world state and score arithmetic:
+   * Reads a 3-element NBT list on `who` into this vector, scaled to integers:
    *
    *   v.readEntity(target, Path.Entity.Pos, 100)   // centi-blocks
-   *
-   * emits one `execute [at …] store result score <axis> run data get entity <who>
-   * <path>[i] <scale>` per axis. `path` is indexed through {@link NbtPath.index},
-   * so the list layout stays a path concept.
    */
   readEntity(
     who: Selector,
@@ -175,8 +151,7 @@ export class ScoreVec3 {
   }
 
   /**
-   * The inverse of {@link readEntity}: write this vector into a 3-element numeric
-   * NBT list on `who`, `scale`d back into the fractional value the field wants:
+   * Writes this vector into a 3-element NBT list on `who`, scaled back to fractions:
    *
    *   v.storeEntity(shot, Path.Entity.Motion, "double", 1 / 10000)
    */
@@ -200,9 +175,8 @@ export class ScoreVec3 {
 }
 
 /**
- * The context a vector's NBT read/write emits into. Unlike the pure score ops it
- * needs the *full* `FunctionContext` (it builds an `execute` chain), which the
- * ambient stack only types as an emitter - hence the narrowing.
+ * The context for NBT reads and writes, narrowed to `FunctionContext` since they build
+ * `execute` chains.
  */
 function emitInto(ctx?: FunctionContext): FunctionContext {
   const target = ctx ?? (currentContext() as FunctionContext | undefined);

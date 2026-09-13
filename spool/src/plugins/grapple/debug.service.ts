@@ -8,20 +8,9 @@ interface DebugDeps {
   repo: StateRepository;
 }
 
-/**
- * The **debug service**: the optional live readouts of the swing state, gated by the
- * `DEBUG`/`LOG` tuning flags in the swing tick. Read-only - it only samples state and
- * prints it, never touches the physics. Two views: an in-place action bar and a
- * per-tick chat line that lands in `logs/latest.log` for offline trajectory analysis.
- */
+/** Optional swing readouts, gated by the `DEBUG`/`LOG` flags. Read-only. */
 export function createDebugService(d: DebugDeps) {
-  /**
-   * Read the player's look angles into two work scores (fixed-point ×100): `yaw =
-   * Rotation[0]` (−180…180, 0 = +Z/south, ±180 = −Z), `pitch = Rotation[1]` (−90 up …
-   * +90 down). Same `store result … run data get` pattern as `repo.readPos`. Lets a
-   * debug line show *where the player is looking* - the axis the release kick flings
-   * along. Runs as the grappling player (`@s`).
-   */
+  /** Reads the player's yaw and pitch (×100) into work scores. Run as the player. */
   function readFacing(ctx: FunctionContext) {
     const yaw = d.scratch.scalar("face_yaw");
     const pitch = d.scratch.scalar("face_pitch");
@@ -32,10 +21,8 @@ export function createDebugService(d: DebugDeps) {
 
   return {
     /**
-     * Live action-bar (overwrites in place, no chat spam): the three numbers the pendulum
-     * turns on. Taut requires dist² ≥ rope²; the constraint also needs dot < 0 (moving
-     * outward). If dist² never reaches rope², the rope is never taut and you free-fall. Raw
-     * score component (score parts aren't expressible through the typed `Component` yet).
+     * Action-bar readout of dist², rope² and dot.
+     * The rope is taut when dist² ≥ rope²; if dist² never gets there, you're free-falling.
      */
     readout(scratch: SwingScratch, ctx: FunctionContext): void {
       const v = ctx.version;
@@ -58,14 +45,12 @@ export function createDebugService(d: DebugDeps) {
     },
 
     /**
-     * Per-tick **chat** line (one per grappling player per tick) of the full swing state, so
-     * the trajectory lands in the client's `logs/latest.log` (chat is logged) and can be read
-     * back offline to see exactly where a swing misbehaves.
+     * Logs the full swing state to chat each tick, so it lands in `logs/latest.log` for
+     * analysis.
      *
-     * All scores are the raw integers the math runs on: positions/velocity in **decimetres**
-     * (÷10 = blocks), `dist²`/`rope²`/`dot` in **scale²** (÷100). A monotonic `#log_frame`
-     * counter (incremented here) orders samples *within* a log second, since the log timestamp
-     * is only second-resolution.
+     * Positions and velocity are in decimetres; dist², rope² and dot in scale².
+     * `#log_frame` orders
+     * lines within a second, since log timestamps are per second.
      */
     log(scratch: SwingScratch, ctx: FunctionContext): void {
       const frame = d.scratch.scalar("log_frame");

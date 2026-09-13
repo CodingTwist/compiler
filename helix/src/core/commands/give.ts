@@ -9,11 +9,9 @@ import { Item, ItemValue } from "../values/item";
 import { Enchantment } from "../values/resource.generated";
 
 /**
- * Legacy loose description of an item to give. Superseded by the rich
- * {@link Item} builder ({@link ItemValue}), which is the single source of truth
- * for item data across give/predicate/holding - prefer
- * `Item("...").named(...).enchant(...)`. Still accepted by {@link FunctionContext.playerGive}
- * and lowered through the same `Item` machinery.
+ * Legacy item description for `give`. Prefer the {@link Item} builder; this still works
+ * with
+ * {@link FunctionContext.playerGive}.
  */
 export interface ItemSpec {
   id: Item | string;
@@ -85,8 +83,7 @@ FunctionContext.prototype.playerGive = function (
   item: ItemSpec | Item | string,
   count?: number,
 ) {
-  // Normalize to the single-source Item. An explicit `count` arg wins; otherwise
-  // the item/spec keeps whatever count it already carries (default 1 at render).
+  // Convert to an Item. An explicit `count` wins; otherwise the item keeps its own count.
   const resolved = toItem(item);
   if (count !== undefined) resolved.count(count);
   this.emit(new PlayerGiveNode(selector.build(), resolved));

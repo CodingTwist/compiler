@@ -2,13 +2,8 @@ import { VersionProfile } from "../../versions/profile";
 import { CommandValue } from "./value";
 
 /**
- * A reference to a **function tag** - the `#namespace:name` form that `function`
- * and `schedule` accept in place of a single function id.
- *
- * A tag is a fan-out hook: several functions join it and one call runs them all.
- * The datapack owns the members (see {@link Datapack.functionTag}); this value is
- * just the typed way to *name* the tag at a call site, so no caller ever writes
- * a `"#ns:name"` string by hand.
+ * A reference to a function tag (`#namespace:name`). Members are set with {@link
+ * Datapack.functionTag}.
  */
 export class FunctionTagRefValue implements CommandValue {
   constructor(

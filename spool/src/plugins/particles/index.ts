@@ -5,13 +5,13 @@ import type { KitPlugin } from "../../plugin";
 export interface RingOptions {
   /** Blocks from the centre. */
   radius: number;
-  /** Particles in the ring - also how many commands this costs. Default 16. */
+  /** Particles in the ring, and commands it costs. Default 16. */
   count?: number;
   /** Height of the ring above the run position. Default 0. */
   y?: number;
   /**
-   * Turns to make while drawing. `1` is a closed ring; `2.5` is a spiral of two
-   * and a half turns (pair it with {@link rise}). Default 1.
+   * Turns while drawing. `1` is a closed ring, `2.5` a spiral (use with {@link rise}).
+   * Default 1.
    */
   turns?: number;
   /** Blocks climbed over the whole draw - `0` is flat. Default 0. */
@@ -28,14 +28,10 @@ export interface RingOptions {
 }
 
 /**
- * **`particles`** - draw a *shape*, not a point.
+ * `particles`: draw shapes out of particles.
  *
- * Vanilla's own `<delta>`/`<count>` already gives you a random cloud in one
- * command, so this adds the one thing it can't: particles at **chosen** places.
- * The ring is unrolled at build time into `count` `particle ~x ~y ~z` commands
- * about wherever the function runs, so it costs no scoreboard, no recursion and
- * no runtime trig - and, being world-relative, it doesn't skew with the runner's
- * pitch the way `^ ^ ^` would.
+ * Unrolled at build time into one `particle ~x ~y ~z` per point, so no runtime maths.
+ * World-relative, so it doesn't tilt with the runner's pitch.
  *
  * ```ts
  * installKit([particles]);
@@ -45,8 +41,7 @@ export interface RingOptions {
  * ctx.particleRing(Particle.FLAME, { radius: 0.6, turns: 3, rise: 2, count: 24 });
  * ```
  *
- * ponytail: build-time unroll, so `count` is a literal cost - 20 particles is 20
- * commands every time it fires. Fine on a hit or a shot; think twice per tick.
+ * ponytail: `count` is the command cost every time; avoid large rings every tick.
  */
 declare module "helix" {
   interface FunctionContext {

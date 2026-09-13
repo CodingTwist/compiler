@@ -24,7 +24,10 @@ export class SelectorScore {
   }
 }
 
-/** An axis-aligned volume in selector terms: `x/y/z` lower corner (omitted: the execution position) + `dx/dy/dz` span. */
+/**
+ * An axis-aligned selector volume: lower corner `x/y/z` (default: execution position) plus
+ * `dx/dy/dz`.
+ */
 export interface SelectorVolume {
   x?: number;
   y?: number;
@@ -88,7 +91,7 @@ export class Selector {
     this.limitValue = n;
     return this;
   }
-  /** Order multi-match results (`sort=`). Prefer the typed `Sort.NEAREST` over a bare string. */
+  /** Orders results (`sort=`). Prefer `Sort.NEAREST` over a string. */
   sort(order: Sort): this {
     this.sortValue = order;
     return this;
@@ -102,12 +105,7 @@ export class Selector {
     return this;
   }
 
-  /**
-   * Restrict to entities whose hitbox overlaps the axis-aligned box between two
-   * corners (`x=…,y=…,z=…,dx=…,dy=…,dz=…`). Corner order doesn't matter - the
-   * lower corner and absolute spans are derived. Replaces hand-built volume
-   * selector strings.
-   */
+  /** Matches entities whose hitbox overlaps the box between two corners, in any order. */
   volume(from: readonly [number, number, number], to: readonly [number, number, number]): this {
     this.volumeBox = {
       x: Math.min(from[0], to[0]),
@@ -121,31 +119,23 @@ export class Selector {
   }
 
   /**
-   * Restrict to entities whose hitbox overlaps a box spanning `dx/dy/dz` from the
-   * **execution position** - {@link volume} without a fixed corner, so it moves with
-   * `positioned`/`at`. Vanilla adds 1 to each span, so `span(0, 0, 0)` is a 1-block cube.
+   * Matches entities overlapping a `dx/dy/dz` box from the execution position.
+   * Vanilla adds 1 to each span, so `span(0, 0, 0)` is a 1-block cube.
    */
   span(dx: number, dy: number, dz: number): this {
     this.volumeBox = { dx, dy, dz };
     return this;
   }
 
-  /**
-   * Restrict to entities within a distance range of the execution position
-   * (`distance=<range>`). Pass a `Range` so e.g. `..6` (within 6 blocks) or
-   * `2..` is modelled as a value, not a hand-built `distance=..6` string.
-   */
+  /** Matches entities within `range` of the execution position (`distance=`). */
   distance(range: Range): this {
     this.distanceRange = range;
     return this;
   }
 
   /**
-   * A raw vertical position band (`y=<y>,dy=<dy>`) - the partial form of
-   * {@link volume} with no x/z restriction. `dy` is a signed offset from `y`
-   * (negative extends downward), matching vanilla's own field, not a min/max
-   * pair - use this only when you genuinely mean "however far above/below one
-   * point", not a min/max span (for that, prefer a location predicate).
+   * A vertical band (`y=<y>,dy=<dy>`). `dy` is a signed offset, as in vanilla, not a
+   * min/max.
    */
   yBand(y: number, dy: number): this {
     this.yBandValue = { y, dy };
@@ -164,49 +154,33 @@ export class Selector {
     return this;
   }
 
-  /** Restrict to a game mode (`gamemode=survival|creative|adventure|spectator`). Prefer the typed `Gamemode.SURVIVAL` over a bare string. */
+  /** Matches a game mode. Prefer `Gamemode.SURVIVAL` over a string. */
   gamemode(mode: Gamemode): this {
     this.gamemodeValue = mode;
     return this;
   }
 
-  /**
-   * Exclude a game mode (`gamemode=!creative`). Repeatable - vanilla ANDs the
-   * negations, which is the only way to say "anyone I can actually interact
-   * with" (creative players ignore damage; spectators aren't there at all).
-   */
+  /** Excludes a game mode (`gamemode=!creative`). Repeat to exclude several. */
   notGamemode(mode: Gamemode): this {
     this.notGamemodes.push(mode);
     return this;
   }
 
-  /**
-   * Restrict to one entity type (`type=<id>`). Accepts a typed `EntityType`
-   * (`EntityType.ENDERMAN`) or a raw id string - a leading `#` is a registry
-   * tag reference (`type=#tunnel:removable`), passed through as-is rather than
-   * routed through `EntityType(...)`'s id validation (which expects a bare
-   * `minecraft:entity_type` id, not a tag).
-   */
+  /** Matches one entity type. A string starting with `#` is passed through as a tag. */
   type(entityType: EntityType | string): this {
     this.entityTypeValue = typeof entityType === "string" ? entityType : entityType.render();
     return this;
   }
 
-  /**
-   * Restrict to entities matching `nbt` (`nbt={…}`). Pass an `Nbt` value rather
-   * than a hand-built SNBT string so it renders version-aware at codegen.
-   */
+  /** Matches entities with `nbt`. Renders for the target version. */
   nbt(nbt: Nbt): this {
     this.nbtValue = nbt;
     return this;
   }
 
   /**
-   * Restrict to entities passing a registered predicate (`predicate=<id>`).
-   * Accepts a {@link PredicateRef} (from `dp.predicate(...)`), an {@link Id}, or
-   * a raw id string. This is the cheap, engine-evaluated stand-in for inlining
-   * an `nbt={…}` match into the selector - register the check once as a
-   * `Predicate`, reference it everywhere. Repeatable to AND several predicates.
+   * Matches entities passing a predicate (`predicate=<id>`). Repeat to require several.
+   * Cheaper than inline `nbt={…}`.
    */
   predicate(ref: PredicateRef | Id | string): this {
     const id =
@@ -237,20 +211,12 @@ export class Selector {
     );
   }
 
-  /**
-   * The selector's command-string form, so a `Selector` can be passed directly
-   * as an argument to any command method (which stringify their args).
-   */
+  /** The selector as text, so it can be passed to any command method. */
   toString(): string {
     return renderSelector(this.build());
   }
 
-  /**
-   * `CommandValue` form. Most selector args are version-neutral, but an `nbt={…}`
-   * arm renders its `Nbt` version-aware, so the codegen version is threaded
-   * through here. Lets a `Selector` be passed to any concept-typed entity
-   * argument (`entity`, `score_holder`, ...).
-   */
+  /** Renders for a version, since an `nbt={…}` filter is version-dependent. */
   render(version?: VersionProfile): string {
     return renderSelector(this.build(), version);
   }

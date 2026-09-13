@@ -8,19 +8,11 @@ import {
 } from "./resources";
 
 /**
- * The shared internals threaded through every `player_motion` builder - the one
- * place the objectives, score helpers, selectors, predicate refs, and function
- * refs are constructed, so the `define*` files (init/store/launch/math/api) just
- * destructure what they need and fill bodies, never re-deriving state.
+ * Shared objectives, scores, selectors, predicates and function refs for the
+ * `player_motion` builders.
  *
- * The shape is whatever {@link createInternals} returns (see `PlayerMotionInternals`
- * below) - declared once, not mirrored in a hand-written interface. Objective
- * names keep their global `player_motion.*` form (shared with the enchantment
- * JSON); function paths inline into the consuming pack's own namespace (`ns`),
- * which helix is constrained to.
- *
- * The function refs are all created up front so any body can call any other
- * (the bodies are filled later by the `define*` passes).
+ * Objective names stay `player_motion.*` because the enchantment JSON uses them. Functions
+ * are created up front so bodies can call each other.
  */
 export function createInternals(dp: Datapack) {
   const ns = dp.name;
@@ -44,20 +36,19 @@ export function createInternals(dp: Datapack) {
   const prevZ = new Objective("player_motion.internal.previous_z");
   const prevMethod = new Objective("player_motion.internal.previous_method");
 
-  // Fake-player score helpers: each makes a Score named `name` on one objective.
-  // (`#name` fake players are the datapack convention for scratch/global values.)
+  // Fake-player score helpers.
   const dummyScore = (name: string) => dummy.score(ScoreTarget(name));
   const constant = (name: string) => konst.score(ScoreTarget(name));
   const storeBit = (name: string) => store.score(ScoreTarget(name));
   const gamemodeScore = (name: string) => gm.score(ScoreTarget(name));
 
-  // The working `#x/#y/#z` vector the math operates on, and the `$x/$y/$z`
-  // public input scores a caller sets before invoking an `api/*` function.
+  // The working `#x/#y/#z` vector, and the `$x/$y/$z` inputs callers set before an `api/*`
+  // call.
   const workX = dummyScore("#x");
   const workY = dummyScore("#y");
   const workZ = dummyScore("#z");
-  // One-shot flag: when 1, `launch/main` skips the gamemode-swap trigger and lets
-  // the player's own movement fire the enchantment (per-tick `applyLocal/Global`).
+  // When 1, `launch/main` skips the gamemode swap and lets the player's own movement fire
+  // the enchantment.
   const sustain = dummyScore("#sustain");
   const inputX = api.score(ScoreTarget("$x"));
   const inputY = api.score(ScoreTarget("$y"));

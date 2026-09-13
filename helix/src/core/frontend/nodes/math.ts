@@ -13,9 +13,8 @@ import {
 } from "../../commands/score-expr";
 import type { FunctionContext } from "../context";
 
-// `·` as a dot-product operator, at multiplication precedence, so a formula can
-// be pasted straight out of a docstring. Registering it also takes it out of
-// jsep's identifier character class (everything ≥ U+0080 is one otherwise).
+// `·` as dot product at multiplication precedence. Registering it also stops jsep treating
+// it as an identifier character.
 jsep.addBinaryOp("·", 10);
 
 /** Anything that can be interpolated into a {@link math} formula. */
@@ -33,48 +32,34 @@ type Val =
   | { vec: true; e: [ExprNode, ExprNode, ExprNode] };
 
 /**
- * Infix integer math over scoreboard slots, lowered to whichever backend the
- * target version has - **one `/compute` command on 26.3+, the equivalent
- * `scoreboard players operation` chain below it**. The author writes the algebra
- * once; the version is chosen at codegen, not by the pack.
+ * Integer maths over scores: one `/compute` on 26.3+, an equivalent `scoreboard players
+ * operation`
+ * chain below.
  *
  * ```ts
  * math`-${dot} + min((${distSq} - ${ropeLenSq}) / ${BAUM_DIV}, ${BAUM_MAX})`.into(coef);
  * math`vec(${i} · ${g}, ${j} · ${g}, ${k} · ${g}) / 100000`.into(local);
  * ```
  *
- * Holes are ordinary TypeScript - a `Score`, a `ScoreVec3`, a number, or another
- * `math` expression - so autocomplete works exactly as it does elsewhere; only
- * the operators are text. This is the one place in helix where a small string
- * language pays for itself: the "typed concepts, not strings" rule exists because
- * *Minecraft* changes version to version, and `a + b * min(c, d)` does not.
+ * Holes are `Score`, `ScoreVec3`, numbers or other `math` expressions. A string language is
+ * fine
+ * here because arithmetic doesn't change between versions.
  *
- * **Scores are integers**, so `/` is floor division (toward −∞) and `%` is
- * floor-modulo, matching `scoreboard players operation` - the side that can't be
- * changed. Vector-valued holes broadcast per axis; `·` (or `dot(a, b)`) and
- * `len2(v)` collapse a vector to a scalar, and `vec(a, b, c)` builds one.
+ * Everywhere: `+ - * / %`, unary `-`, `min`, `max`, `abs`, `dot`, `len2`, `vec`. `/` and
+ * `%` floor
+ * like the scoreboard. Vector holes apply per axis.
  *
- * Available everywhere: `+ - * / %`, unary `-`, `min`, `max`, `abs`, `dot`,
- * `len2`, `vec`.
- *
- * **26.3+ only** (no scoreboard lowering exists, so a lower target throws at
- * codegen with the version named): `sqrt`, `sin`, `cos`, `pow`, `avg`, `round`,
- * `floor`, `ceil`, `len`; any **fractional literal** (`0.5`); and any
- * `ContextInt`/`ContextFloat` provider interpolated as a hole, which is how
- * `uniform`, `storage` and `conditional` reach a formula:
+ * 26.3+ only (throws on older targets): `sqrt`, `sin`, `cos`, `pow`, `avg`, `round`,
+ * `floor`,
+ * `ceil`, `len`, fractional literals, and `ContextInt`/`ContextFloat` providers:
  *
  * ```ts
  * math`round(${ContextFloat.uniform(0, 1)} * ${spread}) + ${base}`.into(out);
  * ```
  *
- * Those three things evaluate on `/compute`'s **float** side, and float-ness
- * spreads up the expression and is truncated **once**, at the destination - so
- * `` math`sqrt(${x}) / 2` `` really halves the root instead of flooring it
- * first, and `` math`${a} / 2.0` `` is real division where `` math`${a} / 2` ``
- * floors. Wrap in `round()` if truncating toward 0 isn't what you want. One
- * semantic catch: `%` is floor-modulo on the integer side but **truncated** on
- * the float side, so `-5 % 2` is `1` in an int formula and `-1` once the
- * expression is float - `/compute` has no float floor-modulo to match it with.
+ * These are float and truncate once at the destination, so `sqrt(${x}) / 2` halves the real
+ * root.
+ * Careful: `%` is truncated on the float side, so `-5 % 2` is `1` as int but `-1` as float.
  */
 export function math(
   strings: TemplateStringsArray,
@@ -116,9 +101,8 @@ export class MathExpr {
   }
 
   /**
-   * The formula as a `/compute` argument, for the destinations `.into()` can't
-   * reach - `ctx.compute().entityFloat(target, math`…`.floatProvider)`. 26.3+ by
-   * construction: there is no `/compute` below it.
+   * The formula as a `/compute` argument, for destinations `.into()` can't reach. 26.3+
+   * only.
    */
   get provider(): ContextIntProvider {
     return toProvider(this.scalar("provider"));
@@ -213,9 +197,8 @@ function convert(node: jsep.Expression, src: string, holes: Operand[]): Val {
           case "avg":
             if (!args.length) fail("`avg()` takes at least one argument", src);
             return nary("avg", args);
-          // `len(v)` is one `length` node, not `sqrt(len2(v))` - same value,
-          // fewer nodes. One vector, or any number of scalar legs (`len(a, b)`
-          // is the Pythagorean hypotenuse).
+          // `len(v)` is one `length` node instead of `sqrt(len2(v))`. Scalar arguments give
+          // a hypotenuse.
           case "len":
             if (!args.length) fail("`len()` takes at least one argument", src);
             if (args.length === 1 && args[0].vec)

@@ -16,14 +16,11 @@ import {
 } from "../../versions/experimental";
 
 // ---------------------------------------------------------------------------
-// FAKE Minecraft versions.
+// Fake Minecraft versions.
 //
-// The whole premise of VersionProfiles is that a future game version can change
-// command *grammar* and the hand-written handlers absorb it untouched, because
-// order/structure is sourced from the version's command tree, not the handler.
-// `deriveVersion` (in versions/experimental) mutates a real tree to simulate
-// breaking changes no shipped version has, so we can prove that claim
-// deliberately rather than hoping a real version happens to differ.
+// Handlers take argument order from the version's command tree, so grammar changes
+// shouldn't
+// break them. `deriveVersion` mutates a real tree to prove it.
 // ---------------------------------------------------------------------------
 
 function scoreboardSet(tree: BrigadierNode): BrigadierNode {
@@ -37,8 +34,7 @@ describe("fake future version: breaking grammar changes are absorbed", () => {
   // -- Breaking change #1: the argument ORDER is reversed -------------------
   // Real 1.21.4:  set <targets> <objective> <score>
   // Fake future:  set <score> <objective> <targets>
-  // The arg *names* are preserved (so the handler still fills by name); only
-  // the tree's nesting order changes. This is the shared, exported fixture.
+  // Names stay the same, so the handler still fills by name.
   const reordered = fakeFutureReorderedScoreboard;
 
   it("buildCommand emits args in the FUTURE tree's order, same call site", () => {
@@ -58,8 +54,7 @@ describe("fake future version: breaking grammar changes are absorbed", () => {
   });
 
   it("the UNCHANGED scoreSet entry follows the new order end-to-end", () => {
-    // Same authored node, compiled against the fake version through the real
-    // dispatcher + handler. Nothing handler-side knows the order changed.
+    // Compiled against the fake version; the handler doesn't know the order changed.
     const dp = new Datapack("pack", reordered);
     const fn = new FunctionNode("main");
     new FunctionContext(fn, reordered).scoreSet(
@@ -73,8 +68,7 @@ describe("fake future version: breaking grammar changes are absorbed", () => {
 
   // -- Breaking change #2: a new REQUIRED argument is inserted --------------
   // Fake future:  set <targets> <objective> <score> <dimension>
-  // The handler supplies only the first three, so the command is incomplete.
-  // The framework must FAIL LOUD here, not silently emit a broken command.
+  // The handler only fills three, so the build must fail loudly, not emit a broken command.
   const requiredAdded = fakeFuture((tree) => {
     const objective = scoreboardSet(tree).children!.targets.children!.objective;
     const score = objective.children!.score;

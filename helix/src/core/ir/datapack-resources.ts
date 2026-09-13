@@ -1,9 +1,5 @@
-// The middle third of `Datapack`: every resource registry - the data side
-// (predicates, advancements, loot tables, item modifiers, recipes, biomes,
-// registry tags, raw registry files) and the resource-pack side (models, item
-// definitions, block models, block states, raw asset files). Each registrar
-// records a definition and hands back a typed ref; codegen reads them via the
-// `*Defs` getters. See datapack-core.ts for the split.
+// Middle of `Datapack`: data and resource pack registries. Each returns a typed ref;
+// codegen reads the `*Defs` getters.
 import type { FunctionContext } from "../frontend/context";
 import { FunctionRef } from "../function_ref";
 import { Predicate, PredicateRef } from "../values/predicate";
@@ -32,11 +28,9 @@ export interface RegistryTag {
 }
 
 /**
- * Split a registered definition's name into the namespace its file lands in and
- * the path within that namespace. A bare name belongs to the pack; a namespaced
- * one (`"minecraft:plains"`) writes into that namespace instead, which is how a
- * pack overrides a vanilla resource. Used by {@link DatapackResources.biome} and
- * the codegen loop that emits it.
+ * Splits a definition name into namespace and path. A namespaced name writes into that
+ * namespace,
+ * which is how packs override vanilla resources.
  */
 export function splitDefName(
   dp: { name: string },
@@ -73,35 +67,27 @@ export class DatapackResources extends DatapackCore {
   private lootTables = new Map<string, LootTableDef>();
   private itemModifiers = new Map<string, ItemModifier>();
   private recipes = new Map<string, RecipeDef>();
-  // Biome definitions. Keyed by the name AS AUTHORED, which may carry a
-  // namespace (`minecraft:plains` to override a vanilla biome) - see splitDefName.
+  // Keyed by the name as authored, which may include a namespace.
   private biomes = new Map<string, BiomeDef>();
-  // Registry (block/item/fluid/…) tags, keyed `<registry>/<name>`; distinct from
-  // the function `tags` map on the core, which codegen emits separately.
+  // Registry tags, keyed `<registry>/<name>`. Separate from function tags.
   private registryTags = new Map<string, RegistryTag>();
-  // Raw JSON registry files for types without a typed builder yet (dimensions,
-  // worldgen, damage types, …), keyed by relative `<folder>/<name>` under the ns.
+  // Raw JSON for types without a builder, keyed `<folder>/<name>`.
   private registryFiles = new Map<string, unknown>();
-  // Resource-pack outputs (see writeResourcePack). Generated models keyed by
-  // name; raw asset JSON keyed `<folder>/<name>`; verbatim-copy asset dirs.
+  // Resource pack models by name; raw assets by `<folder>/<name>`; copied asset dirs.
   private models = new Map<string, Model>();
-  // Item definitions (`assets/<ns>/items/<name>.json`) keyed by name. `dp.model`
-  // registers the flat one here; `dp.itemDefinition` the full typed union.
+  // Item definitions by name: flat ones from `dp.model`, full ones from
+  // `dp.itemDefinition`.
   private itemDefinitions = new Map<string, ItemDefinition>();
-  // Block models keyed by name (under this ns); block states keyed by the full
-  // normalized block id they override (usually `minecraft:<block>`).
+  // Block models by name; block states by the block id they override.
   private blockModels = new Map<string, Model>();
   private blockStates = new Map<string, BlockState>();
   private resourceFiles = new Map<string, unknown>();
   private assetDirs: string[] = [];
 
   /**
-   * Register a {@link Predicate} as `data/<ns>/<predicate folder>/<name>.json`
-   * and return a {@link PredicateRef} (`<ns>:name`) to reference it from
-   * `Selector.predicate(...)` (`@e[predicate=...]`) or `predicateCheck(...)`
-   * (`if predicate ...`). Re-registering the same name throws unless the
-   * predicate object is identical by reference (so shared modules can declare
-   * once without ordering hazards).
+   * Registers a {@link Predicate} and returns its ref for `Selector.predicate` or
+   * `predicateCheck`.
+   * The same name with a different object throws.
    */
   predicate(name: string, predicate: Predicate): PredicateRef {
     this.registerDef(this.predicates, "Predicate", name, predicate);
@@ -114,11 +100,8 @@ export class DatapackResources extends DatapackCore {
   }
 
   /**
-   * Register an {@link AdvancementDef} as `data/<ns>/<advancement folder>/<name>.json`
-   * and return an {@link Advancement} id (`<ns>:name`) to reference it (e.g. from
-   * `ctx.advancement().revokeOnly(...)`). Re-registering the same name throws
-   * unless the definition is identical by reference (so shared modules can declare
-   * once without ordering hazards), mirroring {@link predicate}.
+   * Registers an {@link AdvancementDef} and returns its id. The same name with a different
+   * object throws.
    */
   advancement(name: string, def: AdvancementDef): Advancement {
     this.registerDef(this.advancements, "Advancement", name, def);
@@ -131,21 +114,15 @@ export class DatapackResources extends DatapackCore {
   }
 
   /**
-   * A **repeatable event handler**: `body` runs, as the triggering player, every
-   * time `trigger` fires.
+   * A repeatable event: `body` runs as the player every time `trigger` fires.
    *
-   * Vanilla has no event hook, so the idiom is an advancement whose reward
-   * function re-arms it - and the re-arm is the part that gets forgotten, leaving
-   * a handler that silently fires exactly once per player, forever. This emits
-   * both halves under `name` and appends the
-   * `advancement revoke @s only <this>` tail itself, so the pair can't drift:
+   * Emits the advancement and a reward function that revokes it, so it can't be left firing
+   * only once:
    *
    *   dp.event("exit/eat_chorus", Trigger.consumeItem(Item.CHORUS_FRUIT),
    *     (ctx) => { ... });
    *
-   * Note this is genuinely *event*-shaped work. A condition you could just as
-   * well test on a tick (a player standing in a box, a block having a given
-   * state) belongs in a {@link Predicate} checked from a tick function, not here.
+   * For conditions you could test on a tick, use a {@link Predicate} instead.
    */
   event(
     name: string,
@@ -164,11 +141,7 @@ export class DatapackResources extends DatapackCore {
     return { advancement, fn };
   }
 
-  /**
-   * Register a {@link LootTableDef} as `data/<ns>/<loot_table folder>/<name>.json` and
-   * return a {@link LootTableRef} (`<ns>:name`) to reference it from `/loot ... loot`,
-   * a container `set_loot`, or a nested loot entry.
-   */
+  /** Registers a {@link LootTableDef} and returns its ref. */
   lootTable(name: string, table: LootTableDef): LootTableRef {
     this.registerDef(this.lootTables, "Loot table", name, table);
     return new LootTableRef(`${this.name}:${name}`);
@@ -179,10 +152,7 @@ export class DatapackResources extends DatapackCore {
     return this.lootTables;
   }
 
-  /**
-   * Register an {@link ItemModifier} as `data/<ns>/<item_modifier folder>/<name>.json`
-   * and return an {@link ItemModifierRef} (`<ns>:name`) for `/item modify ... <ref>`.
-   */
+  /** Registers an {@link ItemModifier} and returns its ref for `/item modify`. */
   itemModifier(name: string, modifier: ItemModifier): ItemModifierRef {
     this.registerDef(this.itemModifiers, "Item modifier", name, modifier);
     return new ItemModifierRef(`${this.name}:${name}`);
@@ -193,10 +163,7 @@ export class DatapackResources extends DatapackCore {
     return this.itemModifiers;
   }
 
-  /**
-   * Register a {@link RecipeDef} as `data/<ns>/<recipe folder>/<name>.json` and return a
-   * {@link RecipeRef} (`<ns>:name`) for `/recipe give|take`.
-   */
+  /** Registers a {@link RecipeDef} and returns its ref for `/recipe give|take`. */
   recipe(name: string, recipe: RecipeDef): RecipeRef {
     this.registerDef(this.recipes, "Recipe", name, recipe);
     return new RecipeRef(`${this.name}:${name}`);
@@ -208,14 +175,9 @@ export class DatapackResources extends DatapackCore {
   }
 
   /**
-   * Register a {@link BiomeDef} as `data/<ns>/worldgen/biome/<name>.json` and
-   * return the {@link Biome} id to reference it from `/fillbiome`, a dimension's
-   * biome source, or another pack.
+   * Registers a {@link BiomeDef} and returns its id.
    *
-   * Unlike the other registries this one is **namespace-aware**: pass a
-   * namespaced `name` to write outside this pack's namespace, which is how a
-   * datapack replaces a vanilla biome (the only way a biome takes effect in the
-   * overworld without a custom dimension):
+   * A namespaced name writes outside this pack, which is how you replace a vanilla biome:
    *
    *   dp.biome("sky/void", def)         -> data/mypack/worldgen/biome/sky/void.json
    *   dp.biome("minecraft:plains", def) -> data/minecraft/worldgen/biome/plains.json
@@ -232,11 +194,8 @@ export class DatapackResources extends DatapackCore {
   }
 
   /**
-   * Register a **registry tag** (`block`, `item`, `fluid`, `entity_type`, ...) as
-   * `data/<ns>/tags/<registry>/<name>.json`. Distinct from the function tags
-   * (`load`/`tick`). Re-registering the same `<registry>/<name>` appends `values`
-   * (so several modules can extend one tag); pass `replace: true` to drop members
-   * contributed by lower-priority packs. Values are member ids or `#tag` refs.
+   * Registers a registry tag (`block`, `item`, `entity_type`…). Registering again appends.
+   * `replace: true` drops members from lower-priority packs.
    */
   tag(
     registry: string,
@@ -263,14 +222,8 @@ export class DatapackResources extends DatapackCore {
   }
 
   /**
-   * Declare a **function tag** in this pack's namespace and return a typed
-   * reference to it, for `ctx.callTag(...)` / `schedule`.
-   *
-   * This is the `load`/`tick` mechanism generalised: those two are vanilla's own
-   * tags and get auto-membership from {@link createFunction}, while these are
-   * pack-defined fan-out hooks whose members you list. Members are given as
-   * {@link FunctionRef}s, so a tag can't name a function that doesn't exist.
-   * Calling again with the same `name` appends members.
+   * Declares a function tag and returns a ref for `ctx.callTag(...)` / `schedule`.
+   * Members are {@link FunctionRef}s, so they must exist. Registering again appends.
    */
   functionTag(
     name: string,
@@ -283,20 +236,14 @@ export class DatapackResources extends DatapackCore {
     return FunctionTagRef(this.name, name);
   }
 
-  /**
-   * The namespaced id of a function in this pack (`<ns>:<name>`), as the typed
-   * {@link FunctionId} that `schedule` and friends take - so a call site never
-   * hand-writes the id of a function it already holds a reference to.
-   */
+  /** The typed id (`<ns>:<name>`) of a function in this pack. */
   idOf(ref: FunctionRef): FunctionId {
     return FunctionId(`${this.name}:${ref.getName()}`);
   }
 
   /**
-   * Escape hatch for data types without a typed builder yet (custom dimensions,
-   * worldgen, damage types, enchantments, chat types, dialogs, ...): write `json`
-   * verbatim to `data/<ns>/<folder>/<name>.json`. `folder` is the registry path
-   * (e.g. `"dimension"`, `"worldgen/configured_feature"`, `"damage_type"`).
+   * Escape hatch for data types without a builder: writes `json` to
+   * `data/<ns>/<folder>/<name>.json`.
    */
   registryFile(folder: string, name: string, json: unknown): void {
     this.registryFiles.set(`${folder}/${name}`, json);
@@ -308,21 +255,17 @@ export class DatapackResources extends DatapackCore {
   }
 
   // --- Resource pack (assets/) --------------------------------------------
-  // Emitted by writeResourcePack, NOT writeDatapack - a resource pack is a
-  // separate Minecraft pack with its own pack.mcmeta and output folder.
+  // Written by writeResourcePack, not writeDatapack; a resource pack is a separate pack.
 
   /**
-   * Register a {@link Model} as `assets/<ns>/models/item/<name>.json` and (on
-   * 1.21.4+) its item definition `assets/<ns>/items/<name>.json`, returning a
-   * {@link ModelRef} (`<ns>:name`) to attach with `Item.X.model(ref)`. Pass
-   * `legacyModelData` to also work on versions predating the `item_model`
-   * component (they reference the model by that `custom_model_data` number).
-   * Re-registering the same name with a different {@link Model} throws.
+   * Registers a {@link Model} and (1.21.4+) its item definition, returning a ref for
+   * `Item.X.model(ref)`.
+   * `legacyModelData` also supports versions before `item_model`. A different model under
+   * the same name throws.
    */
   model(name: string, def: Model, legacyModelData?: number): ModelRef {
     this.registerDef(this.models, "Model", name, def);
-    // The item definition is the flat single-model case of the full union; register
-    // it through the same path a rich `itemDefinition` uses so codegen has one source.
+    // Register through `itemDefinition` so codegen has one source.
     return this.itemDefinition(
       name,
       ItemModel.model(`${this.name}:item/${name}`),
@@ -337,15 +280,12 @@ export class DatapackResources extends DatapackCore {
   }
 
   /**
-   * Register a full typed {@link ItemModel} as the item definition
-   * `assets/<ns>/items/<name>.json` (1.21.4+), returning a {@link ModelRef}
-   * (`<ns>:name`) to attach with `Item.X.model(ref)`. This is the rich sibling of
-   * {@link model}: use it for the branching item-model arms (`condition`, `select`,
-   * `range_dispatch`, `composite`, `special`) and `tints`; `model` is the flat case.
-   * The `ItemModel`'s model references must point at models emitted by
-   * {@link model}/{@link blockModel} or shipped via {@link addAssets}. Pass
-   * `legacyModelData` to also work on versions predating the `item_model` component.
-   * Re-registering the same name with a different definition throws.
+   * Registers a full {@link ItemModel} item definition (1.21.4+) and returns a ref for
+   * `Item.X.model(ref)`.
+   *
+   * For branching models and tints; {@link model} is the simple case. Referenced models
+   * must come
+   * from {@link model}, {@link blockModel} or {@link addAssets}.
    */
   itemDefinition(
     name: string,
@@ -355,8 +295,7 @@ export class DatapackResources extends DatapackCore {
   ): ModelRef {
     const def: ItemDefinition = { model, options };
     const existing = this.itemDefinitions.get(name);
-    // Guard by rendered value (not reference): `model()` builds a fresh wrapper each
-    // call, so an idempotent re-register of the same content must still be allowed.
+    // Compare rendered JSON, since `model()` builds a new wrapper each call.
     if (existing && JSON.stringify(serializeItemDef(existing)) !== JSON.stringify(serializeItemDef(def))) {
       throw new Error(`Item definition "${name}" already registered with a different definition`);
     }
@@ -369,12 +308,7 @@ export class DatapackResources extends DatapackCore {
     return this.itemDefinitions;
   }
 
-  /**
-   * Register a block {@link Model} as `assets/<ns>/models/block/<name>.json` and
-   * return a {@link ModelRef} (`<ns>:block/<name>`) to reference from a
-   * {@link BlockState} variant. No item definition (blocks aren't items).
-   * Re-registering the same name with a different model throws.
-   */
+  /** Registers a block {@link Model} and returns a ref for {@link BlockState} variants. */
   blockModel(name: string, def: Model): ModelRef {
     this.registerDef(this.blockModels, "Block model", name, def);
     return new ModelRef(`${this.name}:block/${name}`);
@@ -386,10 +320,8 @@ export class DatapackResources extends DatapackCore {
   }
 
   /**
-   * Register a {@link BlockState} overriding the appearance of an existing block
-   * (`block` is a block id - namespace defaults to `minecraft:`, since blockstate
-   * files target real block ids), emitted as `assets/<ns>/blockstates/<path>.json`.
-   * Re-registering the same block with a different definition throws.
+   * Overrides an existing block's appearance. `block` defaults to the `minecraft:`
+   * namespace.
    */
   blockState(block: string, def: BlockState): void {
     const id = normalizeId(block);
@@ -406,9 +338,8 @@ export class DatapackResources extends DatapackCore {
   }
 
   /**
-   * Escape hatch for resource-pack files without a typed builder yet (sounds.json,
-   * fonts, blockstates, atlases, …): write `json` verbatim to
-   * `assets/<ns>/<folder>/<name>.json`. Mirrors {@link registryFile} on the data side.
+   * Escape hatch for resource pack files without a builder: writes `json` to
+   * `assets/<ns>/<folder>/<name>.json`.
    */
   resourceFile(folder: string, name: string, json: unknown): void {
     this.resourceFiles.set(`${folder}/${name}`, json);
@@ -420,11 +351,8 @@ export class DatapackResources extends DatapackCore {
   }
 
   /**
-   * Ship every file under `dir` (recursively) verbatim into the resource pack's
-   * `assets/` tree, preserving subfolders - for pre-made models, textures, and
-   * assets from an existing pack (e.g. custom blocks). Mirrors {@link addStructures};
-   * copied at {@link Datapack.writeResourcePack} time. `dir` should contain a
-   * `<ns>/…` (or `minecraft/…`) layout as it will sit directly under `assets/`.
+   * Copies every file under `dir` into the resource pack's `assets/`, keeping subfolders.
+   * `dir` should contain `<ns>/…` folders.
    */
   addAssets(dir: string): this {
     this.assetDirs.push(dir);

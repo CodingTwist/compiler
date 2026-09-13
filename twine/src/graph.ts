@@ -31,9 +31,8 @@ function resolve(ref: ModuleRef): { instance: DatapackModule; meta: ModuleMetada
 }
 
 /**
- * Depth-first, de-duplicated walk building the module graph. A reference imported
- * by several parents is built once; two separate `Door(...)` calls stay distinct.
- * Modules whose `env` excludes the active build are pruned with their subtree.
+ * Builds the module graph depth-first. A shared import is built once; separate `Door(...)`
+ * calls stay separate. Modules excluded by `env` are pruned with their subtree.
  */
 export function buildGraph(root: ModuleRef, env: BuildEnv): Graph {
   const nodes = new Map<ModuleRef, Node>();
@@ -56,15 +55,7 @@ export function buildGraph(root: ModuleRef, env: BuildEnv): Graph {
   return { root, nodes, order };
 }
 
-/**
- * Each area's *effective* dimension: its own `dimension`, or the nearest
- * ancestor that names one (an area inherits the dimension of the area it sits
- * inside). Resolved root-down so a child sees the value already computed for its
- * parent; where a ref is reached through several parents the first walk wins,
- * matching the identity de-duplication in {@link buildGraph}. Returns the map
- * for every reachable node - `undefined` for anything with no dimension in its
- * ancestry, which is left running wherever its caller runs, exactly as before.
- */
+/** Each module's dimension: its own, or the nearest ancestor's. `undefined` if none. */
 export function resolveDimensions(graph: Graph): Map<ModuleRef, Id | undefined> {
   const dims = new Map<ModuleRef, Id | undefined>();
   const walk = (ref: ModuleRef, inherited: Id | undefined): void => {
@@ -79,10 +70,9 @@ export function resolveDimensions(graph: Graph): Map<ModuleRef, Id | undefined> 
 }
 
 /**
- * Memoized: does `ref` need any per-tick work emitted? True if it has an
- * `onTick`, any `@On` handler (each is a poll), if it's a **triggered area**
- * (its detector must run), or if any included descendant needs ticking. Lets a
- * whole subtree with nothing to do be skipped - no empty guard lines.
+ * Memoized: does `ref` need any tick output? True for `onTick`, `@On` handlers, triggered
+ * areas,
+ * or any descendant that does. Lets empty subtrees be skipped.
  */
 export function needsTickMemo(graph: Graph): (ref: ModuleRef) => boolean {
   const cache = new Map<ModuleRef, boolean>();

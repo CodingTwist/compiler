@@ -169,7 +169,7 @@ const bad2 = (f: () => void) => {
 };
 
 describe("math`` backends", () => {
-  // grapple's rope constraint, the formula this whole layer exists for:
+  // The grapple rope constraint:
   //   coef = −dot + min((dist² − ropeLen²) / BAUM_DIV, baumMax)
   const coef = () =>
     math`-${sc("dot")} + min((${sc("dist_sq")} - ${sc("rope_len_sq")}) / ${sc("baum_div")}, ${sc("baum_max")})`.into(
@@ -269,8 +269,7 @@ describe("math`` backends", () => {
   });
 
   it("makes a fractional literal float, so the coefficient survives", () => {
-    // `* 0.5` used to emit `0.5` as an integer constant - a provider the server
-    // rejects, and `scoreboard players set … 0.5` below 26.3.
+    // `* 0.5` used to emit `0.5` as an integer constant, which the server rejects.
     const [line] = emit(
       () => math`${sc("a")} * 0.5 + 1`.into(sc("d")),
       v26_3_rc_2,
@@ -340,8 +339,7 @@ describe("math`` backends", () => {
     );
     expect(litMsg).toContain("0.5");
     expect(litMsg).toContain(v1_21_4.id);
-    // The `+`/`-` literal shortcut is the other path into `scoreboard players
-    // add`, and it has to refuse a fraction too.
+    // The `+`/`-` literal shortcut must reject fractions too.
     expect(
       msg(() => emit(() => math`${sc("a")} + 0.5`.into(sc("d")), v1_21_4)),
     ).toContain("0.5");

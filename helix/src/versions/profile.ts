@@ -1,18 +1,14 @@
 import { BrigadierNode } from "../core/commandtree/tree";
 
 /**
- * How a version expresses its pack format in pack.mcmeta.
- * Older versions use a single scalar `pack_format`; newer versions use a
- * min/max range and reject the scalar form.
+ * How pack.mcmeta expresses the pack format: a single number (older) or a min/max range
+ * (newer).
  */
 export type PackFormatSpec =
   | { kind: "scalar"; value: number }
   | { kind: "range"; min: [number, number]; max: [number, number] };
 
-/**
- * The set of resource-location ids a version knows about, per registry.
- * Used by handlers to validate authored ids against the target version.
- */
+/** Known ids per registry for a version, for validating authored ids. */
 export interface RegistrySet {
   items: ReadonlySet<string>;
   blocks: ReadonlySet<string>;
@@ -23,10 +19,7 @@ export interface RegistrySet {
   enchantments: ReadonlySet<string>;
 }
 
-/**
- * The Brigadier command tree (commands.json root). Typed loosely for now via
- * the shared commandtree model; tightened/queried in Phase 6.
- */
+/** The Brigadier command tree (commands.json root). */
 export type CommandTree = BrigadierNode;
 
 export interface VersionProfile {
@@ -37,9 +30,9 @@ export interface VersionProfile {
   /** The datapack `pack_format` for this version's `pack.mcmeta`. */
   pack: PackFormatSpec;
   /**
-   * The resource-pack `pack_format` - distinct from {@link pack} (e.g. 1.21.4 is
-   * data 61 / resource 46). Used by `writeResourcePack`'s `pack.mcmeta`. Falls
-   * back to the data format on versions predating a separate resource format.
+   * The resource pack format, separate from {@link pack} (e.g. 1.21.4 is data 61, resource
+   * 46).
+   * Falls back to the data format on older versions.
    */
   resourcePack: PackFormatSpec;
   paths: {
@@ -65,10 +58,8 @@ export interface VersionProfile {
     worldgen: string;
   };
   /**
-   * Whether this version uses the 1.21 singular registry-folder convention
-   * (`tags/block`, `function`, …) vs the pre-1.21 plural one (`tags/blocks`,
-   * `functions`, …). Drives registry-tag folder names where the registry id
-   * itself pluralizes; the fixed folders above are pre-resolved in `paths`.
+   * Whether this version uses 1.21's singular folder names (`tags/block`) or the older
+   * plural ones.
    */
   singularFolders: boolean;
   registries: RegistrySet;

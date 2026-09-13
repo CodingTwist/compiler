@@ -2,9 +2,7 @@ import { normalizeId } from "../../versions/registry";
 import { CommandValue } from "./value";
 
 /**
- * A namespaced resource location (`resource_location`, `resource`,
- * `loot_table`, `dimension`, `particle`, `function`, ...). Defaults the
- * namespace to `minecraft:` and supports tag form (`#...`).
+ * A namespaced id. Defaults to `minecraft:`, supports `#tags`.
  *
  *   Id("overworld")  -> "minecraft:overworld"
  *   Id("#logs")      -> "#minecraft:logs"

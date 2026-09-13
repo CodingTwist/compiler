@@ -16,10 +16,8 @@ function blockStr(x: string | BlockValue): string {
 }
 
 /**
- * The rendered body of an `entity_properties` condition for `spec` - reuses
- * {@link Predicate.entity}'s rendering so a trigger's entity/location checks
- * stay in lockstep with predicate files (same slot names, same location
- * shape), instead of re-deriving that JSON here.
+ * The `entity_properties` body for `spec`, reusing {@link Predicate.entity} so triggers
+ * match predicate files.
  */
 function entityPredicateJson(
   spec: EntityPredicateSpec,
@@ -30,10 +28,7 @@ function entityPredicateJson(
 }
 
 /**
- * One advancement **trigger** with its conditions, built from typed concepts (no
- * hand-written JSON). The conditions are sourced from the same {@link ItemValue}
- * you'd `give`, so an item's "fires when used/attacked with" check matches the
- * exact item that was granted - one definition, like {@link Predicate}.
+ * One advancement trigger with typed conditions.
  *
  *   Trigger.usingItem(wand)          // right-click / use of the item
  *   Trigger.playerHurtEntity(wand)   // attacked something while holding it
@@ -46,10 +41,7 @@ export class Trigger {
     return this.builder(version);
   }
 
-  /**
-   * `minecraft:using_item` - fires while the player is using `item` (right-click
-   * on a usable item). The `item` condition is the item's own predicate form.
-   */
+  /** `minecraft:using_item`: fires while the player uses `item`. */
   static usingItem(item: ItemValue): Trigger {
     return new Trigger((v) => ({
       trigger: "minecraft:using_item",
@@ -58,10 +50,8 @@ export class Trigger {
   }
 
   /**
-   * `minecraft:player_hurt_entity` - fires when the player damages an entity
-   * while holding `item` in `slot` (default main hand). The held-item gate reuses
-   * {@link Predicate.holding}, so "attacked with this item" matches the same way
-   * "holding this item" does.
+   * `minecraft:player_hurt_entity`: fires when the player damages an entity while holding
+   * `item`.
    */
   static playerHurtEntity(item: ItemValue, slot: "mainhand" | "offhand" = "mainhand"): Trigger {
     return new Trigger((v) => ({
@@ -71,11 +61,8 @@ export class Trigger {
   }
 
   /**
-   * `minecraft:location` - fires when the player is at a location matching
-   * `spec` (dimension / position bounds / biome / structure / block). Renders
-   * through the same {@link EntityPredicateSpec.location} path as a predicate
-   * file's `location_check`, so a "step into this box" trigger and a "check
-   * they're still in this box" predicate can share one {@link LocationSpec}.
+   * `minecraft:location`: fires when the player is at a location matching `spec`.
+   * Shares {@link LocationSpec} with predicates.
    */
   static location(spec: LocationSpec): Trigger {
     return new Trigger((v) => ({
@@ -101,8 +88,8 @@ export class Trigger {
   }
 
   /**
-   * `minecraft:player_killed_entity` - fires when the player kills an entity
-   * matching `spec` (type / nbt / flags / ...). Omit `spec` to match any kill.
+   * `minecraft:player_killed_entity`: fires on killing an entity matching `spec` (any if
+   * omitted).
    */
   static playerKilledEntity(spec?: EntityPredicateSpec): Trigger {
     return new Trigger((v) => ({
@@ -111,10 +98,7 @@ export class Trigger {
     }));
   }
 
-  /**
-   * `minecraft:placed_block` - fires when the player places `block`,
-   * optionally gated to a `location_check` on where it landed.
-   */
+  /** `minecraft:placed_block`: fires when the player places `block`, optionally at `at`. */
   static placedBlock(block: string | Id, at?: LocationSpec): Trigger {
     return new Trigger((v) => {
       const conditions: Record<string, unknown> = { block: idStr(block) };
@@ -142,12 +126,7 @@ export class Trigger {
 /** `display.frame` - the advancement's toast/tree shape. */
 export type AdvancementFrame = "task" | "goal" | "challenge";
 
-/**
- * The typed shape of an advancement's `display` block. `title`/`description`
- * accept the same plain-or-styled {@link TextComponent} shape as
- * `ItemValue.named`; `icon` is any {@link ItemValue} (only its base id is
- * used - components on it are ignored, matching vanilla's icon rendering).
- */
+/** An advancement's `display` block. Only `icon`'s base id is used, as in vanilla. */
 export interface AdvancementDisplay {
   title: TextComponent;
   description: TextComponent;
@@ -161,14 +140,9 @@ export interface AdvancementDisplay {
 }
 
 /**
- * A registerable advancement, built from typed {@link Trigger}s plus an optional
- * **reward function**. Renders to the JSON written into
- * `data/<ns>/<advancement folder>/<name>.json` (via {@link Datapack.advancement}).
+ * An advancement built from {@link Trigger}s plus an optional reward function.
  *
- * The common shape is a *hidden trigger* advancement - no `display`, no `parent`,
- * one criterion, a `rewards.function`. The reward function typically runs some
- * behaviour and then `advancement revoke @s only <this>` to re-arm, giving an
- * event handler that fires once per occurrence.
+ * Usually hidden, with one criterion and a reward that revokes it to re-arm:
  *
  *   dp.advancement("zzz/item/wand/on_attack",
  *     Advancement().criterion("trigger", Trigger.playerHurtEntity(wand))
@@ -180,7 +154,7 @@ export class AdvancementDef {
   private parentId?: string;
   private displaySpec?: AdvancementDisplay;
 
-  /** Add a named criterion (its trigger). Default requirements (all criteria) apply. */
+  /** Adds a named criterion. */
   criterion(name: string, trigger: Trigger): this {
     this.criteria[name] = trigger;
     return this;

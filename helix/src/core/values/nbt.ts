@@ -2,9 +2,8 @@ import { VersionProfile } from "../../versions/profile";
 import { CommandValue } from "./value";
 
 /**
- * A JS value the SNBT serializer understands: primitives, arrays, plain
- * objects, typed-number wrappers (see {@link Float} et al.), or any
- * `CommandValue` (rendered verbatim and inlined - e.g. a {@link BlockValue}).
+ * Values the SNBT serializer accepts: primitives, arrays, objects, typed numbers, or any
+ * `CommandValue`.
  */
 export type NbtInput =
   | string
@@ -17,9 +16,8 @@ export type NbtInput =
   | { [key: string]: NbtInput };
 
 /**
- * A number carrying an explicit SNBT type suffix (`0.0f`, `64b`, `1l`, ...).
- * JS has only one number type, so floats/bytes/longs must be tagged to
- * round-trip correctly. Use the {@link Float}/{@link Double}/… helpers.
+ * A number with an SNBT type suffix (`0.0f`, `64b`…). Use {@link Float}, {@link Double} and
+ * friends.
  */
 export class NbtNum {
   constructor(
@@ -47,10 +45,7 @@ export const Short = (n: number): NbtNum => new NbtNum(n, "s");
 /** `1l` - a long. */
 export const Long = (n: number): NbtNum => new NbtNum(n, "l");
 
-/**
- * `[I;1,2,3]` - an int array, which SNBT spells differently from a plain list. UUIDs and
- * block positions are stored this way.
- */
+/** `[I;1,2,3]`: an int array, used for UUIDs and block positions. */
 export class NbtIntArray {
   constructor(private readonly values: readonly number[]) {}
   render(): string {
@@ -62,23 +57,14 @@ export const IntArray = (values: readonly number[]): NbtIntArray => new NbtIntAr
 
 const BARE_KEY = /^[A-Za-z0-9_.+-]+$/;
 
-/**
- * Control characters with their own short SNBT escape, per vanilla's own
- * `SnbtGrammar.escapeControlCharacters` (26.1.2) - anything else below 0x20
- * falls back to a `\xHH` hex escape there, and the same fallback is used
- * below.
- */
+/** Control characters with short SNBT escapes, matching vanilla; others use `\xHH`. */
 const CONTROL_ESCAPE: Readonly<Record<number, string>> = {
   8: "b", 9: "t", 10: "n", 12: "f", 13: "r",
 };
 
 /**
- * A literal control character (a raw `\n` from {@link pageLines}, say)
- * cannot survive unescaped: SNBT source is read one physical line at a time,
- * so an un-escaped newline would split a single command's SNBT across two
- * lines and fail to parse, not just render oddly. Escaping every control
- * character the way vanilla's own SNBT writer does (`StringTag.quoteAndEscape`)
- * keeps the source on one line while decoding back to the real character.
+ * Quotes a string, escaping control characters like vanilla does.
+ * An unescaped newline would split the command across lines and fail to parse.
  */
 function quote(s: string): string {
   return `"${s.replace(/[\\"\x00-\x1f]/g, (ch) => {
@@ -99,13 +85,8 @@ function isCommandValue(x: unknown): x is CommandValue {
 }
 
 /**
- * An embedded value's rendering, quoted if SNBT wouldn't accept it bare.
- *
- * A `CommandValue` renders to *command-line* syntax, where an id is written
- * bare - but SNBT only allows `[A-Za-z0-9_.+-]` unquoted, so an inlined
- * `EntityType.ENDERMAN` would emit `id:minecraft:enderman` and fail to parse on
- * the colon. Compounds and lists (an item stack, a position) are already
- * structure rather than a string, and are left exactly as rendered.
+ * Quotes an embedded value if SNBT won't accept it bare, e.g. an id with a colon.
+ * Compounds and lists are left as rendered.
  */
 function embed(rendered: string): string {
   if (rendered.startsWith("{") || rendered.startsWith("[")) return rendered;
@@ -130,9 +111,7 @@ export function toSnbt(value: NbtInput, version: VersionProfile): string {
 }
 
 /**
- * SNBT (`nbt_tag` / `nbt_compound_tag`). Either raw, rendered verbatim, or a
- * structured JS value serialized at codegen (so embedded version-aware values
- * like blocks render correctly):
+ * SNBT, either a raw string or a JS value serialized at codegen:
  *
  *   Nbt('{NoAI:1b}')                 -> "{NoAI:1b}"
  *   Nbt({ NoAI: Byte(1) })           -> "{NoAI:1b}"
@@ -161,12 +140,7 @@ export class NbtPathValue implements CommandValue {
     return this.path;
   }
 
-  /**
-   * Index into a list tag: `Path.Entity.Pos.index(1)` -> `Pos[1]`. Returns a new
-   * path, so the curated constants in `Path.*` stay shared - and an axis of a
-   * `Pos`/`Motion` list is addressed as a path concept rather than a template
-   * literal.
-   */
+  /** Indexes into a list: `Path.Entity.Pos.index(1)` -> `Pos[1]`. Returns a new path. */
   index(i: number): NbtPathValue {
     return new NbtPathValue(`${this.path}[${i}]`);
   }

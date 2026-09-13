@@ -6,9 +6,8 @@ export function normalizeId(id: string): string {
 }
 
 /**
- * Validate a resource-location id against one of the target version's
- * registries. Returns the normalized id, or throws naming the version if the
- * id is unknown.
+ * Checks an id against a version's registry. Returns the normalized id, or throws naming
+ * the version.
  */
 export function validateRegistryId(
   version: VersionProfile,

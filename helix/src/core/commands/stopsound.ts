@@ -7,7 +7,10 @@ import { Selector } from "../frontend/nodes/selector";
 
 /** `stopsound` */
 export class StopsoundBuilder extends CommandBuilder<TreeCommandNode> {
-  /** `stopsound <targets> * [sound]` - every category at once (the source-argument wildcard, hand-added: the generator's endpoint walk doesn't produce a method for a bare `*` literal branch). */
+  /**
+   * `stopsound <targets> * [sound]`: every category. Hand-added; the generator skips bare
+   * `*` branches.
+   */
   any(targets: Selector, sound?: SoundEvent): this {
     this.$set(litPart("stopsound"), argPart(targets), litPart("*"));
     if (sound !== undefined) this.$append(argPart(sound));

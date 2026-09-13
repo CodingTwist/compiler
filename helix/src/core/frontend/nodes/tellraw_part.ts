@@ -3,8 +3,7 @@ import { ClickEvent } from "./click";
 import { HoverEvent } from "./hover";
 
 /**
- * The style fields a text component carries. Keys map **1:1** to the vanilla
- * text-component fields, so codegen just spreads this object onto the JSON.
+ * Text component style fields. Keys match vanilla's, so codegen spreads them into the JSON.
  */
 export interface TextStyle {
   bold?: boolean;
@@ -21,10 +20,7 @@ export abstract class TellrawPart {
   public clickEvent?: ClickEvent;
   public hoverEvent?: HoverEvent;
 
-  /**
-   * Colour this span. Prefer the typed `Color.GOLD`; a raw `#RRGGBB` hex string
-   * is also accepted for custom colours.
-   */
+  /** Colours this span. Prefer `Color.GOLD`; `#RRGGBB` also works. */
   color(color: Color | `#${string}`): this {
     this.style.color = color;
     return this;

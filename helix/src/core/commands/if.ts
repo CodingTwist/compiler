@@ -22,8 +22,7 @@ export interface IfBuilder {
   else(fn: (ctx: FunctionContext) => void): void;
 }
 
-// The score *expression* sublanguage (conditions for `if` / selector scoring).
-// Not commands and have no handler of their own; the `if` handler reads them.
+// Score conditions for `if` and selector scores. Not commands; the `if` handler reads them.
 export class ScoreCompareNode extends ExpressionNode {
   type = "score_compare";
 
@@ -60,9 +59,8 @@ export class PredicateCheckNode extends ExpressionNode {
 }
 
 /**
- * A condition that passes when a registered {@link Predicate} passes, for use
- * with `ctx.if(...)`. Accepts a {@link PredicateRef} (from `dp.predicate(...)`),
- * an {@link Id}, or a raw id string - compiles to `execute if predicate <id>`.
+ * A condition that passes when a {@link Predicate} passes, for `ctx.if(...)`.
+ * Compiles to `execute if predicate <id>`.
  */
 export function predicateCheck(ref: PredicateRef | Id | string): PredicateCheckNode {
   const id =
@@ -131,13 +129,9 @@ export class IfHandler extends CommandHandler<IfElseNode> {
   }
 
   /**
-   * A `thenBody` that is *just* one more guard (a plain if with no elif/else,
-   * or an entity guard from `whenEntity`/`whenPlayerNear`) is a pure chain
-   * link, not a real nested block - Minecraft's `execute` allows multiple
-   * `if`/`unless` clauses before a single `run`, so fold the inner condition
-   * in and recurse instead of emitting `execute ... run execute ...`. Folded
-   * bodies never reach `generateRunTarget`, so no intermediate function/file
-   * is created for them.
+   * Folds a body that is just another guard into this chain, so it emits one `execute … if
+   * … if … run`
+   * instead of `execute … run execute …`. No extra function is created.
    */
   private emitBodyChain(
     ctx: CodegenContext,
@@ -160,11 +154,9 @@ export class IfHandler extends CommandHandler<IfElseNode> {
   }
 
   /**
-   * Same folding, but past an `EntityGuardNode` there's no `FunctionNode`
-   * wrapper any more (its `command` is a single bare `ASTNode`) - so once a
-   * chain descends this far, a non-foldable terminal renders via
-   * `generateSingleNode` (one line only) instead of `generateRunTarget`,
-   * matching `EntityGuardHandler`'s own pre-existing single-line assumption.
+   * Same folding past an `EntityGuardNode`, whose command is a single node, so the terminal
+   * renders
+   * with `generateSingleNode`.
    */
   private emitNodeChain(
     ctx: CodegenContext,
@@ -216,13 +208,9 @@ export class IfHandler extends CommandHandler<IfElseNode> {
   }
 
   /**
-   * The first link is tree-validated normally. Past it, the matches/compare/
-   * entity argument redirects back to `execute` (so a second `if`/`unless` is
-   * valid Minecraft grammar) but the token validator doesn't follow redirects
-   * - same situation as `at_entity.ts`/`near_guard.ts`, so the rest of the
-   * chain goes out as `raw`, with each link's values still rendered through
-   * the typed `ScoreTarget`/`Objective`/`Selector` classes, never hand-built
-   * strings.
+   * The first link is validated; the rest are `raw` because the validator can't follow
+   * execute's
+   * redirects. Values still render through their typed classes.
    */
   private execChain(
     ctx: CodegenContext,
@@ -352,9 +340,8 @@ export class IfHandler extends CommandHandler<IfElseNode> {
 }
 
 /**
- * One link in a chained `execute`: a score condition, an entity guard
- * (`if`/`unless entity`), or a near-player guard (`positioned ... if/as
- * entity ... [unless entity ...]`, from `whenPlayerNear`).
+ * One link in an `execute` chain: a score condition, an entity guard, or a near-player
+ * guard.
  */
 type ChainLink =
   | { kind: "score"; mode: "if" | "unless"; cond: ExpressionNode }

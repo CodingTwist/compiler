@@ -1,9 +1,7 @@
-// The disk-writing half of codegen. Everything here touches `fs`/`path` (and,
-// via structure.ts, `zlib`) - it is deliberately the ONLY codegen module that
-// imports Node built-ins, so `codegen.ts` (buildDatapack/buildResourcePack) and
-// the whole authoring import graph stay pure and browser-safe. Consumers reach
-// this only through `dp.writeDatapack()` / `dp.writeResourcePack()`, which
-// dynamic-import it lazily, so importing the compiler never pulls Node built-ins.
+// Writes packs to disk. The only codegen module that imports Node built-ins, so the rest
+// stays
+// browser-safe. Reached through `dp.writeDatapack()` / `dp.writeResourcePack()`, which
+// import it lazily.
 import fs from "fs";
 import path from "path";
 import { Datapack } from "../ir/datapack";
@@ -19,10 +17,8 @@ export function writeDatapack(dp: Datapack, outDir: string, opts?: { zip?: boole
     return;
   }
 
-  // Everything under `data/<ns>/` is fully owned by this call, so anything there
-  // that this build did not produce (a renamed advancement, a moved function)
-  // is deleted - but unchanged files are left alone, so a rebuild touches only
-  // what changed instead of rewriting the whole tree.
+  // This build owns `data/<ns>/`: files it didn't produce are deleted, unchanged files are
+  // left alone.
   syncFiles(outDir, collectDatapackFiles(dp), [path.join("data", dp.name)]);
   if (!sourceMapJson(dp)) {
     // a stale map from a debug build would lie
@@ -31,9 +27,9 @@ export function writeDatapack(dp: Datapack, outDir: string, opts?: { zip?: boole
 }
 
 /**
- * Write `files` (path relative to `outDir` → bytes), skipping any whose on-disk
- * content already matches, then delete every file under the `owned` folders
- * that `files` does not name (and the directories that leaves empty).
+ * Writes `files` (skipping unchanged ones), then deletes anything under `owned` that
+ * `files`
+ * doesn't list, plus empty directories.
  */
 function syncFiles(outDir: string, files: Map<string, Buffer>, owned: string[]) {
   const stale = new Set<string>();
@@ -66,8 +62,8 @@ function pruneEmptyDirs(dir: string) {
 export const SOURCE_MAP_FILE = "helix-sources.json";
 
 /**
- * `{ "<function>": { "<1-based .mcfunction line>": "<file>:<line>:<col>" } }`, or
- * `undefined` unless the pack was built with `debug.sources`/`comments`.
+ * `{ "<function>": { "<line>": "<file>:<line>:<col>" } }`, or `undefined` without debug
+ * sources.
  */
 function sourceMapJson(dp: Datapack): string | undefined {
   if (!dp.debug.sources && !dp.debug.comments) return undefined;
@@ -82,11 +78,7 @@ function sourceMapJson(dp: Datapack): string | undefined {
   return JSON.stringify(out, null, 2);
 }
 
-/**
- * Everything a loose-file `writeDatapack` would put on disk (generated JSON,
- * copied `.nbt` structures incl. derived `_clear` variants, `pack.mcmeta`),
- * collected in memory instead - shared by the zip branch above.
- */
+/** Everything `writeDatapack` would write, in memory. Used for zip output. */
 function collectDatapackFiles(dp: Datapack): Map<string, Buffer> {
   const files = new Map<string, Buffer>();
 
@@ -125,13 +117,11 @@ function collectDatapackFiles(dp: Datapack): Map<string, Buffer> {
 export function writeResourcePack(dp: Datapack, outDir: string) {
   const files = buildResourcePack(dp);
 
-  // `pack.mcmeta` below is written straight into outDir, and the per-file loop
-  // only creates it as a side effect - so a pack with no models/assets at all
-  // would never create it. Ensure it up front.
+  // Create outDir up front; a pack with no models or assets wouldn't otherwise create it.
   fs.mkdirSync(outDir, { recursive: true });
 
-  // The generated model/item trees are fully owned: anything there this build
-  // did not produce is removed; copied assets and other namespaces are untouched.
+  // Generated model and item folders are owned: stale files are removed. Copied assets are
+  // untouched.
   syncFiles(
     outDir,
     new Map([...files].map(([p, c]) => [p, Buffer.from(c, "utf-8")])),
@@ -149,8 +139,7 @@ export function writeResourcePack(dp: Datapack, outDir: string) {
 }
 
 /**
- * Copy every file under each registered `addAssets` dir into the resource pack's
- * `assets/` tree, preserving subfolders (any extension - models, `.png`, …).
+ * Copies each `addAssets` directory into the resource pack's `assets/`, keeping subfolders.
  */
 function copyAssets(dp: Datapack, outDir: string) {
   for (const dir of dp.assetSources) {
@@ -180,15 +169,9 @@ function walkFiles(root: string, prefix = ""): string[] {
 
 /** Relative paths of every `.nbt` file under `root`, recursing into subfolders. */
 /**
- * The `/place template` names this pack will actually ship - every `.nbt` under
- * every directory registered with {@link Datapack.addStructures}, relative and
- * extension-stripped, exactly as {@link writeDatapack} will emit them (`cog.nbt`
- * in a source dir -> `cog`, so the id is `<ns>:cog`).
+ * The `/place template` names this pack will ship, e.g. `cog.nbt` becomes `cog`.
  *
- * Reading the set back off the datapack rather than off a path constant lets a
- * consumer validate its own references against the same set the build copies - a
- * level naming a template that was never staged can fail the build instead of
- * failing silently in-game as an empty room.
+ * Lets consumers check their template references against what the build actually copies.
  */
 export function shippedStructureNames(dp: Datapack): Set<string> {
   const names = new Set<string>();

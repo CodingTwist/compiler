@@ -1,36 +1,23 @@
-// The environment-agnostic public surface of helix - everything that is safe to
-// import in any runtime (no Node built-ins on its import graph). Both entry
-// points build on this: `index.ts` (Node) adds the eager version constants and
-// `validateDatapack`; `browser.ts` adds only the pure `profileFromRaw`. Keeping
-// the shared surface here means the two entries can't drift.
+// The public API safe in any runtime. `index.ts` and `browser.ts` both build on it so they
+// can't drift.
 export { Datapack } from "./core/ir/datapack";
 export { type RuntimeTarget } from "./core/ir/target";
 export * from "./core/ir/node";
 export * from "./core/frontend/";
 
-// The concept value library (Pos, Block, Item, Display, Id, Nbt, ...) and the
-// Selector builder are part of the authoring surface: downstream packages build
-// packs with these, so they belong in the public API rather than reached for via
-// deep `dist/core/...` paths.
+// Value classes and Selector, for building packs.
 export * from "./core/values";
 export { Selector, SelectorScore, type SelectorBase } from "./core/frontend/nodes/selector";
-// `Objective` exists both as the builder class (frontend) and a `string` alias
-// (values/enums); the builder is the one downstream packages author with.
+// The builder `Objective`, not the string alias in values/enums.
 export { Objective, usedStatCriteria, type ObjectiveKind } from "./core/frontend/nodes/objective";
-// Animation mechanics (Clip/Slide/DisplayEffect) live in the `spool` package,
-// not the core: they're composed AST-building conveniences over this public API, not
-// part of the AST→IR→codegen engine. The core only exposes the timing *contract* they
-// share with the IR scheduler (`dp.timing`).
+// Animation lives in `spool`; the core only exposes the timing contract.
 export { FOREVER, TICKS_PER_SECOND, type Countdown } from "./core/timing/scoreboard-timing";
 export type { FunctionRef } from "./core/function_ref";
-// Codegen entry: turn a built `Datapack` into a path→contents map (consumers usually
-// call `dp.writeDatapack(dir)`; this is the in-memory form for tests/inspection).
+// Builds a `Datapack` into a path → contents map, without writing to disk.
 export { buildDatapack } from "./core/codegen/codegen";
-// Where compiler-/engine-generated helper functions are tucked so they sort away
-// from authored entry points; the spool clip/cutscene engine routes its names through this.
+// Where generated helper functions live.
 export { PRIVATE_ROOT, privateChild, privateName } from "./core/private-fn";
-// Per-tick cost analysis (`dp.report()` / `dp.printReport()`): worst-case
-// commands/tick and unbounded `@e` scan detection.
+// Per-tick cost analysis (`dp.report()` / `dp.printReport()`).
 export {
   analyzeCost,
   formatCostReport,
@@ -43,8 +30,7 @@ export {
   type LintRule,
   NBT_READ_MIN_PERIOD,
 } from "./core/report/cost-report";
-// Measured profile (`dp.profileReport(raw)`): the helix-profiler mod's JSON lined up
-// with this pack - real time per function/command, mapped back to source.
+// Measured profile report (`dp.profileReport(raw)`).
 export {
   analyzeProfile,
   formatProfileReport,
@@ -58,22 +44,17 @@ export {
   type ProfiledFunction,
   type ProfiledCommand,
 } from "./core/report/profile-report";
-// Debug source tracking (`new Datapack(…, { debug: { sources, comments } })`):
-// map each emitted command back to the TS line that authored it.
+// Debug source tracking: maps emitted commands to TS lines.
 export {
   ignoreSourceFrames,
   type DebugOptions,
   type SourceLoc,
 } from "./core/debug/sources";
-// Command-node factory consumers need for click events etc. (no `new` in consumers).
-// Command-file named exports aren't at the package root by default (the index only
-// side-effect-imports ../commands), so list it explicitly.
+// Exported explicitly since command-file exports aren't at the package root.
 export { triggerCmd } from "./core/commands/trigger";
 
-// Version profile *types* and the pure profile builder are safe everywhere. The
-// eager version constants (`v1_21_4`, …) read data from disk at import time, so
-// they live in the Node entry (`index.ts`) only; the browser builds a profile
-// from fetched JSON via `profileFromRaw`.
+// Profile types and `profileFromRaw` work anywhere; disk-loaded constants are in `index.ts`
+// only.
 export type {
   PackFormatSpec,
   RegistrySet,

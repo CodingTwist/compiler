@@ -3,11 +3,8 @@ import type { FunctionContext } from "helix";
 import type { GrappleConfig, GrappleFunctions, GrappleSelectors, Scratch, StateRepository } from "./state";
 
 /**
- * Particle the rope is drawn from. We redraw the whole line every tick, so the particle
- * must be **short-lived and near-stationary** - otherwise old frames drift off and smear
- * into a cloud (which `end_rod`, floating up over ~3s, did). A short, low-drift spark just
- * refreshes in place each tick and vanishes on release. Kept option-less so it stays a
- * typed `Particle` (no SNBT).
+ * Rope particle. Redrawn every tick, so it must be short-lived and still, or old frames
+ * smear.
  */
 const ROPE_PARTICLE = Particle("electric_spark");
 
@@ -19,19 +16,12 @@ interface RopeDeps {
   fn: GrappleFunctions;
 }
 
-/**
- * The **rope service**: the *visible* rope. A real leash can't be drawn by command, so we
- * march short-lived particles from the player's hand to the anchor instead (no reach cap,
- * always renders). The factory builds the recursive marcher (`grapple/rope`); {@link RopeService.draw}
- * (called each tick by the swing service) aims and fires it for one player.
- */
+/** Draws the visible rope as a line of particles from the hand to the anchor. */
 export function createRopeService(d: RopeDeps) {
   const ropeStep = d.scratch.scalar("rope_step");
 
-  // Build the recursive marcher: one particle here, then - while steps remain and the anchor
-  // isn't reached - step a full block along ^ (still pointed at the anchor) and recurse. A
-  // 1-block spacing keeps the rope readable without flooding the view. The step guard bounds
-  // the recursion to the rope's max length even if the aim is slightly off.
+  // The recursive marcher: a particle, then step a block toward the anchor and recurse.
+  // The step limit stops it if the aim is slightly off.
   d.fn.rope.build((ctx) => {
     ropeStep.remove(1);
     ctx.particle(ROPE_PARTICLE, Pos.here(), Pos(0, 0, 0), 0, 1);
@@ -45,10 +35,8 @@ export function createRopeService(d: RopeDeps) {
 
   return {
     /**
-     * Draw this player's rope for one tick (run **as + at** the player). Tag exactly *this*
-     * player's anchor `grapple._aim` (matched by the shared grapple id, so `facing entity` /
-     * the arrival check can name it - we run per player, so only one is tagged at a time),
-     * then start the marcher at the *hand* and aim it at the anchor, and finally untag.
+     * Draws this player's rope for one tick. Run as and at the player.
+     * Temporarily tags their anchor `grapple._aim` so `facing entity` can target it.
      */
     draw(ctx: FunctionContext): void {
       const ropeId = d.scratch.scalar("rope_id");
@@ -61,9 +49,8 @@ export function createRopeService(d: RopeDeps) {
         .run((b) => b.tag().add(Selector.self(), "grapple._aim"));
 
       ropeStep.set(d.config.maxSteps);
-      // Start at the *hand*, not the eyes: offset down-right and a block forward
-      // (`^-0.4 ^-0.4 ^1`) so the near end clears the first-person camera instead of
-      // smearing particles across the view. Then re-aim ^ at the anchor and hand off.
+      // Start at the hand (`^-0.4 ^-0.4 ^1`) so particles don't cover the first-person
+      // view.
       ctx
         .execute()
         .anchored(EntityAnchor.EYES)

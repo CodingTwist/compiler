@@ -1,15 +1,7 @@
 /**
- * The `clip` plugin and the clip/cutscene timeline **engine** it installs.
+ * The `clip` plugin: installs `dp.clip()` and `dp.cutscene()`.
  *
- * The engine is a generic animation layer over the helix public API: a
- * {@link Clip} is a named timeline of {@link Track}s (display transforms,
- * arbitrary NBT paths, teleport paths) plus timeline events; a {@link Cutscene}
- * composes clips on a shared timeline. It is pure animation - world tricks like
- * block↔display swapping live with the app that needs them, not here.
- *
- * The KitPlugin at the bottom installs the engine onto `dp` as `dp.clip()` /
- * `dp.cutscene()`. The rest of this folder is the engine's private
- * implementation; consumers only touch what this barrel re-exports.
+ * Pure animation. World tricks like block/display swapping belong in the app.
  */
 
 import { Datapack } from "helix";
@@ -42,20 +34,21 @@ export {
 export { secondsToTicks } from "./time";
 
 // --- The plugin ------------------------------------------------------------
-// Importing this module surfaces `dp.clip()`/`dp.cutscene()` to the type-checker;
-// `install()` wires them at runtime.
+// Declares `dp.clip()`/`dp.cutscene()` for the type checker; `install()` adds them at
+// runtime.
 declare module "helix" {
   interface Datapack {
     /**
-     * Start a {@link Clip}: a named animation timeline whose primary track is the
-     * given display model. Chain motion (`.move`/`.spin`/`.scaleTo`/`.rotateTo`),
-     * add more tracks (`.track`/`.nbt`/`.tp`) and events (`.at`), then drive it
-     * with `.play`/`.reverse` (one-shot) or `.loop`/`.start`/`.stop` (continuous).
+     * Starts a {@link Clip} for a display model.
+     *
+     * Chain motion (`.move`/`.spin`/`.scaleTo`/`.rotateTo`), tracks (`.track`/`.nbt`/`.tp`)
+     * and
+     * events (`.at`), then run it with `.play`/`.reverse` or `.loop`/`.start`/`.stop`.
      */
     clip(model: DisplayValue): Clip;
     /**
-     * Start a {@link Cutscene}: compose clips on one shared timeline (`.add`,
-     * `.camera`, `.at`) and `.play` the whole sequence from one call.
+     * Starts a {@link Cutscene}: clips on one timeline (`.add`, `.camera`, `.at`), played
+     * with `.play`.
      */
     cutscene(name: string): Cutscene;
   }

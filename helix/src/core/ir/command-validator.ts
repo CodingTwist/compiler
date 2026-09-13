@@ -15,24 +15,17 @@ export function hasArgumentChild(node: BrigadierNode): boolean {
   );
 }
 
-/** Whether the version actually ships a command tree (vs. a `{}` stub). */
+/** Whether the version has a real command tree, not a `{}` stub. */
 export function hasCommandTree(root: BrigadierNode | undefined): boolean {
   return !!root?.children && Object.keys(root.children).length > 0;
 }
 
 /**
- * Validate an emitted command against the target version's Brigadier command
- * tree.
+ * Checks an emitted command's leading keywords against the version's command tree.
  *
- * Commands are version-specific: a command or sub-command keyword may not exist
- * in the target version (e.g. `random` before 1.20.3). This walks the leading
- * run of literal keywords and throws a clear error if one is not a valid
- * command / sub-command for the version.
- *
- * It deliberately STOPS at the first argument position rather than parsing
- * argument values - those can span whitespace (selectors, JSON, NBT) and are
- * validated elsewhere (e.g. registry ids). The guarantee is one-directional:
- * it never rejects a valid command, it only flags impossible literal paths.
+ * Stops at the first argument, since values can contain spaces. Never rejects a valid
+ * command;
+ * only catches keywords that don't exist (e.g. `random` before 1.20.3).
  */
 export function validateCommand(command: string, version: VersionProfile): void {
   // A leading `$` marks a macro line; the command keyword follows it.
@@ -54,8 +47,7 @@ export function validateCommand(command: string, version: VersionProfile): void 
       continue;
     }
 
-    // Not a literal keyword here. If arguments can begin, the validated prefix
-    // is fine and the rest is out of scope.
+    // An argument can start here, so the rest is out of scope.
     if (hasArgumentChild(node)) return;
 
     // No argument is allowed here, so a literal was expected.

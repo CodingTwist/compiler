@@ -1,12 +1,7 @@
 /**
- * The `probe` plugin: **in-game** tests.
+ * The `probe` plugin: tests that run in a real world.
  *
- * The unit tests in this repo assert on emitted command text; a probe suite
- * asserts on the running world - run `/function <ns>:probe/run` in a world and
- * read PASS/FAIL out of chat. See {@link Suite} for the shape.
- *
- * It builds entirely on helix's public API (`Detect`, `execute store success`,
- * `schedule`, `tellraw`) and adds no new primitives.
+ * Run `/function <ns>:probe/run` and read PASS/FAIL in chat. See {@link Suite}.
  */
 
 import { Datapack } from "helix";
@@ -18,10 +13,7 @@ export type { ProbeCase, ProbeOptions } from "./suite";
 
 declare module "helix" {
   interface Datapack {
-    /**
-     * Start a {@link Suite} of in-game tests. Pass `{ enabled: <dev flag> }` and
-     * a prod build emits nothing at all - no functions, no objective.
-     */
+    /** Starts a {@link Suite} of in-game tests. `{ enabled: false }` emits nothing. */
     probe(opts?: ProbeOptions): Suite;
   }
 }

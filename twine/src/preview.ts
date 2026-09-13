@@ -5,19 +5,15 @@ import type { MobModuleRef, MobPreview } from "./mob";
 
 export interface MobPreviewOpts {
   /**
-   * A vanilla client jar (`.../libraries/com/mojang/minecraft/<ver>/minecraft-<ver>-client.jar`)
-   * to pull the real item/block textures from. Without one, members render as flat colour.
+   * A vanilla client jar to take real textures from. Without one, members render as flat
+   * colour.
    */
   clientJar?: string;
 }
 
 /**
- * Write a standalone HTML page that renders a mob's rig and scrubs its gestures, with
- * the game's own maths: `translation · left · scale · right` per member, item displays
- * spun 180° about Y, the entity's yaw as `rotationYXZ(-yaw, pitch, 0)`, and each pose
- * write slerped over its interpolation from wherever the last one had got to.
- *
- * Open the file in a browser (three.js loads from jsdelivr).
+ * Writes an HTML page that renders a mob's rig and plays its gestures, using the game's
+ * transform maths. Open it in a browser.
  */
 export function writeMobPreview(file: string, mob: MobModuleRef, opts: MobPreviewOpts = {}): void {
   const data = mob.preview();
@@ -31,8 +27,9 @@ function textures(data: MobPreview, jar?: string): Record<string, string> {
   for (const { kind, id } of data.members) {
     const [ns, path] = id.includes(":") ? id.split(":") : ["minecraft", id];
     try {
-      // ponytail: vanilla textures named after the id only - a resource-pack model or a
-      // block with per-face textures (logs, furnaces) falls back to flat colour.
+      // ponytail: only textures named after the id; resource-pack models and per-face
+      // blocks
+      // render as flat colour.
       const png = execFileSync("unzip", ["-p", jar, `assets/${ns}/textures/${kind}/${path}.png`], {
         stdio: ["ignore", "pipe", "ignore"],
       });

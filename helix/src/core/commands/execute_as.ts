@@ -15,13 +15,11 @@ export class ExecuteAsNode extends ASTNode {
 }
 
 /**
- * Vanilla commands whose first argument is a *multi-target* entity list and for
- * which `execute as <S> run <cmd> @s …` is exactly equivalent to `<cmd> <S> …`.
- * `as` rebinds only the executor (`@s`) - never position/rotation/dimension - so
- * for these "do it to each of these entities" commands, selecting the targets
- * directly runs the same work once per matched entity with no `execute` wrapper.
- * Deliberately conservative: commands with a *single-entity* slot (e.g. `data …
- * from entity @s`, where a multi-entity selector would be invalid) are excluded.
+ * Commands where `execute as <S> run <cmd> @s …` equals `<cmd> <S> …`, so the wrapper can
+ * be dropped.
+ *
+ * Only multi-target commands. Single-entity slots (e.g. `data … from entity @s`) are
+ * excluded.
  */
 const FOLDABLE_AS_TARGET = new Set([
   "effect",
@@ -32,8 +30,7 @@ const FOLDABLE_AS_TARGET = new Set([
   "title",
 ]);
 
-// A standalone `@s` token: not part of a longer word and not carrying its own
-// `[...]` predicate block (folding would drop those predicates, so we bail).
+// A bare `@s`, not part of a word and without its own `[...]`.
 const BARE_SELF = /@s(?![\w[])/g;
 
 export class ExecuteAsHandler extends CommandHandler<ExecuteAsNode> {
@@ -64,17 +61,15 @@ export class ExecuteAsHandler extends CommandHandler<ExecuteAsNode> {
   }
 
   /**
-   * Collapse `execute as <selector> run <command>` into `<command>` with
-   * `@s` replaced by `<selector>`, when that is provably identity-preserving:
-   * the command is one of {@link FOLDABLE_AS_TARGET} and references the executor
-   * exactly once via a bare `@s`. Returns the folded line, or `undefined` to
-   * keep the explicit `execute as … run …`.
+   * Folds `execute as <selector> run <command>` into `<command>` with `@s` replaced, when
+   * safe:
+   * the command is in {@link FOLDABLE_AS_TARGET} and uses a bare `@s` exactly once.
+   * Returns `undefined` to keep the `execute`.
    */
   private fold(command: string, selector: string): string | undefined {
     const keyword = command.slice(0, command.indexOf(" "));
     if (!FOLDABLE_AS_TARGET.has(keyword)) return undefined;
-    // Exactly one executor reference, and none carrying `@s[...]` predicates
-    // (which the substitution can't preserve).
+    // Exactly one `@s`, and no `@s[...]`, whose filters the substitution would lose.
     if (/@s\[/.test(command)) return undefined;
     const refs = command.match(BARE_SELF);
     if (!refs || refs.length !== 1) return undefined;

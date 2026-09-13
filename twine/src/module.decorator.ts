@@ -10,8 +10,7 @@ import type {
 const MODULE_META = Symbol("datapack:module");
 
 /**
- * Marks a class as a datapack module and attaches its {@link ModuleMetadata}.
- * Mirrors NestJS's `@Module({ ... })` so the composition root reads familiarly:
+ * Marks a class as a datapack module, like NestJS's `@Module`.
  *
  * ```ts
  * @Module({ name: "timer", area: true, activeByDefault: true })
@@ -41,8 +40,7 @@ export function getModuleMetadata(target: ModuleClass): ModuleMetadata {
 }
 
 /**
- * Build a {@link ConfiguredModule} from explicit metadata + a ready instance -
- * the building block of a `forFeature`-style factory:
+ * Builds a {@link ConfiguredModule} from metadata and an instance, for config factories:
  *
  * ```ts
  * export const Door = (cfg: DoorConfig) =>

@@ -1,18 +1,13 @@
-// HAND-WRITTEN. The one place score arithmetic chooses its backend.
+// HAND-WRITTEN. Chooses the backend for score arithmetic.
 //
-// A run of `scoreboard players operation` lines is a *chain of mutations* only
-// because pre-26.3 there was nothing else: no expression could be written down,
-// so every intermediate needed a real slot. 26.3's `/compute` takes the whole
-// tree as one argument, which collapses the chain AND the scratch slots it
-// needed. For the portable op set both lowerings compute the same integers, so
-// that's a pure backend swap - not a behaviour change and not something the
-// author opts into. The compute-only ops (`sqrt`, trig, rounding, `pow`, `avg`,
-// `len`), provider leaves and fractional literals have no chain to swap to, so
-// below 26.3 they `reject()` with the target named: a build error, not a silent
-// difference.
+// 26.3+ uses one `/compute` command; older versions get a `scoreboard players operation`
+// chain.
+// Both compute the same integers for the portable ops. Compute-only ops (`sqrt`, trig,
+// rounding,
+// `pow`, `avg`, `len`), providers and fractional literals `reject()` below 26.3 as a build
+// error.
 //
-// Principle 3: the version is only known at codegen, so the frontend emits ONE
-// node carrying the expression tree and this handler lowers it.
+// The version is only known at codegen, so the frontend emits one node and this lowers it.
 //
 // Registered via EXTRA_HANDLERS in scripts/gen-commands.mjs.
 import { ASTNode } from "../ir/node";
@@ -59,10 +54,9 @@ export class ScoreExprNode extends ASTNode {
 }
 
 /**
- * `/compute` exists AND the profile actually carries a command tree.
- * {@link supportsCommand} answers `true` for a tree-less stub profile on purpose
- * (so stubs aren't falsely gated) - here that default is backwards, because it
- * would silently switch a pack onto a command the target may not have.
+ * `/compute` exists and the profile has a command tree.
+ * Unlike {@link supportsCommand}, a stub profile answers false, so packs don't switch to a
+ * command the target may lack.
  */
 const hasCompute = (version: VersionProfile): boolean =>
   hasCommandTree(version.commands as BrigadierNode | undefined) &&
@@ -77,9 +71,8 @@ export class ScoreExprCommand extends CommandHandler<ScoreExprNode> {
         ctx.dispatcher.dispatch(n, ctx);
       return;
     }
-    // `compute` validated against the tree on its own; the `execute store …
-    // run` head is a raw tail because the data's redirect chains drop it (the
-    // same shape the execute chain builder uses).
+    // `compute` is validated alone; the `execute store … run` head is raw because the
+    // data's redirects drop it.
     const compute = buildTokens(ctx.version, [
       lit("compute"),
       lit("default"),
@@ -111,13 +104,12 @@ export function toFloatProvider(e: ExprNode): ContextFloatProvider {
 }
 
 /**
- * A subexpression plus which side of `/compute` it lives on. An **integer**
- * literal stays untagged (`float: false`) - it's legal in both namespaces, so it
- * never forces a crossing. A fractional one is float by definition.
+ * A subexpression and whether it's float. Integer literals are valid on both sides, so
+ * they're untagged.
  */
 type Ref = { float: boolean; v: IntRef | FloatRef };
 
-/** Widen to float. Free for a literal, one `from_int` node otherwise. */
+/** Widen to float: free for a literal, one `from_int` otherwise. */
 const asFloat = (r: Ref): FloatRef =>
   r.float || typeof r.v === "number"
     ? (r.v as FloatRef)
@@ -134,9 +126,7 @@ const asInt = (r: Ref): IntRef =>
 const ref = (e: ExprNode): Ref => {
   switch (e.kind) {
     case "lit":
-      // `0.5` is not an integer constant, so it drags its expression onto the
-      // float side - which is the only way to write a real coefficient (or a
-      // real division: `${a} / 2.0`) without a provider hole.
+      // A fractional literal makes its expression float, e.g. `${a} / 2.0`.
       return { float: !Number.isInteger(e.value), v: e.value };
     case "score":
       return { float: false, v: i.score(e.score) };
@@ -147,9 +137,8 @@ const ref = (e: ExprNode): Ref => {
       };
     case "op": {
       const args = e.args.map(ref);
-      // The float ops take and return floats; everything else follows its
-      // operands, so an int-only formula lowers exactly as it always did and a
-      // float one keeps its precision until the destination truncates it once.
+      // Float ops are float; other ops follow their operands, so int formulas lower as
+      // before.
       if (isFloatOp(e.op)) return { float: true, v: floatOnlyOp(e.op, args) };
       const float = args.some((a) => a.float);
       if (float) {
@@ -254,10 +243,8 @@ const SYM: Record<
 };
 
 /**
- * The one failure mode of the portable formula syntax: an op that exists only
- * inside `/compute`, on a target that doesn't have `/compute`. A build-time
- * throw with no source context around it, so it names the op, the target, and
- * the two ways out.
+ * Throws for a compute-only op on a target without `/compute`, naming the op, target and
+ * fixes.
  */
 function reject(what: string, version: VersionProfile): never {
   throw new Error(
@@ -268,19 +255,14 @@ function reject(what: string, version: VersionProfile): never {
 }
 
 /**
- * ≤26.2 lowering: the equivalent `scoreboard players operation` chain.
+ * ≤26.2 lowering: an equivalent `scoreboard players operation` chain.
  *
- * Three rules carry all of it. **Accumulate in place** - the leftmost spine is
- * evaluated into the destination, then each remaining operand is folded in with
- * one `<op>=`. **Literals** are free for `+`/`-` (`scoreboard players add|remove`)
- * but cost one `set <temp> <n>` anywhere else, because `operation` needs a score
- * operand - interpolate a load-seeded constant slot instead if that command
- * matters. **Aliasing** - if `dest` appears anywhere but as the leftmost leaf,
- * accumulate into a temp and copy back, so `math`${a} * ${v}`.into(v)` is right.
+ * - Accumulate into the destination, folding each operand in with one `<op>=`.
+ * - Literals are free for `+`/`-`; anything else costs a `set <temp> <n>`.
+ * - If `dest` appears anywhere but the leftmost leaf, work in a temp and copy back.
  *
- * Temps are fake players on `dest`'s own objective under the reserved `#_t<depth>`
- * prefix: depth-indexed, so they're reused by stack discipline and nothing needs
- * allocating or registering (the destination's objective provably already exists).
+ * Temps are `#_t<depth>` on `dest`'s objective, reused by depth, so nothing needs
+ * registering.
  */
 export function toScoreOps(
   dest: Score,
@@ -296,8 +278,7 @@ export function toScoreOps(
 
   const emit = (t: Score, n: ExprNode, depth: number): void => {
     if (n.kind === "lit") {
-      // No float op need be involved for a formula to be un-lowerable: a
-      // fractional constant alone has no integer command to go in.
+      // A fractional constant alone can't be expressed in integer commands.
       if (!Number.isInteger(n.value))
         reject(`the fractional literal ${n.value}`, version);
       out.push(scoreLitNode("set", t, n.value));

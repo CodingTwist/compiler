@@ -3,23 +3,14 @@ import type { FunctionRef } from "helix";
 import type { PlayerMotionInternals } from "./context";
 
 /**
- * `internal/store/{x,y,z}`: write each axis value into the store objective as 32
- * on/off bit flags (`#x.0` .. `#x.31`).
+ * `internal/store/{x,y,z}`: writes each axis as 32 bit flags (`#x.0` .. `#x.31`).
  *
- * Why: the `apply_impulse` enchantment can't read a number - it can only test
- * "is this fixed score == 1?" and apply a fixed impulse if so. So we express the
- * value in binary: the enchantment has one effect per bit that, when that bit's
- * flag is set, pushes the player by `0.0001 * 2^bit` along the axis. Summed over
- * the set bits, those impulses reconstruct the original value as a real impulse.
+ * The enchantment can only test "is this score 1" and apply a fixed push, so each bit gets
+ * a
+ * push of `0.0001 * 2^bit`, and the set bits add up to the value.
  *
- * How we fill the flags (standard binary decomposition, high bit to low):
- *   - bit 31 is the sign bit. If the value is negative, set bit 31 and add
- *     2^31-1 to make it non-negative (the enchantment makes bit 31's impulse
- *     negative to match).
- *   - for bits 30..1: if the (now non-negative) value is >= 2^bit, set that bit
- *     and subtract 2^bit. `storeSuccessScore` records 1 exactly when the `if`
- *     matched, so the test and the flag are one command.
- *   - bit 0 is whatever single unit remains.
+ * Bit 31 is the sign: if negative, set it and add 2^31-1. Bits 30..1 are set by subtracting
+ * 2^bit when the value is big enough. Bit 0 is what's left.
  */
 export function defineStore(I: PlayerMotionInternals): void {
   const { storeBit, dummyScore, fStoreX, fStoreY, fStoreZ } = I;

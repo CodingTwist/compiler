@@ -1,8 +1,6 @@
-// HAND-WRITTEN. Run a command only when a player is within range of a position
-// (and, optionally, only while a re-arm guard entity is absent):
+// HAND-WRITTEN. Runs a command only when a player is near a position, optionally only while
+// a guard entity is absent:
 //   execute positioned <pos> if entity @a[distance=..<radius>] [unless entity <guard>] run <command>
-// Used for proximity triggers - e.g. start a door's cog spin when a player walks
-// up, gated on the cog not already existing so it doesn't restart every tick.
 // Registered via EXTRA_HANDLERS in scripts/gen-commands.mjs, never regenerated.
 import { generateSingleNode, runClause } from "../ir/generate";
 import { ASTNode, FunctionNode, Range } from "../ir/node";
@@ -27,11 +25,8 @@ export class NearGuardNode extends ASTNode {
     public readonly unlessSelector: Selector | undefined,
     public readonly command: ASTNode,
     /**
-     * When true, run the body `as` each matching player (so `@s` is that
-     * player) - fires once per nearby player. When false (default), a single
-     * `if entity` presence check that fires the body once regardless of how
-     * many players are in range. Opt into the per-player form only when the
-     * body actually needs the player handle.
+     * When true, runs the body as each nearby player (`@s` is the player). Default false:
+     * runs once.
      */
     public readonly perPlayer = false,
   ) {
@@ -48,8 +43,7 @@ export class NearGuardHandler extends CommandHandler<NearGuardNode> {
       ctx.datapack,
       ctx.dispatcher,
     );
-    // The proximity test is a real selector - `@a` within `distance=..radius` -
-    // rendered by the selector layer, not a hand-built string.
+    // A real `@a[distance=..radius]` selector, not a hand-built string.
     const near = Selector.allPlayers().distance(new Range(undefined, node.radius));
     const nearStr = node.perPlayer
       ? toCommandValue(near).render(ctx.version)
@@ -57,14 +51,12 @@ export class NearGuardHandler extends CommandHandler<NearGuardNode> {
     const guard = node.unlessSelector
       ? ` unless entity ${renderExistence(node.unlessSelector, ctx.version)}`
       : "";
-    // Presence check (`if entity`) runs the body once; per-player (`as`) runs it
-    // once for each matching player with `@s` bound to them.
+    // `if entity` runs once; `as` runs once per matching player.
     const match = node.perPlayer
       ? `as ${nearStr}${guard}`
       : `if entity ${nearStr}${guard}`;
-    // `positioned <pos>` is validated; the execute grammar after it stays raw so
-    // the validator doesn't have to follow the execute redirect (see at_entity.ts
-    // for the same reason).
+    // `positioned <pos>` is validated; the rest is raw since the validator can't follow
+    // execute's redirect.
     ctx.emit(
       buildTokens(ctx.version, [
         lit("execute"),
@@ -79,19 +71,13 @@ export class NearGuardHandler extends CommandHandler<NearGuardNode> {
 declare module "../frontend/context" {
   interface FunctionContext {
     /**
-     * Run each command emitted in `build` only when a player is within `radius`
-     * blocks of `pos`. Pass `unlessSelector` to additionally gate on that entity
-     * being absent (a re-arm guard, so a held-down trigger doesn't refire).
+     * Runs each command from `build` only when a player is within `radius` of `pos`.
+     * `unlessSelector` also requires that entity to be absent, so a held trigger doesn't
+     * refire.
      *
-     * By default this is a single presence check - `execute positioned <pos> if
-     * entity @a[distance=..radius] … run <command>` - so the body runs **once**
-     * no matter how many players are in range.
-     *
-     * Opt into a per-player handle by declaring a second `build` parameter: the
-     * body then runs `as @a[distance=..radius]`, once **per** nearby player,
-     * with the passed `Selector` (`@s`) bound to that player. Use this only when
-     * the body needs the player (e.g. `ctx.tellraw(player, …)`); the extra
-     * `as`-fan-out is why it isn't the default.
+     * Runs once regardless of player count. Give `build` a second parameter to run once per
+     * nearby
+     * player with that player as `@s`; only do this when the body needs the player.
      */
     whenPlayerNear(
       pos: Pos,
@@ -109,12 +95,9 @@ FunctionContext.prototype.whenPlayerNear = function (
   build: (ctx: FunctionContext, player: Selector) => void,
   unlessSelector?: Selector,
 ): void {
-  // A `build` that declares the second (player) param opts into the per-player
-  // `as` form; a one-arg builder keeps the cheap single presence check.
+  // A two-parameter `build` opts into the per-player form.
   const perPlayer = build.length >= 2;
-  // Capture the builder's commands into a throwaway function, then re-emit each
-  // wrapped in the proximity guard (one line per command). Inside the per-player
-  // form, `@s` is the matched player.
+  // Capture the commands into a throwaway function, then re-emit each with the guard.
   const tmp = new FunctionNode(this.fn.name);
   const child = new (this.constructor as new (
     fn: FunctionNode,

@@ -1,14 +1,8 @@
-// Compile-time per-tick cost report. A datapack compiler is uniquely able to walk
-// the *static* call graph rooted at the `tick` tag and tell the author, before the
-// pack ever loads, how much work runs each tick and where the expensive unbounded
-// entity scans live (the #1 source of datapack lag).
+// Static per-tick cost report: how many commands run each tick and where unbounded entity
+// scans are.
 //
-// The analysis runs over the already-rendered function text in `dp.files` (the same
-// output codegen writes to disk): call edges are the emitted `function <ns>:<name>`
-// lines, a "command" is any non-blank, non-comment line, and selectors appear in
-// their final version-rendered form. This is read-only inspection of output, not
-// command authoring, so it is deliberately string-based - it sees exactly what the
-// game will run, including inlined `execute … run` branches.
+// Reads the rendered function text, so it sees exactly what the game runs, including
+// inlined branches.
 import type { Datapack } from "../ir/datapack";
 import type { SourceLoc } from "../debug/sources";
 
@@ -24,10 +18,9 @@ export interface FunctionCost {
 }
 
 /**
- * Cost attributed to one direct call site in a tick root's body - the subtree
- * reached *through that call*, with each shared function counted once (claimed by
- * the first call site in body order that reaches it). So a root's `selfCommands`
- * plus every breakdown entry's `commands` sums back to its `worstCaseCommands`.
+ * Cost of one direct call site in a tick root, counting each shared function once (first
+ * caller wins).
+ * A root's `selfCommands` plus its breakdown sums to `worstCaseCommands`.
  */
 export interface CallSiteCost {
   /** The called function (bare name). */
@@ -96,10 +89,7 @@ export interface NbtRead {
 /** Reads at this period or slower (the t5 clock) aren't warned about. */
 export const NBT_READ_MIN_PERIOD = 5;
 
-/**
- * Entity/block NBT reads: each one serializes the whole entity (or block entity).
- * `storage` is a plain compound lookup, so it isn't counted.
- */
+/** Entity/block NBT reads, which serialize the whole entity. Storage reads don't count. */
 const NBT_READ = /nbt=|data get (entity|block)|(if|unless) data (entity|block)|from (entity|block)/;
 
 /** A helix clock gate (`timing.phaseGate`): an exact residue, not the `N..` wrap. */
@@ -111,11 +101,7 @@ const lcm = (a: number, b: number) => (a * b) / gcd(a, b);
 /** A selector narrowed by any of these is treated as bounded (a small scan). */
 const BOUNDED_PREDICATES = ["limit=", "type=", "tag=", "name="];
 
-/**
- * Find unbounded `@e` selectors in a single rendered line. `@e` with no `type`,
- * `limit`, `tag` or `name` predicate iterates every loaded entity; `@a/@p/@r/@s`
- * are bounded by the player set and are not flagged.
- */
+/** Unbounded `@e` selectors in a line: no `type`, `limit`, `tag` or `name`. */
 function unboundedScansIn(line: string): string[] {
   const out: string[] = [];
   // `@e` optionally followed by a `[...]` predicate block.
@@ -143,11 +129,7 @@ function indexedCommandLines(text: string): [string, number][] {
     .filter(([l]) => l.length > 0 && !l.startsWith("#"));
 }
 
-/**
- * Build the per-function cost map plus the call graph (caller → called function
- * names) from rendered function text. Call edges are the emitted
- * `function <ns>:<name>` tokens - they appear bare or inside an `execute … run`.
- */
+/** Per-function costs and the call graph, from rendered text. */
 function analyseFunctions(dp: Datapack): {
   costs: Map<string, FunctionCost>;
   calls: Map<string, string[]>;
@@ -177,10 +159,7 @@ function analyseFunctions(dp: Datapack): {
 }
 
 /**
- * Direct `function <ns>:<name>` call sites in a function's body, in body order,
- * each paired with the `execute …` guard it sits behind (`""` when unconditional).
- * One entry per line; the guard is the line text before the call with the leading
- * `execute` and trailing `run` stripped.
+ * Direct call sites in body order, each with the `execute` guard before it (`""` if none).
  */
 function directCallSites(
   text: string,
@@ -202,9 +181,8 @@ function directCallSites(
 }
 
 /**
- * Walk the subtree rooted at `start`, counting each not-yet-`claimed` function
- * once (and marking it claimed). Returns the newly-attributed command/function
- * totals, so successive calls over one root's call sites partition its subtree.
+ * Counts each unclaimed function under `start` once and claims it, so call sites partition
+ * a subtree.
  */
 function attributeSubtree(
   start: string,
@@ -226,10 +204,7 @@ function attributeSubtree(
   return { commands, functions };
 }
 
-/**
- * Static per-tick cost analysis. Requires `dp.files` to be populated; callers go
- * through {@link Datapack.report}, which runs codegen first.
- */
+/** Static per-tick cost analysis. Needs `dp.files`; use {@link Datapack.report}. */
 export function analyzeCost(dp: Datapack): CostReport {
   const { costs, calls } = analyseFunctions(dp);
   const tickRoots = [...(dp.tags.get("tick") ?? [])];
@@ -256,9 +231,7 @@ export function analyzeCost(dp: Datapack): CostReport {
       worstCaseCommands += costs.get(name)?.commands ?? 0;
     }
 
-    // Partition the subtree across the root's direct call sites (body order, so a
-    // shared function is attributed to whichever call site reaches it first). The
-    // root's own lines stay as `selfCommands`; the rest sums across the breakdown.
+    // Split the subtree across direct call sites, in body order.
     const selfCommands = costs.get(root)?.commands ?? 0;
     const claimed = new Set<string>([root]);
     const seen = new Set<string>();
@@ -333,10 +306,9 @@ const linePeriod = (line: string, p: number) =>
   [...line.matchAll(CLOCK_GATE)].reduce((acc, m) => lcm(acc, Number(m[1])), p);
 
 /**
- * Cadence: walk from the roots carrying a period, raised by every clock gate a
- * call sits behind. A function keeps the fastest period it is reached at.
- * An allow covers everything the allowed function calls (its `execute … run`
- * bodies included), unless that callee is also reached some other, faster way.
+ * Finds each function's slowest guaranteed period by walking from the roots through clock
+ * gates.
+ * An allow covers the allowed function's callees unless they're reached faster elsewhere.
  */
 function cadence(dp: Datapack, roots: string[], allows: Map<string, string> | undefined) {
   const period = new Map<string, number>();
@@ -357,11 +329,7 @@ function cadence(dp: Datapack, roots: string[], allows: Map<string, string> | un
   return { period, allowedBy };
 }
 
-/**
- * Tick-reachable functions only ever called behind an `if`/`unless` (clock gates aside,
- * they already set the period): they run *at most* that often - an edge-triggered
- * `leave` looks per-tick statically, so the report says "up to".
- */
+/** Tick functions only called behind `if`/`unless`, so they run at most that often. */
 function guardedFns(dp: Datapack, roots: string[], period: Map<string, number>): Set<string> {
   const free = new Set<string>();
   const stack = [...roots];
@@ -388,10 +356,9 @@ function collapseReads(reads: NbtRead[]): NbtRead[] {
 }
 
 // ---------------------------------------------------------------------------
-// Lints: the Minecraft Wiki's "Optimizing a data pack" advice, checked against
-// rendered lines. Rules marked exact flag a line with an equivalent cheaper
-// form and run over every function; the rest only look at tick-reachable code.
-// Anything intentional is silenced per function with `dp.allow(rule, fn, why)`.
+// Lints from the Minecraft Wiki's "Optimizing a data pack", checked on rendered lines.
+// Exact rules run everywhere; the rest only on tick-reachable code.
+// Silence one with `dp.allow(rule, fn, why)`.
 // ---------------------------------------------------------------------------
 
 export type LintRule =
@@ -541,7 +508,7 @@ const STAT_TRIGGERS: [RegExp, string][] = [
   ],
 ];
 
-/** Entity NBT writes a vanilla command performs directly. Other fields have no alternative, so aren't flagged. */
+/** Entity NBT writes that have a direct command alternative. */
 const NBT_WRITE_COMMANDS: [RegExp, string][] = [
   [/^(Item|item|Inventory|equipment|HandItems|ArmorItems)\b/, "`item replace|modify entity <target> <slot>` (dp.itemModifier)"],
   [/^Rotation\b/, "`rotate` (1.21.2+) or `tp`"],
@@ -564,8 +531,7 @@ function lint(
   guarded: Set<string>,
   costs: Map<string, FunctionCost>,
 ): { lints: Lint[]; allowedLints: Lint[] } {
-  // Per rule: which functions an allow covers (inheriting down the tick tree),
-  // plus direct allows on functions outside it. Walked only for rules with allows.
+  // Per rule, which functions an allow covers.
   const allowWalks = new Map<LintRule, Map<string, string | undefined>>();
   const allowedFor = (rule: LintRule, fn: string): string | undefined => {
     const allows = dp.allowed.get(rule);
@@ -580,8 +546,8 @@ function lint(
     for (const m of text.matchAll(/^scoreboard objectives add (\S+) (\S+)/gm)) criteria.set(m[1], m[2]);
   }
 
-  // Functions running as each player: called behind `as @a…`, and down from there
-  // through calls that don't re-bind the executor.
+  // Functions running as each player: called behind `as @a…` and down through calls that
+  // keep `@s`.
   const perPlayer = new Set<string>();
   const stack: [string, boolean][] = roots.map((r) => [r, false]);
   const visited = new Set<string>();
@@ -716,8 +682,8 @@ function lint(
               : hasArg(s, "distance") && /positioned -?[\d.]+ -?[\d.]+ -?[\d.]+ /.test(line.slice(0, s.start))),
         )
       ) {
-        // Only `as @a[…]` acting on players in a fixed area; `if/unless entity @a[…]` is a
-        // presence check ("anyone / nobody there"), which a per-player trigger can't replace.
+        // Only `as @a[…]` in a fixed area; `if entity @a[…]` is a presence check a trigger
+        // can't replace.
         add("poll-trigger", line, i, LOCATION_HINT);
       } else if (
         new RegExp(`if items entity (@a\\S*${asPlayer ? "|@s" : ""}) (container|armor|inventory|hotbar|player\\.crafting)\\.`).test(line)
@@ -769,8 +735,7 @@ export function formatCostReport(report: CostReport): string {
       `    ${r.root}: ${r.worstCaseCommands} cmds, ` +
         `${r.reachableFunctions} fn(s)${r.recursive ? " (recursive - lower bound)" : ""}`,
     );
-    // Per-call-site breakdown: where the root's budget goes, and the guard each
-    // subtree sits behind. Skipped when the root is a single flat body.
+    // Per-call-site breakdown, skipped for flat bodies.
     if (r.breakdown.length > 0) {
       if (r.selfCommands > 0) out.push(`      · self: ${r.selfCommands} cmds`);
       for (const c of r.breakdown) {

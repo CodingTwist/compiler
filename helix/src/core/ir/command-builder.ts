@@ -5,12 +5,7 @@ import { hasCommandTree, literalChildren } from "./command-validator";
 
 export type ArgValue = string | number;
 
-/**
- * Render a builder argument (a concept value or a raw primitive) to its command
- * token for the target version. Typed command nodes store the author's concept
- * values; their handler calls this to defer stringification to codegen, so the
- * same node renders correctly across versions.
- */
+/** Renders an argument for the target version. Handlers call this at codegen. */
 export const renderArg = (value: ArgInput, version: VersionProfile): string =>
   toCommandValue(value).render(version);
 
@@ -23,15 +18,10 @@ function argChildEntry(
 }
 
 /**
- * Choose which argument child to descend into when a node has several (an
- * overloaded command like `teleport`, whose root branches into `destination` /
- * `location` / `targets`). `moreFollow` says whether more tokens still need a
- * slot after this one: if so, prefer a child that can continue (has its own
- * children); otherwise prefer one that ends the command (`executable`). With a
- * single argument child this is just that child, so non-overloaded commands are
- * unaffected. Argument *values* aren't type-checked here (a vec3 vs an entity
- * read the same as raw token text), so picking any viable branch yields correct
- * output text - this only steers past dead-end leaves.
+ * Picks which argument child to follow when a command branches (e.g. `teleport`).
+ *
+ * If more tokens follow, prefer a child with children; otherwise prefer an executable one.
+ * Values aren't type-checked, so any viable branch gives the same text.
  */
 function pickArgChild(
   node: BrigadierNode,
@@ -81,20 +71,15 @@ function resolveLiteralPath(
 }
 
 /**
- * Build a command from a literal path plus NAMED arguments. The argument
- * **order comes from the version's command tree**, not from the handler: each
- * slot in the tree's spine is filled by looking the provided value up by the
- * tree's argument name. So if a version reorders a command's arguments, the
- * same handler still emits them correctly.
+ * Builds a command from a literal path and named arguments, in the order the version's tree
+ * gives.
  *
- * `tail` appends trailing literal sub-commands AFTER the named arguments - the
- * one shape named args alone cannot express, e.g. `setblock <pos> <block> keep`
- * where the `keep` mode literal follows the args. Each tail literal is validated
- * against the tree like the leading path.
+ * So a version that reorders arguments still gets correct output. `tail` adds literals
+ * after
+ * the arguments (e.g. `setblock <pos> <block> keep`).
  *
- * Throws if a command/sub-command literal does not exist, if a provided name
- * matches no slot, or if the result is not executable (a required argument was
- * omitted). Falls back to insertion order when a profile has no command tree.
+ * Throws on unknown literals, unmatched names, or a missing required argument.
+ * Uses insertion order when the profile has no command tree.
  */
 export function buildCommand(
   version: VersionProfile,
@@ -153,10 +138,9 @@ export function buildCommand(
 }
 
 /**
- * Low-level, explicit token sequence for commands the named-argument builder
- * cannot express: interleaved literals after arguments (e.g. `trigger ... set`)
- * and the `execute ... run <nested>` tail, which the data's redirect chains
- * drop. Done by hand on top of the same tree validation.
+ * An explicit token list for commands named arguments can't express: literals after
+ * arguments
+ * (`trigger ... set`) and `execute ... run <nested>`. Still validated against the tree.
  */
 export type Token =
   | { kind: "literal"; text: string }

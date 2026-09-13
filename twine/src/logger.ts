@@ -21,20 +21,12 @@ export interface NamespaceLogger {
 }
 
 /**
- * A per-player, severity-threshold logger: each player has their own score on
- * one objective (unset = logging off for them), set via the generated
- * `debug/log/{debug,info,warn,off}` functions. A message at level `L` reaches
- * exactly the players whose score is `<= SEVERITY[L]` - so a player who sets
- * themselves to `debug` sees everything, `warn` sees only warnings, and a
- * player who never runs any of these commands sees nothing.
+ * A per-player logger with severity levels.
  *
- * Unlike a per-namespace on/off flag, the namespace passed to {@link for} is
- * only a label in the message - it does not gate anything - so it needs no
- * name to be reserved ahead of time and costs no extra scoreboard entry.
- *
- * `TWINE_LOG=off` is a build-time kill switch: it makes every emitted message
- * a true no-op (no commands at all), rather than one gated by a check that
- * always fails.
+ * Players pick a level with `debug/log/{debug,info,warn,off}` and see messages at or above
+ * it.
+ * Players who never set one see nothing. The namespace is just a label, not a filter.
+ * `TWINE_LOG=off` removes all log commands at build time.
  */
 export class Logger {
   private static readonly buildEnabled = process.env.TWINE_LOG !== "off";
@@ -48,22 +40,16 @@ export class Logger {
   }
 
   /**
-   * Makes `instance` the target of the static {@link Logger.for}. Call once,
-   * before constructing anything whose functions might log - a module-level
-   * `const log = Logger.for("Name")` elsewhere is safe to import at any time
-   * (even before this runs) because its handles resolve {@link Logger.current}
-   * lazily, at the point they're actually called with a `ctx`, not at import
-   * time.
+   * Sets the instance {@link Logger.for} handles use. Call once, before anything logs.
+   *
+   * Handles look it up when called, so `Logger.for` at module scope is safe before this
+   * runs.
    */
   static attach(instance: Logger) {
     Logger.current = instance;
   }
 
-  /**
-   * A namespaced handle callable at module scope, with no instance to thread
-   * through constructors - each method looks up {@link Logger.attach}'s
-   * instance when actually called, not when `for` itself is called.
-   */
+  /** A namespaced log handle usable at module scope. */
   static for(namespace: string): NamespaceLogger {
     return {
       debug: (ctx, message) => Logger.current?.emit(ctx, "debug", namespace, message),
@@ -81,12 +67,7 @@ export class Logger {
     };
   }
 
-  /**
-   * Builds `debug/log/{debug,info,warn,off}` - the commands a player runs to
-   * set (or clear) their own severity threshold. Call once, before anything
-   * that might call {@link for}'s handles actually builds - order doesn't
-   * matter beyond that, since there is one objective, not one per namespace.
-   */
+  /** Builds the `debug/log/{debug,info,warn,off}` commands. Call once. */
   registerCommands(dp: Datapack, path = "debug/log") {
     if (!this.objective) return;
     const set = (level: LogLevel) =>

@@ -9,38 +9,26 @@ import { toSnbt, NbtInput } from "./nbt";
 import { textJson as tellrawJson } from "./text-json";
 import { TellrawPart } from "../frontend/nodes/tellraw_part";
 
-/**
- * The vanilla item *tags* (`ITEM_TAGS.PLANKS = "minecraft:planks"`), the
- * newest-version superset - typed, autocompleted ids for tag slots (`clear`, item
- * predicates) so authors never hand-write `"#minecraft:planks"`.
- */
+/** Typed vanilla item tag ids, e.g. `ITEM_TAGS.PLANKS`. */
 export { ITEM_TAGS } from "../../versions/data/ids";
 
 /** Data version of 1.20.5, where item NBT was replaced by data components. */
 const COMPONENTS_DATA_VERSION = 3837;
 
 /**
- * Data version of 24w44a (shipped in 1.21.4), where the `item_model` component +
- * `assets/<ns>/items/` item definitions arrived. At/after this a model handle
- * lowers to `item_model=<ns:name>`; before it there is no such component, so the
- * handle must fall back to a `custom_model_data` number.
+ * 24w44a (1.21.4) added `item_model`. Before it, model handles fall back to
+ * `custom_model_data`.
  */
 const ITEM_MODEL_DATA_VERSION = 4174;
 
 /**
- * Data version of 24w44a (shipped in 1.21.4), where `custom_model_data` stopped
- * being a bare integer and became a struct of `{ floats, flags, strings, colors }`.
- * At/after this the component must render as `{floats:[n]}` in both the item-stack
- * string and an item predicate's `components` map; before it, the plain integer.
+ * 24w44a (1.21.4) made `custom_model_data` a struct, rendered `{floats:[n]}`; before, a
+ * plain integer.
  */
 const CUSTOM_MODEL_DATA_STRUCT_DATA_VERSION = 4174;
 
 /**
- * A text component for an item's name/lore lines: a plain string (rendered as
- * `{"text":"..."}`) or a raw text-component object for styling - color, a
- * suppressed `italic`, click/hover, nested `extra`, etc. Keeps "typed concepts
- * not strings": authors build the component, the same object lowers to both the
- * SNBT stack form and the predicate JSON form.
+ * Text for item names and lore: a string or a styled text component object.
  *
  *   item.named("Excalibur")
  *   item.named({ text: "Time Lantern", color: "aqua", italic: false })
@@ -52,21 +40,14 @@ function textObj(value: TextComponent): Record<string, unknown> {
   return typeof value === "string" ? { text: value } : value;
 }
 
-/**
- * Legacy (pre-1.20.5) text component: a single-quoted *JSON string*, e.g.
- * `'{"text":"Excalibur"}'`. This is correct for NBT `display.Name`/`Lore`, where
- * the value is a string holding JSON.
- */
+/** Pre-1.20.5 text: a quoted JSON string, e.g. `'{"text":"Excalibur"}'`. */
 function textSnbt(value: TextComponent): string {
   return `'${JSON.stringify(textObj(value))}'`;
 }
 
 /**
- * Modern (1.20.5+) text component: an SNBT *compound*, e.g.
- * `{"text":"Excalibur","color":"aqua"}` - no surrounding quotes. Data components
- * store text as SNBT, so the value must be a compound. Wrapping it in quotes (the
- * legacy string-JSON form) makes newer versions show the literal JSON text and
- * breaks `match_tool` equality, so name/lore must use this form for components.
+ * 1.20.5+ text: an SNBT compound, not a quoted string.
+ * Quoting it shows the raw JSON in game and breaks `match_tool`.
  */
 function textCompound(value: TextComponent): string {
   return JSON.stringify(textObj(value));
@@ -91,11 +72,7 @@ function resolveModelId(handle: ModelRef | string): string {
   return handle instanceof ModelRef ? handle.render() : normalizeId(handle);
 }
 
-/**
- * The legacy `custom_model_data` number for a model handle on a version predating
- * the `item_model` component. Throws unless the handle carries one, since there's
- * no other way to reference a model there.
- */
+/** The legacy `custom_model_data` number for a model handle. Throws if it has none. */
 function legacyModelData(handle: ModelRef | string, version: VersionProfile): number {
   const n = handle instanceof ModelRef ? handle.legacyModelData : undefined;
   if (n === undefined) {
@@ -121,11 +98,9 @@ function customModelDataLowering(n: number, version: VersionProfile): ComponentL
 }
 
 /**
- * One data component of an item, lowered to *both* forms from a single
- * definition: `stack` for the `give`/item-stack string (`id[stack,...]`) and
- * `key`/`json` for an `item_predicate`'s `components` map. Keeping both on one
- * object is what guarantees "define once" - a given item matches its own
- * predicate by construction.
+ * One item component in both forms: `stack` for give strings and `key`/`json` for item
+ * predicates.
+ * One definition means an item always matches its own predicate.
  */
 interface ComponentLowering {
   /** `[...]` fragment, e.g. `custom_name={"text":"x"}`. */
@@ -137,12 +112,10 @@ interface ComponentLowering {
 }
 
 /**
- * An item - id plus an optional, structured definition of its data (name, model
- * data, enchantments, lore, raw components). **The single source of truth for an
- * item across the pack:** pass the same object to `give` to grant it, or to
- * `Predicate.matchTool(...)` / `Selector.holding(...)` to check for it. It lowers
- * itself per target version (data components on 1.20.5+, NBT before) and per
- * context (item-stack string vs `item_predicate` JSON) - you never re-encode it.
+ * An item: id plus its name, model, enchantments, lore and components.
+ *
+ * Pass the same object to `give` and to predicates; it renders per version (components on
+ * 1.20.5+, NBT before) and per use (stack string or predicate JSON).
  *
  *   const excalibur = Item("diamond_sword")
  *     .named("Excalibur").enchant("sharpness", 5).modelData(1234);
@@ -151,8 +124,7 @@ interface ComponentLowering {
  *   ctx.if(predicateCheck(dp.predicate("excalibur",         // if predicate … run …
  *     Predicate.matchTool(excalibur))), …);
  *
- * Bare ids and `#tags` still work (`Item("diamond")`, `Item("#planks")`), and
- * `.data(raw)` is a verbatim escape hatch for hand-written component/NBT strings.
+ * `.data(raw)` is an escape hatch for hand-written component strings.
  */
 export class ItemValue implements CommandValue {
   private dataStr?: string;
@@ -192,10 +164,7 @@ export class ItemValue implements CommandValue {
   }
 
   /**
-   * Raw `custom_model_data` / `CustomModelData` integer - the escape hatch for a
-   * model you manage in an external resource pack. Prefer {@link model} with a
-   * {@link ModelRef} from `dp.model(...)`, which generates the model + emits the
-   * typed `item_model` component instead of a magic number.
+   * Raw `custom_model_data` integer, for externally managed models. Prefer {@link model}.
    */
   modelData(n: number): this {
     this.customModelDataValue = n;
@@ -203,10 +172,8 @@ export class ItemValue implements CommandValue {
   }
 
   /**
-   * Point this item at a resource-pack model via its {@link ModelRef} (from
-   * `dp.model(...)`) or a bare `<ns>:name`. Lowers to the `item_model` component
-   * on 1.21.4+; on older versions it needs the ref's legacy `custom_model_data`
-   * number (see {@link ModelRef}), else rendering throws.
+   * Points the item at a model by ref or `<ns>:name`. Renders as `item_model` on 1.21.4+;
+   * older versions need the ref's legacy `custom_model_data` number or it throws.
    */
   model(handle: ModelRef | string): this {
     this.itemModelValue = handle;
@@ -226,16 +193,9 @@ export class ItemValue implements CommandValue {
   }
 
   /**
-   * Restrict where this item may be placed in adventure mode (`can_place_on`).
-   * Each argument is a block id or `#tag` (`"minecraft:stone"`, `"#minecraft:stone_bricks"`).
+   * Blocks this item can be placed on in adventure mode. Each is a block id or `#tag`.
    *
-   * The shape is an `AdventureModePredicate`, which does *not* survive a naive
-   * hand-encoding: on 1.20.5+ it lowers to the structured `can_place_on` component
-   * (a `{blocks:…}` block predicate - the codec is `compactListCodec(BlockPredicate)`,
-   * so there is no `predicates:` wrapper), while before components it is
-   * the flat NBT `CanPlaceOn:[…]` string list - the same reason the pack never
-   * hand-writes item NBT. Whether the restriction shows in the tooltip is a
-   * separate concern (`tooltip_display` on modern, `HideFlags` before).
+   * Renders as the `can_place_on` component on 1.20.5+, `CanPlaceOn` NBT before.
    */
   canPlaceOn(...blocks: string[]): this {
     this.canPlaceOnValue.push(...blocks.map(normalizeBlockRef));
@@ -243,25 +203,11 @@ export class ItemValue implements CommandValue {
   }
 
   /**
-   * `minecraft:written_book_content` - a resolved written book's title,
-   * author and pages. Each page is a plain string, a single styled
-   * `text(...)` span, or an array of spans sharing one line (see
-   * {@link pageLines}/{@link rightAlign} for building those) - the array form
-   * lowers to one base component carrying those spans as `extra` siblings.
+   * `minecraft:written_book_content`: title, author and pages.
    *
-   * Each page is `Filterable<Component>` per the component's own codec - a
-   * real text component stored as NBT structure, *not* a JSON string - so
-   * this renders each page through the shared {@link toSnbt} serializer
-   * directly, the same as any other structured component value. (Earlier
-   * revisions of this builder JSON-stringified each page into a quoted SNBT
-   * string, matching `writable_book_content`'s plain-string pages rather than
-   * this component's actual schema; that produced a book whose pages
-   * displayed their own JSON source as literal text - {@link pageJson} is
-   * typed `Record<string, NbtInput>`, not `NbtInput`, specifically so a page
-   * can't be a bare string and that mistake can't compile again.)
-   *
-   * Components only - a target predating 1.20.5 throws rather than silently
-   * dropping the book's content.
+   * Each page is a string, a styled span, or an array of spans. Pages are stored as text
+   * compounds,
+   * not JSON strings; a JSON string page shows its source as text. Throws before 1.20.5.
    */
   writtenBook(title: string, author: string, pages: (TellrawPart | string | TellrawPart[])[]): this {
     this.writtenBookValue = { title, author, pages };
@@ -269,10 +215,8 @@ export class ItemValue implements CommandValue {
   }
 
   /**
-   * `minecraft:charged_projectiles` - what a crossbow is loaded with. It is also
-   * what makes one *render* loaded: the vanilla crossbow model selects on
-   * `charge_type`, so a crossbow carrying a rocket here draws with the rocket in
-   * it, and an empty one draws unstrung.
+   * `minecraft:charged_projectiles`: what a crossbow is loaded with, which also makes it
+   * render loaded.
    */
   chargedProjectiles(...items: ItemValue[]): this {
     return this.component("charged_projectiles", {
@@ -287,9 +231,8 @@ export class ItemValue implements CommandValue {
   }
 
   /**
-   * A raw data component for things the typed builders don't model yet, e.g.
-   * `.component("unbreakable", "{}")`. `key`/`json` are optional predicate
-   * counterparts so it can still participate in `match_tool` matching.
+   * A raw component for things without a builder, e.g. `.component("unbreakable", "{}")`.
+   * `key`/`json` let it match in predicates too.
    */
   component(
     name: string,
@@ -308,22 +251,14 @@ export class ItemValue implements CommandValue {
   }
 
   /**
-   * An item **sub-predicate** - the `predicates: { "<type>": <json> }` half of an
-   * `item_predicate`, which asks a *question* about a component rather than
-   * matching its exact value the way {@link component}/{@link toPredicate}'s
-   * `components` map does. This is the only way to express "has an enchantment at
-   * all", "damage in a range", "custom_data contains this key":
+   * An item sub-predicate: asks about a component instead of matching it exactly.
    *
    *   Item("diamond_sword").subPredicate("enchantments", [{}])   // any enchantment
    *   Item("diamond_sword").subPredicate("damage", { durability: { min: 1 } })
    *
-   * Predicate-only - it describes a match, not a stack, so it is ignored by
-   * {@link render}/{@link toStackNbt}. There is no *negative* form in vanilla
-   * (an item predicate can't say "component absent"); wrap the whole condition in
-   * `Predicate.not(...)` for that.
-   *
-   * Sub-predicates arrived with data components (1.20.5), so rendering one for an
-   * older target throws rather than silently matching everything.
+   * Predicate-only; ignored when rendering a stack. For "absent", wrap in
+   * `Predicate.not(...)`.
+   * Throws before 1.20.5.
    */
   subPredicate(type: string, json: unknown): this {
     this.subPredicates.push({ type: normalizeId(type), json });
@@ -357,14 +292,7 @@ export class ItemValue implements CommandValue {
   }
 
   /**
-   * A book page's text-component form (see {@link writtenBook}) - always a
-   * compound (`{text:...}`, or `{text:"",extra:[...]}` for the array form),
-   * never a bare string. Typed `Record<string, NbtInput>` rather than the
-   * broader `NbtInput` on purpose: a plain `string` (what a stray
-   * `JSON.stringify` would produce) is itself a valid `NbtInput`, so that
-   * type wouldn't stop pages from being silently double-encoded again -
-   * `Record<string, NbtInput>` does, the same convention `display.ts` uses
-   * for values that must be a compound.
+   * A book page as a text compound. Typed as a record so a JSON string page can't compile.
    */
   private static pageJson(page: TellrawPart | string | TellrawPart[]): Record<string, NbtInput> {
     if (Array.isArray(page)) {
@@ -394,8 +322,7 @@ export class ItemValue implements CommandValue {
           json: id,
         });
       } else {
-        // 1.20.5..1.21.3: components exist but `item_model` doesn't, so fall
-        // back to the ref's legacy custom_model_data number.
+        // 1.20.5..1.21.3 has components but no `item_model`, so use the legacy number.
         out.push(customModelDataLowering(legacyModelData(this.itemModelValue, version), version));
       }
     }
@@ -417,11 +344,8 @@ export class ItemValue implements CommandValue {
       });
     }
     if (this.canPlaceOnValue.length > 0) {
-      // `can_place_on` is an AdventureModePredicate, whose codec is
-      // `compactListCodec(BlockPredicate)`: the value is a single block
-      // predicate, or a list of them - there is no `predicates:` wrapper. A
-      // block predicate matches with `{blocks:<id|#tag|list>}`, where `blocks`
-      // is a HolderSet (a bare id/#tag for one block, a list for several).
+      // `can_place_on` is a block predicate or a list of them, with no `predicates:`
+      // wrapper.
       const blocks = this.canPlaceOnValue;
       const snbt = blocks.length === 1 ? `"${blocks[0]}"` : `[${blocks.map((b) => `"${b}"`).join(",")}]`;
       out.push({
@@ -498,11 +422,8 @@ export class ItemValue implements CommandValue {
   }
 
   /**
-   * This item as an `item_predicate` JSON object (the body of a `match_tool`
-   * condition, or a recipe/equipment item check). Built from the same component
-   * definitions as {@link render}, so a give'd item matches its own predicate.
-   * Raw `.data(...)` strings can't be parsed back, so an item defined only that
-   * way matches by id alone.
+   * This item as `item_predicate` JSON, from the same definitions as {@link render}.
+   * Items defined only by raw `.data(...)` match by id alone.
    */
   toPredicate(version: VersionProfile): Record<string, unknown> {
     const out: Record<string, unknown> = { items: this.baseId() };
@@ -533,12 +454,10 @@ export class ItemValue implements CommandValue {
   }
 
   /**
-   * The item's data components as a `{ "minecraft:custom_name": ... }` map, for a
-   * loot/recipe `set_components` function or any data-file that carries components
-   * inline. Built from the same definitions as {@link render}/{@link toPredicate},
-   * so a loot-granted item matches its give'd / predicate forms. Empty on versions
-   * before components, or for an item defined only via raw `.data(...)` (which
-   * can't be parsed back into structured components).
+   * The item's components as a `{ "minecraft:custom_name": ... }` map, for loot
+   * `set_components` and similar.
+   * Same definitions as {@link render}. Empty before components or for raw `.data(...)`
+   * items.
    */
   componentsJson(version: VersionProfile): Record<string, unknown> {
     if (!this.hasStructuredData() || version.dataVersion < COMPONENTS_DATA_VERSION) {
@@ -552,19 +471,12 @@ export class ItemValue implements CommandValue {
   }
 
   /**
-   * This item as an **item-stack NBT compound** - the shape an entity or block
-   * entity stores a stack in (an item frame's `Item`, a container's `Items`
-   * entry, a dropped item's `Item`), as opposed to the command-line stack string
-   * {@link render} produces or the predicate JSON {@link toPredicate} produces.
+   * This item as an item-stack NBT compound, as stored in item frames, containers and
+   * dropped items.
    *
-   * Same definitions, third rendering, so a named item summoned inside a frame is
-   * the same value that `give`s and that a `match_tool` predicate matches. Version
-   * aware in two places at once: `count`/`components` on 1.20.5+, `Count:1b`/`tag`
-   * before it.
-   *
-   * A raw `.data(...)` escape hatch can't be lowered into this form (the string is
-   * stack syntax, not NBT), so an item defined that way throws rather than
-   * silently emitting a stack missing its data.
+   * Same definitions as {@link render} and {@link toPredicate}. `count`/`components` on
+   * 1.20.5+,
+   * `Count`/`tag` before. Throws for raw `.data(...)` items, which can't be converted.
    */
   toStackNbt(version: VersionProfile): string {
     const modern = version.dataVersion >= COMPONENTS_DATA_VERSION;
@@ -573,8 +485,7 @@ export class ItemValue implements CommandValue {
 
     if (this.hasStructuredData()) {
       if (modern) {
-        // `stack` is `name=<snbt value>`; the compound wants the same value under
-        // the component's full id, which is exactly what `key` carries.
+        // The compound uses the component's full id, which `key` holds.
         const entries = this.modernComponents(version).map((c) => {
           const eq = c.stack.indexOf("=");
           return `"${c.key ?? normalizeId(c.stack.slice(0, eq))}":${c.stack.slice(eq + 1)}`;
@@ -594,10 +505,7 @@ export class ItemValue implements CommandValue {
     return `{${parts.join(",")}}`;
   }
 
-  /**
-   * {@link toStackNbt} deferred, so the stack can be dropped straight into an
-   * `Nbt({ Item: … })` compound and rendered with everything around it.
-   */
+  /** {@link toStackNbt}, deferred so it can go inside an `Nbt({ Item: … })` compound. */
   stackNbt(): CommandValue {
     return { render: (version: VersionProfile) => this.toStackNbt(version) };
   }
@@ -605,10 +513,7 @@ export class ItemValue implements CommandValue {
 
 export type Item = ItemValue;
 
-/**
- * Build an item from any id (custom namespaces, `#tags`, `.data(...)`), or use
- * a generated member for a known vanilla item: `Item.DIAMOND`.
- */
+/** An item from any id, or a generated member like `Item.DIAMOND`. */
 export const Item = withMembers(
   (id: string): ItemValue => new ItemValue(id),
   ITEM_IDS,

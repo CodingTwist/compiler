@@ -6,8 +6,7 @@ import { loadPack, worldDir } from "./load";
 import { buildDatapack } from "../core/codegen/codegen";
 import { v1_21_4 } from "../versions/profiles";
 
-// The fixture imports nothing (tsx inside vitest can't resolve helix source); its version
-// comes in on a global. Real `from "helix"` imports are covered by building the packs.
+// The fixture can't import helix source under vitest, so its version comes from a global.
 (globalThis as Record<string, unknown>).__fixtureVersion = v1_21_4;
 const roots: string[] = [];
 afterAll(() => roots.forEach((r) => fs.rmSync(r, { recursive: true, force: true })));

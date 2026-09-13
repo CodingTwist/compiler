@@ -3,30 +3,17 @@ import type { FunctionContext } from "helix";
 import type { PlayerMotionInternals } from "./context";
 
 /**
- * The global-vector math (pure scoreboard / storage, no macros).
+ * Converts a world-axis vector to the player's local axes, since the impulse only pushes
+ * along local axes.
  *
- * The problem: `launch/main` can only push the player along its *local* axes
- * (the impulse enchantment is direction-fixed), but `launch_global_xyz` is given
- * a vector in *world* axes. So we change the vector's basis from world to local
- * before launching. Two steps:
+ * `store_reference_vectors`: teleport one unit along each local axis and read the world
+ * position, giving vectors i (left), j (up), k (forward).
  *
- *   `store_reference_vectors` - find what the player's three local axes point to
- *     in world space. Teleport one unit along each local axis (`^1 ^0 ^0` = left,
- *     `^0 ^1 ^0` = up, `^0 ^0 ^1` = forward) and read the resulting world `Pos`.
- *     Those are the unit vectors i (left), j (up), k (forward). Then teleport back.
- *
- *   `convert_to_local` - project the requested world vector onto i/j/k (a dot
- *     product per axis): the local coordinate along each axis is how much of the
- *     world vector lies along that reference vector. The `*100000` / `/100000`
- *     dance is fixed-point: scoreboards are integer-only, so each fractional
- *     reference-vector component is read scaled up by 100000, multiplied in, then
- *     scaled back down. (Upstream calls this a "no-tp approximation" - it skips a
- *     per-component teleport by doing the projection in arithmetic instead.)
+ * `convert_to_local`: dot the world vector with i, j and k. Values are scaled by 100000
+ * because
+ * scores are integers.
  */
-/**
- * The three reference vectors in `temp` storage - each a 3-element list, so an axis
- * is `VEC.i.index(0)` rather than a `"vec_i[0]"` literal.
- */
+/** The three reference vectors in `temp` storage. */
 const VEC = {
   i: NbtPath("vec_i"),
   j: NbtPath("vec_j"),
@@ -68,9 +55,8 @@ export function defineMath(I: PlayerMotionInternals): void {
         .storeResultScore(dest)
         .run((b) => b.storage(temp).get(path, 100000));
 
-    // The world vector, saved off because the work slots double as each
-    // reference vector's x component below (one slot fewer than reading them
-    // into three more).
+    // Save the world vector, because the work slots are reused for the reference vectors
+    // below.
     const g = { x: dummyScore("#_x"), y: dummyScore("#_y"), z: dummyScore("#_z") };
     g.x.assign(workX);
     g.y.assign(workY);
@@ -91,9 +77,7 @@ export function defineMath(I: PlayerMotionInternals): void {
     getInto(kY, VEC.k.index(1));
     getInto(kZ, VEC.k.index(2));
 
-    // local = (g·i, g·j, g·k) / 100000 - the projection, written as itself.
-    // `#constant.100000` rather than the literal so the scoreboard backend gets
-    // a score operand instead of materialising the number three times.
+    // local = (g·i, g·j, g·k) / 100000
     const S = constant("#constant.100000");
     math`(${workX} * ${g.x} + ${iZ} * ${g.z}) / ${S}`.into(workX);
     math`(${workY} * ${g.x} + ${jY} * ${g.y} + ${jZ} * ${g.z}) / ${S}`.into(workY);
@@ -102,12 +86,8 @@ export function defineMath(I: PlayerMotionInternals): void {
 }
 
 /**
- * The shared tail of `launch_global_xyz` once `#x/#y/#z` hold the global vector:
- * read the reference vectors via the marker, short-circuit to the cached local
- * vector when inputs + orientation match, otherwise convert and launch. The
- * large-vector branch needs macros and is unsupported in this build, so it
- * early-`return fail`. Lives here (not in api) because it is the bridge into the
- * math functions and shares all their state.
+ * Tail of `launch_global_xyz`: reads reference vectors, reuses the cached result if nothing
+ * changed, otherwise converts and launches. The large-vector branch returns fail.
  */
 export function globalConversionTail(
   I: PlayerMotionInternals,

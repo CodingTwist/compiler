@@ -39,13 +39,9 @@ export function itemSlug(item: Item): string {
 }
 
 /**
- * Register (once) the holding predicate for `item` and return an `@a` selector
- * matching whoever holds it - the held-detection primitive shared by
- * {@link ItemModule}'s held sweep and exposed via `ItemBuilder.holderSelector`
- * so callers with their own tick loop (e.g. a per-area mechanism) can refine it
- * (`.volume(...)`) and detect holders the same way the item is given. The slug +
- * register-once dedup live in helix's `holdingPredicate`, so this names the file
- * the same way spool's `holding` plugin does and shares it if both are present.
+ * Returns an `@a` selector for players holding `item`, registering its predicate once.
+ *
+ * Shares the predicate file with spool's `holding` plugin if both are used.
  */
 export function itemHolderSelector(dp: Datapack, item: Item, opts?: HoldingOptions): Selector {
   return Selector.allPlayers().predicate(holdingPredicate(dp, item, opts));
@@ -60,12 +56,7 @@ export function itemGiveFunction(dp: Datapack, item: Item, slug: string): Functi
   return dp.getOrCreateFunction(name);
 }
 
-/**
- * The drop-in {@link DatapackModule} an `ItemBuilder` compiles to. It owns nothing
- * at construction time; everything is materialised in `register(dp)` (give
- * function, attack/use advancements + self-revoking reward functions) and
- * `onTick(ctx)` (the held sweep), and only for behaviours that were attached.
- */
+/** The module an `ItemBuilder` compiles to. Only attached behaviours emit anything. */
 export class ItemModule implements DatapackModule {
   private heldSelector?: Selector;
 
@@ -102,23 +93,18 @@ export class ItemModule implements DatapackModule {
   onTick(ctx: FunctionContext): void {
     const held = this.opts.held;
     if (!held || !this.heldSelector) return;
-    // Run the held body as each holder, anchored at them (so @s is the holder and
-    // positional ops land on the holder).
+    // Run the held body as each holder, at them.
     this.heldSelector.run((as) => as.atEntity(Selector.self(), held, "xyz"))(ctx);
   }
 
   /**
-   * Wire reliable right-click detection via the `used:<item>` statistic (the
-   * standard carrot-/warped-fungus-on-a-stick technique). A per-item objective
-   * mirrors the use count; each tick we run the body as (and at) every holder
-   * whose count went `>= 1` since last tick - gated by this item's holding
-   * predicate so only *this* custom item fires, not any plain stick - then reset
-   * the objective to 0. Its own objective (keyed on the slug) means two
-   * right-click items never reset each other's counter.
+   * Wires right-click detection with the `used:<item>` statistic (the carrot-on-a-stick
+   * trick).
    *
-   * Self-contained: it creates its own `load` (objective init) and `tick` (scan +
-   * reset) functions, so it works whether the item was wired via `register()` or
-   * `toModule()`. Idempotent on the slug.
+   * Each tick, runs the body as holders whose count went up, then resets it. Gated by the
+   * holding
+   * predicate so plain items don't fire. Makes its own load and tick functions; idempotent
+   * per item.
    */
   private rightClick(dp: Datapack, base: string, body: ItemBehaviour): void {
     const tickName = `${base}/rc_tick`;
@@ -131,19 +117,12 @@ export class ItemModule implements DatapackModule {
     dp.createFunction(`${base}/rc_load`, "load").build((ctx) => ctx.scoreInit(rc));
     dp.createFunction(tickName, "tick").build((ctx) => {
       ctx.execute().as(clicked).at(Selector.self()).run((b) => body(b));
-      // Reset every player (cheap) so a use registered this tick can't linger and
-      // re-fire next tick. `set 0` behaves like `reset` here: the stat re-mirrors
-      // its (>=1) total on the next use.
+      // Reset every player so this tick's use doesn't fire again next tick.
       rc.score(Selector.allPlayers()).set(0);
     });
   }
 
-  /**
-   * Wire one event behaviour. `dp.event` owns the shape - a self-revoking
-   * advancement whose reward function runs the body and then re-arms itself -
-   * so an item's "on use" hook and a pack's hand-written event handlers are the
-   * same construct rather than two copies of the same idiom.
-   */
+  /** Wires one event behaviour through `dp.event` (a self-revoking advancement). */
   private event(dp: Datapack, name: string, trigger: Trigger, body: ItemBehaviour): void {
     dp.event(name, trigger, (ctx) => body(ctx));
   }

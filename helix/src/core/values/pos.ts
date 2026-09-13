@@ -3,9 +3,8 @@ import { CommandValue } from "./value";
 type Mode = "absolute" | "exact" | "relative" | "local";
 
 /**
- * A single axis pinned to its own mode. Pass one in place of a number to mix
- * modes within a vector (`~ 0 ~`), which vanilla allows per-axis - the only
- * illegal mix is local (`^`) with anything else.
+ * One axis with its own mode, for mixing modes within a vector (`~ 0 ~`). Local `^` can't
+ * be mixed.
  */
 export interface Coord {
   readonly n: number;
@@ -16,8 +15,7 @@ export interface Coord {
 export type CoordArg = number | Coord;
 
 /**
- * A coordinate tuple (`block_pos`, `vec3`, `vec2`, `column_pos`). The factory
- * picks the default mode; any axis may override it:
+ * A coordinate tuple. The factory sets the default mode; any axis can override it:
  *
  *   Pos(10, 4, 5)                 -> "10 4 5"     (absolute)
  *   Pos.rel(0, 1, 0)              -> "~ ~1 ~"     (relative, ~)
@@ -36,11 +34,7 @@ export class PosValue implements CommandValue {
     return this.parts.map((c) => component(c.n, c.mode)).join(" ");
   }
 
-  /**
-   * The numeric world coordinates, for data that takes numbers rather than a
-   * command position (e.g. a `location` trigger's bounds). Throws unless every
-   * axis is absolute - `~`/`^` have no value outside an execution context.
-   */
+  /** The numeric coordinates. Throws unless every axis is absolute. */
   coords(): [number, number, number] {
     if (this.parts.length !== 3 || this.parts.some((c) => c.mode !== "absolute" && c.mode !== "exact")) {
       throw new Error(`Pos "${this.render()}" has no absolute coordinates`);
@@ -57,10 +51,8 @@ export class PosValue implements CommandValue {
   }
 
   /**
-   * A new position at the center of this block cell (+0.5 on each axis). A
-   * block_display whose blocks are translated by `-0.5` (centered for rotation)
-   * renders its visual center at the entity position, so summoning at a cell's
-   * center makes those blocks fill the cell exactly instead of sitting 0.5 low.
+   * This position plus 0.5 on each axis: the centre of the block.
+   * Centred block displays (translated -0.5) fill the cell exactly when summoned here.
    */
   center(): PosValue {
     return this.offset(0.5, 0.5, 0.5);
@@ -69,20 +61,15 @@ export class PosValue implements CommandValue {
 
 function component(n: number, mode: Mode): string {
   if (mode === "absolute") return String(n);
-  // A whole number in a vec3 is block-centered by vanilla (`0` means 0.5 on x/z);
-  // the trailing `.0` is what pins it to the exact coordinate.
+  // Vanilla centres whole numbers in a vec3 (`0` means 0.5), so add `.0` to pin it.
   if (mode === "exact") return Number.isInteger(n) ? `${n}.0` : String(n);
   const prefix = mode === "relative" ? "~" : "^";
   return n === 0 ? prefix : `${prefix}${n}`;
 }
 
 /**
- * A position whose tokens were authored as a raw string (e.g. `"~ ~ ~"`). It
- * renders the text verbatim and is otherwise opaque - `offset` can't shift a
- * vector it never parsed, so it returns itself unchanged. This exists only to
- * coerce the legacy `Pos | string` escape hatch into a real {@link PosValue} at
- * the boundary of the strict command API; new code should build positions with
- * `Pos(...)`, `Pos.rel(...)`, etc.
+ * A position from a raw string, rendered as-is. `offset` can't shift it.
+ * Only for the legacy `Pos | string` inputs; use `Pos(...)` in new code.
  */
 class RawPos extends PosValue {
   constructor(private readonly text: string) {
@@ -104,10 +91,7 @@ export type Pos = PosValue;
 export const Pos = Object.assign(
   (...coords: CoordArg[]): PosValue => new PosValue(coords, "absolute"),
   {
-    /**
-     * Absolute, but pinned to the exact coordinate (`0.0`) rather than the block
-     * center vanilla infers from a whole number (`0` -> 0.5 on x/z in a vec3).
-     */
+    /** Absolute, pinned to the exact coordinate (`0.0`) instead of the block centre. */
     exact: (...coords: CoordArg[]): PosValue => new PosValue(coords, "exact"),
     /** Relative to the executor (`~`). */
     rel: (...coords: CoordArg[]): PosValue => new PosValue(coords, "relative"),

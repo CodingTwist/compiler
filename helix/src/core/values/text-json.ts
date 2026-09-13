@@ -10,18 +10,10 @@ import { Text } from "../frontend/nodes/text";
 import { generateSingleNode } from "../ir/generate";
 
 /**
- * A built text span as its vanilla JSON object.
+ * A text span as vanilla JSON, for tellraw, signs, books, item names and lore.
  *
- * `tellraw` is not the only place a text component appears: sign lines, book
- * pages, custom item names and lore are all the same structure, and all of them
- * used to mean hand-writing the JSON - which is how a pack ends up with the
- * pre-1.21.5 `{"clickEvent":{"action":…,"value":…}}` spelling in one file and
- * the modern `click_event`/`command` in another. One builder, one renderer.
- *
- * `ctx` is only needed by the parts that name something the compiler has to
- * resolve - a selector, an NBT holder, a command node. Without it those throw
- * rather than render half a component; a plain styled `text(...)` with a string
- * click command needs nothing and is what the non-`tellraw` uses build.
+ * `ctx` is needed for parts that reference a selector, NBT holder or command; without it
+ * they throw.
  */
 export function textJson(part: TellrawPart, ctx?: CodegenContext): any {
   const json: any = {};
@@ -60,10 +52,8 @@ export function textJson(part: TellrawPart, ctx?: CodegenContext): any {
 }
 
 /**
- * Which field a click action carries its payload in. Since 1.21.5 the flat
- * `value` was replaced by a per-action key - so a `run_command` writes
- * `command` and an `open_url` writes `url`, and writing `command` for both
- * produces a link that silently does nothing.
+ * Which field holds each click action's payload. Since 1.21.5 each action has its own key;
+ * the wrong key gives a link that does nothing.
  */
 const CLICK_FIELD: Record<ClickEvent["action"], string> = {
   run_command: "command",

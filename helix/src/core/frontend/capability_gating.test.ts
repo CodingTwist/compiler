@@ -5,9 +5,8 @@ import { FunctionNode } from "../ir/node";
 import { v1_20_1 } from "../../versions/profiles";
 import { v1_21_4 } from "../../versions/profiles";
 
-// `random` was added in 1.20.3. The frontend gates on the target version, so
-// authoring `ctx.random(...)` against an older target throws at the call site -
-// not at codegen.
+// `random` needs 1.20.3+, so calling it for an older target throws at the call, not at
+// codegen.
 describe("frontend capability gating", () => {
   const ctxFor = (v: typeof v1_21_4) =>
     new FunctionContext(new FunctionNode("main"), v);

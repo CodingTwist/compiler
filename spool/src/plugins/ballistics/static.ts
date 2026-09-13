@@ -1,14 +1,8 @@
 /**
- * **The build-time half of `ballistics`: both endpoints known now.**
+ * Build-time shots: solved now into one `/summon` with a fixed `Motion`.
  *
- * `solve.ts` inverts the flight exactly, here at compile time, and the result is frozen
- * into a single `/summon` with a literal `Motion` - nothing is computed in game, so the
- * shot costs one command and hits the same spot every run. That is the whole trade
- * against `runtime.ts`, which solves in game and can chase a moving target.
- *
- * Because the solve happens here, this half gets the *full* aiming vocabulary
- * ({@link LaunchOptions}: speed caps, pitch window, min-speed / min-time / max-time
- * preference). The runtime half has only a fixed flight time.
+ * Costs one command and supports every {@link LaunchOptions}; use `runtime.ts` for moving
+ * targets.
  */
 import { Pos, round6 } from "helix";
 import type { FunctionContext, Vec3 } from "helix";

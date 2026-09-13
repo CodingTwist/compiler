@@ -1,8 +1,4 @@
-// The top third of `Datapack`: the entry points authors actually call to run
-// code (`load` / `tick` / `after` / periodic hooks) and the codegen/output
-// surface. The class is split across three files purely for size - see
-// datapack-core.ts (identity, functions, objectives) and datapack-resources.ts
-// (every resource registry), both of which this extends and re-exports.
+// Top of `Datapack`: entry points (`load`, `tick`, `after`, periodic hooks) and output.
 import { buildDatapack } from "../codegen/codegen";
 import {
   analyzeCost,
@@ -35,12 +31,8 @@ export {
 
 export class Datapack extends DatapackResources {
   /**
-   * Write this pack to `outputPath` (functions, tags, data resources, structures,
-   * `pack.mcmeta`). The disk-writing code lives in `codegen/write.ts` and is
-   * loaded lazily via dynamic `import()`, so merely importing helix (or building a
-   * pack in-memory with {@link buildDatapack}) never pulls in Node's `fs`/`path` -
-   * that's what lets the compiler run in a browser. Consequently this is async;
-   * `await` it if you need the files on disk before continuing.
+   * Writes the datapack to `outputPath`.
+   * Async because the disk code is imported lazily, keeping helix browser-safe.
    */
   async writeDatapack(outputPath: string, opts?: { zip?: boolean }) {
     this.prepareForCodegen();
@@ -49,12 +41,8 @@ export class Datapack extends DatapackResources {
   }
 
   /**
-   * Write this pack's resource pack (`assets/` + a resource-format `pack.mcmeta`)
-   * to `outputPath` - a *separate* pack from {@link writeDatapack} (own folder,
-   * own format). Emits generated models + item definitions + `resourceFile` JSON
-   * and copies `addAssets` dirs verbatim. Async for the same reason as
-   * {@link writeDatapack}: the disk path is dynamic-imported so the compiler
-   * stays browser-safe.
+   * Writes the resource pack to `outputPath`, separate from {@link writeDatapack}. Async
+   * for the same reason.
    */
   async writeResourcePack(outputPath: string) {
     this.prepareForCodegen();
@@ -62,22 +50,15 @@ export class Datapack extends DatapackResources {
     writeResourcePack(this, outputPath);
   }
 
-  /**
-   * Settle deferred authoring and inject load initializers, the shared prelude
-   * to any codegen. Idempotent - `runFinalizers` and the init injection both
-   * no-op on repeat - so {@link report} and {@link writeDatapack} can both call it.
-   */
+  /** Runs finalizers and injects load setup before codegen. Idempotent. */
   private prepareForCodegen() {
     this.runFinalizers();
     this.ensureLoadInitializers();
   }
 
   /**
-   * Static per-tick cost analysis: walks the call graph rooted at the `tick` tag
-   * to report worst-case commands/tick and flag functions doing unbounded `@e`
-   * scans. Runs codegen first (into `dp.files`), so call it once authoring is
-   * done. Pure analysis - emits nothing and does not write to disk. Pass through
-   * {@link formatCostReport} (or {@link printReport}) for a readable summary.
+   * Static per-tick cost report: worst-case commands per tick and unbounded `@e` scans.
+   * Runs codegen first; call when authoring is done. See {@link formatCostReport}.
    */
   report(): CostReport {
     this.prepareForCodegen();
@@ -86,9 +67,9 @@ export class Datapack extends DatapackResources {
   }
 
   /**
-   * Line up a measured profile (the helix-profiler mod's `/helixprof stop` JSON, already
-   * parsed) with this pack: per-function calls and time, hottest commands mapped back to
-   * `.mcfunction` lines and, with `debug.sources`, TS lines. See {@link formatProfileReport}.
+   * Matches a measured profile from the helix-profiler mod to this pack's functions and
+   * lines.
+   * See {@link formatProfileReport}.
    */
   profileReport(raw: ProfileDump): ProfileReport {
     this.prepareForCodegen();
@@ -107,9 +88,8 @@ export class Datapack extends DatapackResources {
   readonly allowed = new Map<LintRule, Map<string, string>>();
 
   /**
-   * Mark `fn`'s hits of a {@link report} lint `rule` as intentional. Covers what `fn`
-   * calls too (its `execute … run` bodies included), so keep the expensive commands
-   * in a function of their own - a new one elsewhere still warns.
+   * Marks `fn`'s hits of lint `rule` as intentional, including functions it calls.
+   * Keep the expensive commands in their own function so new ones elsewhere still warn.
    */
   allow(rule: LintRule, fn: FunctionRef | string, reason: string): void {
     const fns = this.allowed.get(rule) ?? new Map<string, string>();
@@ -130,8 +110,8 @@ export class Datapack extends DatapackResources {
   }
 
   /**
-   * A hook function that runs every `seconds` seconds (scoreboard clock).
-   * `phase` (in ticks) staggers it within the period - see {@link everyTicks}.
+   * A function that runs every `seconds` seconds. `phase` staggers it; see {@link
+   * everyTicks}.
    */
   everySeconds(seconds: number, phase = 0): FunctionRef {
     return this.timing.everyTicks(
@@ -143,18 +123,14 @@ export class Datapack extends DatapackResources {
   }
 
   /**
-   * A hook function that runs every `ticks` ticks (scoreboard clock). `phase`
-   * offsets it within the period so several same-period hooks fire on different
-   * ticks, spreading per-tick load instead of bunching it.
+   * A function that runs every `ticks` ticks. `phase` offsets it so same-period hooks
+   * spread out.
    */
   everyTicks(ticks: number, phase = 0): FunctionRef {
     return this.timing.everyTicks(this, ticks, `${ticks}t`, phase);
   }
 
-  // `dp.clip()` / `dp.slide()` / `dp.effect()` are installed by the `spool`
-  // package (it augments this prototype) - the animation mechanics are composed
-  // conveniences over the public API, not part of the IR core. `import "spool"`
-  // to use them. They share the `timing` strategy below.
+  // `dp.clip()` and friends are added by `spool`, not part of the core.
 
   /** Append to the `load` function (runs on pack load / `/reload`). */
   load(builder: (ctx: FunctionContext) => void): FunctionRef {
@@ -164,19 +140,15 @@ export class Datapack extends DatapackResources {
   }
 
   /**
-   * Run `build` once, after `time` has elapsed:
+   * Runs `build` once after `time`:
    *
    *   dp.after(ctx, Time.seconds(3), (c) => c.say("done"));
    *
-   * `schedule` needs a *named* target, which has meant inventing an entry-point
-   * name for a body nothing ever calls directly. This captures it into an
-   * auto-named private child of the calling function - the same scheme `if` and
-   * `execute … run` bodies already use - and schedules that. Pass `append` to
-   * queue behind a pending schedule for the same body instead of replacing it.
-   *
-   * Not a coroutine: the commands after this call still run *now*, and the body
-   * runs at the world origin as the server, so it must re-establish any
-   * `as`/`at` context it needs.
+   * The body goes in an auto-named child function, so you don't invent a name. `append`
+   * queues
+   * instead of replacing a pending run. Not a coroutine: the body runs later at the world
+   * origin
+   * as the server, so it must set its own `as`/`at`.
    */
   after(
     ctx: FunctionContext,
@@ -224,11 +196,8 @@ export class Datapack extends DatapackResources {
       this.functions.set(initName, initFn);
     }
 
-    // Rebuild the objective-creation body from the *current* objective set on
-    // every call. prepareForCodegen is idempotent, but objectives may have been
-    // registered between calls (e.g. `dp.report()`, then more authoring, then
-    // `writeDatapack()`); freezing the body at first codegen would silently drop
-    // those late objectives from init. Clearing in place is cheap.
+    // Rebuild from the current objectives each time, since more may be added between
+    // codegen calls.
     initFn.nodes.length = 0;
     for (const obj of this.objectiveDefs.values()) {
       initFn.nodes.push(scoreInitNode(obj));

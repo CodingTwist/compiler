@@ -1,11 +1,7 @@
 import { normalizeId } from "../../versions/registry";
 import { ModelRef } from "./model";
 
-/**
- * A reference to a resource-pack **model** file - either a {@link ModelRef} handed
- * back by `dp.model`/`dp.blockModel`, or a bare `<ns>:path` string. Normalized to
- * a `minecraft:`-qualified id.
- */
+/** A resource pack model reference: a {@link ModelRef} or a `<ns>:path` string. */
 export type ModelResource = ModelRef | string;
 
 function refId(ref: ModelResource): string {
@@ -13,10 +9,8 @@ function refId(ref: ModelResource): string {
 }
 
 /**
- * Property ids for the `minecraft:condition` item-model arm (the boolean-valued
- * item-model property registry). Author `ItemModel.condition(CONDITION_PROPERTIES.DAMAGED, …)`
- * or pass a raw `<ns>:id` string. Hand-listed (client-side registry, absent from
- * the mcmeta server summary) - use `.raw()` if a newer one isn't here yet.
+ * Property ids for `minecraft:condition` item models. Hand-listed (client-only registry);
+ * use `.raw()` for new ones.
  */
 export const CONDITION_PROPERTIES = {
   USING_ITEM: "minecraft:using_item",
@@ -91,10 +85,7 @@ export const SPECIAL_MODEL_TYPES = {
 } as const;
 
 /**
- * A **tint source** (`minecraft:tint_source`) - one entry of a
- * {@link ItemModel.model} `tints` array, colouring a texture layer. Static
- * constructors mirror the vanilla registry; `.raw()` is the escape hatch for a
- * shape not modelled here.
+ * A tint source for an item model's `tints`. `.raw()` for unmodelled shapes.
  *
  *   ItemModel.model(m, [TintSource.dye(0xFFFFFF)])
  */
@@ -144,9 +135,7 @@ export class TintSource {
 }
 
 /**
- * A **special model** (`minecraft:special_model_type`) - the inner `model` of the
- * {@link ItemModel.special} arm, rendering a hardcoded block-entity model (bed,
- * banner, chest, …). Static constructors mirror the registry; `.raw()` escapes.
+ * A special model (bed, banner, chest…) for {@link ItemModel.special}. `.raw()` for others.
  */
 export class SpecialModel {
   private constructor(private readonly data: Record<string, unknown>) {}
@@ -231,14 +220,12 @@ export interface RangeEntry {
 }
 
 /**
- * The client **item model** - the tagged union under an item definition's `model`
- * field (`assets/<ns>/items/<name>.json`), selecting how a stack renders. Mirrors
- * the full vanilla schema (misode's `assets/item/` generator): a flat
- * {@link ItemModel.model}, or one of the branching arms (`composite` / `condition`
- * / `select` / `range_dispatch`), the terminals (`empty` / `bundle/selected_item`),
- * or a `special` block-entity model. Every arm has a `.raw()` sibling escape hatch;
- * registered via `dp.itemDefinition(name, model)` (or emitted by `dp.model` for the
- * flat case). All model-resource fields accept a {@link ModelRef} or a `<ns>:path`.
+ * An item model: how a stack renders, under an item definition's `model` field.
+ *
+ * A flat {@link ItemModel.model} or a branching arm (`composite`, `condition`, `select`,
+ * `range_dispatch`), plus `empty`, `bundle/selected_item` and `special`. Each has a
+ * `.raw()`.
+ * Register with `dp.itemDefinition(name, model)`.
  *
  *   ItemModel.rangeDispatch("minecraft:damage", [
  *     { threshold: 0, model: ItemModel.model("ns:item/sword") },
@@ -266,9 +253,7 @@ export class ItemModel {
   }
 
   /**
-   * Boolean branch on `property` (see {@link CONDITION_PROPERTIES}); `opts` carries
-   * that property's extra fields (e.g. `{ component }` for `has_component`,
-   * `{ keybind }` for `keybind_down`, `{ index }` for `custom_model_data`).
+   * Branches on a boolean `property`. `opts` holds its extra fields, e.g. `{ component }`.
    */
   static condition(
     property: string,
@@ -284,10 +269,7 @@ export class ItemModel {
     });
   }
 
-  /**
-   * Match `property` (see {@link SELECT_PROPERTIES}) against `cases`; `opts` carries
-   * that property's extra fields (e.g. `{ block_state_property }` for `block_state`).
-   */
+  /** Matches `property` against `cases`. `opts` holds its extra fields. */
   static select(
     property: string,
     cases: SelectCase[],
@@ -303,9 +285,8 @@ export class ItemModel {
   }
 
   /**
-   * Numeric threshold dispatch on `property` (see {@link RANGE_DISPATCH_PROPERTIES}).
-   * `opts.scale` multiplies the raw value; `opts.fallback` renders below the lowest
-   * threshold; any other key is a property-specific field.
+   * Picks a model by numeric threshold on `property`. `opts.scale` scales the value,
+   * `opts.fallback` renders below the lowest threshold.
    */
   static rangeDispatch(
     property: string,

@@ -3,18 +3,10 @@ import type { FunctionContext } from "helix";
 import type { KitPlugin } from "../../plugin";
 
 /**
- * A named set of entities tracked by an entity **tag**. The point is lag: a bare
- * `@e` selector iterates every loaded entity every time it runs - the single
- * biggest source of datapack tick cost. Registering the entities you care about
- * under a tag and querying `set.all()` turns that into a bounded `@e[tag=…]`
- * scan, which the per-tick cost report (`dp.report()`) recognises as narrowed and
- * does not flag.
+ * A named set of entities tracked by a tag, so you query `@e[tag=…]` instead of scanning
+ * all of `@e`.
  *
- * The tag id is the set name, so two `EntitySet`s with the same name address the
- * same membership - identity is the name, not the instance.
- *
- * (Named `EntitySet`, not "registry", to stay clear of helix's `dp.registryFile`
- * and the registry data-resource concept - this is purely an entity-tag set.)
+ * Sets with the same name share members.
  */
 export class EntitySet {
   constructor(public readonly name: string) {}
@@ -40,15 +32,11 @@ export class EntitySet {
   }
 }
 
-// Importing this module surfaces `dp.entitySet()` to the type-checker; the runtime
-// method is installed when the `entitySet` plugin's `install()` runs.
+// Declares `dp.entitySet()` for the type checker; the plugin's `install()` adds it at
+// runtime.
 declare module "helix" {
   interface Datapack {
-    /**
-     * An {@link EntitySet} for `name`: register entities under a tag and query
-     * the small tagged set instead of scanning `@e`. Pairs with `dp.report()`,
-     * which flags the unbounded scans this is meant to replace.
-     */
+    /** An {@link EntitySet} for `name`. */
     entitySet(name: string): EntitySet;
   }
 }

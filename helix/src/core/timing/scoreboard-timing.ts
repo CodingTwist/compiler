@@ -1,8 +1,5 @@
-// Timing: realise countdowns and periodic clocks with a
-// scoreboard. Countdowns are a per-holder score on the `anim_life` objective;
-// periodic clocks are a per-period fake-player on a shared `clock` objective that
-// the `__clock` tick driver increments and resets. Scores survive /reload, so a
-// running animation keeps going across reloads.
+// Scoreboard timers: countdowns on `anim_life`, periodic clocks on `clock`. Scores survive
+// /reload.
 import { Range, FunctionNode } from "../ir/node";
 import type { ExpressionNode } from "../ir/node";
 import { ScoreRangeNode } from "../commands/if";
@@ -13,8 +10,7 @@ import type { Objective } from "../frontend/nodes/objective";
 import { ScoreTarget } from "../values/score_target";
 import { privateName } from "../private-fn";
 
-// The shared per-tick clock driver, tucked under the private root so it sorts
-// away from authored functions rather than to the top of the list.
+// The shared clock driver, under the private root.
 const CLOCK = privateName("clock");
 
 export const TICKS_PER_SECOND = 20;
@@ -29,9 +25,8 @@ export interface Countdown {
 }
 
 /**
- * How run-for-a-duration / periodic timing compiles: countdowns are a per-holder
- * score on the `anim_life` objective; periodic clocks are a per-period fake-player
- * on a shared `clock` objective driven by the `__clock` tick function.
+ * Countdowns are a score per holder on `anim_life`; periodic clocks are fake players on
+ * `clock`.
  */
 export class ScoreboardTiming {
   // Periods whose cycle-counter driver has already been installed in `__clock`.
@@ -94,12 +89,7 @@ export class ScoreboardTiming {
     );
   }
 
-  /**
-   * Install the shared per-period cycle counter (idempotent) and return the
-   * normalised phase. The counter counts 0..period-1, wrapping at the period, so
-   * each tick lands on exactly one residue and distinct phases fall on distinct
-   * ticks.
-   */
+  /** Installs the per-period counter (idempotent) and returns the normalised phase. */
   private ensureCounter(dp: Datapack, periodTicks: number, phase: number): number {
     const clock = dp.objective("clock");
     const holder = `t${periodTicks}`;

@@ -19,11 +19,8 @@ interface SwingDeps {
 }
 
 /**
- * The **swing service**: the per-tick pendulum. It owns `grapple/drive` (one player's
- * step) and `grapple/constrain` (the taut-tick rope solve), and exposes {@link driveAll}
- * for the tick controller to fan out over every grappling player. The maths lives in the
- * `physics` library; this file is the orchestration - `drive` reads as its four phases:
- * sense the state, (optionally) report it, turn it into a launch impulse, draw the rope.
+ * The per-tick pendulum: `grapple/drive` (one player) and `grapple/constrain` (taut rope
+ * solve).
  */
 export function createSwingService(d: SwingDeps) {
   const scratch = swingScratch(d.scratch);
@@ -44,17 +41,12 @@ export function createSwingService(d: SwingDeps) {
   d.fn.constrain.build(() => solveConstraint(d, scratch));
 
   /**
-   * Turn the sensed state into this tick's launch impulse and fire it once. player_motion's
-   * `applyGlobal` **adds** the impulse to the player's velocity, so:
+   * Builds and fires this tick's launch impulse. `applyGlobal` adds to velocity, so:
    *
-   *   - start from **zero** - the slack-tick baseline; a zero impulse adds nothing, so a slack
-   *     tick leaves the player to fall under engine gravity untouched.
-   *   - when **taut** (dist² ≥ ropeLen²), `grapple/constrain` overwrites that with the rope
-   *     correction. Gate on radius alone, not `dot`: the constraint cancels the *full* radial
-   *     velocity and its position trim must still fire when momentarily moving inward but
-   *     drifted out. Going genuinely slack drops dist² below ropeLen², stopping this.
-   *   - **clamp** per axis (caps the single big yank on the first taut tick of a fast grapple),
-   *     then **sustain** the impulse (no gamemode swap; the swing's own motion fires it).
+   * - Start at zero, so a slack tick leaves the player to gravity.
+   * - When taut (dist² ≥ ropeLen²), `grapple/constrain` writes the rope correction. Gate on
+   *   distance only, since the position trim must still run while moving inward.
+   * - Clamp per axis to cap the first yank, then sustain the impulse.
    */
   function applyRopeImpulse(ctx: FunctionContext): void {
     const launch = d.repo.launchVec();

@@ -1,5 +1,5 @@
-// Loads a pack from its `helix.config.ts` and creates one Datapack per target. Needs a
-// TypeScript-capable loader (the `helix` bin runs under tsx; vitest works too).
+// Loads a pack from `helix.config.ts` and creates one Datapack per target. Needs a TS
+// loader (tsx or vitest).
 import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
@@ -22,10 +22,7 @@ export interface LoadResult {
   packs: LoadedPack[];
 }
 
-/**
- * A module's default export, through however many CJS interop `default` wrappers. Plain
- * `import()`: the `helix` bin runs this under tsx, so `.ts` files load as-is.
- */
+/** A module's default export, unwrapping any CJS interop `default` layers. */
 async function importDefault<T>(file: string): Promise<T> {
   let mod = (await import(pathToFileURL(file).href)) as { default?: unknown };
   while (mod && typeof mod === "object" && "default" in mod) mod = mod.default as typeof mod;

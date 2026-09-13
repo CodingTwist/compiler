@@ -16,19 +16,15 @@ interface ControllerDeps {
 }
 
 /**
- * The **controller**: the plugin's three invoked entry functions - the "routes." Each is
- * thin, wiring the run context and delegating the body to a service:
+ * The plugin's entry functions, each delegating to a service:
  *
- *   - `grapple/start` (public)  → fire the web raycast, then latch on a hit.
- *   - `grapple/tick`  (tick)    → drive every grappling player.
- *   - `grapple/stop`  (public)  → release the executing player.
- *
- * No physics or state maths here; that's the services. `drive`/`constrain`/`rope` aren't
- * routes (never called from outside) - the swing/rope services own those.
+ * - `grapple/start` (public): fire the web and latch on a hit.
+ * - `grapple/tick` (tick): drive every grappling player.
+ * - `grapple/stop` (public): release the executing player.
  */
 export function defineController(d: ControllerDeps): void {
-  // grapple/start - run as + at the player. Cast the web from the eyes; on a hit (the anchor
-  // service placed a marker) latch the player, else report the miss.
+  // grapple/start, run as and at the player: cast from the eyes, latch on a hit, else
+  // report a miss.
   d.fn.start.build((ctx) => {
     // Root the web at the eye position and fire the ray (seeds its reach + marches).
     ctx
@@ -38,8 +34,7 @@ export function defineController(d: ControllerDeps): void {
       .positioned(Pos.local(0, 0, 0))
       .run((b) => d.ray.fire(b));
 
-    // Latch only if the ray actually placed an anchor (a filtered/missed cast summons nothing,
-    // so this stays un-run and no stale rope radius carries over).
+    // Only latch if the ray placed an anchor, so no stale rope length carries over.
     ctx.execute().ifEntity(d.selectors.freshAnchor()).run((b) => d.attach.latch(b));
 
     if (DEBUG) {

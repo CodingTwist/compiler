@@ -29,10 +29,8 @@ export class RandomCommand extends CommandHandler<RandomValueNode> {
 declare module "../frontend/context" {
   interface FunctionContext {
     /**
-     * Roll a random value, gated on the target version: `random` was added in
-     * 1.20.3, so authoring against an older target throws HERE (at the call).
-     * Returns a version-neutral node other commands (e.g. score storeResult)
-     * consume - it is not emitted on its own.
+     * Rolls a random value. `random` needs 1.20.3+, so older targets throw here.
+     * Returns a node for other commands (e.g. score storeResult) to consume.
      */
     random(min: number, max: number): RandomValueNode;
   }

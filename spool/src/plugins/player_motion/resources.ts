@@ -1,9 +1,6 @@
 /**
- * The data-resource JSON for `player_motion` - the `apply_impulse` enchantment
- * and the two predicates. Pure builders: no datapack/version state, just the
- * shapes upstream ships, so they read as data, not commands. The `ns` argument
- * is the consuming pack's namespace (helix is single-namespace, so the library
- * inlines into it rather than a `player_motion:` pack).
+ * Enchantment and predicate JSON for `player_motion`, under the consuming pack's namespace
+ * `ns`.
  */
 
 /** The dummy marker entity's fixed UUID (`d4bd74a7-4e82-4a07-8850-dfc4d89f9e2f`). */

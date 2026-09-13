@@ -13,21 +13,17 @@ interface AttachDeps {
 }
 
 /**
- * The **attach service**: latch a player onto an anchor that was just placed. This is the
- * body the controller runs, gated on the fresh anchor existing (a fizzled/filtered raycast
- * summons nothing, so this never runs and the player stays un-tagged with no stale rope).
+ * Latches a player onto a freshly placed anchor.
  *
- * It fixes the swing radius (the same vector maths a drive tick measures distance with, via
- * `physics.fixRopeLength`), stamps a fresh shared id on the player + their anchor so `stop`
- * and the per-tick rope can name exactly this pair by scoreboard compare, tags the player
- * `grappling`, and (when `ZERO_GRAVITY`) zeroes gravity with a removable modifier so the
- * swing is a momentum orbit. The raycast + anchor placement are separate services.
+ * Only runs if the anchor exists, so a missed raycast leaves no stale rope. Fixes the rope
+ * length,
+ * gives the player and anchor a shared id, and tags the player `grappling`.
  */
 export function createAttachService(d: AttachDeps) {
   const scratch = swingScratch(d.scratch);
 
   return {
-    /** Latch the executing player onto the fresh anchor. Runs as + at the player. */
+    /** Latches the executing player onto the fresh anchor. Run as and at the player. */
     latch(ctx: FunctionContext): void {
       // Fix the swing radius = current distance² to the anchor, seeding prev-pos.
       d.repo.readPos(ctx, d.selectors.self(), scratch.pos);
@@ -41,11 +37,10 @@ export function createAttachService(d: AttachDeps) {
         .as(d.selectors.freshAnchor())
         .run((a) => d.repo.id.score(Selector.self()).assign(d.consts.nextId, a));
 
-      // Tag the player swinging, then drop the transient summon handle (it only ever matched
-      // this anchor). The visible rope is drawn each tick by the swing service.
+      // Tag the player, then clear the temporary summon tag. The swing service draws the
+      // rope.
       ctx.tag().add(d.selectors.self(), "grappling");
-      // Zero gravity while swinging (removed in `grapple/stop`): kills the bounce's energy
-      // source and turns the swing into a momentum orbit. See `tuning.ts`.
+      // Zero gravity while swinging (removed in `grapple/stop`). See `tuning.ts`.
       if (ZERO_GRAVITY) {
         ctx.attribute().modifierAddAddMultipliedTotal(
           d.selectors.self(), Attribute.GRAVITY, GRAVITY_MODIFIER_ID, -1,

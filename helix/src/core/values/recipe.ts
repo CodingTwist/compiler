@@ -4,10 +4,7 @@ import { ItemValue } from "./item";
 import { IdValue } from "./id";
 import { normalizeId } from "../../versions/registry";
 
-/**
- * The 1.20.5 data version: recipes flip from `{item: id}` ingredients + `{item,count}`
- * results to flat id-string ingredients + `{id,count}` results (the components era).
- */
+/** 1.20.5: ingredients became flat id strings and results `{id,count}`. */
 const RECIPE_FLAT_DATA_VERSION = 3837;
 
 /** Anything usable as a recipe ingredient: an item/tag id string, an {@link ItemValue}, or an {@link IdValue}. */
@@ -34,10 +31,7 @@ function renderResult(result: Ingredient, count: number, version: VersionProfile
 }
 
 /**
- * A registerable **recipe** - the JSON written to `data/<ns>/<recipe folder>/<name>.json`
- * (via `Datapack.recipe`). Built from typed {@link ItemValue}/{@link IdValue}
- * ingredients, rendered version-aware (the 1.20.5 ingredient/result format change is
- * handled for you).
+ * A recipe, registered with `Datapack.recipe`. Rendered for the target version.
  *
  *   dp.recipe("ruby_block", RecipeDef.shaped(
  *     ["###", "###", "###"], { "#": Item.of("mypack:ruby") }, Item.of("mypack:ruby_block")));
@@ -77,8 +71,8 @@ export class RecipeDef {
   }
 
   /**
-   * A cooking recipe: `minecraft:smelting` (default), `blasting`, `smoking`, or
-   * `campfire_cooking`. `experience`/`cookingtime` default to 0.1 / 200.
+   * A cooking recipe: `smelting` (default), `blasting`, `smoking` or `campfire_cooking`.
+   * `experience`/`cookingtime` default to 0.1 / 200.
    */
   static cooking(
     ingredient: Ingredient,

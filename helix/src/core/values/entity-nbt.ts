@@ -2,25 +2,19 @@ import type { VersionProfile } from "../../versions/profile";
 import { Byte, Double, Float, NbtValue, toSnbt } from "./nbt";
 import type { NbtInput } from "./nbt";
 import type { ItemValue } from "./item";
-// The gate table: which dataVersion each version a schema mentions starts at. Generated
-// alongside the schemas from misode/mcmeta, so the two can't drift.
+// dataVersion for each version the schemas mention. Generated with them.
 import { DV } from "./entity-versions.generated";
 
 /**
- * Entity NBT as a **typed concept per entity type**, the way {@link Item} and
- * {@link Block} already are:
+ * Typed entity NBT per entity type:
  *
  *   Tnt({ fuse: 40, blockState: Block.SAND, motion: [0, 1, 0] })
  *     // 1.21.4 -> {fuse:40s,block_state:{Name:"minecraft:sand"},Motion:[0.0d,1.0d,0.0d]}
  *     // 1.20.1 -> {Fuse:40s,Motion:[0.0d,1.0d,0.0d]}   (no block_state before 1.20.3)
  *
- * The author names the *concept* in camelCase and the compiler owns the rest: the
- * vanilla key, the SNBT type suffix, and which version renamed, retyped or introduced
- * the field. There is deliberately no raw-key escape hatch: a field the schema is
- * missing is a hole in the generator (`scripts/gen-entity-nbt.mjs`), and patching it
- * there fixes it for everyone instead of freezing one call site to one version.
- *
- * This file is the **mechanism**; the curated schemas it is fed are in `entities.ts`.
+ * Fields are camelCase; helix handles keys, SNBT types and version changes. No raw-key
+ * escape
+ * hatch: fix missing fields in `scripts/gen-entity-nbt.mjs`. Schemas are in `entities.ts`.
  */
 
 export type McVersion = keyof typeof DV;
@@ -29,9 +23,9 @@ export const atLeast = (version: VersionProfile, at: McVersion): boolean =>
   version.dataVersion >= DV[at];
 
 /**
- * How one author-facing field becomes SNBT keys on a given version. Returning a
- * *record* (rather than a value) is what lets a field vanish on a version that lacks
- * it, or write into a shared parent compound - see villager's `VillagerData`.
+ * How one field becomes SNBT keys on a version. Returns a record so a field can be absent
+ * or
+ * write into a shared compound.
  */
 export type FieldEncoder<T> = (
   value: T,
@@ -67,11 +61,7 @@ export const asDoubles = (v: readonly number[]): NbtInput => v.map(Double);
 export const asFloats = (v: readonly number[]): NbtInput => v.map(Float);
 export const asList = (v: readonly NbtInput[]): NbtInput => [...v];
 
-/**
- * A plain-string display name. Until 1.21.5 a name is a *JSON string*; since, it is a
- * real text compound. Rich components (colour, click events) aren't expressible here -
- * building one needs a `CodegenContext`, which value rendering does not have.
- */
+/** A plain-string display name. A JSON string before 1.21.5, a text compound after. */
 /** Slot -> item, for the 1.21.5+ `equipment` compound. An {@link Item} goes in whole. */
 export type EquipmentInput = Partial<
   Record<
@@ -84,8 +74,7 @@ export const asEquipment = (v: EquipmentInput): NbtInput =>
   Object.fromEntries(
     Object.entries(v).map(([slot, item]) => [
       slot,
-      // Duck-typed rather than `instanceof`: importing item.ts here would put the whole
-      // item/text/tellraw graph behind every schema.
+      // Duck-typed so this file doesn't import the whole item graph.
       typeof (item as ItemValue)?.stackNbt === "function"
         ? (item as ItemValue).stackNbt()
         : (item as NbtInput),
@@ -113,8 +102,7 @@ function merge(
 
 /** An entity's NBT, assembled from its schema at codegen against the target version. */
 export class EntityNbtValue extends NbtValue {
-  // Extends `NbtValue` so it is accepted anywhere SNBT is (`summon`, `data merge entity`)
-  // without touching a single command signature; only the rendering differs.
+  // Extends `NbtValue` so it works anywhere SNBT does.
   constructor(
     private readonly schema: Record<string, FieldEncoder<never>>,
     private readonly fields: Record<string, unknown>,
@@ -133,22 +121,12 @@ export class EntityNbtValue extends NbtValue {
     return toSnbt(out, version);
   }
 
-  /**
-   * A copy that also writes its own `id`. A `summon` states the type in the command,
-   * but anything *nested* - a `Passengers` entry, an item's `entity_data` - has to
-   * carry it in the compound. The value already knows its entity, so nothing has to
-   * spell the id out.
-   */
+  /** A copy that also writes its own `id`, for nested entities like `Passengers`. */
   asPassenger<T extends EntityNbtValue>(this: T): T {
     return new EntityNbtValue(this.schema, this.fields, this.entity, true) as T;
   }
 
-  /**
-   * A copy of this value with extra `Tags` **appended** - how a caller labels an
-   * entity it summons from a concept someone else authored, so it can select the
-   * entity afterwards. Appending keeps the author's own tags. Returns a new value;
-   * `this` is untouched.
-   */
+  /** A copy with extra `Tags` appended, so a caller can find what it summoned. */
   tagged<T extends EntityNbtValue>(this: T, ...names: string[]): T {
     if (!this.schema.tags) {
       throw new Error(`${this.entity ?? "This"} entity NBT schema has no \`tags\` field`);
@@ -163,10 +141,7 @@ export class EntityNbtValue extends NbtValue {
   }
 }
 
-/**
- * A schema's fields as an SNBT record. Walks the *author's* fields, not the schema, so the
- * emitted compound reads in the order it was written rather than base-class-first.
- */
+/** A schema's fields as SNBT, in the order the author wrote them. */
 export function renderFields(
   schema: Record<string, FieldEncoder<never>>,
   fields: Record<string, unknown>,
@@ -181,10 +156,7 @@ export function renderFields(
   return out;
 }
 
-/**
- * A field that is itself a curated compound (a villager's `VillagerData`), so its contents
- * stay typed instead of degrading to a raw blob at the first nesting level.
- */
+/** A field that is itself a typed compound, e.g. `VillagerData`. */
 export const nested =
   <F extends object>(schema: EntityNbtSchema<F>) =>
   (value: F, version: VersionProfile): NbtInput =>
@@ -205,17 +177,14 @@ export interface IdentifiedEntityNbt extends EntityNbtValue {
 }
 
 /**
- * Build a typed entity-NBT factory from a field schema. Exported so a plugin can curate
- * an entity this file does not, without waiting on the compiler:
+ * Builds a typed entity NBT factory from a field schema, for entities helix doesn't cover:
  *
  *   const Creeper = defineEntityNbt<MobFields & { fuse?: number }>({
  *     ...MOB,
  *     fuse: field({ key: "Fuse", encode: Short }),
  *   }, "minecraft:creeper");
  *
- * Naming the entity is what lets `ctx.summon(Creeper({ fuse: 20 }), pos)` state the type
- * once. Omit it for a schema that fits many entities (a bare mob base, say) - those keep
- * the explicit `ctx.summon(EntityType.X, pos, nbt)` form, since nothing can infer the id.
+ * Name the entity so `ctx.summon(Creeper({ fuse: 20 }), pos)` knows its type.
  */
 export function defineEntityNbt<F extends object>(
   schema: EntityNbtSchema<F>,

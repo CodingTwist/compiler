@@ -92,8 +92,7 @@ describe("dp.grapple (kit)", () => {
     expect(attach).toContain("scoreboard players operation @s grapple.id = #next_id grapple.const");
     expect(attach).toContain("execute as @e[type=minecraft:marker,tag=grapple._new] run scoreboard players operation @s grapple.id = #next_id grapple.const");
     expect(attach).toContain("tag @s add grappling");
-    // gravity handling follows the ZERO_GRAVITY toggle: zeroed via a removable modifier
-    // (momentum-orbit model) when on, left untouched (engine-gravity swing) when off.
+    // Gravity follows ZERO_GRAVITY: removed with a modifier when on, untouched when off.
     const gravityAdd = "attribute @s minecraft:gravity modifier add grapple:zero_gravity -1 add_multiplied_total";
     if (ZERO_GRAVITY) expect(attach).toContain(gravityAdd);
     else expect(attach).not.toContain("minecraft:gravity");
@@ -121,9 +120,8 @@ describe("dp.grapple (kit)", () => {
   it("constrain assigns the full radial cancel, a Baumgarte trim, and a tangential sustain into the launch input", () => {
     const { dp } = build();
     const c = dp.files.get("grapple/constrain")!;
-    // One formula per destination now, so the Baumgarte trim is a subexpression in the
-    // backend's own temp (`#_t0`) rather than a named `#baum` slot - the arithmetic below is
-    // the pre-26.3 chain it lowers to, command for command.
+    // The Baumgarte trim is a subexpression in the backend's temp (`#_t0`); below is the
+    // pre-26.3 chain.
     // coef = -dot (cancel the radial velocity in either direction - rigid rope) ...
     expect(c).toContain("scoreboard players set #coef grapple.work 0");
     expect(c).toContain("scoreboard players operation #coef grapple.work -= #dot grapple.work");
@@ -142,8 +140,8 @@ describe("dp.grapple (kit)", () => {
     // impulse = frac * r, written straight into player_motion's launch input
     expect(c).toContain("scoreboard players operation $x player_motion.api.launch = #to_anchor_x grapple.work");
     expect(c).toContain("scoreboard players operation $x player_motion.api.launch *= #frac grapple.work");
-    // tangential sustain: fracRad = dot * FRAC_SCALE / dist_sq, radial = fracRad * r, then
-    // tang = v*FRAC_SCALE - radial, /= SUSTAIN_DIV, added back (anti-drag, radial excluded)
+    // Tangential sustain: fracRad = dot * FRAC_SCALE / dist_sq, radial = fracRad * r,
+    // tang = v*FRAC_SCALE - radial, divided by SUSTAIN_DIV and added back.
     expect(c).toContain("scoreboard players operation #frac_rad grapple.work = #dot grapple.work");
     expect(c).toContain("scoreboard players operation #frac_rad grapple.work /= #dist_sq grapple.work");
     expect(c).toContain("scoreboard players operation #rad_x grapple.work = #to_anchor_x grapple.work");
@@ -153,8 +151,7 @@ describe("dp.grapple (kit)", () => {
     expect(c).toContain(`scoreboard players operation ${tang} -= #rad_x grapple.work`);
     expect(c).toContain(`scoreboard players operation ${tang} /= #sustain_div grapple.const`);
     expect(c).toContain(`scoreboard players operation $x player_motion.api.launch += ${tang}`);
-    // radial overdamp is a disabled rebound generator (RADIAL_DAMP_DIV=0): when off it
-    // emits nothing; if ever re-enabled it bleeds an extra radVec/RADIAL_DAMP_DIV.
+    // Radial overdamp is disabled (RADIAL_DAMP_DIV=0), so it emits nothing.
     if (RADIAL_DAMP_DIV > 0) {
       expect(c).toContain("scoreboard players operation #rad_x grapple.work /= #radial_damp_div grapple.const");
       expect(c).toContain("scoreboard players operation $x player_motion.api.launch -= #rad_x grapple.work");
@@ -170,8 +167,7 @@ describe("dp.grapple (kit)", () => {
   it("drive zeroes the launch, gates the constraint on taut, then clamps and sustains (engine gravity falls)", () => {
     const { dp } = build();
     const drive = dp.files.get("grapple/drive")!;
-    // slack-tick baseline: launch starts at zero each tick (a zero impulse adds nothing,
-    // so a slack tick lets the player fall under engine gravity untouched)
+    // Launch starts at zero each tick, so a slack tick adds nothing and gravity acts alone.
     expect(drive).toContain("scoreboard players set $x player_motion.api.launch 0");
     expect(drive).toContain("scoreboard players set $y player_motion.api.launch 0");
     expect(drive).toContain("scoreboard players set $z player_motion.api.launch 0");

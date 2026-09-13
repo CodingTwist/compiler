@@ -28,9 +28,8 @@ export interface BarStyle {
 }
 
 /**
- * One of a boss's attacks. The framework owns the cooldown (a score on the boss's
- * objective, decayed once per poll) and the selection; `body` is just what the
- * attack *does*, run as - and at - the boss.
+ * One boss attack. The framework handles cooldown and selection; `body` runs as and at the
+ * boss.
  */
 export interface AbilityOpts {
   /** Ticks before this ability can be picked again. */
@@ -42,10 +41,7 @@ export interface AbilityOpts {
 
 /** One stage of the fight. */
 export interface PhaseOpts {
-  /**
-   * The health **percentage** at or below which the fight enters this phase.
-   * Omit on the first phase - the first declared phase is where the fight starts.
-   */
+  /** Health percentage at or below which this phase starts. Omit on the first phase. */
   at?: number;
   /** Re-style the bar on entering this phase (a new name, a new colour, or both). */
   bar?: BarStyle;
@@ -87,10 +83,8 @@ const COLOR: Record<BossbarColor, (b: Bossbar, id: Id) => unknown> = {
 };
 
 /**
- * Fluent builder for a **boss fight**: a real mob, staged by health percentage,
- * attacking out of a weighted pool of cooldown-gated abilities, with a bar bound
- * to whoever is in the arena. `toModule(name)` turns it into a drop-in
- * {@link ConfiguredModule} listed in a parent module's `imports`.
+ * Builds a boss fight: a mob with health-based phases, weighted abilities on cooldowns, and
+ * a bossbar.
  *
  *   const king = defineBoss(Wither({ customName: "Bone King" }), Pos(0, 70, 0))
  *     .arena({ kind: "region", center: [0, 70, 0], radius: 30 })
@@ -103,10 +97,8 @@ const COLOR: Record<BossbarColor, (b: Bossbar, id: Id) => unknown> = {
  *
  *   @Module({ name: "keep", imports: [king.toModule("bone_king")] })
  *
- * The arena is an ordinary `area` trigger, so entering the zone starts the fight
- * and the region emptying (everyone left, or everyone died and respawned outside)
- * is the loss condition - no separate arena concept, and "everyone dead = fail"
- * costs no code.
+ * The arena is a normal area trigger: entering starts the fight, and the arena emptying is
+ * a loss.
  */
 export class BossBuilder {
   private readonly phases: Phase[] = [];
@@ -132,7 +124,7 @@ export class BossBuilder {
     return this;
   }
 
-  /** Declare a phase. The **first** one declared is where the fight starts. */
+  /** Declares a phase. The first one declared is where the fight starts. */
   phase(label: string, opts: PhaseOpts = {}): this {
     if (this.phases.some((p) => p.label === label)) {
       throw new Error(`Duplicate boss phase "${label}"`);
@@ -145,9 +137,8 @@ export class BossBuilder {
   }
 
   /**
-   * Attach an ability to the **most recently declared phase**. To use the same
-   * attack in two phases, declare it in both off a shared `body` - a name
-   * registry would buy nothing but a string back-reference.
+   * Adds an ability to the last declared phase. To reuse one, add it to each phase with a
+   * shared `body`.
    */
   ability(name: string, opts: AbilityOpts): this {
     const phase = this.phases[this.phases.length - 1];
@@ -159,7 +150,7 @@ export class BossBuilder {
     return this;
   }
 
-  /** The boss died. Runs **as each participant**, so `@s` is a player to reward. */
+  /** Runs when the boss dies, as each participant. */
   onVictory(body: BossBody): this {
     this.victory = body;
     return this;
@@ -201,12 +192,7 @@ interface BossOpts {
   defeat?: BossBody;
 }
 
-/**
- * The {@link DatapackModule} a {@link BossBuilder} compiles to. Owns nothing at
- * construction; everything is materialised in `register` (the phase machine, the
- * ability functions, the cleanup/victory/defeat functions) and driven from
- * `onTick` / `onActivate` / `onDeactivate`.
- */
+/** The module a {@link BossBuilder} compiles to. */
 class BossModule implements DatapackModule {
   private dp!: Datapack;
   private obj!: Objective;
@@ -230,14 +216,13 @@ class BossModule implements DatapackModule {
     return Selector.allEntities().tag(this.name).limit(1);
   }
   /**
-   * Every entity wearing the boss tag - what cleanup kills. Deliberately *not*
-   * {@link boss}: a `limit=1` kill would leave a duplicate boss alive, which is
-   * precisely the state cleanup exists to get out of.
+   * Every entity with the boss tag, for cleanup. No `limit=1`, so duplicate bosses get
+   * killed too.
    */
   private get allBosses(): Selector {
     return Selector.allEntities().tag(this.name);
   }
-  /** Everyone currently in the arena. Recomputed each poll, so never stale. */
+  /** Everyone in the arena, recomputed each poll. */
   private get participants(): Selector {
     return Selector.allPlayers().tag(`${this.name}.p`);
   }
@@ -261,8 +246,7 @@ class BossModule implements DatapackModule {
       if (phase.abilities.length > 0) pickers.set(phase, this.picker(scope, phase));
     }
 
-    // The phase machine shares the boss's objective (its holders are `#<name>`,
-    // `#<name>.cur`, `#<name>.done`, none of which collide with the fight's).
+    // The phase machine shares the boss's objective; its score holders don't collide.
     const sm = new StateMachine(dp, this.name);
     for (const phase of this.opts.phases) {
       sm.state(phase.label, {
@@ -278,9 +262,8 @@ class BossModule implements DatapackModule {
         onExit: phase.onExit,
       });
     }
-    // Linear chain in declaration order: each phase is entered at its own health
-    // threshold. Deliberately no `initial()` - an unseeded state leaves the boss
-    // inert at load, so `onActivate` is the only way in and the fight is repeatable.
+    // Phases chain in declaration order. No `initial()`, so the fight only starts from
+    // `onActivate` and can be repeated.
     for (let i = 1; i < this.opts.phases.length; i++) {
       const to = this.opts.phases[i];
       sm.transition(
@@ -311,17 +294,15 @@ class BossModule implements DatapackModule {
   onActivate(ctx: FunctionContext): void {
     ctx.call(this.cleanupFn); // a fresh fight, whatever the last one left behind
     if (this.opts.bar) {
-      // ponytail: no way to test a bossbar exists, so a /reload mid-fight logs one
-      // "bossbar already exists" console error on the next start. Not worth guarding.
+      // ponytail: a /reload mid-fight logs one "bossbar already exists" error on the next
+      // start.
       ctx.bossbar().add(this.barId, this.opts.bar.name);
       ctx.bossbar().setMax(this.barId, 100);
       this.styleBar(ctx, this.opts.bar);
     }
-    // The framework's own tag is what makes the mob addressable afterwards;
-    // `tagged` appends, so the author's own tags survive.
+    // The framework tag makes the mob findable later; `tagged` keeps the author's tags.
     ctx.summon(this.nbt.tagged(this.name), this.spawn);
-    // Max health read from the mob itself at full health - no config field to
-    // silently disagree with the NBT, and attribute modifiers are included.
+    // Read max health from the mob itself, so it includes attribute modifiers.
     ctx
       .execute()
       .storeResultScore(this.score("max"))
@@ -332,9 +313,7 @@ class BossModule implements DatapackModule {
 
   onTick(ctx: FunctionContext): void {
     ctx.if(this.score("live").equal(1), (live) => {
-      // One `if entity` for the whole body, not one per command: `run` commits a
-      // multi-command body to its own function, so the entity scan - the expensive
-      // half of the poll - is paid once.
+      // One `if entity` for the whole body, so the entity scan is paid once.
       live
         .execute()
         .ifEntity(this.boss)
@@ -343,16 +322,15 @@ class BossModule implements DatapackModule {
           this.mirrorHealth(alive);
           for (const phase of this.opts.phases) {
             for (const a of phase.abilities) {
-              // ponytail: unguarded decay drifts negative; `matches ..0` doesn't care
-              // and cleanup zeroes it. int32 floor is ~5 years of continuous fight.
+              // ponytail: decay goes negative unguarded; `matches ..0` doesn't care and
+              // cleanup resets it.
               this.cooldown(phase, a).remove(this.tickEvery, alive);
             }
           }
           alive.execute().as(this.boss).at(Selector.self()).run((b) => b.call(this.dispatch));
         });
-      // Death is the entity being *gone*, not health 0: a real mob that dies is
-      // removed, and a health-0 window is one tick that a 5-tick poll misses.
-      // Despawn/unload lands here too, and cleanup is the right answer there.
+      // Death means the entity is gone, not health 0: a 5-tick poll can miss the health-0
+      // tick.
       live
         .execute()
         .unlessEntity(this.boss)
@@ -361,8 +339,7 @@ class BossModule implements DatapackModule {
   }
 
   onDeactivate(ctx: FunctionContext): void {
-    // `live == 0` here means the boss was already killed and cleaned up; this is
-    // just the players wandering off afterwards.
+    // `live == 0` here means the boss already died; players are just leaving.
     if (this.defeatFn) {
       const fn = this.defeatFn;
       ctx.if(this.score("live").equal(1), (lost) => lost.call(fn));
@@ -388,10 +365,8 @@ class BossModule implements DatapackModule {
   }
 
   /**
-   * Recompute arena membership from scratch each poll. `bossbar set … players`
-   * and a reward `loot give` each want *one* selector, and a union of zones isn't
-   * one - so the geometry is collapsed into a tag. Recomputing (rather than
-   * tracking enter/leave edges) costs 2-3 commands and can never go stale.
+   * Recomputes who's in the arena each poll into a tag.
+   * Bossbar and loot commands need one selector, and a union of zones isn't one.
    */
   private trackParticipants(ctx: FunctionContext): void {
     const tag = `${this.name}.p`;
@@ -427,11 +402,7 @@ class BossModule implements DatapackModule {
     if (style.color) COLOR[style.color](ctx.bossbar(), id);
   }
 
-  /**
-   * Sum the weights of the abilities that are **off cooldown**, then hand off to
-   * the picker if any are. A total of `0` (everything on cooldown) simply fails
-   * the guard - no roll, no special case.
-   */
+  /** Sums the weights of ready abilities and calls the picker if any are ready. */
   private rollAbility(ctx: FunctionContext, phase: Phase, pick: FunctionRef): void {
     const total = this.score("total");
     total.set(0);
@@ -444,13 +415,11 @@ class BossModule implements DatapackModule {
   }
 
   /**
-   * The weighted pick. `random value` takes a *build-time literal* range, so it
-   * cannot roll `1..total` when the total depends on which abilities happen to be
-   * ready - roll the full int range and take it modulo the live total instead.
-   * The bias that introduces is ~5e-9 for any sane weight sum; ignore it.
+   * Picks a ready ability by weight.
    *
-   * The winner is then found by walking cumulative thresholds across the ready
-   * abilities, each in its own function so the walk can stop.
+   * `random value` needs a build-time range, so roll the full int range and take it modulo
+   * the
+   * live total. The bias is negligible.
    */
   private picker(scope: ModuleScope, phase: Phase): FunctionRef {
     const roll = this.score("roll");
@@ -473,8 +442,7 @@ class BossModule implements DatapackModule {
         .execute()
         .storeResultScore(roll)
         .run((b) => b.emit(b.random(0, MAX_INT)));
-      // 1..total, the weights' own range - each ability then subtracts its weight
-      // in `try_*` until one takes the roll to zero.
+      // 1..total; each ability subtracts its weight in `try_*` until the roll hits zero.
       math`${roll} % ${this.score("total")} + 1`.into(roll, ctx);
       picked.set(0);
       phase.abilities.forEach((a, i) => {
@@ -488,10 +456,11 @@ class BossModule implements DatapackModule {
   }
 
   /**
-   * Put the fight back to untouched: no boss, no bar, no participants, every
-   * cooldown clear - and every `@On` latch on this instance re-armed, because a
-   * latch is a scoreboard value that outlives a `/reload` and would otherwise
-   * suppress its trigger for good on the second run of the fight.
+   * Resets the fight: no boss, no bar, no participants, cooldowns cleared, and `@On`
+   * latches re-armed.
+   *
+   * Latches are scores that survive /reload, so without re-arming they'd block the next
+   * fight.
    */
   private cleanup(ctx: FunctionContext): void {
     ctx.kill(this.allBosses);

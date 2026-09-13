@@ -1,11 +1,7 @@
-// Measured profile report: the runtime counterpart to cost-report's static worst case.
-// The helix-profiler Fabric mod (sibling `helix-profiler/`) times every command queue
-// entry in game and writes raw JSON keyed by function id + command text. Everything
-// helix-aware happens here: mapping ids back to this pack's functions, command text
-// back to file lines and (with `debug.sources`) the TS line that emitted them, and
-// lining the measurements up with the static cost numbers.
+// Measured profile report: the runtime counterpart to the static cost report.
 //
-// Browser-safe: takes the already-parsed JSON, never reads the file itself.
+// Maps the helix-profiler mod's timings back to this pack's functions, lines and (with
+// `debug.sources`) TS lines. Browser-safe: takes parsed JSON.
 import type { Datapack } from "../ir/datapack";
 import type { SourceLoc } from "../debug/sources";
 import { analyzeCost, type FunctionCost } from "./cost-report";
@@ -82,8 +78,8 @@ export interface ProfileReport extends ProfileSpanReport {
 }
 
 /**
- * Line up a measured profile with this pack. Requires `dp.files` to be populated;
- * callers go through {@link Datapack.profileReport}, which runs codegen first.
+ * Matches a measured profile to this pack. Needs `dp.files`; use {@link
+ * Datapack.profileReport}.
  */
 export function analyzeProfile(dp: Datapack, raw: ProfileDump): ProfileReport {
   if (raw.version !== 1) throw new Error(`helix profile: unsupported version ${raw.version}`);
@@ -177,8 +173,8 @@ function lineIndex(text: string): Map<string, number> {
 }
 
 /**
- * Flame-graph input in the folded-stack format (`a;b;command selfNs` per line), which
- * speedscope and flamegraph.pl open as-is.
+ * Folded-stack flame graph input (`a;b;command selfNs` per line), for speedscope or
+ * flamegraph.pl.
  */
 export function toFoldedStacks(raw: ProfileDumpSpan): string {
   return raw.frames

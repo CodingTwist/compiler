@@ -154,8 +154,7 @@ describe("IfHandler - nested if chains", () => {
     const outer = new IfElseNode(condA, buildBody("outer_then", inner));
     new IfHandler().generate(outer, ctx);
 
-    // Not flattened: the inner if+else renders to 2 lines, so it commits to its
-    // own function ("outer_then") rather than inlining - the outer wraps that call.
+    // Not flattened: the inner if+else is 2 lines, so it gets its own function.
     expect(ctx.lines[0]).toBe(
       "execute if score @s score matches 0 run function testpack:outer_then",
     );

@@ -5,9 +5,7 @@ import {
   VersionProfile,
 } from "./profile";
 
-// Pure profile construction: turn already-parsed raw mcmeta JSON into a
-// VersionProfile. NO disk access lives here (that's load.ts), so this module is
-// browser-safe - the playground builds profiles from JSON it fetched at runtime.
+// Builds a VersionProfile from parsed JSON. No disk access, so it's browser-safe.
 
 // 1.21 (data version 3953) renamed the function/tag folders to singular.
 const SINGULAR_FOLDERS_SINCE = 3953;
@@ -75,10 +73,8 @@ function registrySet(raw: RawProfile): RegistrySet {
 }
 
 /**
- * Build a {@link VersionProfile} from already-parsed raw mcmeta JSON. Pure - no
- * disk access - so it works in any environment (this is what the browser build
- * calls with JSON it fetched at runtime). `loadProfile` (load.ts) is the Node
- * wrapper that reads the bundled `data/<file>` first.
+ * Builds a {@link VersionProfile} from parsed mcmeta JSON. `loadProfile` is the Node
+ * wrapper that reads the file.
  */
 export function profileFromRaw(raw: RawProfile): VersionProfile {
   const singularFolders = raw.dataVersion >= SINGULAR_FOLDERS_SINCE;

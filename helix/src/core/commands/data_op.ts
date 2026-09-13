@@ -37,9 +37,8 @@ export type DataOp =
     };
 
 /**
- * The AST node behind the code-first `data` facade (`ctx.storage(...)`,
- * `ctx.entity(...)`, `ctx.block(...)`). Carries a typed domain operation; the
- * handler renders it to a `data ...` command against the target version's tree.
+ * The node behind `ctx.storage(...)`, `ctx.entity(...)` and `ctx.block(...)`; renders to a
+ * `data` command.
  */
 export class DataOpNode extends ASTNode {
   readonly type = "data_op";

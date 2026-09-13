@@ -1,5 +1,5 @@
-// The `helix.config.ts` contract: the pack describes itself and helix owns creating
-// the Datapack, calling the entry, and writing / reporting on the result.
+// The `helix.config.ts` contract: the pack describes itself, and helix creates, builds and
+// writes it.
 import type { Datapack } from "../core/ir/datapack";
 import type { RuntimeTarget } from "../core/ir/target";
 import type { DebugOptions } from "../core/debug/sources";
@@ -18,8 +18,8 @@ export interface HelixConfig {
   /** Output folders, relative to the config. `resourcePack` is only written when set. */
   out: { datapack: string; resourcePack?: string };
   /**
-   * World save folder, for `helix profile` to find `helix-profile/` dumps. Default: two
-   * levels above `out.datapack` (`<world>/datapacks/<pack>`).
+   * World save folder, where `helix profile` finds dumps. Default: two levels above
+   * `out.datapack`.
    */
   world?: string;
   /** Debug source tracking, applied to dev builds only. */

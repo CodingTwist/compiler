@@ -1,17 +1,12 @@
 /**
- * The track kinds. A track owns *what* it animates and *how it samples* - every
- * track compiles to either:
+ * Track kinds. Each compiles to one of:
  *
- *   - **frame mode**: a set of `period` distinct per-tick functions (the clip
- *     cycles `frame_(t % period)`). Always correct, needed for spins (periodic),
- *     multi-keyframe paths, and any non-display target.
- *   - **smooth mode**: a single native-interpolation merge per member that
- *     Minecraft tweens over the whole duration (one command, GPU-smooth). Only
- *     transform tracks that *don't* spin can take this path.
+ * - frame mode: one function per tick of the period. Needed for spins, multi-keyframe paths
+ * and
+ *   non-display targets.
+ * - smooth mode: one native interpolation per member. Only non-spinning transform tracks.
  *
- * A clip is wholly one mode or the other (see `clip.ts`): mixing a periodic spin
- * with a native tween in one clip is rejected - compose them as separate clips or
- * via a `Cutscene`.
+ * A clip can't mix modes; use separate clips or a `Cutscene`.
  */
 import {
   DecomposedTransformation,
@@ -53,8 +48,7 @@ export interface Track {
 function transformNbt(translation: Vec3, scale: Vec3, left: Quat, interpDuration: number) {
   const f = (v: number) => Float(round6(v));
   return DisplayBase({
-    // The rotations are plain lists in the schema, so they carry their own `f` suffix;
-    // scale/translation are encoded as floats for us and only need the rounding.
+    // Rotations are plain lists in the schema, so they need their own `f` suffix.
     transformation: DecomposedTransformation({
       leftRotation: left.map(f),
       rightRotation: IDENTITY_QUAT.map(f),
@@ -67,10 +61,8 @@ function transformNbt(translation: Vec3, scale: Vec3, left: Quat, interpDuration
 }
 
 /**
- * Animates a display model's transform - any combination of `move` (translate),
- * `scale`, `rotateTo` (set orientation), and `spin` (continuous rotation about an
- * axis). A spin makes the track periodic (baked frames); otherwise it tweens
- * natively unless `.bake()` is forced.
+ * Animates a display model's transform: `move`, `scale`, `rotateTo` and `spin`.
+ * Spins are frame-baked; everything else tweens natively unless `.bake()` is set.
  */
 export class TransformTrack implements Track {
   private moveDelta?: Vec3;
@@ -141,8 +133,7 @@ export class TransformTrack implements Track {
   }
 
   emitFrame(ctx: FunctionContext, f: number, period: number, duration: number): void {
-    // Spin angle: a pure spin steps by the exact revolution increment (so it loops
-    // seamlessly); a spin combined with a ramp uses its raw per-tick speed.
+    // A pure spin steps by an exact fraction of a revolution so it loops seamlessly.
     const rev = this.revolution();
     const angle =
       this.spinAxis === undefined
@@ -189,10 +180,7 @@ export class TransformTrack implements Track {
 /** A leaf value a generic NBT track interpolates: a number or a 3-vector. */
 export type NbtValue = number | Vec3;
 
-/**
- * Animates an arbitrary NBT path on an arbitrary selector over keyframes - e.g.
- * a scoreboard-free way to drive any merge-able numeric field. Always baked.
- */
+/** Animates any NBT path on any selector over keyframes. Always baked. */
 export class NbtTrack implements Track {
   readonly mode: TrackMode = "frame";
 
@@ -234,17 +222,11 @@ function mixNbt(a: NbtValue, b: NbtValue, u: number): NbtValue {
 }
 
 /**
- * Teleports a selector along a positional path over keyframes - a camera dolly or
- * any entity move. Baked: by default one `tp` per tick.
+ * Teleports a selector along keyframes. One `tp` per tick by default.
  *
- * **Gliding** (`glide`) teleports only *on* the keyframes and sets the entity's
- * `teleport_duration` to the gap ahead, so the client tweens the move instead of
- * snapping - a 4-keyframe 100-tick path costs 4 teleports rather than 100, and
- * looks smoother than the per-tick version because it interpolates between
- * client frames rather than between server ticks.
- *
- * `teleport_duration` is a **display-entity** field, so gliding only applies to
- * display targets; a mob path has to stay per-tick.
+ * With `glide`, teleports only on keyframes and sets `teleport_duration` so the client
+ * tweens:
+ * fewer commands and smoother. Display entities only.
  */
 export class TpTrack implements Track {
   readonly mode: TrackMode = "frame";
@@ -266,8 +248,7 @@ export class TpTrack implements Track {
   }
   length(): number {
     const last = this.keys[this.keys.length - 1].tick;
-    // Sampling a per-tick path at its last tick lands on the final value anyway, but
-    // a glide *fires* on that tick - so the clip has to be long enough to contain it.
+    // A glide fires on the last tick, so the clip must include it.
     return this.glide ? last + 1 : last;
   }
   period(duration: number): number {
@@ -278,9 +259,8 @@ export class TpTrack implements Track {
   }
 
   emitFrame(ctx: FunctionContext, f: number): void {
-    // `teleport <targets> <location>` isn't accepted by the command grammar, so
-    // run a location-only teleport in the selector's `as` context instead:
-    // `execute as <sel> run teleport <x y z>`.
+    // `teleport <targets> <location>` isn't valid grammar, so use `execute as <sel> run
+    // teleport <x y z>`.
     const tp = (p: Vec3) =>
       this.selector.run((c) => c.teleport(undefined, Pos(p[0], p[1], p[2])))(ctx);
 
@@ -288,9 +268,8 @@ export class TpTrack implements Track {
       tp(sampleVec3(this.keys, f));
       return;
     }
-    // Gliding: this frame does nothing unless a keyframe lands on it. The
-    // duration must be written *before* the teleport it applies to, and re-written
-    // each time, since consecutive gaps differ.
+    // Only keyframe ticks do anything. Set the duration before each teleport, since gaps
+    // differ.
     const i = this.keys.findIndex((k) => k.tick === f);
     if (i === -1) return;
     const next = this.keys[i + 1];

@@ -1,6 +1,4 @@
-// The two named shortcuts over `ctx.execute()` - `atEntity` (anchor a body at a
-// selector) and `whenItems` (guard a body on one inventory slot). Both used to be
-// their own node + handler; they are now clauses on the general chain.
+// `atEntity` and `whenItems`, shortcuts over `ctx.execute()`.
 import { describe, it, expect } from "vitest";
 import { Datapack, Selector, Item, Slot } from "../../index";
 import { v1_21_4 } from "../../versions/profiles";

@@ -11,15 +11,11 @@ import {
 import type { MobEffect } from "./resource.generated";
 
 /**
- * One entry of a mob's `active_effects` (and of anything else holding a
- * `MobEffectInstance`), as a typed concept rather than a hand-spelt compound:
+ * One mob effect instance, typed:
  *
  *   Effect({ id: MobEffect.SLOWNESS, amplifier: 127, duration: -1, showParticles: false })
  *     // 1.20.2+ -> {id:"minecraft:slowness",amplifier:127b,duration:-1,show_particles:0b}
  *     // 1.20.1  -> {Id:2,Amplifier:127b,Duration:-1,ShowParticles:0b}
- *
- * 1.20.2 both lower-cased the keys and swapped the numeric effect id for a
- * resource location; the author names the effect once and the version decides.
  */
 export interface EffectFields {
   id: MobEffect;
@@ -31,9 +27,8 @@ export interface EffectFields {
   ambient?: boolean;
   showParticles?: boolean;
   /**
-   * Whether the effect appears in the inventory GUI / HUD. NBT-only: `/effect give`'s
-   * `hideParticles` flag sets both this and `showParticles` together, so hiding just the
-   * particles and keeping the icon (or the reverse) is only reachable from here.
+   * Whether the effect shows in the GUI. Only settable through NBT, since `/effect` ties it
+   * to particles.
    */
   showIcon?: boolean;
   /** A lower-amplifier effect of the same type, restored when this one ends. */
@@ -41,10 +36,8 @@ export interface EffectFields {
 }
 
 /**
- * The pre-1.20.2 numeric ids (mcdoc `EffectIntId`, 1.19+). Nothing added after
- * 1.20.1 is here because nothing after it needs the numeric form.
- * ponytail: 1.19 and older want the *byte* form; add the cast if helix ever
- * supports a version that old.
+ * Numeric effect ids used before 1.20.2.
+ * ponytail: 1.19 and older need a byte; add the cast if helix supports them.
  */
 const LEGACY_IDS: Record<string, number> = {
   speed: 1, slowness: 2, haste: 3, mining_fatigue: 4, strength: 5,

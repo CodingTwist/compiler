@@ -65,8 +65,8 @@ describe("transform-math", () => {
   });
 
   it("quatFromTo still turns an antiparallel pair around", () => {
-    // No *shortest* rotation exists here, but the one picked must still be a unit
-    // quaternion that lands `from` on `to`.
+    // There's no single shortest rotation here, but the result must still be a unit
+    // quaternion mapping `from` to `to`.
     for (const v of [[0, 1, 0], [1, 0, 0], [0, 0, 1], [1, 1, 1]] as Vec3[]) {
       const flipped = v.map((n) => -n) as Vec3;
       const q = quatFromTo(v, flipped);

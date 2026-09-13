@@ -1,11 +1,5 @@
-// The grapple plugin's **state layer**: options + resolved config, the function
-// table, the selector library, per-tick scratch, load-time constants, the
-// persistent per-player repository, the anchor placement, and the `init` body.
-//
-// One file rather than eight: each of these is a single factory with a single
-// caller (the module in grapple.module.ts), and splitting them cost more import
-// ceremony than it bought. The *behaviour* still lives in its own services
-// (attach / swing / release / rope / debug) and the physics in physics.ts.
+// Grapple state: options, config, functions, selectors, scratch, constants, the per-player
+// repository, anchor placement and init.
 import { EntityAnchor, Id, Marker, Objective, Path, Pos, Range, ScoreTarget, ScoreVec3, Selector } from "helix";
 import type { Block, Datapack, FunctionContext, FunctionRef, Nbt as NbtType } from "helix";
 import type { PlayerMotion } from "../player_motion";
@@ -29,29 +23,20 @@ type Score = ReturnType<Objective["score"]>;
 // --- config ---------------------------------------------------------------
 
 /**
- * Author-facing knobs for {@link Datapack.grapple}. All optional - the bare
- * `dp.grapple()` reproduces the original behaviour (anchor on any solid block,
- * 50-block reach). The handle is cached per `Datapack`, so the options passed to
- * the **first** `dp.grapple(...)` call win; later calls return that same handle.
+ * Options for {@link Datapack.grapple}. All optional.
+ * The handle is cached per pack, so options from the first call win.
  */
 export interface GrappleOptions {
   /**
-   * Restrict which blocks a web can anchor to (a block id, or a tag via
-   * `Block.tag("logs")`). The raycast still stops at the first solid block;
-   * if that block doesn't match, the grapple simply fizzles (no anchor, no tag)
-   * instead of latching. Default: anchor on anything the ray hits.
+   * Blocks a web can anchor to (a block id or `Block.tag(...)`). Default: any block.
+   * The ray still stops at the first solid block; if it doesn't match, the grapple fizzles.
    */
   anchorOn?: Block;
   /** Maximum web reach in blocks (the raycast length). Default 50. */
   maxReach?: number;
 }
 
-/**
- * The resolved, immutable **config** for one grapple install - the `GrappleOptions`
- * turned into the concrete values the rest of the plugin reads (the raycast reach in
- * steps, the anchor block filter, the marker's entity type + NBT). One small
- * value-bag so no service re-derives `maxReach * 2` or re-hand-writes the marker tags.
- */
+/** Resolved config for one grapple install, so services don't re-derive values. */
 export function createConfig(opts: GrappleOptions = {}) {
   // maxReach is in blocks; the marcher steps 0.5 blocks, so 2 steps per block.
   const maxSteps =
@@ -64,10 +49,7 @@ export function createConfig(opts: GrappleOptions = {}) {
     maxSteps,
     /** The invisible marker entity the anchor is (a position holder; no leash is drawable). */
     anchorType: ANCHOR_TYPE,
-    /**
-     * NBT for the marker anchor - just the tags that find it later (structured, not a
-     * hand-built SNBT string, so it renders through helix's serializer).
-     */
+    /** Marker NBT: just the tags used to find it. */
     anchorNbt(): NbtType {
       return Marker({ tags: ["grapple.anchor", "grapple._new"] });
     },
@@ -80,11 +62,8 @@ export type GrappleConfig = ReturnType<typeof createConfig>;
 // --- functions ------------------------------------------------------------
 
 /**
- * The grapple function table: every `.mcfunction` the plugin emits, created **up front**
- * so any body can reference any other before the bodies are filled (the controller builds
- * `start`/`tick`/`stop`; the services build their own internals). `init` is `load`-tagged
- * and `tick` is `tick`-tagged; the rest are plain. The web raycast is *not* here - it's the
- * `raycast` plugin's own function (`raycast/grapple/web`).
+ * Every function the plugin emits, created up front so bodies can reference each other.
+ * The web raycast is the `raycast` plugin's function.
  */
 export function createFunctions(dp: Datapack) {
   return {
@@ -110,11 +89,7 @@ export type GrappleFunctions = ReturnType<typeof createFunctions>;
 
 // --- selectors ------------------------------------------------------------
 
-/**
- * The grapple **selector library**: every `@s`/`@e[...]` query the plugin makes, named
- * once so the services read as intent (`selectors.grappling()`, `selectors.freshAnchor()`)
- * instead of re-spelling tag filters. Pure query builders - no state, no scoreboard.
- */
+/** Every selector the plugin uses, named so services read as intent. */
 export function createSelectors() {
   return {
     /** The executing player/entity (`@s`). */
@@ -123,17 +98,12 @@ export function createSelectors() {
     grappling: () => Selector.allPlayers().tag("grappling"),
     /** Every anchor marker in the world (`@e[tag=grapple.anchor]`). */
     anchors: () => Selector.allEntities().type(ANCHOR_TYPE).tag("grapple.anchor"),
-    /**
-     * The anchor's transient per-summon handle (`grapple._new`, cleared at the end of
-     * `start`, so it only ever matches the just-summoned marker).
-     */
+    /** The just-summoned anchor. The tag is cleared at the end of `start`. */
     freshAnchor: () => Selector.allEntities().type(ANCHOR_TYPE).tag("grapple._new"),
     /** {@link freshAnchor}, limited to one (for reading a single marker's position). */
     freshAnchorOne: () => Selector.allEntities().type(ANCHOR_TYPE).tag("grapple._new").limit(1),
     /**
-     * The rope's per-tick aim target: the executing player's own anchor, transiently
-     * tagged `grapple._aim` for the duration of one `drive` so `facing entity` and the
-     * arrival check can name exactly it (drive runs per player, so only one is tagged).
+     * This player's anchor, tagged for the length of one `drive` so the rope can aim at it.
      */
     aimTarget: () => Selector.allEntities().type(ANCHOR_TYPE).tag("grapple._aim").limit(1),
     /**
@@ -150,13 +120,7 @@ export type GrappleSelectors = ReturnType<typeof createSelectors>;
 
 // --- scratch --------------------------------------------------------------
 
-/**
- * The per-tick **working memory**: the `grapple.work` objective plus the two factories
- * that carve transient `#name` slots out of it - `scalar("dist_sq")` for one score,
- * `vector("vel")` for a `#vel_x/#vel_y/#vel_z` {@link ScoreVec3}. These are scribble
- * space the swing math overwrites every tick; nothing here survives between ticks (that's
- * the repository). Kept separate so "scratch" and "persistent state" never blur together.
- */
+/** Per-tick scratch scores on `grapple.work`; nothing here survives between ticks. */
 export function createScratch() {
   const work = new Objective("grapple.work");
   const scalar = (name: string): Score => work.score(ScoreTarget(`#${name}`));
@@ -169,18 +133,14 @@ export function createScratch() {
 export type Scratch = ReturnType<typeof createScratch>;
 
 /**
- * All the scratch slots one swing tick's math uses, allocated once. Named here so every
- * physics helper agrees on the slots:
- *   pos      #pos_*       the player's position this tick (decimetres)
- *   velocity #vel_*       pos − prev (the player's real displacement last tick)
+ * Every scratch slot one swing tick uses:
+ *   pos      #pos_*       player position (decimetres)
+ *   velocity #vel_*       pos − prev
  *   toAnchor #to_anchor_* r = anchor − pos
- *   radVec   #rad_*       the radial slice of velocity, as a vector
+ *   radVec   #rad_*       radial part of velocity
  *   distSq   #dist_sq     |r|²
  *   dot      #dot         v · r
- *   coef/frac/fracRad     the constraint's intermediate scalars
- *
- * The tangential vector and the Baumgarte trim have no slot: each is a subexpression of
- * one `math` formula now, so they live in the backend's own temporaries.
+ *   coef/frac/fracRad     constraint intermediates
  */
 export function swingScratch(scratch: Scratch) {
   return {
@@ -200,11 +160,8 @@ export type SwingScratch = ReturnType<typeof swingScratch>;
 // --- constants ------------------------------------------------------------
 
 /**
- * The load-time **constants** the pendulum math multiplies by: the `#…` slots on
- * `grapple.const`, plus the {@link seeds} table `grapple/init` writes them from (each
- * `[slot, value]` sourced from `tuning.ts`). The one place a tuning knob becomes a live
- * score. `nextId` is deliberately **not** in `seeds` - it's a persistent counter seeded
- * once, conditionally, by init (never clobbered on reload).
+ * Load-time constants on `grapple.const`, seeded by `grapple/init` from `tuning.ts`.
+ * `nextId` isn't in `seeds`: it's a persistent counter seeded once.
  */
 export function createConstants() {
   const objective = new Objective("grapple.const");
@@ -221,8 +178,7 @@ export function createConstants() {
   const impulseMax = score("impulse_max");
   const impulseMin = score("impulse_min");
 
-  // Seed order is the order `grapple/init` emits (kept stable so the rendered init is
-  // predictable). `nextId` is omitted - init seeds it conditionally, not in this loop.
+  // Kept in a stable order so init output is predictable. `nextId` is seeded separately.
   const seeds: readonly [Score, number][] = [
     [fracScale, FRAC_SCALE],
     [baumDiv, BAUMGARTE_DIV],
@@ -254,12 +210,9 @@ interface StateRepositoryDeps {
 }
 
 /**
- * The **repository**: the plugin's persistent, per-player state - the scoreboard row for
- * each swinging player. It owns the state objectives (anchor / prev-pos / stored-velocity
- * / rope-length² / grapple-id), hands them out as `self`-bound {@link ScoreVec3} views the
- * physics reads and writes, and is the **single owner** of the raw `Pos[]` entity-NBT
- * layout (via {@link readPos}). Everything transient (this-tick scratch) lives elsewhere;
- * this is only what must survive from one tick to the next.
+ * Per-player grapple state that survives between ticks: anchor, previous position,
+ * velocity,
+ * rope length² and id.
  */
 export function createStateRepository(d: StateRepositoryDeps) {
   const self = d.selectors.self;
@@ -271,14 +224,14 @@ export function createStateRepository(d: StateRepositoryDeps) {
   const prevX = new Objective("grapple.prev_x");
   const prevY = new Objective("grapple.prev_y");
   const prevZ = new Objective("grapple.prev_z");
-  // The player's last measured swing velocity (pos − prev), stored per-tick by drive so the
-  // release kick can read it *without* racing prev (which drive overwrites every tick).
+  // Last tick's velocity, stored so the release kick doesn't read `prev` after drive
+  // overwrote it.
   const velX = new Objective("grapple.vel_x");
   const velY = new Objective("grapple.vel_y");
   const velZ = new Objective("grapple.vel_z");
   const ropeLenSq = new Objective("grapple.rope_len_sq");
-  // A per-grapple id shared by a player and their anchor pair, so stop can find *this*
-  // player's anchor by scoreboard compare alone (no macros, multiplayer-safe).
+  // Id shared by a player and their anchor, so stop can find the anchor by score
+  // (multiplayer-safe).
   const id = new Objective("grapple.id");
 
   /** A `self`-bound vector over an [x, y, z] objective triple. */
@@ -296,12 +249,7 @@ export function createStateRepository(d: StateRepositoryDeps) {
   const launchVec = () =>
     new ScoreVec3(d.motion.launchInput.x, d.motion.launchInput.y, d.motion.launchInput.z);
 
-  /**
-   * Read an entity's world position into a vector as fixed-point decimetres. helix's
-   * {@link ScoreVec3.readEntity} owns the `Pos[]` layout; the **one** thing the repository
-   * still owns is the {@link POS_PER_BLOCK} scale every stored position is held at. Works
-   * on any builder context (a `fn.build`'s or a nested `.run`'s).
-   */
+  /** Reads an entity's position into a vector in decimetres. */
   const readPos = (
     ctx: FunctionContext,
     who: Selector,
@@ -343,20 +291,12 @@ interface AnchorDeps {
 }
 
 /**
- * The **anchor service**: what happens *at the block the web hits* - it's the `onHit`
- * payload handed to the `raycast` plugin. Summon the invisible marker there (the anchor a
- * leash can't be, so a position holder the rope + constraint reference by id) and read its
- * world position into the player's anchor scores. The block *filter* (`config.anchorOn`) is
- * the raycast's job now, so a disallowed block never calls this at all - hence the summon is
- * unconditional here.
+ * Runs at the block the web hits: summons the anchor marker and stores its position.
+ * Block filtering happens in the raycast, so this always summons.
  */
 export function createAnchorService(d: AnchorDeps) {
   return {
-    /**
-     * Place the anchor at the current (hit) position and record it. Runs `at` the player
-     * (the raycast preserves `@s`), so `repo.anchorVec()` writes into *this* player's anchor
-     * scores.
-     */
+    /** Places the anchor here and records it in this player's scores. */
     place(ctx: FunctionContext): void {
       ctx.summon(d.config.anchorType, Pos.here(), d.config.anchorNbt());
       d.repo.readPos(ctx, d.selectors.freshAnchorOne(), d.repo.anchorVec());
@@ -376,12 +316,7 @@ interface InitDeps {
   consts: Constants;
 }
 
-/**
- * `grapple/init` (load-tagged): create every objective the plugin uses (scratch, constants,
- * and the repository's per-player state) and seed the constants the pendulum math multiplies
- * by (from the `consts.seeds` table, itself sourced from `tuning.ts`). The grapple-id counter
- * is the one exception - it persists across the run, so it's seeded once, conditionally.
- */
+/** `grapple/init` (load): creates objectives and seeds constants from `tuning.ts`. */
 export function defineInit(d: InitDeps): void {
   d.fn.init.build((ctx) => {
     const objectives = [d.scratch.work, d.consts.objective, ...d.repo.objectives];
@@ -389,9 +324,7 @@ export function defineInit(d: InitDeps): void {
 
     for (const [score, value] of d.consts.seeds) score.set(value);
 
-    // The grapple-id counter persists across the run; only seed it if unset (load runs on
-    // every reload, and we must not reset live anchors' ids to 0). A score compared to itself
-    // fails when it has no value, so `unless` fires exactly once.
+    // Only seed the id counter if unset; reloads must not reset live anchors' ids.
     ctx
       .execute()
       .unlessScore(d.consts.nextId, "=", d.consts.nextId)

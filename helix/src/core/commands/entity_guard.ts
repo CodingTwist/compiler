@@ -1,8 +1,6 @@
-// HAND-WRITTEN. A reusable conditional guard:
-//   execute (if|unless) entity <selector> run <command>
-// Used e.g. for idempotent spawns - only summon when the group isn't present,
-// so a /reload doesn't pile up duplicate copies. Registered via EXTRA_HANDLERS
-// in scripts/gen-commands.mjs, never regenerated.
+// HAND-WRITTEN. `execute (if|unless) entity <selector> run <command>`.
+// E.g. only summon when the entity isn't there, so /reload doesn't duplicate it.
+// Registered via EXTRA_HANDLERS in scripts/gen-commands.mjs, never regenerated.
 import { generateSingleNode, runClause } from "../ir/generate";
 import { ASTNode, FunctionNode } from "../ir/node";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
@@ -53,19 +51,15 @@ export class EntityGuardHandler extends CommandHandler<EntityGuardNode> {
 declare module "../frontend/context" {
   interface FunctionContext {
     /**
-     * Summon `display` only when `cond` holds - e.g. an idempotent spawn:
-     * `ctx.summonIf(cog.notExist, cog)`. Emits one guarded line
-     * (`execute unless entity <sel> run summon ...`), no helper function.
+     * Summons `display` only when `cond` holds, e.g. `ctx.summonIf(cog.notExist, cog)`. One
+     * guarded line.
      */
     summonIf(cond: EntityCondition, display: DisplayValue): void;
 
     /**
-     * Run each command emitted in `build` only when an entity matches `selector`
-     * - one `execute (if|unless) entity <selector> run <command>` line per
-     * emitted command (`mode` defaults to `"if"`). The body runs against a child
-     * context, so this is the API-level way to wrap a block of commands in an
-     * entity guard without touching the IR. Pair with `Selector.volume(...)` for
-     * "every player inside a box" triggers.
+     * Runs each command from `build` only when an entity matches `selector` (`mode`
+     * defaults to `"if"`).
+     * One guarded line per command. Pair with `Selector.volume(...)` for box triggers.
      */
     whenEntity(
       selector: Selector,
@@ -97,8 +91,7 @@ FunctionContext.prototype.whenEntity = function (
   build: (ctx: FunctionContext) => void,
   mode: "if" | "unless" = "if",
 ): void {
-  // Capture the builder's commands into a throwaway function, then re-emit each
-  // wrapped in the entity guard (one line per command). Mirrors whenPlayerNear.
+  // Capture the commands into a throwaway function, then re-emit each with the guard.
   const tmp = new FunctionNode(this.fn.name);
   const child = new (this.constructor as new (
     fn: FunctionNode,

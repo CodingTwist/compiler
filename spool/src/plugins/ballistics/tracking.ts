@@ -3,31 +3,22 @@ import type { FunctionRef, Objective } from "helix";
 import { AXES, OBJECTIVE, POS_SCALE } from "./constants";
 
 /**
- * **Target lead: knowing how fast a player is moving.**
+ * Tracks player velocity so shots can lead moving targets.
  *
- * A shot solved against where the target *is* misses a moving one - a sprinting player
- * covers ~0.28 blocks/tick, so a 40-tick lob lands ~11 blocks behind them. There is no
- * `Motion` on a player to read (the server doesn't write it), so velocity is *derived*:
- * diff this tick's `Pos` against last tick's, per axis, per player.
- *
- * That costs a function per tracked player per tick, so the set is kept small:
- * **firing at someone enrols them**, and they drop out {@link TRACK_TTL} ticks after the
- * last shot. Emitted at most once per datapack however many shots ask for `lead`.
+ * Players have no readable `Motion`, so velocity is this tick's position minus last tick's.
+ * Only players recently shot at are tracked, and it's emitted once per pack.
  */
 
 /** Players currently being diffed. Enrolment is by shot, not by being online. */
 const TRACK_TAG = "ballistics.tracked";
 
-/**
- * Ticks a target stays enrolled after the last shot at it. Long enough to span any
- * sane reload cooldown, so a sustained engagement never falls back to a cold sample.
- */
+/** Ticks a target stays tracked after the last shot. Longer than any reasonable reload. */
 const TRACK_TTL = 200;
 
 export interface Tracker {
   /** Per-axis velocity in centi-blocks/tick, keyed by player. */
   readonly vel: Objective[];
-  /** Run *as* a target to (re)enrol it. Idempotent; refreshes the TTL. */
+  /** Run as a target to (re)enrol it. Idempotent; refreshes the timeout. */
   readonly enroll: FunctionRef;
 }
 
@@ -45,9 +36,7 @@ export function targetVelocity(dp: Datapack): Tracker {
   /** The three objectives as one `@s`-bound vector. */
   const vec = (o: Objective[]) => ScoreVec3.from((_, i) => o[i].score(me()));
 
-  // Cold start: seed `prev` from the current position and zero the velocity. Without
-  // this, a player who dropped out of the set, walked 500 blocks and got re-enrolled
-  // would diff against where they left off and the next shell would aim at the moon.
+  // Seed the previous position on enrol, or a returning player's first diff would be huge.
   const init = dp.createFunction("zzz/track_init");
   init.build((ctx) => {
     vec(prev).readEntity(me(), Path.Entity.Pos, POS_SCALE, { ctx });
@@ -66,8 +55,7 @@ export function targetVelocity(dp: Datapack): Tracker {
 
   const track = dp.createFunction("zzz/track_targets");
   track.build((ctx) => {
-    // v = now - then, *then* then = now. Order matters: the subtract has to see last
-    // tick's value before it is overwritten.
+    // Subtract before overwriting the previous position.
     const v = vec(vel);
     const then = vec(prev);
     v.readEntity(me(), Path.Entity.Pos, POS_SCALE, { ctx }).sub(then, ctx);

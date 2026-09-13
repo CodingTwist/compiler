@@ -8,9 +8,8 @@ import { createCommandHandlers } from "../commands";
 import { generateFunction, generateSingleNode } from "../ir/generate";
 import { PackFormatSpec } from "../../versions/profile";
 
-// 24w44a (1.21.4): the `assets/<ns>/items/` item-definition system + `item_model`
-// component. Only emit item definitions at/after this; older packs used
-// `models/item/<base>.json` overrides instead.
+// 24w44a (1.21.4) added `assets/<ns>/items/` item definitions. Older packs use
+// `models/item/` overrides.
 const ITEM_DEFINITION_DATA_VERSION = 4174;
 
 // Re-exported from their leaf home so existing importers keep working.
@@ -82,9 +81,7 @@ export function buildDatapack(dp: Datapack): Map<string, string> {
     );
   }
 
-  // Emit registered biomes. `worldgen/biome` never pluralized, so the folder is
-  // fixed; the *namespace* is not - a namespaced name overrides another pack's
-  // (usually vanilla's) biome.
+  // Emit biomes. A namespaced name overrides another pack's biome (usually vanilla's).
   for (const [name, biome] of dp.biomeDefs) {
     const { namespace, path } = splitDefName(dp, name);
     files.set(
@@ -93,9 +90,8 @@ export function buildDatapack(dp: Datapack): Map<string, string> {
     );
   }
 
-  // Emit registry tags (block/item/fluid/…). The registry id pluralizes on
-  // pre-1.21 (`tags/blocks`) and is singular on 1.21+ (`tags/block`). The map key
-  // is `<registry>/<name>`; the name (after the first `/`) may itself be nested.
+  // Emit registry tags. The folder is plural before 1.21 (`tags/blocks`), singular after.
+  // The key is `<registry>/<name>`, and the name may be nested.
   for (const [key, tag] of dp.registryTagDefs) {
     const folder = dp.version.singularFolders ? tag.registry : `${tag.registry}s`;
     const name = key.slice(tag.registry.length + 1);
@@ -117,10 +113,9 @@ export function buildDatapack(dp: Datapack): Map<string, string> {
 }
 
 /**
- * Build the resource pack's generated files (`assets/` tree): each registered
- * {@link Model} as `models/item/<name>.json`, its item definition (1.21.4+) as
- * `items/<name>.json`, and any raw `resourceFile` JSON. Verbatim `addAssets`
- * files are copied separately by {@link copyAssets}.
+ * Builds the resource pack's generated files: models, item definitions (1.21.4+) and raw
+ * JSON.
+ * `addAssets` files are copied separately by {@link copyAssets}.
  */
 export function buildResourcePack(dp: Datapack): Map<string, string> {
   const files = new Map<string, string>();
@@ -133,9 +128,7 @@ export function buildResourcePack(dp: Datapack): Map<string, string> {
     );
   }
 
-  // Item definitions (`assets/<ns>/items/<name>.json`): the full typed item-model
-  // union. `dp.model` registers the flat single-model case here; `dp.itemDefinition`
-  // the branching ones. The `item_model` component on a stack points at these.
+  // Item definitions: `dp.model` registers simple ones, `dp.itemDefinition` branching ones.
   if (emitItemDefs) {
     for (const [name, def] of dp.itemDefinitionDefs) {
       files.set(
@@ -153,8 +146,7 @@ export function buildResourcePack(dp: Datapack): Map<string, string> {
     );
   }
 
-  // Blockstate overrides. Keyed by the full block id (`minecraft:note_block`),
-  // so the file lands under THAT block's namespace, not necessarily this pack's.
+  // Blockstate overrides, written under the block's own namespace.
   for (const [id, state] of dp.blockStateDefs) {
     const sep = id.indexOf(":");
     const ns = id.slice(0, sep);
@@ -173,8 +165,8 @@ export function buildResourcePack(dp: Datapack): Map<string, string> {
   return files;
 }
 
-// Newer versions reject the scalar `pack_format` and require a min/max range.
-// `spec` selects which format (datapack by default, resource pack for the RP).
+// Newer versions require a min/max pack format range instead of a single number.
+// `spec` picks the datapack or resource pack format.
 export function buildPackMcmeta(
   dp: Datapack,
   spec: PackFormatSpec = dp.version.pack,

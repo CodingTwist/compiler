@@ -1,16 +1,6 @@
-// Small fixed-vocabulary parsers. These are plain string-literal unions: the
-// builder still passes the string through `argPart`, but the author gets
-// autocomplete and a compile error on a typo.
+// Small fixed vocabularies, typed for autocomplete and typo checks.
 
-/**
- * `gamemode` - the four vanilla game modes. A named-constant namespace *and* the
- * string-union type of the same name (TS declaration merging): author
- * `Gamemode.SURVIVAL` instead of the bare, typo-prone `"survival"`, while
- * `Gamemode` still types every `gamemode: Gamemode` parameter (commands and
- * `Selector.gamemode`) as the union of the four ids. Each member is the vanilla id
- * the command/selector renders - same "typed concepts, not strings" stance as
- * {@link Slot}, `Item.DIAMOND`, `Block.STONE`.
- */
+/** The four game modes. Use `Gamemode.SURVIVAL`; the type is the union of their ids. */
 export const Gamemode = {
   SURVIVAL: "survival",
   CREATIVE: "creative",
@@ -19,11 +9,7 @@ export const Gamemode = {
 } as const;
 export type Gamemode = (typeof Gamemode)[keyof typeof Gamemode];
 
-/**
- * Selector `sort=` - the order a multi-match selector returns entities in. A
- * named-constant namespace + union type (declaration merging), same stance as
- * {@link Gamemode}: author `Sort.NEAREST` over the bare, typo-prone `"nearest"`.
- */
+/** Selector `sort=` order. Use `Sort.NEAREST`. */
 export const Sort = {
   NEAREST: "nearest",
   FURTHEST: "furthest",
@@ -32,21 +18,14 @@ export const Sort = {
 } as const;
 export type Sort = (typeof Sort)[keyof typeof Sort];
 
-/**
- * `entity_anchor` - the point on an entity a `facing`/`anchored` clause aims from.
- * Named-constant namespace + union type (declaration merging), same stance as
- * {@link Gamemode}: author `EntityAnchor.EYES` over the bare `"eyes"`.
- */
+/** `entity_anchor`: the point `facing`/`anchored` aims from. Use `EntityAnchor.EYES`. */
 export const EntityAnchor = {
   EYES: "eyes",
   FEET: "feet",
 } as const;
 export type EntityAnchor = (typeof EntityAnchor)[keyof typeof EntityAnchor];
 
-/**
- * `swing_animation` (26.3+) - which arm animation `/swing` plays. Named-constant
- * namespace + union type (declaration merging), same stance as {@link Gamemode}.
- */
+/** `swing_animation` (26.3+): which arm `/swing` animates. */
 export const SwingAnimation = {
   NONE: "none",
   WHACK: "whack",
@@ -55,13 +34,10 @@ export const SwingAnimation = {
 export type SwingAnimation = (typeof SwingAnimation)[keyof typeof SwingAnimation];
 
 /**
- * `execute on <relation>` - swap the executor for an entity related to it. Named-constant
- * namespace + union type (declaration merging), same stance as {@link Gamemode}.
+ * `execute on <relation>`: switch the executor to a related entity.
  *
- * The relation is the only way to reach state the game keeps but NBT does not expose -
- * notably `TARGET`, a hostile mob's *current* attack target, which is what separates
- * "this mob is fighting someone" from "a player is nearby". A relation with no match
- * (no target, no vehicle) yields no executor, so the chain simply does nothing.
+ * The only way to reach state NBT doesn't expose, like a mob's current attack `TARGET`.
+ * No match means no executor, so the chain does nothing.
  */
 export const Relation = {
   ATTACKER: "attacker",
@@ -76,12 +52,8 @@ export const Relation = {
 export type Relation = (typeof Relation)[keyof typeof Relation];
 
 /**
- * The vanilla **named text colours** - the fixed palette a text component's
- * `color` field accepts by name. Named-constant namespace + union type
- * (declaration merging), same stance as {@link Gamemode}: author
- * `Color.GOLD` over the bare, typo-prone `"gold"`. Arbitrary `#RRGGBB` hex is
- * still allowed at the call site (see `TellrawPart.color`) - this covers just
- * the 16 vanilla names plus `reset`.
+ * The named text colours: 16 vanilla colours plus `reset`. Use `Color.GOLD`; hex is also
+ * allowed.
  */
 export const Color = {
   BLACK: "black",
@@ -126,12 +98,7 @@ export type TemplateRotation =
 /** `template_mirror` */
 export type TemplateMirror = "none" | "front_back" | "left_right";
 
-/**
- * `swizzle` - an axis combo for `align`/`positioned`. The canonical-order subsets
- * of {x, y, z}; the union gives autocomplete and rejects typos (`"xzy"`, `"abc"`)
- * at compile time. Reorderings (`"yx"`) are intentionally excluded - write the
- * axes low-to-high.
- */
+/** An axis combination for `align`/`positioned`, in x-y-z order. */
 export type Swizzle = "x" | "y" | "z" | "xy" | "xz" | "yz" | "xyz";
 
 // Free-text / open-vocabulary parsers kept as `string` (with a meaningful name).
@@ -139,11 +106,8 @@ export type Message = string; // `message`
 export type ItemSlot = string; // `item_slot` / `item_slots`
 
 /**
- * Typed slot references for `item replace`/`item modify` and friends. The single
- * equipment slots are named members so authors write `Slot.MAINHAND` instead of
- * the bare, typo-prone string `"weapon.mainhand"`; the indexed containers stay
- * open via the `container(n)`/`hotbar(n)` helpers. Each renders to the vanilla
- * slot string an {@link ItemSlot} expects.
+ * Typed slot names for `item replace`/`item modify`, e.g. `Slot.MAINHAND`. Use
+ * `container(n)`/`hotbar(n)` for indexed slots.
  */
 export const Slot = {
   MAINHAND: "weapon.mainhand",

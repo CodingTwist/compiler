@@ -1,7 +1,5 @@
-// Leaf codegen helpers: turn AST nodes into command text via a Dispatcher.
-// Kept separate from codegen.ts (which imports the commands barrel) so the
-// command handler files can import these without dragging the whole barrel -
-// that import cycle would break FunctionContext's prototype augmentations.
+// Codegen helpers that render nodes to text. Separate from codegen.ts so command files can
+// import them without the import cycle.
 import type { Datapack } from "./datapack";
 import { ASTNode, FunctionNode } from "./node";
 import { CodegenContext, Dispatcher } from "./commandhandler";
@@ -18,14 +16,11 @@ function dispatchAll(fn: FunctionNode, ctx: CodegenContext, dispatcher: Dispatch
 }
 
 /**
- * Validate and store a function's rendered lines. With debug source tracking on,
- * also record its per-line sources, and (`comments`) put `# <loc>` above each
- * run of lines from one author line - after validation, so comments never reach it.
+ * Validates and stores a function's lines. With debug sources, records sources and adds
+ * `# <loc>` comments after validation.
  */
 function commit(fn: FunctionNode, dp: Datapack, ctx: CodegenContext): void {
-  // Verify every emitted command is legal for the target Minecraft version.
-  // External lines (native plugin calls) carry an unknown leading keyword, so
-  // they are exempt - they are validated by their own runtime, not vanilla.
+  // Validate every line for the target version, except native plugin calls.
   ctx.lines.forEach((line, i) => {
     if (!ctx.externalLines.has(i)) validateCommand(line, dp.version);
   });
@@ -67,23 +62,17 @@ export function generateFunction(
 }
 
 /**
- * The `run …` tail of an `execute` chain for a {@link generateRunTarget} result.
- * A body that is itself one `execute` chain is spliced in as more clauses
- * (`execute A run execute B run c` ≡ `execute A B run c` - execute composes
- * context exactly that way) instead of nesting a second `execute`.
+ * The `run …` tail for a {@link generateRunTarget} result. A nested `execute` is merged
+ * into
+ * the chain instead of nesting.
  */
 export function runClause(cmd: string): string {
   return cmd.startsWith("execute ") ? cmd.slice("execute ".length) : `run ${cmd}`;
 }
 
 /**
- * Render a control-flow body for use after `execute … run`. A body of exactly one
- * command is returned **inline** (e.g. `setblock …`, or a nested `execute if … run
- * …`) so the caller can splice it straight into its `run` clause - no child
- * function file. Multi-command (or empty) bodies are committed as their own
- * function and a `function <ns>:<name>` call is returned instead. Inlining single
- * branches collapses the generated `zzz/*` helper explosion from large `if` fans
- * (e.g. a Clip's per-frame `step`).
+ * Renders a body for `execute … run`. One command is returned inline; more (or none) become
+ * a function and its call is returned. Inlining avoids piles of tiny helper files.
  */
 export function generateRunTarget(
   fn: FunctionNode,
@@ -95,16 +84,13 @@ export function generateRunTarget(
   dispatchAll(fn, ctx, dispatcher);
 
   if (ctx.lines.length === 1 && ctx.externalLines.size === 0) {
-    // Inline: the parent function validates the composed `execute … run <line>`.
-    // A macro line's leading `$` belongs at the front of the whole composed
-    // line, not mid-command - drop it here, the parent's emit re-adds it.
+    // A macro line's `$` must go at the front of the whole composed line, so drop it here.
     if (ctx.lines[0].startsWith("$")) return ctx.lines[0].slice(1);
-    // A native call is never inlined - a bare `paper:…` keyword can't follow
-    // `execute … run` (which expects a vanilla literal), so it gets its own file.
+    // Native calls aren't vanilla literals, so they can't follow `run` inline.
     return ctx.lines[0];
   }
-  // An empty body renders `""` so the caller can drop its whole line - unless
-  // it needs a real call there (a `store` reads the result, `return run`).
+  // An empty body returns `""` so the caller can drop the line, unless it needs a real
+  // call.
   if (ctx.lines.length === 0 && !opts.keepEmpty) return "";
 
   commit(fn, dp, ctx);

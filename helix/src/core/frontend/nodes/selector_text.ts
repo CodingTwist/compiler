@@ -1,13 +1,7 @@
 import { Selector } from "./selector";
 import { TellrawPart } from "./tellraw_part";
 
-/**
- * A `{"selector": "<sel>"}` text component - the names of everything the
- * selector matches, joined by the client.
- *
- * It carries a `Selector`, not a string, so the target is built and rendered by
- * the same typed path as any other selector argument.
- */
+/** A `{"selector": "<sel>"}` text component: the names of every matching entity. */
 export class SelectorText extends TellrawPart {
   constructor(public readonly selector: Selector) {
     super();

@@ -2,11 +2,7 @@ import type { FunctionContext } from "helix";
 import { Pos, Selector } from "helix";
 import type { AreaTrigger, Vec3, Zone } from "./area";
 
-/**
- * Flatten a *geometric* presence trigger to the list of zones a player can be
- * inside. `score` and `players` triggers aren't defined over space, so they
- * yield no zones (the tick wiring handles each separately).
- */
+/** The zones of a geometric trigger. `score` and `players` triggers have none. */
 export function triggerZones(trigger: AreaTrigger): Zone[] {
   switch (trigger.kind) {
     case "region":
@@ -22,14 +18,9 @@ export function triggerZones(trigger: AreaTrigger): Zone[] {
 }
 
 /**
- * Run `body` for every player inside the union of `zones`. Each zone emits one
- * guarded line - a sphere via `whenPlayerNear`, a cuboid via a volume `Selector`
- * fed to `whenEntity`. A player inside several overlapping zones triggers `body`
- * once per zone, so `body` must be idempotent (a flag set or a function call -
- * the only two things the factory passes - both are).
+ * Runs `body` for every player inside any of `zones`, one guarded line per zone.
  *
- * Both paths go through the compiler's public API; this layer never builds IR
- * nodes or selector strings itself.
+ * A player in overlapping zones runs `body` once per zone, so `body` must be idempotent.
  */
 export function whenPlayerInZones(
   ctx: FunctionContext,
@@ -45,12 +36,7 @@ export function whenPlayerInZones(
   }
 }
 
-/**
- * Emit `body`'s commands each guarded by `execute if entity @a[<box>] run …`,
- * using the `Selector.volume` builder + `ctx.whenEntity` capture API. The
- * selector matches any player whose hitbox overlaps the axis-aligned box between
- * the two corners (order-independent).
- */
+/** Runs `body` guarded by `execute if entity @a[<box>]` for the box between two corners. */
 function whenPlayerInBox(
   ctx: FunctionContext,
   from: Vec3,

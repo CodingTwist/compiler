@@ -22,16 +22,12 @@ export interface ProbeCase {
   after?: number;
   /** The condition that must hold. Any {@link Detector}, so `Detect.all(...)` composes. */
   expect: Detector;
-  /** Undo `setup` - kill spawned entities, restore blocks. Runs after the check either way. */
+  /** Undoes `setup`. Always runs after the check. */
   teardown?(ctx: FunctionContext): void;
 }
 
 export interface ProbeOptions {
-  /**
-   * When `false`, every `case()` and `run()` is a **true** no-op: no functions,
-   * no objective, nothing in the emitted pack. Pass the build's dev flag here
-   * rather than wrapping call sites in `if`.
-   */
+  /** When `false`, emits nothing at all. Pass the build's dev flag. */
   enabled?: boolean;
   /** Function-path prefix. Defaults to `probe`, i.e. `/function <ns>:probe/run`. */
   name?: string;
@@ -41,17 +37,12 @@ const slug = (name: string): string =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 
 /**
- * A suite of in-game tests, run by a human typing `/function <ns>:probe/run`.
+ * In-game tests, run with `/function <ns>:probe/run`.
  *
- * Unit tests assert on *emitted text*; this asserts on the *running world* -
- * that the shell actually lands, that the impulse actually decays. Each case is
- * `setup` → wait `after` ticks → evaluate `expect` → `teardown`, and cases run as
- * a **serial chain** (each check schedules the next setup a tick later) so two
- * tests can never share a world at the same moment. Results arrive as `tellraw`
- * PASS/FAIL lines plus a final tally.
- *
- * Nothing is tagged `load`/`tick`: an unrun suite costs zero commands per tick.
- * A disabled suite costs zero *files* - see {@link ProbeOptions.enabled}.
+ * Each case runs `setup`, waits `after` ticks, checks `expect`, then `teardown`. Cases run
+ * one
+ * after another so they never share the world. Results go to chat. Nothing runs on load or
+ * tick.
  */
 export class Suite {
   private readonly enabled: boolean;
@@ -73,8 +64,8 @@ export class Suite {
   }
 
   /**
-   * Emit the suite. Returns the entry point (`<root>/run`), or `undefined` when
-   * disabled or empty. Call once, after every `case`.
+   * Emits the suite and returns `<root>/run`, or `undefined` if disabled or empty. Call
+   * once, after every `case`.
    */
   run(): FunctionRef | undefined {
     if (!this.cases.length) return undefined;
@@ -111,9 +102,8 @@ export class Suite {
       });
 
       f.check.build((ctx) => {
-        // `store success` with no `run`: the conditions themselves are the
-        // command, so one emission of the detector yields both branches - no
-        // negated detector needed (there is no `Detect.any`/`not`).
+        // `store success` with no `run` gives both pass and fail from one detector, so no
+        // negation is needed.
         const chain = ctx.execute().storeSuccessScore(ok);
         f.spec.expect(chain);
         chain.done();

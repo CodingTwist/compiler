@@ -5,84 +5,57 @@ import type { AreaTrigger } from "./area";
 export type { AreaTrigger, Vec3, Zone } from "./area";
 
 /**
- * What a module knows about itself at {@link DatapackModule.register} time.
+ * What a module knows about itself in {@link DatapackModule.register}.
  *
- * The `dimension` an area declares reaches its tick subtree and its
- * `onActivate`/`onDeactivate` automatically, because the framework emits those.
- * It cannot reach a function the module creates itself - and a block read that
- * silently resolves against the wrong dimension fails by never matching, which
- * is the worst way for a build to be wrong. So the resolved dimension is handed
- * to `register`, and {@link fn} is the way to create a function that runs where
- * the module actually is.
+ * Functions the module creates itself don't get its dimension automatically. A block check
+ * in
+ * the wrong dimension silently never matches, so create them with {@link fn}.
  */
 export interface ModuleScope {
   /** This module's `name` from its {@link ModuleMetadata}. */
   readonly name: string;
 
-  /**
-   * The dimension this module resolved to - its own `dimension`, else the
-   * nearest ancestor's, else `undefined` (run wherever the caller is).
-   */
+  /** This module's dimension: its own, the nearest ancestor's, or `undefined`. */
   readonly dimension?: Id;
 
   /**
-   * `dp.createFunction` + build, with the body wrapped in {@link dimension}.
+   * Creates a function whose body runs in {@link dimension}.
    *
-   * Use it for anything the module creates that is *called from outside* its
-   * tick tree - admin commands, scheduled one-shots, event rewards - all of
-   * which otherwise run in whatever dimension invoked them.
+   * Use it for functions called from outside the tick tree: admin commands, schedules,
+   * rewards.
    */
   fn(name: string, body: (ctx: FunctionContext) => void): FunctionRef;
 }
 
 /**
- * A datapack module is a class with an optional constructor and the lifecycle
- * hooks below. It is instantiated once by {@link DatapackFactory} when its
- * containing module tree is enabled (i.e. it is reachable through the root
- * module's `imports`). A module NOT reachable through `imports` is never
- * constructed and emits nothing - that is the compile-time disable.
+ * A datapack module: a class with optional lifecycle hooks.
+ *
+ * Built once if reachable through the root's `imports`. Unreachable modules emit nothing.
  */
 export interface DatapackModule {
   /**
-   * Arbitrary one-off setup: declare extra objectives, create standalone
-   * functions, register structures, etc. Runs once at build time.
+   * One-off build-time setup: objectives, functions, structures.
    *
-   * `scope` carries this module's resolved dimension and a `fn` that applies it
-   * - see {@link ModuleScope}. Ignore the second argument entirely if the module
-   * has no dimension to speak of.
+   * `scope` has the module's dimension; see {@link ModuleScope}.
    */
   register?(dp: Datapack, scope: ModuleScope): void;
 
-  /**
-   * Appended to the shared `load` function (runs on pack load / `/reload`).
-   * Always runs - load-time setup is not gated by the runtime flag.
-   */
+  /** Added to the shared `load` function. Always runs; not gated by area flags. */
   onLoad?(ctx: FunctionContext): void;
 
-  /**
-   * Appended to the shared `tick` function (runs every game tick) - but only
-   * reached while every `area` ancestor of this module is active. Put per-tick
-   * work here (proximity checks, timers); it costs nothing while an ancestor
-   * area is inactive, because the parent's single `active` check skips the whole
-   * subtree before this is ever called.
-   */
+  /** Added to the shared tick, but only runs while every `area` ancestor is active. */
   onTick?(ctx: FunctionContext): void;
 
   /**
-   * Runs once when this module's `area` becomes active (see {@link ModuleMetadata.area}) -
-   * e.g. summon a level's entities. Only meaningful on an `area` module; emitted
-   * into its generated `<name>/activate` function.
+   * Runs once when this module's area becomes active, e.g. to summon its entities.
+   * Emitted into `<name>/activate`.
    */
   onActivate?(ctx: FunctionContext): void;
 
   /**
-   * How an `@On({ name })` handler body becomes a function - override to apply
-   * whatever conventions this pack puts on every function it creates (a trace
-   * line, a tag, a naming scheme). Defaults to a plain `dp.createFunction`.
-   *
-   * The same reasoning as a handler's detector being an argument: the framework
-   * decides that a named body *gets* a function, not what one of this pack's
-   * functions looks like.
+   * Creates the function for an `@On({ name })` body. Override to apply your pack's
+   * function
+   * conventions. Defaults to `dp.createFunction`.
    */
   defineFunction?(
     dp: Datapack,
@@ -91,8 +64,8 @@ export interface DatapackModule {
   ): FunctionRef;
 
   /**
-   * Runs once when this module's `area` becomes inactive - e.g. despawn the
-   * level's entities and clean up. Emitted into `<name>/deactivate`.
+   * Runs once when this module's area becomes inactive, e.g. to clean up. Emitted into
+   * `<name>/deactivate`.
    */
   onDeactivate?(ctx: FunctionContext): void;
 }
@@ -103,11 +76,8 @@ export interface ModuleClass {
 }
 
 /**
- * A pre-instantiated, configured module - the NestJS `forRoot`/`forFeature`
- * analogue. A feature that needs per-use config (e.g. a door at a given
- * position) exposes a factory returning one of these, so the same feature can be
- * imported many times with different settings. Build one with
- * {@link defineModule}.
+ * A module built with config, like NestJS `forFeature`, so a feature can be imported many
+ * times with different settings. Build one with {@link defineModule}.
  */
 export interface ConfiguredModule {
   readonly __configured: true;
@@ -115,93 +85,65 @@ export interface ConfiguredModule {
   readonly instance: DatapackModule;
 }
 
-/**
- * Anything accepted in a module's `imports`: a decorated class (built with no
- * args) or a {@link ConfiguredModule} (already built with config).
- */
+/** Anything allowed in `imports`: a decorated class or a {@link ConfiguredModule}. */
 export type ModuleRef = ModuleClass | ConfiguredModule;
 
-/** Build target. `dev` is the iteration build; `prod` is the shippable one. */
+/** Build target: `dev` for iterating, `prod` to ship. */
 export type BuildEnv = "dev" | "prod";
 
 /** Metadata attached to a class by the {@link Module} decorator. */
 export interface ModuleMetadata {
-  /**
-   * Stable identifier for the module. Used as the scoreboard fake-player id
-   * (`#<name> modules`) and as the namespace for the enable/disable functions.
-   */
+  /** Stable module id. Used as the scoreboard name and the namespace for its functions. */
   name: string;
 
   /**
-   * Child modules to compose in (NestJS-style): decorated classes and/or
-   * {@link ConfiguredModule}s. Listing a module here enables it; removing it
-   * disables it at compile time. References are de-duplicated by identity, so
-   * the same class (or the same configured instance) imported by several
-   * parents is only built once - but two separate `Door(...)` calls are two
-   * distinct doors.
+   * Child modules to include. Removing one leaves it out of the build.
+   *
+   * Deduplicated by identity: a shared class is built once, but two `Door(...)` calls are
+   * two doors.
    */
   imports?: ModuleRef[];
 
   /**
-   * Mark this module as an **area**: it owns an `active` scoreboard flag, and its
-   * own `onTick` *and the entire subtree of modules it imports* run only while
-   * that flag is `1`. An inactive area costs a single `execute if score … active`
-   * check per tick - everything beneath it (including children's proximity
-   * checks) is skipped. Flip it with the generated `<name>/activate` /
-   * `<name>/deactivate` functions, or a {@link regionTrigger}/{@link scoreTrigger}.
+   * Makes this module an area: its tick and whole import subtree only run while its
+   * `active` flag is `1`.
+   *
+   * A dormant area costs one check per tick. Flip it with `<name>/activate` /
+   * `<name>/deactivate`
+   * or a {@link trigger}.
    */
   area?: boolean;
 
-  /**
-   * Initial state of an `area`'s flag, set in `load`. Default `false` - areas
-   * start inactive and are switched on by a trigger (a level you enter, etc.).
-   * Set `true` for an area that should be live from load.
-   */
+  /** Initial flag value, set on load. Default `false`. */
   activeByDefault?: boolean;
 
   /**
-   * How this `area` switches itself on (see {@link AreaTrigger}). Omit to
-   * activate it manually via the generated `<name>/activate` function.
+   * How this area switches itself on (see {@link AreaTrigger}). Omit to activate manually.
    */
   trigger?: AreaTrigger;
 
   /**
-   * The dimension this `area` lives in. When set, twine runs the area's whole
-   * lifecycle *in* it: `onActivate`/`onDeactivate`, the throttled `onTick`/`@On`
-   * subtree, and the arm/presence detectors are each wrapped in
-   * `execute in <dimension> run …`. A feature states "I live in the End" once,
-   * instead of every handler re-adding `.in(...)` and one silently forgetting -
-   * a positional trigger, or a block/`from block` read inside a handler, then
-   * resolves against the area's dimension rather than against wherever the tick
-   * loop happens to run (the overworld). Child areas inherit it, so a nested
-   * area need only name a dimension when it differs from its parent's. Only
-   * meaningful on an `area` module.
+   * The dimension this area lives in. Its lifecycle, ticks and triggers all run in it.
+   *
+   * Saves adding `.in(...)` to every handler, where one missed call silently checks the
+   * wrong
+   * dimension. Child areas inherit it.
    */
   dimension?: Id;
 
-  /**
-   * Restrict the module to specific build environments. When set, the module
-   * (and any modules reachable only through it) is compiled in only if the
-   * active {@link BuildEnv} is listed - e.g. `env: ["dev"]` for debug-only
-   * features that must never reach a prod build. Omit to include in all envs.
-   */
+  /** Build environments this module is included in, e.g. `["dev"]`. Omit for all. */
   env?: BuildEnv[];
 
   /**
-   * Throttle this module's `onTick`: run it once every `tickEvery` ticks instead
-   * of every tick. Wrapped *inside* any area gating, so it still costs nothing
-   * while an ancestor area is dormant - this just spreads out the work while
-   * active. Omit (or `1`) to run every tick. Use for per-tick work that doesn't
-   * need 20 Hz (proximity sweeps, slow timers) to cut per-tick command volume.
+   * Runs this module's `onTick` every `tickEvery` ticks instead of every tick. Still inside
+   * area gating.
    */
   tickEvery?: number;
 
   /**
-   * The offset (in ticks, `0..tickEvery-1`) at which this module's throttled
-   * `onTick` fires within its period. Lets you deliberately spread same-period
-   * modules across different ticks. Omit to have the factory auto-assign distinct
-   * phases round-robin across modules sharing a `tickEvery`, so they don't all
-   * fire on the same tick. Only meaningful with `tickEvery` set.
+   * Tick offset (`0..tickEvery-1`) for the throttled `onTick`. Omit to have modules sharing
+   * a
+   * `tickEvery` spread across ticks automatically.
    */
   tickPhase?: number;
 }

@@ -4,11 +4,7 @@ import { ScoreTarget } from "helix";
 /** Scoreboard objective holding every area's `active` flag (`#<area> active`). */
 export const ACTIVE_OBJECTIVE = "active";
 
-/**
- * Owns the `active` scoreboard objective and the per-area flag score. The flag
- * gates an area's whole subtree at tick time and is flipped by the generated
- * `<area>/activate` / `<area>/deactivate` functions (see the factory).
- */
+/** Owns the `active` objective and each area's flag score. */
 export class ActiveFlags {
   private readonly objective;
 

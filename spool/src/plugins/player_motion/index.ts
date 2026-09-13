@@ -9,38 +9,18 @@ import { defineMath } from "./math";
 import { defineApi } from "./api";
 
 /**
- * A typed port of the published `player_motion` datapack
- * (https://github.com/MulverineX/player_motion): launch a player by applying an
- * `apply_impulse` enchantment to a dummy saddle, decomposing a velocity vector
- * into a 32-bit-per-axis score tree the enchantment reads.
+ * A typed port of the `player_motion` datapack
+ * (https://github.com/MulverineX/player_motion).
  *
- * Scope (decided with the user): the **modern recommended API only**, and **no
- * macros**. `launch_local_xyz` (common viewport==context path) and
- * `launch_global_xyz` (small-vector path, |x|,|y|,|z| <= 12398) compile to pure
- * command/scoreboard math. The upstream macro paths - large-vector
- * `convert_large_to_local`, mismatched-context `local_to_global`, polar-local
- * rotation, and the deprecated `launch_xyz`/`launch_looking` buckets - are **not**
- * ported (helix has no macro engine, and they are a documented perf cost upstream);
- * those branches early-`return fail` so a caller gets a clear "unsupported in this
- * build" signal instead of silently-wrong motion.
+ * Launches a player by applying an `apply_impulse` enchantment on a dummy saddle, with the
+ * velocity split into per-bit scores.
  *
- * Everything compiles into the consuming pack's own namespace (helix is
- * single-namespace), so the library is inlined rather than referenced as a
- * separate `player_motion:` pack. The scoreboard objective names keep their
- * `player_motion.*` form (global names, shared with the enchantment JSON).
- *
- * The implementation is split by concern - see the sibling files: `resources.ts`
- * (enchantment + predicate JSON), `context.ts` (the shared objectives / score
- * helpers / function refs threaded everywhere), `init.ts`, `store.ts` (32-bit
- * decomposition), `launch.ts` (main/reset/use_previous/polar), `math.ts`
- * (reference vectors + convert-to-local), and `api.ts` (the two entry points).
- * This file is just the public type + plugin + orchestration.
+ * Only the modern API, without macros. The macro-based upstream paths (large vectors,
+ * mismatched context, polar rotation, deprecated functions) aren't ported and `return
+ * fail`.
+ * Everything is inlined into the consuming pack's namespace.
  */
-/**
- * A velocity relative to the player's facing, in blocks/tick. Every axis is
- * optional and defaults to 0, so `{ up: 0.8, forward: 1.2 }` reads as itself.
- * Used by {@link PlayerMotion.launchLocal} (the player must be the run context).
- */
+/** A velocity relative to the player's facing, in blocks/tick. Missing axes are 0. */
 export interface LocalVelocity {
   /** Strafe: right (+) / left (-). */
   readonly sideways?: number;
@@ -58,43 +38,28 @@ export interface GlobalVelocity {
 }
 
 export interface PlayerMotion {
-  /**
-   * Launch the executing player by `velocity` **relative to their facing**
-   * (sideways/up/forward in blocks/tick). Emits the input writes + the call, so
-   * one line replaces the set-three-scores-then-call dance. Must run positioned
-   * as the player (e.g. `execute as @p at @s run ...`).
-   */
+  /** Launches the executing player relative to their facing. Run as and at the player. */
   launchLocal(ctx: FunctionContext, velocity: LocalVelocity): void;
   /**
-   * Launch the executing player by `velocity` **along world axes** (x/y/z in
-   * blocks/tick). Must run `at` the player. Inputs outside +/-12398 blocks/tick
-   * per axis hit the unsupported large-vector path and `return fail`.
+   * Launches the executing player along world axes. Run at the player.
+   * Values beyond ±12398 per axis aren't supported and `return fail`.
    */
   launchGlobal(ctx: FunctionContext, velocity: GlobalVelocity): void;
 
   /**
-   * Like {@link launchLocal}, but a **sustained per-tick** impulse: it skips the
-   * gamemode-swap trigger and relies on the player *already moving* to fire the
-   * enchantment that tick. Call it every tick (`execute as @a[tag=…] at @s run …`)
-   * to drive continuous motion - a thrust, a grapple, the arc of a swing. The
-   * very first kick from a standstill still needs {@link launchLocal} (which
-   * forces the trigger); use this to maintain motion once underway.
+   * Like {@link launchLocal}, but for a per-tick sustained push (thrust, grapple, swing).
    *
-   * Omit `velocity` to sustain whatever is already in {@link launchInput} - the
-   * way to drive a **runtime-computed** vector (set the input scores yourself,
-   * then call this with no velocity).
+   * Skips the gamemode swap, so the player must already be moving; start from standstill
+   * with
+   * {@link launchLocal}. Omit `velocity` to use what's already in {@link launchInput}.
    */
   applyLocal(ctx: FunctionContext, velocity?: LocalVelocity): void;
   /**
-   * Like {@link launchGlobal}, but a **sustained per-tick** impulse along world
-   * axes - the natural fit for swing/grapple physics, where each tick you
-   * recompute a world-space velocity (e.g. toward an anchor) and re-apply it. See
-   * {@link applyLocal} for the swap-free trigger model, the standstill caveat, and
-   * the no-velocity (runtime {@link launchInput}) form.
+   * Like {@link launchGlobal}, but sustained per tick. See {@link applyLocal}.
    *
-   * Note: a velocity past the +/-12398 large-vector limit `return fail`s before the
-   * sustain flag is cleared, so it can leak into the next launch - a non-issue for
-   * per-tick velocities (a few blocks/tick), which is the only place this is used.
+   * Past ±12398 it fails before clearing the sustain flag, which can leak into the next
+   * launch.
+   * Not an issue at per-tick speeds.
    */
   applyGlobal(ctx: FunctionContext, velocity?: GlobalVelocity): void;
 
@@ -104,9 +69,9 @@ export interface PlayerMotion {
   /** `api/launch_global_xyz` - the raw function, to `ctx.call` yourself after setting {@link launchInput}. */
   readonly launchGlobalXyz: FunctionRef;
   /**
-   * The `$x/$y/$z player_motion.api.launch` input scores, as typed `Score`s. These
-   * are **fixed-point**: `10000` == 1.0 block/tick. Prefer {@link launchLocal} /
-   * {@link launchGlobal}, which take plain block/tick floats and convert for you.
+   * The `$x/$y/$z player_motion.api.launch` input scores, in fixed-point (10000 = 1
+   * block/tick).
+   * Prefer {@link launchLocal} / {@link launchGlobal}, which convert for you.
    */
   readonly launchInput: { readonly x: Score; readonly y: Score; readonly z: Score };
 }
@@ -167,11 +132,7 @@ function definePlayerMotion(dp: Datapack): PlayerMotion {
 
 declare module "helix" {
   interface Datapack {
-    /**
-     * Install the {@link PlayerMotion} library into this pack (idempotent) and
-     * return its handle. Registers the internal functions, the `apply_impulse`
-     * enchantment, the two predicates, and a `load`-tagged `internal/init`.
-     */
+    /** Installs the {@link PlayerMotion} library (idempotent) and returns its handle. */
     playerMotion(): PlayerMotion;
   }
 }

@@ -1,11 +1,6 @@
 /**
- * Interpolation primitives + the keyframe model the timeline engine samples.
- *
- * The number-crunching math (interpolation, quaternions, rotate-about-pivot,
- * stable rounding) all lives in the compiler core (`lerp`/`lerpVec3`, `quat`,
- * `rotateAboutPivot`, `round6`) - this module only adds the keyframe *sampler*
- * the baked tracks use, composing the core `lerp`/`lerpVec3` mixers. No math is
- * redone here: `lerp` is imported and re-exported so callers have one home.
+ * Keyframe sampling for the timeline engine. The maths itself (`lerp`, `quat`...) lives in
+ * helix.
  */
 import { lerp, lerpVec3 } from "helix";
 import type { Vec3, NbtInput } from "helix";
@@ -26,9 +21,8 @@ export interface Keyframe<T> {
 }
 
 /**
- * Sample a sorted keyframe list at `tick`, returning the interpolated value via
- * `mix`. Clamps outside the range (holds the first/last value), and respects a
- * `"step"` ease (hold the left keyframe until the next one).
+ * Samples sorted keyframes at `tick` with `mix`. Holds the ends, and `"step"` holds the
+ * left key.
  */
 export function sample<T>(
   keys: readonly Keyframe<T>[],
@@ -60,11 +54,7 @@ export const sampleScalar = (keys: readonly Keyframe<number>[], tick: number): n
 export const sampleVec3 = (keys: readonly Keyframe<Vec3>[], tick: number): Vec3 =>
   sample(keys, tick, lerpVec3);
 
-/**
- * Build a nested object from a dotted NBT path and a leaf value, e.g.
- * `nest("transformation.translation", v)` -> `{transformation:{translation:v}}`.
- * Used by the generic NBT track to merge an arbitrary path.
- */
+/** Builds a nested object from a dotted path, e.g. `nest("a.b", v)` -> `{a:{b:v}}`. */
 export function nest(path: string, value: NbtInput): { [key: string]: NbtInput } {
   const parts = path.split(".");
   const root: { [key: string]: NbtInput } = {};

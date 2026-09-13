@@ -22,9 +22,7 @@ function fire(name: string, opts: RuntimeShotOptions = {}): string[] {
 }
 
 /**
- * Re-run the *integer* arithmetic the emitted function performs, so the check measures
- * the datapack's real answer (truncation and all), not the float solve it is derived
- * from. Mirrors the command sequence in `runtime.ts` one for one.
+ * Re-runs the emitted integer maths, truncation included, to test the pack's real answer.
  */
 function scoreboardVelocity(from: Vec3, to: Vec3, ticks: number): Vec3 {
   const { A, G } = trajectoryBasis(TNT, ticks);
@@ -43,10 +41,8 @@ function scoreboardVelocity(from: Vec3, to: Vec3, ticks: number): Vec3 {
 describe("runtime ballistics", () => {
   it("emits one solve: read six coords, scale, divide, write Motion", () => {
     const lines = fire("fire/live", { ticks: 40 });
-    // A(40) = 27.6, so the constants baked into the formula are the basis at exactly
-    // that tick - literals, materialised into a scratch slot only where the pre-26.3
-    // `operation` chain needs a score operand (on 26.3+ they are just numbers in the
-    // one `/compute` argument).
+    // The basis at tick 40 is baked in as literals; older versions need scratch scores for
+    // them.
     const { A, G } = trajectoryBasis(TNT, 40);
     expect(lines).toContain(`scoreboard players set #_t0 ballistics ${Math.round(A[40] * 100)}`);
     expect(lines).toContain("scoreboard players operation #vx ballistics /= #_t0 ballistics");
@@ -75,8 +71,7 @@ describe("runtime ballistics", () => {
     expect(lines.some((l) => l.startsWith("execute at @e[tag=gun,limit=1] run summon minecraft:tnt ~ ~ ~ "))).toBe(true);
     expect(lines.some((l) => l.includes("fuse:40s"))).toBe(true);
     expect(lines).toContain("tag @e[tag=art.shot,limit=1] remove art.shot");
-    // Nothing is fired unless every axis is inside vanilla's +/-10 Motion limit; the
-    // caller learns which happened from the return value.
+    // Nothing fires unless every axis is within ±10; the return value says which happened.
     expect(lines).toContain(
       "execute unless score #vx ballistics matches -100000..100000 run return 0",
     );
@@ -112,8 +107,7 @@ describe("runtime ballistics", () => {
     );
     expect(lines).toContain("execute at @s as @p run function art:zzz/track_enroll");
     expect(lines).toContain("tag @s add ballistics.tracked");
-    // A cold (or re-)enrolment reseeds prev, so the first diff can't be against a
-    // position from a previous engagement.
+    // Enrolling reseeds the previous position, so the first diff isn't against stale data.
     expect(lines).toContain(
       "execute unless entity @s[tag=ballistics.tracked] run function art:zzz/track_init",
     );

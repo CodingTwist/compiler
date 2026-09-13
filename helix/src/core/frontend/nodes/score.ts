@@ -21,11 +21,7 @@ export class Score extends TellrawPart implements ExpressionNode {
     if (value !== undefined) this.value = value;
   }
 
-  /**
-   * `matches <range>` - the general two-bounded form the other comparisons are
-   * special cases of (`equal(n)` is `n..n`, `greaterThan(n)` is `n..`). Use it
-   * when a condition spans a band of values rather than one edge.
-   */
+  /** `matches <range>`: true when the score is in `range`. */
   matches(range: Range): ExpressionNode {
     return new ScoreRangeNode(this.target, this.objective, range);
   }
@@ -60,10 +56,7 @@ export class Score extends TellrawPart implements ExpressionNode {
     );
   }
 
-  /**
-   * The context a mutating verb emits into: the explicit `ctx` if given, else
-   * the ambient one (the `build`/`run`/`if` callback you are inside).
-   */
+  /** The explicit `ctx` if given, else the ambient one. */
   private emitter(ctx?: FunctionContext): EmitContext {
     const target = ctx ?? currentContext();
     if (!target)
@@ -105,14 +98,10 @@ export class Score extends TellrawPart implements ExpressionNode {
   }
 
   /**
-   * `scoreboard players operation <this> <op> <other>` - typed score-to-score
-   * arithmetic. The named verbs below (`plus`, `times`, …) delegate here; use
-   * this directly only for a dynamic operator. Returns `this`, so a run of
-   * operations on the same score chains: `acc.times(k).plus(d)`.
+   * `scoreboard players operation <this> <op> <other>`. Chains; prefer the named verbs
+   * (`plus`, `times`…).
    *
-   * The emitting context is the ambient one (the `build`/`run`/`if` callback you
-   * are inside). Pass `ctx` explicitly only to override it - e.g. when two
-   * contexts are in scope and you mean the outer one. See {@link currentContext}.
+   * Emits into the ambient context; pass `ctx` to override. See {@link currentContext}.
    */
   operation(op: ScoreOperator, other: Score, ctx?: FunctionContext): this {
     this.emitter(ctx).emit(scoreOpNode(this, op, other));

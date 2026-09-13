@@ -1,7 +1,4 @@
-// A minimal ZIP (store the central directory, deflate the entries) writer -
-// no external dependency, in the same spirit as structure.ts's hand-rolled
-// NBT codec. Only what `writeDatapack`'s zip mode needs: build a single
-// in-memory archive from a flat set of (path -> content) pairs.
+// A minimal in-memory ZIP writer for `writeDatapack`'s zip mode. No external dependency.
 import zlib from "zlib";
 
 const CRC_TABLE = (() => {

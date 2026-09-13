@@ -1,10 +1,7 @@
 import { normalizeId } from "../../versions/registry";
 import { ModelRef } from "./model";
 
-/**
- * One applied model in a blockstate file: which model to show, plus the optional
- * rotation (`x`/`y`, multiples of 90), `uvlock`, and random-`weight`.
- */
+/** One model in a blockstate file, with optional `x`/`y` rotation, `uvlock` and `weight`. */
 export interface BlockStateVariant {
   /** The block model to render - a {@link ModelRef} (`dp.blockModel(...)`) or `<ns>:block/x`. */
   model: ModelRef | string;
@@ -32,12 +29,8 @@ function variantValueJson(v: VariantValue): unknown {
 }
 
 /**
- * A resource-pack **blockstate** definition (`assets/<ns>/blockstates/<block>.json`),
- * mapping each state of a block to the model(s) that render it. Blockstate files
- * override the appearance of an *existing* (usually vanilla) block - there is no
- * vanilla "new block", so this is the file half of any custom-block technique
- * (that technique - allocation, place/break detection - is policy for a higher
- * layer). Registered via {@link Datapack.blockState}.
+ * A resource pack blockstate: which models render each state of an existing block.
+ * Registered with {@link Datapack.blockState}.
  *
  *   dp.blockState("note_block", BlockState.variants({
  *     "note=0": { model: myModel },      // repurpose an unused note pitch

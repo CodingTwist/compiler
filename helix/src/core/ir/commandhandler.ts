@@ -12,9 +12,8 @@ export class CodegenContext {
     public lines: string[] = [];
 
     /**
-     * Indices into {@link lines} that are NOT vanilla commands (e.g. a native
-     * Paper plugin call) and so must skip validation against the version's
-     * Brigadier tree. See {@link emitExternal} and `generateFunction`.
+     * Indices of lines that aren't vanilla commands (native plugin calls) and skip
+     * validation.
      */
     public externalLines = new Set<number>();
 
@@ -29,20 +28,14 @@ export class CodegenContext {
     ) { }
 
     emit(line: string) {
-        // A line carrying a `$(arg)` macro substitution must be marked with a
-        // leading `$`. Done here so every handler gets it for free.
-        // ponytail: a literal "$(" in e.g. a tellraw string would also trip
-        // this; pass the text differently if that ever bites.
+        // Lines with a `$(arg)` macro need a leading `$`; added here for every handler.
+        // ponytail: a literal "$(" in text would trigger this too.
         const text = line.toString();
         this.lines.push(text.includes("$(") ? `$${text}` : text);
         this.sources.push(this.current);
     }
 
-    /**
-     * Emit a line that is not a vanilla command (a native plugin call) - it is
-     * recorded as exempt from Brigadier validation, which would reject its
-     * unknown leading keyword.
-     */
+    /** Emits a non-vanilla line (a native plugin call), exempt from validation. */
     emitExternal(line: string) {
         this.externalLines.add(this.lines.length);
         this.lines.push(line.toString());
@@ -59,12 +52,8 @@ export class CodegenContext {
 }
 
 /**
- * The handler for every "mechanical" command: render the node's accumulated
- * literal/arg `parts` as tokens, validated against the target version's command
- * tree. One shared instance serves all of them - {@link Dispatcher} falls back to
- * it for any {@link CommandNodeBase} without a registered handler, so a generated
- * command needs no handler class of its own. Commands whose lowering is
- * version-dependent (give's NBT vs components, ...) register their own handler.
+ * The handler for every generated command: renders its parts, validated against the tree.
+ * {@link Dispatcher} uses it for any node without its own handler.
  */
 export class TreeCommandHandler extends CommandHandler<CommandNodeBase> {
     readonly type = "tree-command";
@@ -83,9 +72,7 @@ export class Dispatcher {
     constructor(private handlers: Map<ASTNode["type"], CommandHandler>) { }
 
     dispatch(node: ASTNode, ctx: CodegenContext) {
-        // Registered handlers first; anything that is just command parts (every
-        // generated command) falls back to the shared tree handler, so mechanical
-        // commands need no handler class of their own.
+        // Registered handlers first, else the shared tree handler.
         const handler = this.handlers.get(node.type);
         if (handler) return handler.generate(node, ctx);
         if (node instanceof CommandNodeBase) {
