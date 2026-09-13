@@ -1,12 +1,17 @@
 import "reflect-metadata";
-import { Datapack, v1_20_4 } from "helix";
-import type { FunctionContext, Id, VersionProfile, FunctionRef, RuntimeTarget } from "helix";
+import { Datapack, ignoreSourceFrames, v1_20_4 } from "helix";
+import type { DebugOptions, FunctionContext, Id, VersionProfile, FunctionRef, RuntimeTarget } from "helix";
 import type { BuildEnv, ModuleClass, ModuleRef, ModuleScope } from "./module.interface";
 import { buildEnv, setBuildEnv } from "./env";
 import { ActiveFlags } from "./flags";
 import { EventLatches, getEventHandlers } from "./events";
 import { buildGraph, needsTickMemo, resolveDimensions, type Node } from "./graph";
 import { emitArea, wireTick, type Wiring } from "./tick-wiring";
+
+// Debug source tracking: twine is a framework - lines it emits itself (tick
+// wiring, mob plumbing) point at twine, not at the `DatapackFactory.create` call
+// (this file sits in `src/` or `dist/`, one below the package root).
+ignoreSourceFrames(__dirname.replace(/[\\/][^\\/]+$/, ""), { framework: true });
 
 /**
  * The {@link ModuleScope} handed to a module's `register`: its resolved
@@ -66,6 +71,12 @@ export interface FactoryOptions {
    * Default `"vanilla"`. Build the same root twice to ship both packs.
    */
   target?: RuntimeTarget;
+  /**
+   * Debug-only build settings, off by default. `sources` maps every emitted
+   * command to the module line that authored it (cost-report `↳`s and
+   * `helix-sources.json`); `comments` also writes `# <file>:<line>` into the pack.
+   */
+  debug?: DebugOptions;
 }
 
 /**
@@ -81,7 +92,9 @@ export interface FactoryOptions {
  */
 export class DatapackFactory {
   static create(root: ModuleClass, opts: FactoryOptions): Datapack {
-    const dp = new Datapack(opts.name, opts.version ?? v1_20_4, opts.target);
+    const dp = new Datapack(opts.name, opts.version ?? v1_20_4, opts.target, {
+      debug: opts.debug,
+    });
     const flags = new ActiveFlags(dp);
     const latches = new EventLatches(dp);
     // Resolved once and published, so `isDev()` inside a module body can't

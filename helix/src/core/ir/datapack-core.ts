@@ -10,6 +10,7 @@ import { VersionProfile } from "../../versions/profile";
 import type { ClearFill } from "../codegen/structure";
 import { ScoreboardTiming } from "../timing/scoreboard-timing";
 import { DEFAULT_TARGET, RuntimeTarget } from "./target";
+import { enableSourceTracking, type DebugOptions, type SourceLoc } from "../debug/sources";
 
 export type FunctionTag = "load" | "tick";
 
@@ -27,6 +28,13 @@ export class DatapackCore {
   protected objectives = new Map<string, Objective>();
   public files = new Map<string, string>();
   public tags = new Map<FunctionTag, Set<string>>();
+  /** Debug-only build settings (source tracking); all off by default. */
+  readonly debug: DebugOptions;
+  /**
+   * With `debug.sources`: the author line behind each line of each function's
+   * rendered file (a `# source` comment line maps to `undefined`).
+   */
+  readonly sourceMap = new Map<string, (SourceLoc | undefined)[]>();
 
   /** How run-for-a-duration / periodic timing compiles. */
   readonly timing = new ScoreboardTiming();
@@ -42,10 +50,14 @@ export class DatapackCore {
     name: string,
     version: VersionProfile,
     target: RuntimeTarget = DEFAULT_TARGET,
+    opts: { debug?: DebugOptions } = {},
   ) {
     this.name = name.toLowerCase();
     this.version = version;
     this.target = target;
+    this.debug = opts.debug ?? {};
+    // Capture has to be on before authoring starts - nodes are attributed as they're pushed.
+    if (this.debug.sources || this.debug.comments) enableSourceTracking();
   }
 
   /**

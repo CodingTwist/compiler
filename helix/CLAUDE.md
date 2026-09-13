@@ -160,6 +160,27 @@ allow inherits down the call tree (so it covers `execute … run` child function
 an event-driven function called from the tick tree looks per-tick - allow it where the
 caller knows better.
 
+### Debug source tracking (`src/core/debug/sources.ts`) - off by default
+
+`new Datapack(name, version, target, { debug: { sources, comments } })` maps each rendered
+command back to the TS line that authored it. The hook is `FunctionNode.push`: when a debug pack
+has enabled capture (process-wide flag), the push reads the JS stack and stores a location keyed
+by (parent function, node). A call node is the callee's shared `FunctionNode`, so a location
+can't live on the node itself. `generate.ts` sets `CodegenContext.current` per node, so every
+line gets `ctx.sources[i]`. Validation runs first; then `comments` adds `# <loc>` lines, and
+`dp.sourceMap` is indexed by **file line** (`undefined` on comment lines). Uses:
+- the cost report's `↳ <loc>` on WARNs and `@e` scans
+- `writeDatapack` writes `helix-sources.json` at the pack root, and deletes it when debug is off
+
+Frames under helix are skipped. Other packages register with `ignoreSourceFrames(dir)`, with
+two behaviours:
+- plain (spool): a line is attributed to whoever called the plugin;
+- `{ framework: true }` (twine): a line twine emits itself points at twine, not at the shared
+  `DatapackFactory.create` call.
+
+`*.test.ts` frames always count as the author. Both flags off means no capture and output
+byte-identical to a normal build.
+
 ### JSON validation (`src/validate/mcdoc.ts`) - optional
 
 `validateDatapack(dp, opts?)` checks the pack's emitted JSON resources against the *vanilla

@@ -73,6 +73,22 @@ constructed and emits nothing** - that is the compile-time disable.
   and the hit relay - whose test is `if function <name>/attacked` (`on attacker`), not an
   `nbt={attack:{}}` read. twine `dp.allowNbtRead`s `face_one` and cooldown-capped gesture
   bodies so the cost report doesn't warn on them.
+  **Every check is written once, by the framework.** This is a rule for mob codegen, and for authors:
+  - **wake:** one `as <mobs>` scan into `wake_one`, then one `at @a as <mobs>[distance]` scan into
+    `wake_near`.
+  - **triggers:** all gesture triggers sit behind one `unless finishing` check (`<name>/triggers`).
+  - **animation steps:** a sequence's steps are one `dispatchScore` on the clock (`<g>_pose` →
+    `<g>_step_<k>`), with no per-member `as @s[scores=…]`.
+  - **states:** a multi-phase mob uses `.states({ name: { polls?, onEnter?, tick?, onDone?, then? } })`,
+    never hand-rolled tags that each line re-checks.
+    - A mob's state index lives in `<name>.state`, and `tick_one` checks it once
+      (`matches 1..` → `<name>/state`).
+    - `<name>/state` dispatches on a `#<name>_state` copy, so a state that enters a later state
+      can't also run that state in the same poll.
+    - A timed state counts `<name>.state_t` down (the hook arg `mob.clock`) and keeps the mob
+      awake to finish it.
+    - Every body (`onTick`, `onFire`, `onRecover`, state hooks) gets `mob.enter/leave`, and state
+      names are typed when `.states()` is declared first.
   `toModule` returns the `ConfiguredModule` **plus handles** (`.summon`, `.spawn`,
   `.gestures.x`) to the functions it generated, so a consumer never looks a name up on
   the datapack - and it emits `<name>/spawn` (summon one at the nearest player) itself,
@@ -181,6 +197,18 @@ call it, so `tick.mcfunction` stays a short list and each module's cost sits und
 name. A module imported by several parents is built once. A `<name>/tick` that clashes with
 an existing function throws. Tests reading "the tick" should join every
 `*/tick.mcfunction`, not only the root file.
+
+**Debug source tracking.** Pass `DatapackFactory.create(Root, { …, debug: { sources, comments } })`.
+It's off by default; lab turns it on for `MODE=dev`. Each command then maps to the TS line that
+emitted it:
+- report `↳`
+- `# loc` comments in the pack
+- `helix-sources.json`
+
+`factory.ts` registers twine with `ignoreSourceFrames(root, { framework: true })`, so framework
+plumbing (tick wiring, mob internals) points at `twine/src/*.ts`, and module bodies point at the
+author's module. `sourceMap: true` in tsconfig is what turns the dist frames back into `.ts` lines.
+See helix/CLAUDE.md.
 
 ## Commands
 

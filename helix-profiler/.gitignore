@@ -1,0 +1,5 @@
+# Gradle / Loom output and the dev server's world (runServer).
+build/
+.gradle/
+run/
+.idea/

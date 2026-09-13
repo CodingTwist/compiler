@@ -214,16 +214,62 @@ scoreboard players remove #rope_step grapple.work 1
 particle minecraft:electric_spark ~ ~ ~ 0 0 0 0 1
 execute if score #rope_step grapple.work matches 1.. unless entity @e[distance=..0.6,tag=grapple._aim,limit=1] positioned ^ ^ ^1 run return run function test:grapple/rope
 === grapple/start
-execute at @s anchored eyes positioned ^ ^ ^ run function test:zzz/grapple/start/exec_0
-execute if entity @e[tag=grapple._new] run function test:zzz/grapple/start/exec_1
+execute at @s anchored eyes positioned ^ ^ ^ run function test:grapple/zzz/start/exec_0
+execute if entity @e[tag=grapple._new] run function test:grapple/zzz/start/exec_1
 execute unless entity @e[tag=grapple._new] run tellraw @s {"text":"[grapple] nothing to grab"}
 === grapple/stop
-execute at @s run function test:zzz/grapple/stop/exec_0
+execute at @s run function test:grapple/zzz/stop/exec_0
 tag @s remove grappling
 scoreboard players operation #stop_id grapple.work = @s grapple.id
 execute as @e[tag=grapple.anchor] if score @s grapple.id = #stop_id grapple.work run kill @s
 === grapple/tick
 execute as @a[tag=grappling] at @s run function test:grapple/drive
+=== grapple/zzz/start/exec_0
+scoreboard players set #grapple_web_steps raycast.work 100
+function test:raycast/grapple/web
+=== grapple/zzz/start/exec_1
+execute store result score #pos_x grapple.work run data get entity @s Pos[0] 10
+execute store result score #pos_y grapple.work run data get entity @s Pos[1] 10
+execute store result score #pos_z grapple.work run data get entity @s Pos[2] 10
+scoreboard players operation @s grapple.prev_x = #pos_x grapple.work
+scoreboard players operation @s grapple.prev_y = #pos_y grapple.work
+scoreboard players operation @s grapple.prev_z = #pos_z grapple.work
+scoreboard players operation #to_anchor_x grapple.work = @s grapple.anchor_x
+scoreboard players operation #to_anchor_y grapple.work = @s grapple.anchor_y
+scoreboard players operation #to_anchor_z grapple.work = @s grapple.anchor_z
+scoreboard players operation #to_anchor_x grapple.work -= #pos_x grapple.work
+scoreboard players operation #to_anchor_y grapple.work -= #pos_y grapple.work
+scoreboard players operation #to_anchor_z grapple.work -= #pos_z grapple.work
+scoreboard players operation @s grapple.rope_len_sq = #to_anchor_x grapple.work
+scoreboard players operation @s grapple.rope_len_sq *= #to_anchor_x grapple.work
+scoreboard players operation #_t0 grapple.rope_len_sq = #to_anchor_y grapple.work
+scoreboard players operation #_t0 grapple.rope_len_sq *= #to_anchor_y grapple.work
+scoreboard players operation @s grapple.rope_len_sq += #_t0 grapple.rope_len_sq
+scoreboard players operation #_t0 grapple.rope_len_sq = #to_anchor_z grapple.work
+scoreboard players operation #_t0 grapple.rope_len_sq *= #to_anchor_z grapple.work
+scoreboard players operation @s grapple.rope_len_sq += #_t0 grapple.rope_len_sq
+scoreboard players add #next_id grapple.const 1
+scoreboard players operation @s grapple.id = #next_id grapple.const
+execute as @e[tag=grapple._new] run scoreboard players operation @s grapple.id = #next_id grapple.const
+tag @s add grappling
+tag @e[tag=grapple._new] remove grapple._new
+tellraw @s {"text":"[grapple] hooked - swinging (watch the action bar)"}
+=== grapple/zzz/stop/exec_0
+scoreboard players operation #frac grapple.work = @s grapple.vel_x
+scoreboard players operation #frac grapple.work *= @s grapple.vel_x
+scoreboard players operation #_t0 grapple.work = @s grapple.vel_y
+scoreboard players operation #_t0 grapple.work *= @s grapple.vel_y
+scoreboard players operation #frac grapple.work += #_t0 grapple.work
+scoreboard players operation #_t0 grapple.work = @s grapple.vel_z
+scoreboard players operation #_t0 grapple.work *= @s grapple.vel_z
+scoreboard players operation #frac grapple.work += #_t0 grapple.work
+scoreboard players set $x player_motion.api.launch 0
+scoreboard players set $y player_motion.api.launch 0
+scoreboard players operation $z player_motion.api.launch = #frac grapple.work
+scoreboard players operation $z player_motion.api.launch *= #release_kick grapple.const
+scoreboard players operation $z player_motion.api.launch < #release_kick_max grapple.const
+scoreboard players set #sustain player_motion.internal.dummy 1
+function test:api/launch_local_xyz
 === internal/init
 scoreboard objectives add player_motion.api.launch dummy
 scoreboard objectives add player_motion.internal.dummy dummy
@@ -441,52 +487,6 @@ execute store result score @s grapple.anchor_z run data get entity @e[tag=grappl
 scoreboard objectives add raycast.work dummy
 === tick
 execute as @a[tag=ballistics.tracked] run function test:zzz/track_targets
-=== zzz/grapple/start/exec_0
-scoreboard players set #grapple_web_steps raycast.work 100
-function test:raycast/grapple/web
-=== zzz/grapple/start/exec_1
-execute store result score #pos_x grapple.work run data get entity @s Pos[0] 10
-execute store result score #pos_y grapple.work run data get entity @s Pos[1] 10
-execute store result score #pos_z grapple.work run data get entity @s Pos[2] 10
-scoreboard players operation @s grapple.prev_x = #pos_x grapple.work
-scoreboard players operation @s grapple.prev_y = #pos_y grapple.work
-scoreboard players operation @s grapple.prev_z = #pos_z grapple.work
-scoreboard players operation #to_anchor_x grapple.work = @s grapple.anchor_x
-scoreboard players operation #to_anchor_y grapple.work = @s grapple.anchor_y
-scoreboard players operation #to_anchor_z grapple.work = @s grapple.anchor_z
-scoreboard players operation #to_anchor_x grapple.work -= #pos_x grapple.work
-scoreboard players operation #to_anchor_y grapple.work -= #pos_y grapple.work
-scoreboard players operation #to_anchor_z grapple.work -= #pos_z grapple.work
-scoreboard players operation @s grapple.rope_len_sq = #to_anchor_x grapple.work
-scoreboard players operation @s grapple.rope_len_sq *= #to_anchor_x grapple.work
-scoreboard players operation #_t0 grapple.rope_len_sq = #to_anchor_y grapple.work
-scoreboard players operation #_t0 grapple.rope_len_sq *= #to_anchor_y grapple.work
-scoreboard players operation @s grapple.rope_len_sq += #_t0 grapple.rope_len_sq
-scoreboard players operation #_t0 grapple.rope_len_sq = #to_anchor_z grapple.work
-scoreboard players operation #_t0 grapple.rope_len_sq *= #to_anchor_z grapple.work
-scoreboard players operation @s grapple.rope_len_sq += #_t0 grapple.rope_len_sq
-scoreboard players add #next_id grapple.const 1
-scoreboard players operation @s grapple.id = #next_id grapple.const
-execute as @e[tag=grapple._new] run scoreboard players operation @s grapple.id = #next_id grapple.const
-tag @s add grappling
-tag @e[tag=grapple._new] remove grapple._new
-tellraw @s {"text":"[grapple] hooked - swinging (watch the action bar)"}
-=== zzz/grapple/stop/exec_0
-scoreboard players operation #frac grapple.work = @s grapple.vel_x
-scoreboard players operation #frac grapple.work *= @s grapple.vel_x
-scoreboard players operation #_t0 grapple.work = @s grapple.vel_y
-scoreboard players operation #_t0 grapple.work *= @s grapple.vel_y
-scoreboard players operation #frac grapple.work += #_t0 grapple.work
-scoreboard players operation #_t0 grapple.work = @s grapple.vel_z
-scoreboard players operation #_t0 grapple.work *= @s grapple.vel_z
-scoreboard players operation #frac grapple.work += #_t0 grapple.work
-scoreboard players set $x player_motion.api.launch 0
-scoreboard players set $y player_motion.api.launch 0
-scoreboard players operation $z player_motion.api.launch = #frac grapple.work
-scoreboard players operation $z player_motion.api.launch *= #release_kick grapple.const
-scoreboard players operation $z player_motion.api.launch < #release_kick_max grapple.const
-scoreboard players set #sustain player_motion.internal.dummy 1
-function test:api/launch_local_xyz
 === zzz/init_objectives
 scoreboard objectives add ballistics dummy
 scoreboard objectives add ballistics.vx dummy

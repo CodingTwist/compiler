@@ -156,6 +156,12 @@ export function wireTick(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: 
     if (!w.needsTick(childRef)) continue; // nothing to run below → emit nothing
     const child = w.graph.nodes.get(childRef)!;
     if (!child.meta.area) {
+      // A pure wrapper (only imports, e.g. a dev-only `mace_demo` around `mace`)
+      // gets no `<name>/tick` - it would just forward to its children's.
+      if (!child.instance.onTick && getEventHandlers(child.instance).length === 0) {
+        wireTick(w, childRef, ctx, dim);
+        continue;
+      }
       // gated by (and in the dimension of) ancestors
       ctx.call(moduleTick(w, childRef, dim, (c) => wireTick(w, childRef, c, dim)));
       continue;

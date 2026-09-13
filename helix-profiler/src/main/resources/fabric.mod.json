@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "helix-profiler",
+  "version": "${version}",
+  "name": "helix profiler",
+  "description": "Times datapack functions per command; /helixprof start|stop writes JSON for helix's profile report.",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.helix.profiler.HelixProfiler"]
+  },
+  "mixins": ["helixprof.mixins.json"],
+  "depends": {
+    "fabricloader": "*",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}

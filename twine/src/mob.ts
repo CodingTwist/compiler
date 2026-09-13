@@ -9,6 +9,7 @@ import {
   add,
   displayPose,
   mulQuat,
+  privateName,
   rotateAboutPivot,
   round6,
 } from "helix";
@@ -23,6 +24,7 @@ import type {
   IdentifiedEntityNbt,
   Objective,
   Quat,
+  Score,
   Transform,
   Vec3,
 } from "helix";
@@ -46,8 +48,39 @@ export interface MobModuleOpts {
   wakeRange?: number;
 }
 
-/** Per-mob tick body: run as the mob, at it, only while it's awake. */
-export type MobTick = (ctx: FunctionContext, dp: Datapack) => void;
+/**
+ * Per-mob body: run as the mob, at it. `mob` switches this mob between its
+ * {@link MobBuilder.states} (declare `.states()` first to get the names typed).
+ */
+export type MobTick<S extends string = never> = (ctx: FunctionContext, dp: Datapack, mob: MobStates<S>) => void;
+
+/**
+ * One phase of a mob - airborne, slamming, stunned. A mob is in at most one state,
+ * held as a score, so a mob in none costs one check per poll and a mob in one runs
+ * only that state's body: the phase guard is written once, by the framework.
+ */
+export interface MobState<S extends string> {
+  /** Polls it lasts. Omit to stay until something enters another state. */
+  polls?: number;
+  /** Once, on entering, as the mob, at it. */
+  onEnter?: MobTick<S>;
+  /** Each poll while in it, as the mob, at it - after the clock has counted down. */
+  tick?: MobTick<S>;
+  /** When {@link polls} run out, before {@link then}. */
+  onDone?: MobTick<S>;
+  /** Entered when {@link polls} run out. Omit to go back to no state. */
+  then?: S;
+}
+
+/** A mob's state switch, handed to every body that runs as the mob. */
+export interface MobStates<S extends string> {
+  /** Put this mob (`@s`) into `state`, running its `onEnter`. */
+  enter(ctx: FunctionContext, state: S): void;
+  /** Take this mob (`@s`) out of any state. */
+  leave(ctx: FunctionContext): void;
+  /** Polls left in the current timed state, on `@s` - what phases within a state test. */
+  readonly clock: Score;
+}
 
 /**
  * A one-shot **member animation**: swing an arm, open a jaw, tilt a head. Vanilla
@@ -55,7 +88,7 @@ export type MobTick = (ctx: FunctionContext, dp: Datapack) => void;
  * snapped on and then interpolated back to the model's own rest pose - two `data
  * merge`s per member, no tween to drive.
  */
-export interface Gesture {
+export interface Gesture<S extends string = never> {
   /** Which members move, as indices into the model's `members()` (root is 0). */
   members: number[];
   /** What they turn about, in the model's own coordinates (the group `offset` is added for you). */
@@ -109,7 +142,7 @@ export interface Gesture {
    *
    * See {@link fireAfter} to land it partway through the animation instead.
    */
-  onFire?: (ctx: FunctionContext, dp: Datapack) => void;
+  onFire?: MobTick<S>;
   /**
    * Ticks after the raise that {@link onFire} lands, so the hit reads as the *result*
    * of the swing rather than its cause - the blade comes round, and a beat later you
@@ -125,7 +158,7 @@ export interface Gesture {
    * {@link onRecover} puts back - a crossbow emptied on the shot and reloaded before
    * the next one. Needs a cooldown (the clock it is counted on) and must land inside it.
    */
-  onRecover?: (ctx: FunctionContext, dp: Datapack) => void;
+  onRecover?: MobTick<S>;
   /** Ticks after the raise that {@link onRecover} lands. Default `0`. */
   recoverAfter?: number;
 }
@@ -154,10 +187,11 @@ export interface Gesture {
  * The mob is summoned by the generated `<name>/summon` function, at wherever it
  * is run from ({@link summonRef} gets you a handle to call it).
  */
-export class MobBuilder {
+export class MobBuilder<S extends string = never> {
   private relay?: { damage: number; type?: DamageType };
-  private readonly gestures = new Map<string, Gesture>();
-  private tick?: MobTick;
+  private readonly gestures = new Map<string, Gesture<S>>();
+  private tick?: MobTick<S>;
+  private stateDefs = new Map<string, MobState<S>>();
 
   constructor(
     private readonly nbt: IdentifiedEntityNbt,
@@ -178,9 +212,21 @@ export class MobBuilder {
    * Add a named {@link Gesture}. It becomes a `<mob>/<name>` function you can call
    * as the mob yourself, plus - if the gesture has a `when` - a per-tick trigger.
    */
-  gesture(name: string, g: Gesture): this {
+  gesture(name: string, g: Gesture<S>): this {
     this.gestures.set(name, g);
     return this;
+  }
+
+  /**
+   * The mob's {@link MobState}s, by name. Declare them before the gestures and
+   * `onTick` that enter them, so those bodies get the names typed. Each state
+   * becomes `<mob>/state/<name>`, reached by one score dispatch per poll; the
+   * `states` handles on the module enter one from outside.
+   */
+  states<T extends string>(defs: Record<T, MobState<NoInfer<T>>>): MobBuilder<T> {
+    const self = this as unknown as MobBuilder<T>;
+    self.stateDefs = new Map(Object.entries(defs) as [T, MobState<T>][]);
+    return self;
   }
 
   /**
@@ -189,7 +235,7 @@ export class MobBuilder {
    * turns is what they see this poll. It lands in its own `<mob>/on_tick` function (`onTickFn` on the module),
    * which is what to hand `dp.allowNbtRead` when a read in it is meant to be fast.
    */
-  onTick(body: MobTick): this {
+  onTick(body: MobTick<S>): this {
     this.tick = body;
     return this;
   }
@@ -222,7 +268,7 @@ export class MobBuilder {
   /** Compile to a drop-in {@link ConfiguredModule} (name = module / tag id). */
   toModule(name: string, opts: MobModuleOpts = {}): MobModuleRef {
     const tickEvery = opts.tickEvery ?? 2;
-    const mob = new MobModule(name, this.nbt, this.model, tickEvery, opts.wakeRange ?? 48, this.relay, this.gestures, this.tick);
+    const mob = new MobModule<S>(name, this.nbt, this.model, tickEvery, opts.wakeRange ?? 48, this.relay, this.gestures, this.tick, this.stateDefs);
     const mod = defineModule({ name, tickEvery, dimension: opts.dimension }, mob) as MobModuleRef;
     // Getters, not values: the functions don't exist until the module registers,
     // which is after the importing module has built this.
@@ -233,6 +279,11 @@ export class MobBuilder {
       gestures: {
         get: () =>
           Object.fromEntries([...this.gestures.keys()].map((g) => [g, mob.fnRef(g)])),
+        enumerable: true,
+      },
+      states: {
+        get: () =>
+          Object.fromEntries([...this.stateDefs.keys()].map((s) => [s, mob.fnRef(`enter/${s}`)])),
         enumerable: true,
       },
       preview: { value: () => this.preview(tickEvery) },
@@ -255,6 +306,8 @@ export interface MobModuleRef extends ConfiguredModule {
   readonly onTickFn: FunctionRef;
   /** Each {@link Gesture}'s raise function, by name - call it *as* the mob. */
   readonly gestures: Record<string, FunctionRef>;
+  /** Each {@link MobState}'s enter function, by name - call it *as* the mob. */
+  readonly states: Record<string, FunctionRef>;
   /** The model and gesture timelines as plain data - what `writeMobPreview` renders. */
   preview(): MobPreview;
 }
@@ -283,7 +336,7 @@ export interface MobPreview {
 }
 
 /** The {@link DatapackModule} a {@link MobBuilder} compiles to. */
-class MobModule implements DatapackModule {
+class MobModule<S extends string> implements DatapackModule {
   private killRig!: FunctionRef;
   private faceOne!: FunctionRef;
 
@@ -293,10 +346,17 @@ class MobModule implements DatapackModule {
     private readonly model: DisplayValue,
     private readonly tickEvery: number,
     private readonly wakeRange: number,
-    private readonly relay?: { damage: number; type?: DamageType },
-    private readonly gestures: ReadonlyMap<string, Gesture> = new Map(),
-    private readonly tick?: MobTick,
+    private readonly relay: { damage: number; type?: DamageType } | undefined,
+    private readonly gestures: ReadonlyMap<string, Gesture<S>>,
+    private readonly tick: MobTick<S> | undefined,
+    private readonly stateDefs: ReadonlyMap<string, MobState<S>>,
   ) {}
+
+  /** `<mob>.state`: the 1-based index of the state a mob is in, 0 for none. */
+  private stateObj!: Objective;
+  /** `<mob>.state_t`: polls left in a timed state. */
+  private stateClockObj!: Objective;
+  private handle!: MobStates<S>;
 
   private dp!: Datapack;
   private wake!: FunctionRef;
@@ -354,11 +414,35 @@ class MobModule implements DatapackModule {
     return `${this.name}.cur`;
   }
 
+  /** A function only this mob's own tick tree calls: no dimension wrap, since it inherits the caller's. */
+  private internal(short: string, body: (ctx: FunctionContext) => void): FunctionRef {
+    const fn = this.dp.createFunction(privateName(`${this.name}/${short}`));
+    fn.build(body);
+    return fn;
+  }
+
   register(dp: Datapack, scope: ModuleScope): void {
     this.dp = dp;
     this.model.named(this.rig);
 
-    this.killRig = scope.fn(`${this.name}/kill_rig`, (ctx) => {
+    // Before any author body is built: they all take the switch.
+    if (this.stateDefs.size) {
+      this.stateObj = dp.objective(`${this.name}.state`);
+      this.stateClockObj = dp.objective(`${this.name}.state_t`);
+      for (const s of this.stateDefs.keys()) this.fns.set(`enter/${s}`, dp.createFunction(`${this.name}/enter/${s}`));
+    }
+    const mobName = this.name;
+    const states = this;
+    this.handle = {
+      enter: (ctx, s) => ctx.call(states.fnRef(`enter/${s}`)),
+      leave: (ctx) => states.stateObj.score(Selector.self()).set(0, ctx),
+      get clock() {
+        if (!states.stateClockObj) throw new Error(`Mob "${mobName}" has no states - declare them with .states() to use the clock.`);
+        return states.stateClockObj.score(Selector.self());
+      },
+    };
+
+    this.killRig = scope.fn(privateName(`${this.name}/kill_rig`), (ctx) => {
       // Passengers first: killing a vehicle dismounts its riders, it doesn't kill them.
       ctx.execute().on(Relation.PASSENGERS).run((b) => b.kill(Selector.self()));
       ctx.kill(Selector.self());
@@ -368,7 +452,7 @@ class MobModule implements DatapackModule {
     // to the mob, the rig is still nameable. That exactness is the point - the
     // nearest-rig-within-2-blocks guess this replaces made two mobs standing in
     // each other wear (and steer by) the same model.
-    this.faceOne = scope.fn(`${this.name}/face_one`, (ctx) => {
+    this.faceOne = scope.fn(privateName(`${this.name}/face_one`), (ctx) => {
       const me = Selector.allEntities().tag(this.curTag).limit(1);
       ctx.tag().add(Selector.self(), this.curTag);
       // Yaw only: the mob pitches to look up/down at its target, and a display
@@ -430,7 +514,7 @@ class MobModule implements DatapackModule {
         // only for the mobs actually mid-swing.
         this.fns.set(
           `${gname}_hit`,
-          scope.fn(`${this.name}/${gname}_hit`, (ctx) => g.onFire?.(ctx, dp)),
+          scope.fn(privateName(`${this.name}/${gname}_hit`), (ctx) => g.onFire?.(ctx, dp, this.handle)),
         );
       }
       if (g.onRecover) {
@@ -441,7 +525,7 @@ class MobModule implements DatapackModule {
         }
         this.fns.set(
           `${gname}_recover`,
-          scope.fn(`${this.name}/${gname}_recover`, (ctx) => g.onRecover?.(ctx, dp)),
+          scope.fn(privateName(`${this.name}/${gname}_recover`), (ctx) => g.onRecover?.(ctx, dp, this.handle)),
         );
       }
       this.fns.set(
@@ -451,8 +535,8 @@ class MobModule implements DatapackModule {
           if (g.cooldown !== 0) {
             this.cooldown(Selector.self(), gname).set(g.cooldown ?? 20, ctx);
           }
-          this.poseMembers(ctx, Selector.self(), g, poses(g)[0], g.rise ?? 0);
-          if (!g.fireAfter) g.onFire?.(ctx, dp);
+          this.poseMembers(ctx, undefined, g, poses(g)[0], g.rise ?? 0);
+          if (!g.fireAfter) g.onFire?.(ctx, dp, this.handle);
         }),
       );
       // A cooldown caps how often the gesture's own bodies can run, which the report
@@ -465,22 +549,77 @@ class MobModule implements DatapackModule {
       }
       // The clock-driven half runs only for a mob whose clock is running.
       if (g.cooldown !== 0) {
-        this.fns.set(`${gname}_clock`, dp.createFunction(`${this.name}/${gname}_clock`));
+        this.fns.set(`${gname}_clock`, dp.createFunction(privateName(`${this.name}/${gname}_clock`)));
         this.fns.get(`${gname}_clock`)!.build((ctx) => this.clockGesture(ctx, gname, g));
       }
     }
 
     if (this.tick) {
       const body = this.tick;
-      this.fns.set("on_tick", scope.fn(`${this.name}/on_tick`, (ctx) => body(ctx, dp)));
+      this.fns.set("on_tick", scope.fn(privateName(`${this.name}/on_tick`), (ctx) => body(ctx, dp, this.handle)));
     }
+    this.registerStates(dp);
     // The yaw copy is a read per rig per tick, and the whole point of riding.
     dp.allowNbtRead(this.faceOne, "rig yaw copy, awake mobs only");
 
     this.awakeObj = dp.objective(`${this.name}.awake`);
-    this.wake = scope.fn(`${this.name}/wake`, (ctx) => this.wakeBody(ctx));
-    this.tickOne = dp.createFunction(`${this.name}/tick_one`);
+    this.wake = scope.fn(privateName(`${this.name}/wake`), (ctx) => this.wakeBody(ctx));
+    this.tickOne = dp.createFunction(privateName(`${this.name}/tick_one`));
     this.tickOne.build((ctx) => this.tickOneBody(ctx));
+  }
+
+  /**
+   * `<mob>/enter/<s>`, `<mob>/state/<s>` (+ `/done` for a timed one), and `<mob>/state`:
+   * the dispatch `tick_one` calls for a mob in any state.
+   */
+  private registerStates(dp: Datapack): void {
+    if (!this.stateDefs.size) return;
+    const state = this.stateObj.score(Selector.self());
+    const clock = this.stateClockObj.score(Selector.self());
+    const cases = [...this.stateDefs].map(([s, def], i) => {
+      const idx = i + 1;
+      this.fns.get(`enter/${s}`)!.build((ctx) => {
+        state.set(idx, ctx);
+        // Zeroed for an untimed state too, or a stale count would keep the mob awake in it.
+        clock.set(def.polls ?? 0, ctx);
+        def.onEnter?.(ctx, dp, this.handle);
+      });
+      const done =
+        def.polls === undefined
+          ? undefined
+          : this.internal(`state/${s}/done`, (ctx) => {
+              def.onDone?.(ctx, dp, this.handle);
+              if (def.then) this.handle.enter(ctx, def.then);
+              else this.handle.leave(ctx);
+            });
+      const body = this.internal(`state/${s}`, (ctx) => {
+        if (done) clock.remove(1, ctx);
+        def.tick?.(ctx, dp, this.handle);
+        // Still in this state: a tick that already switched keeps its switch.
+        if (done) {
+          ctx
+            .execute()
+            .ifScoreMatches(state, Range.exactly(idx))
+            .ifScoreMatches(clock, Range.atMost(0))
+            .run((b) => b.call(done));
+        }
+      });
+      return { range: Range.exactly(idx), fn: body };
+    });
+    if (cases.length === 1) {
+      this.fns.set("state", cases[0].fn);
+      return;
+    }
+    // Dispatched on a copy: a state body that enters a later state must not run that
+    // one too in the same poll, whether or not `return run` stops the dispatch.
+    const current = this.stateObj.score(ScoreTarget(`#${this.name}_state`));
+    this.fns.set(
+      "state",
+      this.internal("state", (ctx) => {
+        current.assign(state, ctx);
+        ctx.dispatchScore(current, cases);
+      }),
+    );
   }
 
   /** Worn while a gesture is raised - cleared next tick, which starts the fall. */
@@ -500,14 +639,17 @@ class MobModule implements DatapackModule {
    */
   private poseMembers(
     ctx: FunctionContext,
-    self: Selector,
-    g: Gesture,
+    /** Who to pose, or `undefined` for `@s` itself - no `as` hop. */
+    self: Selector | undefined,
+    g: Gesture<S>,
     /** The rotation to hold, or `undefined` for the model's own rest pose. */
     q: Quat | undefined,
     duration: number,
   ): void {
     for (const i of g.members) {
-      const chain = ctx.execute().as(self).on(Relation.PASSENGERS);
+      const chain = ctx.execute();
+      if (self) chain.as(self);
+      chain.on(Relation.PASSENGERS);
       if (i !== 0) chain.on(Relation.PASSENGERS);
       chain
         .run((b) =>
@@ -523,10 +665,10 @@ class MobModule implements DatapackModule {
   }
 
   /**
-   * The gesture work every awake mob does each poll, as the mob: drop a one-step raise,
-   * start its clock-driven half, or fire it.
+   * The gesture work every awake mob does each poll, as the mob: drop a one-step raise
+   * or run its clock-driven half. Firing is {@link trigger}, grouped after every clock.
    */
-  private tickGesture(ctx: FunctionContext, gname: string, g: Gesture): void {
+  private tickGesture(ctx: FunctionContext, gname: string, g: Gesture<S>): void {
     const tag = this.gestureTag(gname);
     // The fall is emitted *before* the trigger, or a gesture started this tick
     // would be dropped again by its own end in the same function body.
@@ -540,22 +682,23 @@ class MobModule implements DatapackModule {
         .ifScoreMatches(this.cooldown(Selector.self(), gname), new Range(1, undefined))
         .run((b) => b.call(this.fnRef(`${gname}_clock`)));
     }
+  }
 
-    if (!g.when) return;
-    const chain = ctx.execute().unlessEntity(Selector.self().tag(this.finishingTag));
+  /** Fire `gname` if its `when` holds and its clock is idle. `guard` adds the finishing check. */
+  private trigger(ctx: FunctionContext, gname: string, g: Gesture<S>, guard: boolean): void {
+    const chain = ctx.execute();
+    if (guard) chain.unlessEntity(Selector.self().tag(this.finishingTag));
     if (g.cooldown !== 0) {
       chain.unlessScoreMatches(this.cooldown(Selector.self(), gname), new Range(1, undefined));
     }
-    g.when(chain);
+    g.when!(chain);
     chain.run((b) => b.call(this.fnRef(gname)));
   }
 
   /** `<mob>/<gesture>_clock`: one mob's countdown and everything timed off it. As the mob, at it. */
-  private clockGesture(ctx: FunctionContext, gname: string, g: Gesture): void {
+  private clockGesture(ctx: FunctionContext, gname: string, g: Gesture<S>): void {
     const tag = this.gestureTag(gname);
-    const clock = this.cooldowns.get(gname)!;
     this.cooldown(Selector.self(), gname).remove(1, ctx);
-    const at = (v: number) => Selector.self().score(clock, new Range(v, v));
     // A beat on the clock: this mob, exactly `after` polls past its raise.
     const onBeat = (after: number, fn: string) =>
       ctx
@@ -574,10 +717,17 @@ class MobModule implements DatapackModule {
     if (sequenced(g)) {
       // The raise function made write 0; the last write is home again. Slerp takes the
       // short way, so a sequence ending just short of a full turn finishes it forwards.
-      const writes = poseSchedule(g, this.tickEvery);
-      const clockAt = (poll: number) => at((g.cooldown ?? 20) - poll);
-      for (const w of writes.slice(1)) this.poseMembers(ctx, clockAt(w.poll), g, w.q, w.duration);
-      ctx.tag().remove(clockAt(writes.at(-1)!.poll), tag);
+      // One function per step, picked by a single dispatch on the clock rather than
+      // re-testing the score on every member's line.
+      const later = poseSchedule(g, this.tickEvery).slice(1);
+      const cases = later.map((w, k) => ({
+        range: Range.exactly((g.cooldown ?? 20) - w.poll),
+        fn: this.internal(`${gname}_step_${k + 1}`, (c) => {
+          this.poseMembers(c, undefined, g, w.q, w.duration);
+          if (k === later.length - 1) c.tag().remove(Selector.self(), tag);
+        }),
+      }));
+      ctx.call(this.internal(`${gname}_pose`, (c) => c.dispatchScore(this.cooldown(Selector.self(), gname), cases)));
     }
   }
 
@@ -602,18 +752,36 @@ class MobModule implements DatapackModule {
 
   /** `<mob>/wake`: tag the mobs worth running, count them, and sweep orphaned rigs. */
   private wakeBody(ctx: FunctionContext): void {
-    ctx.tag().remove(this.mobs, this.awakeTag);
-    ctx.tag().remove(this.mobs, this.finishingTag);
-    // Mid-gesture stays awake, so walking off can't freeze a swing (or a leap) halfway -
+    const self = Selector.self();
+    // Mid-clock stays awake, so walking off can't freeze a swing (or a leap) halfway -
     // but only to finish it, or a looping idle gesture would keep it awake for good.
-    for (const [gname, g] of this.gestures) {
-      if (g.cooldown === 0) continue;
-      ctx.tag().add(this.mobs.score(this.cooldowns.get(gname)!, new Range(1, undefined)), this.finishingTag);
-    }
-    const near = () => this.mobs.distance(new Range(undefined, this.wakeRange));
-    ctx.execute().at(Selector.allPlayers()).run((b) => b.tag().add(near(), this.awakeTag));
-    ctx.execute().at(Selector.allPlayers()).run((b) => b.tag().remove(near(), this.finishingTag));
-    ctx.tag().add(this.mobs.tag(this.finishingTag), this.awakeTag);
+    const clocks = [...this.gestures].filter(([, g]) => g.cooldown !== 0).map(([gname]) => this.cooldowns.get(gname)!);
+    if (this.stateClockObj) clocks.push(this.stateClockObj);
+    const finish = clocks.length
+      ? this.internal("wake_finish", (c) => {
+          c.tag().add(self, this.finishingTag);
+          c.tag().add(self, this.awakeTag);
+        })
+      : undefined;
+    // One scan to reset every mob, then one per player for the ones near it.
+    const one = this.internal("wake_one", (c) => {
+      c.tag().remove(self, this.awakeTag);
+      c.tag().remove(self, this.finishingTag);
+      // ponytail: one line per clock - fine at a handful; a shared "busy" score if a mob grows many.
+      for (const obj of clocks) {
+        c.execute().ifScoreMatches(obj.score(self), Range.atLeast(1)).run((b) => b.call(finish!));
+      }
+    });
+    const near = this.internal("wake_near", (c) => {
+      c.tag().add(self, this.awakeTag);
+      c.tag().remove(self, this.finishingTag);
+    });
+    ctx.execute().as(this.mobs).run((b) => b.call(one));
+    ctx
+      .execute()
+      .at(Selector.allPlayers())
+      .as(this.mobs.distance(Range.atMost(this.wakeRange)))
+      .run((b) => b.call(near));
     ctx
       .execute()
       .storeResultScore(this.awakeObj.score(ScoreTarget("#awake")))
@@ -627,7 +795,26 @@ class MobModule implements DatapackModule {
   private tickOneBody(ctx: FunctionContext): void {
     // Yours first: it decides what the gestures' triggers and the yaw copy then see.
     if (this.tick) ctx.call(this.fnRef("on_tick"));
+    // Then the state, if any: one check for a mob in none.
+    if (this.stateDefs.size) {
+      ctx
+        .execute()
+        .ifScoreMatches(this.stateObj.score(Selector.self()), Range.atLeast(1))
+        .run((b) => b.call(this.fnRef("state")));
+    }
     for (const [gname, g] of this.gestures) this.tickGesture(ctx, gname, g);
+    // Every trigger behind one finishing check: a finishing mob fires nothing new.
+    const triggers = [...this.gestures].filter(([, g]) => g.when);
+    if (triggers.length === 1) this.trigger(ctx, triggers[0][0], triggers[0][1], true);
+    else if (triggers.length > 1) {
+      const all = this.internal("triggers", (c) => {
+        for (const [gname, g] of triggers) this.trigger(c, gname, g, false);
+      });
+      ctx
+        .execute()
+        .unlessEntity(Selector.self().tag(this.finishingTag))
+        .run((b) => b.call(all));
+    }
     // Point the rig the way this mob is facing.
     ctx
       .execute()
@@ -658,13 +845,13 @@ class MobModule implements DatapackModule {
   private relayFns?: { attacked: FunctionRef; relay: FunctionRef };
 
   private attackedFn(): FunctionRef {
-    const fn = this.dp.createFunction(`${this.name}/attacked`);
+    const fn = this.dp.createFunction(privateName(`${this.name}/attacked`));
     fn.build((ctx) => ctx.execute().on(Relation.ATTACKER).run((b) => b.return_(1)));
     return fn;
   }
 
   private relayFn(relay: { damage: number; type?: DamageType }): FunctionRef {
-    const fn = this.dp.createFunction(`${this.name}/relay_hit`);
+    const fn = this.dp.createFunction(privateName(`${this.name}/relay_hit`));
     fn.build((ctx) => {
       ctx
         .execute()

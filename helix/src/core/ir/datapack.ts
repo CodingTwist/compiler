@@ -9,6 +9,12 @@ import {
   CostReport,
   formatCostReport,
 } from "../report/cost-report";
+import {
+  analyzeProfile,
+  formatProfileReport,
+  type ProfileReport,
+  type ProfileDump,
+} from "../report/profile-report";
 import { FunctionNode } from "./node";
 import { scoreInitNode } from "../commands/scoreboard";
 import { FunctionRef } from "../function_ref";
@@ -76,6 +82,24 @@ export class Datapack extends DatapackResources {
     this.prepareForCodegen();
     buildDatapack(this); // populate dp.files; idempotent (cached per function)
     return analyzeCost(this);
+  }
+
+  /**
+   * Line up a measured profile (the helix-profiler mod's `/helixprof stop` JSON, already
+   * parsed) with this pack: per-function calls and time, hottest commands mapped back to
+   * `.mcfunction` lines and, with `debug.sources`, TS lines. See {@link formatProfileReport}.
+   */
+  profileReport(raw: ProfileDump): ProfileReport {
+    this.prepareForCodegen();
+    buildDatapack(this);
+    return analyzeProfile(this, raw);
+  }
+
+  /** Convenience: run {@link profileReport} and print the formatted summary. */
+  printProfileReport(raw: ProfileDump): ProfileReport {
+    const report = this.profileReport(raw);
+    console.log(formatProfileReport(report));
+    return report;
   }
 
   /** Functions whose fast NBT reads are intentional, with why - see {@link allowNbtRead}. */

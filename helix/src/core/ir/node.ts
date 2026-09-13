@@ -3,6 +3,7 @@
 // than a folder of their own. Each command's concrete node lives WITH its
 // handler in src/core/commands/<cmd>.ts.
 import { CommandValue } from "../values/value";
+import { captureSource } from "../debug/sources";
 
 export abstract class ASTNode {
   abstract type: string;
@@ -20,6 +21,7 @@ export class FunctionNode extends ASTNode {
   }
 
   push(node: ASTNode) {
+    captureSource(this, node); // no-op unless a debug.sources pack enabled it
     this.nodes.push(node);
   }
 }

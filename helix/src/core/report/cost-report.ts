@@ -10,6 +10,7 @@
 // command authoring, so it is deliberately string-based - it sees exactly what the
 // game will run, including inlined `execute … run` branches.
 import type { Datapack } from "../ir/datapack";
+import type { SourceLoc } from "../debug/sources";
 
 /** Per-function cost: its own command count and any unbounded `@e` scans it makes. */
 export interface FunctionCost {
@@ -18,6 +19,8 @@ export interface FunctionCost {
   commands: number;
   /** Rendered selectors in this function that scan all entities (e.g. bare `@e`). */
   unboundedScans: string[];
+  /** The author line behind each of {@link unboundedScans}, with `debug.sources` on. */
+  scanSources: (SourceLoc | undefined)[];
 }
 
 /**
@@ -74,6 +77,8 @@ export interface NbtRead {
   line: string;
   /** Why it's fine, when allowed via `dp.allowNbtRead`. */
   allowed?: string;
+  /** The author line that emitted it, with `debug.sources` on. */
+  source?: SourceLoc;
 }
 
 /** Reads at this period or slower (the t5 clock) aren't warned about. */
@@ -115,10 +120,15 @@ function unboundedScansIn(line: string): string[] {
 
 /** Bare command/call lines of a function (blank lines and `#` comments dropped). */
 function commandLines(text: string): string[] {
+  return indexedCommandLines(text).map(([l]) => l);
+}
+
+/** Command lines paired with their line index in the file - the index `dp.sourceMap` uses. */
+function indexedCommandLines(text: string): [string, number][] {
   return text
     .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith("#"));
+    .map((l, i): [string, number] => [l.trim(), i])
+    .filter(([l]) => l.length > 0 && !l.startsWith("#"));
 }
 
 /**
@@ -135,16 +145,20 @@ function analyseFunctions(dp: Datapack): {
   const callRe = new RegExp(`function ${dp.name}:([\\w/.\\-]+)`, "g");
 
   for (const [name, text] of dp.files) {
-    const lines = commandLines(text);
+    const lines = indexedCommandLines(text);
     const unboundedScans: string[] = [];
+    const scanSources: (SourceLoc | undefined)[] = [];
     const callees: string[] = [];
-    for (const line of lines) {
-      unboundedScans.push(...unboundedScansIn(line));
+    for (const [line, i] of lines) {
+      for (const scan of unboundedScansIn(line)) {
+        unboundedScans.push(scan);
+        scanSources.push(dp.sourceMap.get(name)?.[i]);
+      }
       let m: RegExpExecArray | null;
       callRe.lastIndex = 0;
       while ((m = callRe.exec(line)) !== null) callees.push(m[1]);
     }
-    costs.set(name, { name, commands: lines.length, unboundedScans });
+    costs.set(name, { name, commands: lines.length, unboundedScans, scanSources });
     calls.set(name, callees);
   }
   return { costs, calls };
@@ -277,11 +291,12 @@ export function analyzeCost(dp: Datapack): CostReport {
   }
   const nbtReads: NbtRead[] = [];
   for (const [fn, p] of [...period].sort(([a], [b]) => a.localeCompare(b))) {
-    for (const line of commandLines(dp.files.get(fn) ?? "")) {
+    for (const [line, i] of indexedCommandLines(dp.files.get(fn) ?? "")) {
       if (!NBT_READ.test(line)) continue;
       // A gate on the read's own line (`execute if score t20 … run data get …`) counts too.
       const lp = [...line.matchAll(CLOCK_GATE)].reduce((acc, m) => lcm(acc, Number(m[1])), p);
-      nbtReads.push({ fn, period: lp, line, allowed: allowedBy.get(fn) });
+      const source = dp.sourceMap.get(fn)?.[i];
+      nbtReads.push({ fn, period: lp, line, allowed: allowedBy.get(fn), ...(source && { source }) });
     }
   }
 
@@ -338,6 +353,7 @@ export function formatCostReport(report: CostReport): string {
     );
     for (const fn of report.unboundedScanners) {
       out.push(`    ${fn.name}: ${fn.unboundedScans.join(", ")}`);
+      for (const loc of new Set(fn.scanSources)) if (loc) out.push(`      ↳ ${loc}`);
     }
   }
   for (const w of report.warnings) {
@@ -346,6 +362,7 @@ export function formatCostReport(report: CostReport): string {
       `  WARN nbt read every ${w.period} tick(s) in ${w.fn}: ${line}\n` +
         `       → move it to a t5/t10/t20 clock, or dp.allowNbtRead("${w.fn}", why)`,
     );
+    if (w.source) out.push(`       ↳ ${w.source}`);
   }
   const allowed = report.nbtReads.filter((r) => r.allowed && r.period < NBT_READ_MIN_PERIOD);
   if (allowed.length > 0) {

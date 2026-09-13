@@ -1,6 +1,7 @@
 import type { Datapack } from "./datapack";
 import { ASTNode, CommandNodeBase } from "./node";
 import { Token, lit, arg, buildTokens } from "./command-builder";
+import type { SourceLoc } from "../debug/sources";
 
 export abstract class CommandHandler<N extends ASTNode = ASTNode> {
     abstract readonly type: N["type"];
@@ -17,6 +18,11 @@ export class CodegenContext {
      */
     public externalLines = new Set<number>();
 
+    /** The author line behind each of {@link lines} (debug source tracking). */
+    public sources: (SourceLoc | undefined)[] = [];
+    /** Source of the node being dispatched; every line it emits takes it. */
+    public current: SourceLoc | undefined;
+
     constructor(
         public datapack: Datapack,
         public dispatcher: Dispatcher
@@ -29,6 +35,7 @@ export class CodegenContext {
         // this; pass the text differently if that ever bites.
         const text = line.toString();
         this.lines.push(text.includes("$(") ? `$${text}` : text);
+        this.sources.push(this.current);
     }
 
     /**
@@ -39,6 +46,7 @@ export class CodegenContext {
     emitExternal(line: string) {
         this.externalLines.add(this.lines.length);
         this.lines.push(line.toString());
+        this.sources.push(this.current);
     }
 
     get version() {

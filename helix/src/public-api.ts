@@ -28,7 +28,7 @@ export type { FunctionRef } from "./core/function_ref";
 export { buildDatapack } from "./core/codegen/codegen";
 // Where compiler-/engine-generated helper functions are tucked so they sort away
 // from authored entry points; the spool clip/cutscene engine routes its names through this.
-export { PRIVATE_ROOT, privateName } from "./core/private-fn";
+export { PRIVATE_ROOT, privateChild, privateName } from "./core/private-fn";
 // Per-tick cost analysis (`dp.report()` / `dp.printReport()`): worst-case
 // commands/tick and unbounded `@e` scan detection.
 export {
@@ -41,6 +41,28 @@ export {
   type NbtRead,
   NBT_READ_MIN_PERIOD,
 } from "./core/report/cost-report";
+// Measured profile (`dp.profileReport(raw)`): the helix-profiler mod's JSON lined up
+// with this pack - real time per function/command, mapped back to source.
+export {
+  analyzeProfile,
+  formatProfileReport,
+  toFoldedStacks,
+  type ProfileDump,
+  type ProfileDumpSpan,
+  type ProfileDumpFrame,
+  type ProfileDumpCall,
+  type ProfileReport,
+  type ProfileSpanReport,
+  type ProfiledFunction,
+  type ProfiledCommand,
+} from "./core/report/profile-report";
+// Debug source tracking (`new Datapack(…, { debug: { sources, comments } })`):
+// map each emitted command back to the TS line that authored it.
+export {
+  ignoreSourceFrames,
+  type DebugOptions,
+  type SourceLoc,
+} from "./core/debug/sources";
 // Command-node factory consumers need for click events etc. (no `new` in consumers).
 // Command-file named exports aren't at the package root by default (the index only
 // side-effect-imports ../commands), so list it explicitly.

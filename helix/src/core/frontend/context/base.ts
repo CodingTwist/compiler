@@ -1,7 +1,7 @@
 import { ASTNode, FunctionNode } from "../../ir/node";
 import { FunctionRef } from "../../function_ref";
 import { VersionProfile } from "../../../versions/profile";
-import { PRIVATE_ROOT } from "../../private-fn";
+import { privateChild } from "../../private-fn";
 
 /**
  * The core of FunctionContext: the function being authored, the target version,
@@ -50,17 +50,13 @@ export class ContextBase {
    *
    * Generated helpers live under the shared `PRIVATE_ROOT` folder so they sort
    * *away* from authored functions (a leading-underscore name sorted them to the
-   * top of the list, in the way). The name nests by parent path - `tick` →
-   * `zzz/tick/if_0` → `zzz/tick/if_0/at_0` - stripping the root from the parent
-   * so the prefix doesn't compound into noise on each nesting level.
+   * top of the list, in the way). The name nests by parent path, inside the
+   * parent's own folder - `mace/tick` → `mace/zzz/tick/if_0` →
+   * `mace/zzz/tick/if_0/at_0`; a top-level `tick` → `zzz/tick/if_0`.
    */
   createChildFunction(suffix: string): FunctionNode {
     const count = this.suffixCounters.get(suffix) ?? 0;
     this.suffixCounters.set(suffix, count + 1);
-    const parent = this.fn.name.startsWith(`${PRIVATE_ROOT}/`)
-      ? this.fn.name.slice(PRIVATE_ROOT.length + 1)
-      : this.fn.name;
-    const name = `${PRIVATE_ROOT}/${parent}/${suffix}_${count}`;
-    return new FunctionNode(name);
+    return new FunctionNode(privateChild(this.fn.name, `${suffix}_${count}`));
   }
 }

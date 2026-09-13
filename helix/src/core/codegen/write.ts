@@ -47,6 +47,31 @@ export function writeDatapack(dp: Datapack, outDir: string, opts?: { zip?: boole
     path.join(outDir, "pack.mcmeta"),
     JSON.stringify(buildPackMcmeta(dp), null, 2),
   );
+
+  const sources = sourceMapJson(dp);
+  const sidecar = path.join(outDir, SOURCE_MAP_FILE);
+  if (sources) fs.writeFileSync(sidecar, sources);
+  else fs.rmSync(sidecar, { force: true }); // a stale map from a debug build would lie
+}
+
+/** Debug sidecar at the pack root (Minecraft ignores unknown root files). */
+export const SOURCE_MAP_FILE = "helix-sources.json";
+
+/**
+ * `{ "<function>": { "<1-based .mcfunction line>": "<file>:<line>:<col>" } }`, or
+ * `undefined` unless the pack was built with `debug.sources`/`comments`.
+ */
+function sourceMapJson(dp: Datapack): string | undefined {
+  if (!dp.debug.sources && !dp.debug.comments) return undefined;
+  const out: Record<string, Record<string, string>> = {};
+  for (const [fn, locs] of [...dp.sourceMap].sort(([a], [b]) => a.localeCompare(b))) {
+    const lines: Record<string, string> = {};
+    locs.forEach((loc, i) => {
+      if (loc) lines[i + 1] = loc;
+    });
+    if (Object.keys(lines).length > 0) out[fn] = lines;
+  }
+  return JSON.stringify(out, null, 2);
 }
 
 /**
@@ -83,6 +108,8 @@ function collectDatapackFiles(dp: Datapack): Map<string, Buffer> {
   }
 
   files.set("pack.mcmeta", Buffer.from(JSON.stringify(buildPackMcmeta(dp), null, 2), "utf-8"));
+  const sources = sourceMapJson(dp);
+  if (sources) files.set(SOURCE_MAP_FILE, Buffer.from(sources, "utf-8"));
 
   return files;
 }
