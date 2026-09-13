@@ -11,6 +11,7 @@ import { BlockDisplay, DisplayBase, Interaction, ItemDisplay } from "./entities.
 import type { ItemDisplayFields } from "./entities.generated";
 import { CommandValue } from "./value";
 import { Pos, PosValue } from "./pos";
+import { Relation } from "./enums";
 import { Vec3, Quat, add } from "./transform-math";
 
 export type { Vec3, Quat };
@@ -298,9 +299,17 @@ export class DisplayValue implements CommandValue {
     ctx.summonIf(cond, this);
   }
 
-  /** Remove every member of the group. */
+  /** `@e[type=<root type>,tag=<name>_0]` - the root member, typed so the scan skips other entities. */
+  rootSelector(): Selector {
+    return Selector.allEntities().type(this.toNbt().entity).tag(`${this.getName()}_0`);
+  }
+
+  /** Remove every member of the group: one typed scan for the root, the rest ride it. */
   kill(ctx: FunctionContext): void {
-    ctx.kill(Selector.allEntities().tag(this.getName()));
+    ctx.execute().as(this.rootSelector()).run((c) => {
+      c.execute().on(Relation.PASSENGERS).run((p) => p.kill(Selector.self()));
+      c.kill(Selector.self());
+    });
   }
 
   /**

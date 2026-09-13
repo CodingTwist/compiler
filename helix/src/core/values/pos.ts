@@ -36,6 +36,18 @@ export class PosValue implements CommandValue {
     return this.parts.map((c) => component(c.n, c.mode)).join(" ");
   }
 
+  /**
+   * The numeric world coordinates, for data that takes numbers rather than a
+   * command position (e.g. a `location` trigger's bounds). Throws unless every
+   * axis is absolute - `~`/`^` have no value outside an execution context.
+   */
+  coords(): [number, number, number] {
+    if (this.parts.length !== 3 || this.parts.some((c) => c.mode !== "absolute" && c.mode !== "exact")) {
+      throw new Error(`Pos "${this.render()}" has no absolute coordinates`);
+    }
+    return this.parts.map((c) => c.n) as [number, number, number];
+  }
+
   /** A new position shifted by `(dx, dy, dz)`, keeping each axis' mode. */
   offset(dx: number, dy: number, dz: number): PosValue {
     const d = [dx, dy, dz];

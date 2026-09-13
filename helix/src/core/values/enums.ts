@@ -152,6 +152,8 @@ export const Slot = {
   CHEST: "armor.chest",
   LEGS: "armor.legs",
   FEET: "armor.feet",
+  /** `contents` - the one item an item display, item frame or dropped item holds. */
+  CONTENTS: "contents",
   /** `container.<n>` - a slot in the target's container (chest, player inventory). */
   container: (n: number): ItemSlot => `container.${n}`,
   /** `hotbar.<n>` - a player's hotbar slot 0-8. */

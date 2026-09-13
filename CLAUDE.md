@@ -37,6 +37,16 @@ the **built `dist/`**, symlinked into `node_modules`, not the source. So:
   version-aware - never string-interpolate command fragments. If the typed API can't yet
   express a concept, **add it to the API first**, then compose. The only sanctioned raw
   JSON is data resources via `dp.registryFile(...)`.
+- **Advancement triggers before tick polling.** For anything a *player* does (use/consume
+  an item, hurt/kill an entity, place a block, enter an area, inventory change...), reach
+  for an advancement trigger (helix `Trigger.*` + `dp.advancement`) before a tick/`@On`
+  poll. Triggers are native event listeners: zero commands when nothing happens, vs. a
+  poll's selector every tick (the Minecraft Wiki's optimization tutorial recommends them over `@a`
+  polling; no published benchmark numbers exist). Caveats: the reward function must
+  `advancement revoke` itself to re-arm; per-player only, so absence ("nobody near"),
+  entity-only events, scores and timers still need a poll; `location` is checked ~once
+  a second per player (≤1s latency) and matches a box, not a radius. If `Trigger` lacks
+  the event you need, add it to helix first.
 - **Tests are colocated `*.test.ts`** (vitest), excluded from the `tsc` build.
 - Don't commit unless asked.
 

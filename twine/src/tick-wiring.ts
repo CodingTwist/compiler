@@ -1,7 +1,7 @@
-import { Datapack, Range, ScoreTarget } from "helix";
-import type { FunctionContext, FunctionRef, Id } from "helix";
+import { Datapack, Pos, privateName, Range, ScoreTarget, Selector, Trigger } from "helix";
+import type { FunctionContext, FunctionRef, Id, Score } from "helix";
 import type { DatapackModule, ModuleMetadata, ModuleRef } from "./module.interface";
-import type { ScoreTrigger } from "./area";
+import type { ScoreTrigger, Zone } from "./area";
 import type { Graph, Node } from "./graph";
 import { ActiveFlags } from "./flags";
 import { EventLatches, emitHandler, getEventHandlers, type EventHandler } from "./events";
@@ -149,7 +149,13 @@ function moduleTick(w: Wiring, ref: ModuleRef, dim: Id | undefined, body: Emit):
  * Because this is emitted within the parent's `active` scope, none of it runs
  * while the parent is dormant.
  */
-export function wireTick(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: Id): void {
+export function wireTick(
+  w: Wiring,
+  ref: ModuleRef,
+  ctx: FunctionContext,
+  dim?: Id,
+  gates: Score[] = [],
+): void {
   const node = w.graph.nodes.get(ref)!;
   emitTick(w, node, ctx);
   for (const childRef of node.children) {
@@ -159,14 +165,14 @@ export function wireTick(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: 
       // A pure wrapper (only imports, e.g. a dev-only `mace_demo` around `mace`)
       // gets no `<name>/tick` - it would just forward to its children's.
       if (!child.instance.onTick && getEventHandlers(child.instance).length === 0) {
-        wireTick(w, childRef, ctx, dim);
+        wireTick(w, childRef, ctx, dim, gates);
         continue;
       }
       // gated by (and in the dimension of) ancestors
-      ctx.call(moduleTick(w, childRef, dim, (c) => wireTick(w, childRef, c, dim)));
+      ctx.call(moduleTick(w, childRef, dim, (c) => wireTick(w, childRef, c, dim, gates)));
       continue;
     }
-    emitArea(w, childRef, ctx, dim);
+    emitArea(w, childRef, ctx, dim, gates);
   }
 }
 
@@ -181,7 +187,13 @@ export function wireTick(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: 
  * the same shape, so an area at the top of the tree is gated exactly like one
  * anywhere else.
  */
-export function emitArea(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: Id): void {
+export function emitArea(
+  w: Wiring,
+  ref: ModuleRef,
+  ctx: FunctionContext,
+  dim?: Id,
+  gates: Score[] = [],
+): void {
   const node = w.graph.nodes.get(ref)!;
   // An area with its own dimension (differing from the one already in effect)
   // runs its detectors and whole subtree wrapped in it; one that inherits its
@@ -191,9 +203,10 @@ export function emitArea(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: 
   // not wherever the tick loop runs.
   const areaDim = w.dims.get(ref) ?? dim;
   const body = (host: FunctionContext) => {
-    if (node.meta.trigger) emitArm(w, ref, host); // only fires while inactive
+    if (node.meta.trigger) emitArm(w, ref, host, areaDim, gates); // only fires while inactive
+    const inside = [...gates, w.flags.score(node.meta.name)];
     const tick = moduleTick(w, ref, areaDim, (inner) => {
-      wireTick(w, ref, inner, areaDim);
+      wireTick(w, ref, inner, areaDim, inside);
       if (node.meta.trigger) emitPresence(w, ref, inner);
     });
     host.if(w.flags.score(node.meta.name).equal(1), (inner) => inner.call(tick));
@@ -213,18 +226,73 @@ export function emitArea(w: Wiring, ref: ModuleRef, ctx: FunctionContext, dim?: 
  *   staying on until something calls `<name>/deactivate`; with `latch: false`
  *   {@link emitPresence} switches them back off when the score stops matching.
  */
-function emitArm(w: Wiring, ref: ModuleRef, ctx: FunctionContext): void {
+function emitArm(
+  w: Wiring,
+  ref: ModuleRef,
+  ctx: FunctionContext,
+  dim: Id | undefined,
+  gates: Score[],
+): void {
   const { meta } = w.graph.nodes.get(ref)!;
   const trigger = meta.trigger!;
   const activate = w.activateOf.get(ref)!;
+  if (trigger.kind !== "score" && trigger.kind !== "players") {
+    armByAdvancement(w, ref, triggerZones(trigger), dim, gates);
+    return;
+  }
   ctx.if(w.flags.score(meta.name).equal(0), (off) => {
     if (trigger.kind === "score") {
       off.if(scoreCondition(w, trigger), (hit) => hit.call(activate));
     } else if (trigger.kind === "players") {
       off.whenEntity(trigger.selector, (any) => any.call(activate));
-    } else {
-      whenPlayerInZones(off, triggerZones(trigger), (inside) => inside.call(activate));
     }
+  });
+}
+
+/**
+ * A geometric area arms on `minecraft:location` advancements - one per zone -
+ * instead of a per-tick `@a` poll, so a dormant area costs nothing per tick.
+ * The trigger matches the zone's box (a sphere's bounding box, narrowed to the
+ * radius in the reward); the reward re-checks what the tick tree used to gate it
+ * by - every ancestor area live, this one not yet - then revokes to re-arm.
+ *
+ * Tradeoffs: vanilla checks `location` about once a second per player, so entry
+ * lags up to 1s, and it tests the player's feet rather than hitbox overlap.
+ * Leaving is absence, which no trigger can see - {@link emitPresence} still polls.
+ */
+function armByAdvancement(
+  w: Wiring,
+  ref: ModuleRef,
+  zones: Zone[],
+  dim: Id | undefined,
+  gates: Score[],
+): void {
+  const { meta } = w.graph.nodes.get(ref)!;
+  const activate = w.activateOf.get(ref)!;
+  const self = w.flags.score(meta.name);
+  zones.forEach((zone, i) => {
+    const name = privateName(`${meta.name}/enter_${i}`);
+    if (w.dp.functionRef(name)) return; // area reached from a second parent: already armed
+    const [from, to] =
+      zone.shape === "sphere"
+        ? [zone.center.map((c) => c - zone.radius), zone.center.map((c) => c + zone.radius)]
+        : [zone.from, zone.to];
+    // Cuboid corners are inclusive blocks, so the box runs to the far block's far face.
+    const far = zone.shape === "sphere" ? 0 : 1;
+    const axis = (k: number) => ({ min: Math.min(from[k], to[k]), max: Math.max(from[k], to[k]) + far });
+    const trigger = Trigger.location({
+      ...(dim ? { dimension: dim } : {}),
+      position: { x: axis(0), y: axis(1), z: axis(2) },
+    });
+    w.dp.event(name, trigger, (ctx) => {
+      const chain = ctx.execute();
+      for (const gate of gates) chain.ifScoreMatches(gate, Range.exactly(1));
+      chain.ifScoreMatches(self, Range.exactly(0));
+      if (zone.shape === "sphere") {
+        chain.positioned(Pos(...zone.center)).ifEntity(Selector.self().distance(Range.atMost(zone.radius)));
+      }
+      chain.run((hit) => hit.call(activate));
+    });
   });
 }
 

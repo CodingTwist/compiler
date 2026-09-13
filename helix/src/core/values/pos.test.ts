@@ -28,4 +28,10 @@ describe("Pos", () => {
   it("renders raw positions verbatim", () => {
     expect(Pos.raw("~ 0 ~").offset(1, 1, 1).render()).toBe("~ 0 ~");
   });
+
+  it("exposes numeric coords only when every axis is absolute", () => {
+    expect(Pos(1, 2, 3).offset(1, 0, -1).coords()).toEqual([2, 2, 2]);
+    expect(() => Pos.rel(0, 1, 0).coords()).toThrow();
+    expect(() => Pos.raw("1 2 3").coords()).toThrow();
+  });
 });

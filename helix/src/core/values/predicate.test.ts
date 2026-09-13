@@ -41,6 +41,12 @@ describe("Predicate builder", () => {
     expect(terms[1].condition).toBe("minecraft:inverted");
   });
 
+  it("gates newer flags by version", () => {
+    const grounded = Predicate.entity({ flags: { is_on_ground: true } });
+    expect((grounded.toJson(v1_21_4) as any).predicate.flags).toEqual({ is_on_ground: true });
+    expect(() => grounded.toJson(v1_20_1)).toThrow("is_on_ground needs 1.21+");
+  });
+
   it("renders entity_scores bounds", () => {
     const p = Predicate.scores({ kills: { min: 5 }, deaths: 0 });
     expect(p.toJson(v1_21_4)).toEqual({

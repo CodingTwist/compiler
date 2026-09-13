@@ -4,6 +4,7 @@ import { Item } from "./item";
 import { Blaze, Tnt, Villager, Zombie } from "./entities.generated";
 import { Display } from "./display";
 import { v1_20_1, v1_21_4, v26_2 } from "../../versions/profiles";
+import { Datapack } from "../ir/datapack";
 
 describe("entity NBT schemas", () => {
   it("writes a renamed key in the target version's spelling", () => {
@@ -95,5 +96,13 @@ describe("entity NBT schemas", () => {
   it("carries interpolation defaults onto every display member", () => {
     const d = Display(Block.STONE).interpolation(4).teleportDuration(6);
     expect(d.render(v26_2)).toContain("interpolation_duration:4,teleport_duration:6");
+  });
+
+  it("Display.kill: one typed scan for the root, members killed as its passengers", () => {
+    const dp = new Datapack("test", v1_21_4);
+    dp.createFunction("f").build((ctx) => Display(Block.STONE).named("cog").kill(ctx));
+    dp.report();
+    expect(dp.files.get("f")).toBe("execute as @e[type=minecraft:block_display,tag=cog_0] run function test:zzz/f/exec_0");
+    expect(dp.files.get("zzz/f/exec_0")).toBe("execute on passengers run kill @s\nkill @s");
   });
 });

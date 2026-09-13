@@ -128,11 +128,18 @@ describe("triggers", () => {
     @Module({ name: "root", imports: [VaultLike] })
     class Root {}
 
-    const { tick } = compileRoot(Root);
+    const { tick, files } = compileRoot(Root);
 
-    expect(tick).toContain("if score #vaultlike active matches 0");
-    expect(tick).toContain("positioned 1 2 3 if entity @a[distance=..12,limit=1]");
-    expect(tick).toContain("function test:vaultlike/activate");
+    // Entry is a location advancement, not a per-tick poll: the tick only disarms.
+    expect(tick).not.toContain("if score #vaultlike active matches 0");
+    const adv = [...files].find(([p]) => p.endsWith("vaultlike/zzz/enter_0.json"))![1];
+    expect(JSON.parse(adv).criteria.trigger.trigger).toBe("minecraft:location");
+    expect(adv).toContain('"min": -11');
+    const reward = [...files].find(([p]) => p.endsWith("vaultlike/zzz/enter_0.mcfunction"))![1];
+    expect(reward).toContain(
+      "if score #vaultlike active matches 0 positioned 1 2 3 if entity @s[distance=..12] run function test:vaultlike/activate",
+    );
+    expect(reward).toContain("advancement revoke @s only test:vaultlike/zzz/enter_0");
   });
 
   it("emits a score detector that runs only while the area is inactive", () => {
@@ -320,16 +327,14 @@ describe("triggers", () => {
 
     const { root: tick, all } = compileRoot(Root);
 
-    // The outer (top-level) area's detector runs unconditionally...
-    expect(tick).toContain("if score #outer active matches 0");
-    // ...but the inner area's "are you near?" check is NEVER emitted at top level;
-    // it only exists inside the outer-active subtree.
+    // Neither area polls for entry at top level; the tick just gates the outer subtree.
     expect(tick).not.toContain("distance=..3");
     expect(tick).not.toContain("if score #inner active");
     expect(tick).toContain("if score #outer active matches 1 run function test:outer/tick");
-    // It does exist downstream, reachable only once #outer is live.
-    expect(all).toContain("distance=..3");
-    expect(all).toContain("function test:inner/activate");
+    // The inner area's entry advancement re-checks the parent flag before activating.
+    expect(all).toContain(
+      "if score #outer active matches 1 if score #inner active matches 0 positioned 9 9 9 if entity @s[distance=..3] run function test:inner/activate",
+    );
   });
 
   it("checks a shared item module only in the areas that import it (some, not all)", () => {

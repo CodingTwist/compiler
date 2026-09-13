@@ -47,6 +47,7 @@ type Clause =
   | { k: "in"; dim: Id }
   | { k: "positioned"; pos: Pos }
   | { k: "positionedAs"; sel: Selector }
+  | { k: "rotated"; rot: Pos }
   | { k: "rotatedAs"; sel: Selector }
   | { k: "facing"; pos: Pos }
   | { k: "facingEntity"; sel: Selector; anchor: EntityAnchor }
@@ -134,6 +135,11 @@ export class ExecuteBuilder {
   }
   positionedAs(sel: Selector): this {
     this.node.clauses.push({ k: "positionedAs", sel });
+    return this;
+  }
+  /** `rotated <yaw> <pitch>` - e.g. `Pos.rel(0, Pos.abs(0))` keeps yaw, levels pitch. */
+  rotated(rot: Pos): this {
+    this.node.clauses.push({ k: "rotated", rot });
     return this;
   }
   rotatedAs(sel: Selector): this {
@@ -359,6 +365,8 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
         return `positioned ${toCommandValue(c.pos).render(v)}`;
       case "positionedAs":
         return `positioned as ${toCommandValue(c.sel).render(v)}`;
+      case "rotated":
+        return `rotated ${toCommandValue(c.rot).render(v)}`;
       case "rotatedAs":
         return `rotated as ${toCommandValue(c.sel).render(v)}`;
       case "facing":

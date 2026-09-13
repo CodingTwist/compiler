@@ -39,6 +39,8 @@ export {
   type CallSiteCost,
   type FunctionCost,
   type NbtRead,
+  type Lint,
+  type LintRule,
   NBT_READ_MIN_PERIOD,
 } from "./core/report/cost-report";
 // Measured profile (`dp.profileReport(raw)`): the helix-profiler mod's JSON lined up

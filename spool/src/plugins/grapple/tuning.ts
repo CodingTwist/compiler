@@ -194,7 +194,7 @@ export const ANCHOR_TYPE = EntityType("marker");
  * shows a live action-bar readout (dist²/rope/dot + whether the rope is taut) so
  * you can see, in-game, exactly which stage isn't firing.
  */
-export const DEBUG = true;
+export const DEBUG = false;
 
 /**
  * **Kill engine gravity while grappling** (the bounce's energy *source*). The residual
@@ -223,4 +223,4 @@ export const GRAVITY_MODIFIER_ID = Id("grapple:zero_gravity");
  * be read back offline to diagnose exactly where a swing misbehaves. Noisy by design
  * (~20 lines/sec while swinging); turn off for normal play.
  */
-export const LOG = true;
+export const LOG = false;

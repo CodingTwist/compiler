@@ -11,7 +11,7 @@ const USAGE = `usage: helix <command> [options]
 
   build [--prod]          write the datapack (and resource pack, if configured)
   dev                     build, then rebuild when files change
-  report [--strict]       per-tick cost report; --strict exits 1 on warnings
+  report [--strict]       per-tick cost report; --strict exits 1 on warnings/lints
   profile [dump.json]     measured profile from the newest /helixprof dump (or the given one)
   validate                check emitted JSON against the vanilla schema
   data [--force]          download the Minecraft version data (not shipped; needs network)
@@ -45,7 +45,10 @@ export async function runCli(argv: string[]): Promise<number> {
       return build(await load());
     case "report": {
       let warned = false;
-      for (const { dp } of (await load()).packs) warned = dp.printReport().warnings.length > 0 || warned;
+      for (const { dp } of (await load()).packs) {
+        const r = dp.printReport();
+        warned = r.warnings.length + r.lints.length + r.staleAllows.length > 0 || warned;
+      }
       return values.strict && warned ? 1 : 0;
     }
     case "profile":

@@ -8,6 +8,7 @@ import {
   analyzeCost,
   CostReport,
   formatCostReport,
+  type LintRule,
 } from "../report/cost-report";
 import {
   analyzeProfile,
@@ -102,17 +103,23 @@ export class Datapack extends DatapackResources {
     return report;
   }
 
-  /** Functions whose fast NBT reads are intentional, with why - see {@link allowNbtRead}. */
-  readonly nbtReadAllowed = new Map<string, string>();
+  /** Per lint rule, the functions whose hits are intentional, with why - see {@link allow}. */
+  readonly allowed = new Map<LintRule, Map<string, string>>();
 
   /**
-   * Mark `fn`'s NBT reads as intentional, so {@link report} stops warning that they
-   * run faster than the t5 clock. Covers what `fn` calls too (its `execute … run`
-   * bodies included), so keep the allowed reads in a function of their own - a new
-   * read elsewhere still warns.
+   * Mark `fn`'s hits of a {@link report} lint `rule` as intentional. Covers what `fn`
+   * calls too (its `execute … run` bodies included), so keep the expensive commands
+   * in a function of their own - a new one elsewhere still warns.
    */
+  allow(rule: LintRule, fn: FunctionRef | string, reason: string): void {
+    const fns = this.allowed.get(rule) ?? new Map<string, string>();
+    fns.set(typeof fn === "string" ? fn : fn.getName(), reason);
+    this.allowed.set(rule, fns);
+  }
+
+  /** {@link allow} for `"nbt-read"`: NBT reads faster than the t5 clock. */
   allowNbtRead(fn: FunctionRef | string, reason: string): void {
-    this.nbtReadAllowed.set(typeof fn === "string" ? fn : fn.getName(), reason);
+    this.allow("nbt-read", fn, reason);
   }
 
   /** Convenience: run {@link report} and print the formatted summary. */

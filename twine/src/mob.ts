@@ -7,6 +7,7 @@ import {
   ScoreTarget,
   Selector,
   add,
+  atLeast,
   displayPose,
   mulQuat,
   privateName,
@@ -339,6 +340,7 @@ export interface MobPreview {
 class MobModule<S extends string> implements DatapackModule {
   private killRig!: FunctionRef;
   private faceOne!: FunctionRef;
+  private faceByRotate = false;
 
   constructor(
     private readonly name: string,
@@ -409,10 +411,6 @@ class MobModule<S extends string> implements DatapackModule {
   private get freshTag(): string {
     return `${this.name}.new`;
   }
-  /** Held by exactly one rig at a time, inside `face_one`. */
-  private get curTag(): string {
-    return `${this.name}.cur`;
-  }
 
   /** A function only this mob's own tick tree calls: no dimension wrap, since it inherits the caller's. */
   private internal(short: string, body: (ctx: FunctionContext) => void): FunctionRef {
@@ -448,28 +446,38 @@ class MobModule<S extends string> implements DatapackModule {
       ctx.kill(Selector.self());
     });
 
-    // Run as one rig: it tags itself so that, once `on vehicle` has swapped `@s`
-    // to the mob, the rig is still nameable. That exactness is the point - the
-    // nearest-rig-within-2-blocks guess this replaces made two mobs standing in
-    // each other wear (and steer by) the same model.
+    // Run as the rig root. Yaw only: the mob pitches to look up/down at its target,
+    // and a display entity would tilt the whole model with it.
+    this.faceByRotate = atLeast(dp.version, "1.21.2");
     this.faceOne = scope.fn(privateName(`${this.name}/face_one`), (ctx) => {
-      const me = Selector.allEntities().tag(this.curTag).limit(1);
-      ctx.tag().add(Selector.self(), this.curTag);
-      // Yaw only: the mob pitches to look up/down at its target, and a display
-      // entity would tilt the whole model with it.
+      // `rotate` (1.21.2+): the caller positions us at the root, rotated to the
+      // mob's yaw with pitch levelled, so facing a point straight ahead copies the
+      // yaw - no NBT read/write, no selector scan for the mob.
+      const face = (b: FunctionContext) => b.rotate().facing(Selector.self(), Pos.local(0, 0, 1));
+      // Every other member rides the root, and a passenger keeps its own rotation -
+      // so turning the root alone leaves head, arms and weapon still facing north.
+      // They all sit at the root's position, so the same yaw turns the model as one.
+      if (this.faceByRotate) {
+        face(ctx);
+        ctx.execute().on(Relation.PASSENGERS).run(face);
+        return;
+      }
+      // Older versions copy Rotation[0] through NBT. The rig tags itself so that,
+      // once `on vehicle` has swapped `@s` to the mob, the rig is still nameable.
+      const cur = `${this.name}.cur`;
+      const me = Selector.allEntities().tag(cur).limit(1);
+      ctx.tag().add(Selector.self(), cur);
       ctx
         .execute()
         .on(Relation.VEHICLE)
         .run((b) => b.entity(me).set(YAW, b.entity(Selector.self()).at(YAW)));
-      // Every other member rides the root, and a passenger keeps its own rotation -
-      // so turning the root alone leaves head, arms and weapon still facing north.
-      // They all sit at the root's position, so the same yaw turns the model as one.
       ctx
         .execute()
         .on(Relation.PASSENGERS)
         .run((b) => b.entity(Selector.self()).set(YAW, b.entity(me).at(YAW)));
-      ctx.tag().remove(Selector.self(), this.curTag);
+      ctx.tag().remove(Selector.self(), cur);
     });
+    if (!this.faceByRotate) dp.allowNbtRead(this.faceOne, "rig yaw copy, awake mobs only");
 
     const summon = scope.fn(`${this.name}/summon`, (ctx) => {
       const fresh = this.freshTag;
@@ -559,8 +567,6 @@ class MobModule<S extends string> implements DatapackModule {
       this.fns.set("on_tick", scope.fn(privateName(`${this.name}/on_tick`), (ctx) => body(ctx, dp, this.handle)));
     }
     this.registerStates(dp);
-    // The yaw copy is a read per rig per tick, and the whole point of riding.
-    dp.allowNbtRead(this.faceOne, "rig yaw copy, awake mobs only");
 
     this.awakeObj = dp.objective(`${this.name}.awake`);
     this.wake = scope.fn(privateName(`${this.name}/wake`), (ctx) => this.wakeBody(ctx));
@@ -763,10 +769,17 @@ class MobModule<S extends string> implements DatapackModule {
           c.tag().add(self, this.awakeTag);
         })
       : undefined;
-    // One scan to reset every mob, then one per player for the ones near it.
+    // Orphaned rigs: mark-and-sweep, since there's no "has a vehicle" check - the vehicle
+    // knows its passengers, so each live mob clears its rig's mark in wake_one and whatever
+    // is still marked rode something that died, despawned or unloaded.
+    // ponytail: runs from `wake`, so a dead mob's rig can hover up to a second - about as
+    // long as the death animation. Move it back to the poll if that shows.
+    ctx.tag().add(this.rigRoots, this.orphanTag);
+    // One scan to reset every mob (and claim its rig), then one per player for the ones near it.
     const one = this.internal("wake_one", (c) => {
       c.tag().remove(self, this.awakeTag);
       c.tag().remove(self, this.finishingTag);
+      c.execute().on(Relation.PASSENGERS).run((b) => b.tag().remove(Selector.self(), this.orphanTag));
       // ponytail: one line per clock - fine at a handful; a shared "busy" score if a mob grows many.
       for (const obj of clocks) {
         c.execute().ifScoreMatches(obj.score(self), Range.atLeast(1)).run((b) => b.call(finish!));
@@ -787,7 +800,11 @@ class MobModule<S extends string> implements DatapackModule {
       .storeResultScore(this.awakeObj.score(ScoreTarget("#awake")))
       .ifEntity(this.mobs.tag(this.awakeTag))
       .done();
-    this.sweepOrphans(ctx);
+    // Rigs no mob claimed above lost their mob: kill them.
+    ctx
+      .execute()
+      .as(this.rigRoots.tag(this.orphanTag))
+      .run((b) => b.call(this.killRig));
     this.awakeObj.score(ScoreTarget("#wake")).set(0);
   }
 
@@ -816,11 +833,11 @@ class MobModule<S extends string> implements DatapackModule {
         .run((b) => b.call(all));
     }
     // Point the rig the way this mob is facing.
-    ctx
-      .execute()
-      .on(Relation.PASSENGERS)
-      .ifEntity(Selector.self().tag(`${this.rig}_0`))
-      .run((b) => b.call(this.faceOne));
+    const face = ctx.execute();
+    if (this.faceByRotate) face.rotated(Pos.rel(0, Pos.abs(0)));
+    face.on(Relation.PASSENGERS).ifEntity(Selector.self().tag(`${this.rig}_0`));
+    if (this.faceByRotate) face.positionedAs(Selector.self());
+    face.run((b) => b.call(this.faceOne));
     if (this.relay) this.relayHits(ctx, this.relay);
   }
 
@@ -864,27 +881,6 @@ class MobModule<S extends string> implements DatapackModule {
     return fn;
   }
 
-  /**
-   * Kill rigs whose mob is gone. Mark-and-sweep rather than a "does it have a
-   * vehicle" check, because there is no such check: the vehicle is what knows its
-   * passengers, so the surviving mobs clear the mark and whatever is still marked
-   * was riding something that died, despawned or unloaded.
-   *
-   * ponytail: runs from `wake`, so a dead mob's rig can hover up to a second - about
-   * as long as the death animation. Move it back to the poll if that shows.
-   */
-  private sweepOrphans(ctx: FunctionContext): void {
-    ctx.tag().add(this.rigRoots, this.orphanTag);
-    ctx
-      .execute()
-      .as(this.mobs)
-      .on(Relation.PASSENGERS)
-      .run((b) => b.tag().remove(Selector.self(), this.orphanTag));
-    ctx
-      .execute()
-      .as(this.rigRoots.tag(this.orphanTag))
-      .run((b) => b.call(this.killRig));
-  }
 }
 
 /**

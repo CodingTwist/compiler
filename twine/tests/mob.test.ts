@@ -1,20 +1,21 @@
 import "reflect-metadata";
 import { describe, it, expect } from "vitest";
 // From the "helix" barrel, not a deep dist path - see the note in boss.test.ts.
-import { Block, buildDatapack, Display, Husk, Item, Range, Selector, quat, quatFromTo } from "helix";
+import { Block, buildDatapack, Display, Husk, Item, Range, Selector, quat, quatFromTo, v26_2 } from "helix";
+import type { VersionProfile } from "helix";
 import { Module } from "../src/module.decorator";
 import { DatapackFactory } from "../src/factory";
 import { defineMob } from "../src/mob";
 import type { Detector } from "helix";
 
-function build() {
+function build(version?: VersionProfile) {
   const rig = Display(Block.STONE).add(Block.STONE, { translation: [0, 1, 0] }).hitbox(1, 1);
   const mob = defineMob(Husk({ silent: true }), rig).relayHits(4).toModule("sentinel");
 
   @Module({ name: "root", imports: [mob] })
   class Root {}
 
-  const dp = DatapackFactory.create(Root as never, { name: "test", env: "dev" });
+  const dp = DatapackFactory.create(Root as never, { name: "test", env: "dev", version });
   return [...buildDatapack(dp).values()].join("\n");
 }
 
@@ -32,9 +33,8 @@ describe("defineMob", () => {
   it("sweeps rigs whose mob died - a killed vehicle only dismounts its riders", () => {
     const all = build();
     expect(all).toContain("tag @e[type=minecraft:block_display,tag=sentinel_rig_0] add sentinel.orphan");
-    expect(all).toContain(
-      "execute as @e[type=minecraft:husk,tag=sentinel] on passengers run tag @s remove sentinel.orphan",
-    );
+    // Claimed inside wake_one, so the husks are scanned once, not twice.
+    expect(all).toContain("execute on passengers run tag @s remove sentinel.orphan");
     expect(all).toContain(
       "execute as @e[type=minecraft:block_display,tag=sentinel_rig_0,tag=sentinel.orphan] run function test:sentinel/zzz/kill_rig",
     );
@@ -60,6 +60,15 @@ describe("defineMob", () => {
     expect(all).toContain(
       "execute on passengers run data modify entity @s Rotation[0] set from entity @e[tag=sentinel.cur,limit=1] Rotation[0]",
     );
+  });
+
+  it("turns the rig with rotate on 1.21.2+, reading no NBT", () => {
+    const all = build(v26_2);
+    expect(all).toContain(
+      "execute rotated ~ 0 on passengers if entity @s[tag=sentinel_rig_0] positioned as @s run function test:sentinel/zzz/face_one",
+    );
+    expect(all).toContain("rotate @s facing ^ ^ ^1\nexecute on passengers run rotate @s facing ^ ^ ^1");
+    expect(all).not.toContain("Rotation[0]");
   });
 
   it("raises a gesture's members and interpolates them back to their rest pose", () => {
@@ -229,10 +238,11 @@ describe("defineMob", () => {
       ].join("\n"),
     );
     // One reset scan, one near scan per player - each a call, not a scan per tag.
-    expect(fn("wake").split("\n").slice(0, 2)).toEqual([
+    expect(fn("wake").split("\n").slice(1, 3)).toEqual([
       "execute as @e[type=minecraft:husk,tag=sentinel] run function test:sentinel/zzz/wake_one",
       "execute at @a as @e[distance=..30,type=minecraft:husk,tag=sentinel] run function test:sentinel/zzz/wake_near",
     ]);
+    expect(fn("wake").match(/@e\[type=minecraft:husk,tag=sentinel\]/g)).toHaveLength(1);
     expect(fn("tick_one")).not.toContain("@e");
     // Walked away mid-gesture: kept awake to finish it, but a looping one can't re-fire.
     expect(fn("wake_near")).toBe("tag @s add sentinel.awake\ntag @s remove sentinel.finishing");

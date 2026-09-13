@@ -1,4 +1,5 @@
 import { VersionProfile } from "../../versions/profile";
+import { DV } from "./entity-versions.generated";
 import { Nbt } from "./nbt";
 import { Id } from "./id";
 import { BlockValue } from "./block";
@@ -27,7 +28,23 @@ export interface EntityFlags {
   is_sprinting?: boolean;
   is_swimming?: boolean;
   is_baby?: boolean;
+  /** 1.21+. */
+  is_on_ground?: boolean;
+  /** 1.21+. */
+  is_flying?: boolean;
+  /** 1.21.11+. */
+  is_in_water?: boolean;
+  /** 1.21.11+. */
+  is_fall_flying?: boolean;
 }
+
+/** The first version each newer flag exists in (vanilla-mcdoc `EntityFlagsPredicate`). */
+const FLAG_SINCE: Partial<Record<keyof EntityFlags, keyof typeof DV>> = {
+  is_on_ground: "1.21",
+  is_flying: "1.21",
+  is_in_water: "1.21.11",
+  is_fall_flying: "1.21.11",
+};
 
 /** A 1-D inclusive bound for a position/coordinate check. */
 export type Bound = number | { min?: number; max?: number };
@@ -181,7 +198,12 @@ function renderEntitySpec(spec: EntityPredicateSpec, version: VersionProfile): P
   if (spec.flags) {
     const flags: PredicateJson = {};
     for (const [k, val] of Object.entries(spec.flags)) {
-      if (val !== undefined) flags[k] = val;
+      if (val === undefined) continue;
+      const since = FLAG_SINCE[k as keyof EntityFlags];
+      if (since && version.dataVersion < DV[since]) {
+        throw new Error(`Predicate flag ${k} needs ${since}+, but the pack targets ${version.id}`);
+      }
+      flags[k] = val;
     }
     if (Object.keys(flags).length) out.flags = flags;
   }

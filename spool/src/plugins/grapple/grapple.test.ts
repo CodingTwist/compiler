@@ -49,7 +49,7 @@ describe("dp.grapple (kit)", () => {
     );
     // With no block filter the on-hit body (summon + read) inlines into the marcher.
     expect(ray).toContain('summon minecraft:marker ~ ~ ~ {Tags:["grapple.anchor","grapple._new"]}');
-    expect(ray).toContain("store result score @s grapple.anchor_x run data get entity @e[tag=grapple._new,limit=1] Pos[0] 10");
+    expect(ray).toContain("store result score @s grapple.anchor_x run data get entity @e[type=minecraft:marker,tag=grapple._new,limit=1] Pos[0] 10");
   });
 
   it("default reach is 100 steps and anchors on any block (no block gate)", () => {
@@ -80,9 +80,8 @@ describe("dp.grapple (kit)", () => {
     // start roots the web at the eyes and fires the ray (a generated child seeds + calls it).
     expect(start).toContain("execute at @s anchored eyes positioned ^ ^ ^ run function test:");
     expect(all).toContain("function test:raycast/grapple/web");
-    // Attach + the miss feedback are both gated on the just-summoned anchor existing.
-    expect(start).toContain("execute if entity @e[tag=grapple._new,limit=1] run function");
-    expect(start).toContain("execute unless entity @e[tag=grapple._new,limit=1] run tellraw");
+    // Attach is gated on the just-summoned anchor existing (the miss feedback is DEBUG-only).
+    expect(start).toContain("execute if entity @e[type=minecraft:marker,tag=grapple._new,limit=1] run function");
 
     const attach = attachBody(dp);
     // rope length² is written straight into the per-player score via lengthSquared.
@@ -91,7 +90,7 @@ describe("dp.grapple (kit)", () => {
     // a fresh shared id on the player and its anchor
     expect(attach).toContain("scoreboard players add #next_id grapple.const 1");
     expect(attach).toContain("scoreboard players operation @s grapple.id = #next_id grapple.const");
-    expect(attach).toContain("execute as @e[tag=grapple._new] run scoreboard players operation @s grapple.id = #next_id grapple.const");
+    expect(attach).toContain("execute as @e[type=minecraft:marker,tag=grapple._new] run scoreboard players operation @s grapple.id = #next_id grapple.const");
     expect(attach).toContain("tag @s add grappling");
     // gravity handling follows the ZERO_GRAVITY toggle: zeroed via a removable modifier
     // (momentum-orbit model) when on, left untouched (engine-gravity swing) when off.
@@ -99,7 +98,7 @@ describe("dp.grapple (kit)", () => {
     if (ZERO_GRAVITY) expect(attach).toContain(gravityAdd);
     else expect(attach).not.toContain("minecraft:gravity");
     // transient summon handles are dropped
-    expect(attach).toContain("tag @e[tag=grapple._new] remove grapple._new");
+    expect(attach).toContain("tag @e[type=minecraft:marker,tag=grapple._new] remove grapple._new");
   });
 
   it("drive draws a particle rope: tags this player's anchor, faces it, marches grapple/rope", () => {
@@ -107,15 +106,15 @@ describe("dp.grapple (kit)", () => {
     const drive = dp.files.get("grapple/drive")!;
     // tag exactly this player's anchor as the aim target
     expect(drive).toContain("scoreboard players operation #rope_id grapple.work = @s grapple.id");
-    expect(drive).toContain("execute as @e[tag=grapple.anchor] if score @s grapple.id = #rope_id grapple.work run tag @s add grapple._aim");
+    expect(drive).toContain("execute as @e[type=minecraft:marker,tag=grapple.anchor] if score @s grapple.id = #rope_id grapple.work run tag @s add grapple._aim");
     // aim ^ at it from the eyes and hand off to the marcher, then untag
-    expect(drive).toContain("facing entity @e[tag=grapple._aim,limit=1] feet run function test:grapple/rope");
-    expect(drive).toContain("tag @e[tag=grapple._aim,limit=1] remove grapple._aim");
+    expect(drive).toContain("facing entity @e[type=minecraft:marker,tag=grapple._aim,limit=1] feet run function test:grapple/rope");
+    expect(drive).toContain("tag @e[type=minecraft:marker,tag=grapple._aim,limit=1] remove grapple._aim");
 
     const rope = dp.files.get("grapple/rope")!;
     expect(rope).toContain("particle minecraft:electric_spark ~ ~ ~ 0 0 0 0 1");
     // step toward the anchor until reached (within 0.6) or out of steps
-    expect(rope).toContain("unless entity @e[distance=..0.6,tag=grapple._aim,limit=1]");
+    expect(rope).toContain("unless entity @e[distance=..0.6,type=minecraft:marker,tag=grapple._aim,limit=1]");
     expect(rope).toContain("positioned ^ ^ ^1 run return run function test:grapple/rope");
   });
 
@@ -200,7 +199,7 @@ describe("dp.grapple (kit)", () => {
     }
     // kill exactly this player's anchor entities (matched by shared id)
     expect(stop).toContain("scoreboard players operation #stop_id grapple.work = @s grapple.id");
-    expect(stop).toContain("execute as @e[tag=grapple.anchor] if score @s grapple.id = #stop_id grapple.work run kill @s");
+    expect(stop).toContain("execute as @e[type=minecraft:marker,tag=grapple.anchor] if score @s grapple.id = #stop_id grapple.work run kill @s");
   });
 
   it("stop flings the player along their look direction, scaled by swing speed², at @s", () => {

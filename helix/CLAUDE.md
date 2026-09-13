@@ -189,6 +189,23 @@ allow inherits down the call tree (so it covers `execute … run` child function
 an event-driven function called from the tick tree looks per-tick - allow it where the
 caller knows better.
 
+It also runs the Minecraft Wiki's *Optimizing a data pack* checks as `lints` (`WARN <rule>`,
+identical findings in one function collapsed into `count`). **Exact** rules flag a line that has
+an equivalent cheaper form and check every function: `vacuous-execute`, `fold-into-selector`
+(`as <sel> if score|entity @s…` right after `as`, skipped across `limit`/`sort`),
+`redundant-as` (an allowlist of multi-target commands), and `macro-score-set`. **Tick-only**
+rules: `nbt-write` (only fields a command can set: item/Rotation/Pos/Tags/effects/attributes),
+`missing-type`, `repeated-selector` (positional selectors are keyed by their execute context),
+and `poll-trigger` (stat objectives polled per player, `as @a[…]` in a fixed area, and
+inventory-slot polls). Presence checks (`if/unless entity @a[…]`) and `weapon.*` are
+deliberately left out, since no trigger replaces them. Keep it precise: a false positive means
+tightening the pattern. `dp.allow(rule, fn, why)` silences a rule for `fn` and what it calls,
+using the same walk as `allowNbtRead`, which is now `allow("nbt-read", …)`.
+A function reached only behind an `if`/`unless` (clock gates aside) prints `up to every N
+tick(s)`: the static period is a ceiling there, not a rate. `staleAllows` lists `dp.allow` calls
+naming a function the pack doesn't have (after a rename it silently silences nothing).
+`helix report --strict` fails on warnings, lints or stale allows.
+
 ### Debug source tracking (`src/core/debug/sources.ts`) - off by default
 
 `new Datapack(name, version, target, { debug: { sources, comments } })` maps each rendered

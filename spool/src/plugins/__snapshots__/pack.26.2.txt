@@ -161,13 +161,6 @@ scoreboard players operation #dot grapple.work += #_t0 grapple.work
 scoreboard players operation #_t0 grapple.work = #vel_z grapple.work
 scoreboard players operation #_t0 grapple.work *= #to_anchor_z grapple.work
 scoreboard players operation #dot grapple.work += #_t0 grapple.work
-execute store result score #face_yaw grapple.work run data get entity @s Rotation[0] 100
-execute store result score #face_pitch grapple.work run data get entity @s Rotation[1] 100
-title @s actionbar ["grapple  dist²=",{"score":{"name":"#dist_sq","objective":"grapple.work"}},"  rope²=",{"score":{"name":"@s","objective":"grapple.rope_len_sq"}},"  dot=",{"score":{"name":"#dot","objective":"grapple.work"}},"  facing=",{"score":{"name":"#face_yaw","objective":"grapple.work"}},"/",{"score":{"name":"#face_pitch","objective":"grapple.work"}}]
-scoreboard players add #log_frame grapple.work 1
-execute store result score #face_yaw grapple.work run data get entity @s Rotation[0] 100
-execute store result score #face_pitch grapple.work run data get entity @s Rotation[1] 100
-tellraw @s [{"text":"[g] f="},{"score":{"name":"#log_frame","objective":"grapple.work"}},{"text":" pos="},{"score":{"name":"#pos_x","objective":"grapple.work"}},{"text":" "},{"score":{"name":"#pos_y","objective":"grapple.work"}},{"text":" "},{"score":{"name":"#pos_z","objective":"grapple.work"}},{"text":" vel="},{"score":{"name":"#vel_x","objective":"grapple.work"}},{"text":" "},{"score":{"name":"#vel_y","objective":"grapple.work"}},{"text":" "},{"score":{"name":"#vel_z","objective":"grapple.work"}},{"text":" facing="},{"score":{"name":"#face_yaw","objective":"grapple.work"}},{"text":" "},{"score":{"name":"#face_pitch","objective":"grapple.work"}},{"text":" d2="},{"score":{"name":"#dist_sq","objective":"grapple.work"}},{"text":" r2="},{"score":{"name":"@s","objective":"grapple.rope_len_sq"}},{"text":" dot="},{"score":{"name":"#dot","objective":"grapple.work"}}]
 scoreboard players set $x player_motion.api.launch 0
 scoreboard players set $y player_motion.api.launch 0
 scoreboard players set $z player_motion.api.launch 0
@@ -181,10 +174,10 @@ scoreboard players operation $z player_motion.api.launch > #impulse_min grapple.
 scoreboard players set #sustain player_motion.internal.dummy 1
 function test:api/launch_global_xyz
 scoreboard players operation #rope_id grapple.work = @s grapple.id
-execute as @e[tag=grapple.anchor] if score @s grapple.id = #rope_id grapple.work run tag @s add grapple._aim
+execute as @e[type=minecraft:marker,tag=grapple.anchor] if score @s grapple.id = #rope_id grapple.work run tag @s add grapple._aim
 scoreboard players set #rope_step grapple.work 100
-execute anchored eyes positioned ^-0.4 ^-0.4 ^1 facing entity @e[tag=grapple._aim,limit=1] feet run function test:grapple/rope
-tag @e[tag=grapple._aim,limit=1] remove grapple._aim
+execute anchored eyes positioned ^-0.4 ^-0.4 ^1 facing entity @e[type=minecraft:marker,tag=grapple._aim,limit=1] feet run function test:grapple/rope
+tag @e[type=minecraft:marker,tag=grapple._aim,limit=1] remove grapple._aim
 === grapple/init
 scoreboard objectives add grapple.work dummy
 scoreboard objectives add grapple.const dummy
@@ -212,16 +205,15 @@ execute unless score #next_id grapple.const = #next_id grapple.const run scorebo
 === grapple/rope
 scoreboard players remove #rope_step grapple.work 1
 particle minecraft:electric_spark ~ ~ ~ 0 0 0 0 1
-execute if score #rope_step grapple.work matches 1.. unless entity @e[distance=..0.6,tag=grapple._aim,limit=1] positioned ^ ^ ^1 run return run function test:grapple/rope
+execute if score #rope_step grapple.work matches 1.. unless entity @e[distance=..0.6,type=minecraft:marker,tag=grapple._aim,limit=1] positioned ^ ^ ^1 run return run function test:grapple/rope
 === grapple/start
 execute at @s anchored eyes positioned ^ ^ ^ run function test:grapple/zzz/start/exec_0
-execute if entity @e[tag=grapple._new,limit=1] run function test:grapple/zzz/start/exec_1
-execute unless entity @e[tag=grapple._new,limit=1] run tellraw @s {"text":"[grapple] nothing to grab"}
+execute if entity @e[type=minecraft:marker,tag=grapple._new,limit=1] run function test:grapple/zzz/start/exec_1
 === grapple/stop
 execute at @s run function test:grapple/zzz/stop/exec_0
 tag @s remove grappling
 scoreboard players operation #stop_id grapple.work = @s grapple.id
-execute as @e[tag=grapple.anchor] if score @s grapple.id = #stop_id grapple.work run kill @s
+execute as @e[type=minecraft:marker,tag=grapple.anchor] if score @s grapple.id = #stop_id grapple.work run kill @s
 === grapple/tick
 execute as @a[tag=grappling] at @s run function test:grapple/drive
 === grapple/zzz/start/exec_0
@@ -250,10 +242,9 @@ scoreboard players operation #_t0 grapple.rope_len_sq *= #to_anchor_z grapple.wo
 scoreboard players operation @s grapple.rope_len_sq += #_t0 grapple.rope_len_sq
 scoreboard players add #next_id grapple.const 1
 scoreboard players operation @s grapple.id = #next_id grapple.const
-execute as @e[tag=grapple._new] run scoreboard players operation @s grapple.id = #next_id grapple.const
+execute as @e[type=minecraft:marker,tag=grapple._new] run scoreboard players operation @s grapple.id = #next_id grapple.const
 tag @s add grappling
-tag @e[tag=grapple._new] remove grapple._new
-tellraw @s {"text":"[grapple] hooked - swinging (watch the action bar)"}
+tag @e[type=minecraft:marker,tag=grapple._new] remove grapple._new
 === grapple/zzz/stop/exec_0
 scoreboard players operation #frac grapple.work = @s grapple.vel_x
 scoreboard players operation #frac grapple.work *= @s grapple.vel_x
@@ -480,9 +471,9 @@ function test:zzz/init_objectives
 scoreboard players remove #grapple_web_steps raycast.work 1
 execute if block ~ ~ ~ #minecraft:air if score #grapple_web_steps raycast.work matches 1.. positioned ^ ^ ^0.5 run return run function test:raycast/grapple/web
 summon minecraft:marker ~ ~ ~ {Tags:["grapple.anchor","grapple._new"]}
-execute store result score @s grapple.anchor_x run data get entity @e[tag=grapple._new,limit=1] Pos[0] 10
-execute store result score @s grapple.anchor_y run data get entity @e[tag=grapple._new,limit=1] Pos[1] 10
-execute store result score @s grapple.anchor_z run data get entity @e[tag=grapple._new,limit=1] Pos[2] 10
+execute store result score @s grapple.anchor_x run data get entity @e[type=minecraft:marker,tag=grapple._new,limit=1] Pos[0] 10
+execute store result score @s grapple.anchor_y run data get entity @e[type=minecraft:marker,tag=grapple._new,limit=1] Pos[1] 10
+execute store result score @s grapple.anchor_z run data get entity @e[type=minecraft:marker,tag=grapple._new,limit=1] Pos[2] 10
 === raycast/init
 scoreboard objectives add raycast.work dummy
 === tick

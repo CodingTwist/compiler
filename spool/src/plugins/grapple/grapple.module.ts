@@ -60,6 +60,12 @@ export function defineGrapple(dp: Datapack, opts: GrappleOptions): Grapple {
   // --- Lifecycle + controller ------------------------------------------------
   defineInit({ fn, scratch, repo, consts });
   defineController({ fn, selectors, ray, attach, swing, release });
+  // Players have no score source for position/look, so `drive` must read NBT each tick;
+  // `start` (and the raycast hit under it) reads positions once per fire, not per tick.
+  dp.allow("nbt-read", fn.drive, "player Pos has no command source");
+  dp.allow("repeated-selector", fn.drive, "`facing entity` can't bind @s; one typed tagged marker, untagged after");
+  dp.allow("nbt-read", fn.start, "once per web fire");
+  dp.allow("repeated-selector", fn.start, "once per web fire; the hit writes into the firing player's scores");
 
   return { start: fn.start, stop: fn.stop };
 }
