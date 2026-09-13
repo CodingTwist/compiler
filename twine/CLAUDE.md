@@ -105,11 +105,16 @@ can't drift from what was summoned. An array `rotate` is a sequence stepped off 
 `Detector`. One cooldown **per gesture**, so an idle gesture can't gate the others.
 `resolveGesture` fills defaults and rejects timings that don't fit inside the cooldown.
 
-**Difficulty** is read from the world at summon (`difficulty` query into `#difficulty`, then a
-`dispatchScore` into `<name>/zzz/scale/<level>`), so one pack follows the world setting. The
-pack-wide table comes from `mount(..., { difficulty })` (usually a `difficulty.config.ts`);
-`.difficulty(...)` overrides it per level and field. Scaling is attribute modifiers keyed
-`twine:difficulty`, so it needs 1.21+.
+**Difficulty** is per mob: `.difficulty(table)` (usually a `defineDifficulty` config file next to
+the module), read from the world's `/difficulty` at runtime, so changing it mid-game applies
+to live mobs. `wake` re-reads it once a second into `#difficulty`; when it differs from
+`#applied`, every live mob reruns `<name>/zzz/scale` (also run at summon), which removes and
+re-adds attribute multipliers keyed `twine:difficulty` (1.21+). `off: ["g"]` (or a
+`moves: [...]` moveset) adds `unless score #difficulty matches <level>` to that gesture's trigger. Damage dealt by command (`damage`, launches, projectiles) doesn't
+see attributes, so bodies wrap it in `mob.scaled(ctx, (c, s) => ...)`, which re-reads the
+difficulty and builds the body once per level; the author's own table fields
+(`table[s.level].shockwave`) switch features off there. That dispatch `return`s, so it always
+gets its own function.
 
 `toModule` returns the module **plus handles** (`.summon`, `.spawn`, `.gestures.x`,
 `.states.x`, `.onTickFn`), so a consumer never looks a function name up. twine

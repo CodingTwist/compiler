@@ -1,7 +1,7 @@
 import type { DamageType, Datapack, DisplayValue, FunctionContext, FunctionRef, Id, IdentifiedEntityNbt, Score } from "helix";
 import type { ConfiguredModule } from "../core/module.interface";
 import { defineModule } from "../core/module.decorator";
-import type { DifficultyConfig } from "../core/difficulty";
+import type { DifficultyConfig, LevelScaling } from "../core/difficulty";
 import { mobPreview, resolveGesture, type Gesture, type MobPreview } from "./gesture";
 import { MobModule, type Relay } from "./module";
 
@@ -43,6 +43,13 @@ export interface MobStates<S extends string> {
   enter(ctx: FunctionContext, state: S): void;
   /** Take this mob (`@s`) out of any state. */
   leave(ctx: FunctionContext): void;
+  /**
+   * Runs `body` for the world's current difficulty, e.g. `damage(..., 6 * s.damage)`.
+   *
+   * Built once per level, so `if (table[s.level]?.shockwave === false) return` drops a feature.
+   * Without a {@link MobBuilder.difficulty} table it runs once, as `medium`.
+   */
+  scaled(ctx: FunctionContext, body: (ctx: FunctionContext, s: LevelScaling) => void): void;
   /** Polls left in the current timed state, on `@s` - what phases within a state test. */
   readonly clock: Score;
 }
@@ -82,7 +89,7 @@ export class MobBuilder<S extends string = never> {
     return this;
   }
 
-  /** Overrides the pack's difficulty config for this mob, per level and field. */
+  /** This mob's scaling per difficulty level. Usually imported from a config file. */
   difficulty(scaling: DifficultyConfig): this {
     this.scaling = scaling;
     return this;

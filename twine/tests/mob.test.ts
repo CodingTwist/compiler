@@ -365,25 +365,66 @@ describe("mob checks written once", () => {
 });
 
 describe("difficulty", () => {
-  function scaled(version?: VersionProfile) {
-    const rig = Display(Block.STONE);
-    const mob = defineMob(Husk({}), rig).difficulty({ hard: { damage: 2 } }).toModule("brute");
+  function scaled() {
+    const mob = defineMob(Husk({}), Display(Block.STONE))
+      .difficulty({ easy: { speed: 0.5, off: ["swing"] }, hard: { damage: 2, knockback: 3 } })
+      .gesture("swing", { members: [0], pivot: [0, 0, 0], rotate: quat("x", -90), cooldown: 10, when: (c) => c.ifEntity(Selector.nearest()) })
+      .onTick((ctx, _dp, m) => m.scaled(ctx, (c, s) => c.damage(Selector.nearest(), 4 * s.damage)))
+      .toModule("brute");
     @Module({ name: "root", imports: [mob] })
     class Root {}
-    const dp = DatapackFactory.create(Root as never, {
-      name: "test",
-      version,
-      difficulty: { easy: { speed: 0.5 }, hard: { knockback: 1 } },
-    });
+    const dp = DatapackFactory.create(Root as never, { name: "test", version: v26_2 });
     return [...buildDatapack(dp).values()].join("\n");
   }
 
-  it("reads the world's difficulty at summon and scales per level, mob over pack", () => {
-    const all = scaled(v26_2);
+  it("applies the world's difficulty at summon", () => {
+    const all = scaled();
     expect(all).toContain("execute as @e[tag=brute,tag=brute.new,limit=1] run function test:brute/zzz/scale");
     expect(all).toContain("execute store result score #difficulty brute.awake run difficulty");
     expect(all).toContain("attribute @s minecraft:movement_speed modifier add twine:difficulty -0.5 add_multiplied_base");
     expect(all).toContain("attribute @s minecraft:attack_damage modifier add twine:difficulty 1 add_multiplied_base");
-    expect(all).toContain("attribute @s minecraft:attack_knockback modifier add twine:difficulty 1 add_value");
+    expect(all).toContain("attribute @s minecraft:attack_knockback modifier add twine:difficulty 2 add_multiplied_base");
+    // Medium clears the modifiers, so a rescale from easy or hard resets them.
+    expect(all).toContain("attribute @s minecraft:movement_speed modifier remove twine:difficulty");
+  });
+
+  it("rescales live mobs when the world's difficulty changes", () => {
+    const all = scaled();
+    expect(all).toContain("execute unless score #difficulty brute.awake = #applied brute.awake run function test:brute/zzz/rescale");
+    expect(all).toMatch(/execute as @e\[type=minecraft:husk,tag=brute\] run function test:brute\/zzz\/scale\n/);
+  });
+
+  it("turns a gesture's trigger off for the levels that list it", () => {
+    const all = scaled();
+    expect(all).toMatch(/unless score #difficulty brute\.awake matches 1 .* run function test:brute\/swing/);
+  });
+
+  it("builds a scaled body once per level, in its own function", () => {
+    const all = scaled();
+    // The dispatch returns, which would cut off the rest of the caller.
+    expect(all).toContain("function test:brute/zzz/scaled_0\n");
+    expect(all).toContain("matches 1 run return run function test:brute/zzz/scaled_0/easy");
+    expect(all).toContain("damage @p 4");
+    expect(all).toContain("damage @p 8");
+  });
+
+  it("limits a level to its moveset", () => {
+    const mob = defineMob(Husk({}), Display(Block.STONE))
+      .difficulty({ easy: { moves: ["poke"] } })
+      .gesture("poke", { members: [0], pivot: [0, 0, 0], rotate: quat("x", -20), cooldown: 10, when: (c) => c.ifEntity(Selector.nearest()) })
+      .gesture("slam", { members: [0], pivot: [0, 0, 0], rotate: quat("x", -90), cooldown: 10, when: (c) => c.ifEntity(Selector.nearest()) })
+      .toModule("brute");
+    @Module({ name: "root", imports: [mob] })
+    class Root {}
+    const all = [...buildDatapack(DatapackFactory.create(Root as never, { name: "test", version: v26_2 })).values()].join("\n");
+    expect(all).toMatch(/unless score #difficulty brute\.awake matches 1 .* run function test:brute\/slam/);
+    expect(all).not.toMatch(/matches 1 .* run function test:brute\/poke/);
+  });
+
+  it("rejects turning off a gesture the mob doesn't have", () => {
+    const mob = defineMob(Husk({}), Display(Block.STONE)).difficulty({ hard: { off: ["nope"] } }).toModule("typo");
+    @Module({ name: "root", imports: [mob] })
+    class Root {}
+    expect(() => DatapackFactory.create(Root as never, { name: "test", version: v26_2 })).toThrow(/no such gesture/);
   });
 });

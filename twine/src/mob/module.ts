@@ -1,4 +1,4 @@
-import { Attribute, Id, NbtPath, Pos, Range, Relation, ScoreTarget, Selector, atLeast, displayPose, privateName } from "helix";
+import { Attribute, Id, NbtPath, round6, Pos, Range, Relation, ScoreTarget, Selector, atLeast, displayPose, privateName } from "helix";
 import type {
   DamageType,
   Datapack,
@@ -11,7 +11,7 @@ import type {
   Score,
 } from "helix";
 import type { DatapackModule, ModuleScope } from "../core/module.interface";
-import { DIFFICULTY_IDS, difficultyFor, type Difficulty, type DifficultyConfig } from "../core/difficulty";
+import { DIFFICULTY_IDS, levelScaling, type Difficulty, type DifficultyConfig, type LevelScaling } from "../core/difficulty";
 import type { MobState, MobStates, MobTick } from "./builder";
 import { memberPose, type ResolvedGesture } from "./gesture";
 
@@ -34,7 +34,7 @@ export interface MobDef<S extends string> {
   gestures: ResolvedGesture<S>[];
   tick?: MobTick<S>;
   states: ReadonlyMap<string, MobState<S>>;
-  /** This mob's override of the pack's difficulty config. */
+  /** This mob's scaling per difficulty level. */
   scaling?: DifficultyConfig;
 }
 
@@ -52,6 +52,10 @@ export class MobModule<S extends string> implements DatapackModule {
   /** `<mob>.state_t`: polls left in a timed state. */
   private stateClockObj?: Objective;
   private handle!: MobStates<S>;
+  /** Numbers the functions each {@link MobStates.scaled} call emits. */
+  private scaledCalls = 0;
+  /** Memoized {@link scaleFn}; `null` until built. */
+  private scale: FunctionRef | undefined | null = null;
   /** `rotate` (1.21.2+) turns the rig without reading NBT. */
   private faceByRotate = false;
 
@@ -93,6 +97,16 @@ export class MobModule<S extends string> implements DatapackModule {
   private gestureTag(g: ResolvedGesture<S>): string {
     return `${this.name}.${g.name}`;
   }
+  /** Gestures turned off at `level`, from its `off` or everything outside its `moves`. */
+  private offAt(level: Difficulty): string[] {
+    const s = this.def.scaling?.[level];
+    if (s?.moves) return this.def.gestures.map((g) => g.name).filter((g) => !s.moves!.includes(g));
+    return s?.off ?? [];
+  }
+  /** This world's difficulty, as `/difficulty` last read it. */
+  private get difficulty(): Score {
+    return this.awakeObj.score(ScoreTarget("#difficulty"));
+  }
   private cooldown(g: ResolvedGesture<S>): Score {
     return this.cooldowns.get(g.name)!.score(Selector.self());
   }
@@ -113,6 +127,12 @@ export class MobModule<S extends string> implements DatapackModule {
   register(dp: Datapack, scope: ModuleScope): void {
     this.dp = dp;
     const { model, gestures, states } = this.def;
+    for (const [level, s] of Object.entries(this.def.scaling ?? {})) {
+      if (s?.off && s.moves) throw new Error(`Mob "${this.name}" sets both off and moves on ${level}; pick one.`);
+      for (const g of [...(s?.off ?? []), ...(s?.moves ?? [])]) {
+        if (!gestures.some((x) => x.name === g)) throw new Error(`Mob "${this.name}" lists gesture "${g}" on ${level}, but has no such gesture.`);
+      }
+    }
     model.named(this.rig);
 
     // Before any author body is built: they all take the switch.
@@ -125,6 +145,10 @@ export class MobModule<S extends string> implements DatapackModule {
     this.handle = {
       enter: (ctx, s) => ctx.call(this.fnRef(`enter/${s}`)),
       leave: () => this.stateObj.score(Selector.self()).set(0),
+      scaled: (ctx, body) => {
+        if (!this.def.scaling) return body(ctx, levelScaling({}, "medium"));
+        ctx.call(this.byDifficulty(`scaled_${this.scaledCalls++}`, Object.keys(DIFFICULTY_IDS) as Difficulty[], body));
+      },
       get clock() {
         if (!mob.stateClockObj) throw new Error(`Mob "${mob.name}" has no states - declare them with .states() to use the clock.`);
         return mob.stateClockObj.score(Selector.self());
@@ -165,25 +189,42 @@ export class MobModule<S extends string> implements DatapackModule {
     );
   }
 
-  /** `<mob>/scale`: applies this world's difficulty scaling to `@s`, or `undefined` if nothing scales. */
+  /** `<mob>/scale`: sets `@s`'s attribute modifiers for this world's difficulty, or `undefined` if nothing scales. */
   private scaleFn(): FunctionRef | undefined {
-    const config = difficultyFor(this.def.scaling);
-    const levels = Object.keys(config) as Difficulty[];
-    if (!levels.length) return undefined;
+    if (this.scale !== null) return this.scale;
+    const all = Object.keys(DIFFICULTY_IDS) as Difficulty[];
+    const config = this.def.scaling ?? {};
+    const attrs = (
+      [
+        ["speed", Attribute.MOVEMENT_SPEED],
+        ["damage", Attribute.ATTACK_DAMAGE],
+        ["knockback", Attribute.ATTACK_KNOCKBACK],
+      ] as const
+    ).filter(([k]) => all.some((l) => levelScaling(config, l)[k] !== 1));
+    if (!attrs.length) return (this.scale = undefined);
     const self = Selector.self();
-    const cases = levels.map((level) => {
-      const { speed, damage, knockback } = config[level]!;
-      return {
-        range: Range.exactly(DIFFICULTY_IDS[level]),
-        fn: this.internal(`scale/${level}`, (c) => {
-          if (speed !== undefined) c.attribute().modifierAddAddMultipliedBase(self, Attribute.MOVEMENT_SPEED, DIFFICULTY_MODIFIER, speed - 1);
-          if (damage !== undefined) c.attribute().modifierAddAddMultipliedBase(self, Attribute.ATTACK_DAMAGE, DIFFICULTY_MODIFIER, damage - 1);
-          if (knockback !== undefined) c.attribute().modifierAddAddValue(self, Attribute.ATTACK_KNOCKBACK, DIFFICULTY_MODIFIER, knockback);
-        }),
-      };
-    });
-    const current = this.awakeObj.score(ScoreTarget("#difficulty"));
-    return this.internal("scale", (c) => {
+    // Removed first: re-adding an existing modifier fails, and a rescale must clear a level's old value.
+    return (this.scale = this.byDifficulty("scale", all, (b, s) => {
+      for (const [k, attr] of attrs) {
+        b.attribute().modifierRemove(self, attr, DIFFICULTY_MODIFIER);
+        if (s[k] !== 1) b.attribute().modifierAddAddMultipliedBase(self, attr, DIFFICULTY_MODIFIER, round6(s[k] - 1));
+      }
+    }));
+  }
+
+  /**
+   * `<mob>/<short>`: reads the world's difficulty and runs `body`, built once per level in `levels`.
+   *
+   * Its own function because the dispatch returns, which would cut off the caller's later commands.
+   */
+  private byDifficulty(short: string, levels: Difficulty[], body: (ctx: FunctionContext, s: LevelScaling) => void): FunctionRef {
+    const config = this.def.scaling ?? {};
+    const current = this.difficulty;
+    const cases = levels.map((level) => ({
+      range: Range.exactly(DIFFICULTY_IDS[level]),
+      fn: this.internal(`${short}/${level}`, (c) => body(c, levelScaling(config, level))),
+    }));
+    return this.internal(short, (c) => {
       c.execute().storeResultScore(current).run((b) => b.difficulty());
       c.dispatchScore(current, cases);
     });
@@ -375,6 +416,7 @@ export class MobModule<S extends string> implements DatapackModule {
       c.tag().remove(self, this.finishingTag);
     });
     ctx.execute().as(this.mobs).run((b) => b.call(one));
+    if (this.def.scaling) this.watchDifficulty(ctx);
     ctx
       .execute()
       .at(Selector.allPlayers())
@@ -427,13 +469,29 @@ export class MobModule<S extends string> implements DatapackModule {
     if (this.def.relay) this.relayHits(ctx, this.def.relay);
   }
 
+  /** Re-reads the world's difficulty, and rescales every live mob when it changed. */
+  private watchDifficulty(ctx: FunctionContext): void {
+    ctx.execute().storeResultScore(this.difficulty).run((b) => b.difficulty());
+    const scale = this.scaleFn();
+    if (!scale) return;
+    const applied = this.awakeObj.score(ScoreTarget("#applied"));
+    const rescale = this.internal("rescale", (c) => {
+      c.execute().as(this.mobs).run((b) => b.call(scale));
+      c.scoreOp(applied, "=", this.difficulty);
+    });
+    ctx.execute().unlessScore(this.difficulty, "=", applied).run((b) => b.call(rescale));
+  }
+
   /** Every gesture trigger, behind one finishing check: a finishing mob fires nothing new. */
   private triggers(ctx: FunctionContext): void {
     const triggers = this.def.gestures.filter((g) => g.when);
+    const levels = Object.keys(DIFFICULTY_IDS) as Difficulty[];
     const fire = (c: FunctionContext, g: ResolvedGesture<S>, guard: boolean) => {
       const chain = c.execute();
       if (guard) chain.unlessEntity(Selector.self().tag(this.finishingTag));
       if (g.cooldown !== 0) chain.unlessScoreMatches(this.cooldown(g), Range.atLeast(1));
+      // Checked live, so a difficulty change takes effect within a second.
+      for (const l of levels) if (this.offAt(l).includes(g.name)) chain.unlessScoreMatches(this.difficulty, Range.exactly(DIFFICULTY_IDS[l]));
       g.when!(chain);
       chain.run((b) => b.call(this.fnRef(g.name)));
     };

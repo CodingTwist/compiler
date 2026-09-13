@@ -1,47 +1,61 @@
 /**
- * Difficulty scaling for custom mobs, read from the world's `/difficulty` when a mob is summoned.
+ * Per-mob difficulty tables, read from the world's `/difficulty`.
  *
- *   // difficulty.config.ts
- *   export default defineDifficulty({ easy: { speed: 0.8, damage: 0.7 }, hard: { damage: 1.5, knockback: 1 } });
+ *   // sword.difficulty.ts
+ *   export default defineDifficulty({ easy: { damage: 0.6, off: ["whirl"] }, hard: { damage: 1.5 } });
  *
- *   DatapackFactory.mount(dp, AppModule, { difficulty });
+ *   defineMob(...).difficulty(swordDifficulty)
+ *
+ * All checked at runtime, so changing the world's difficulty applies to live mobs within a second. Damage or knockback a mob deals by command goes
+ * through `mob.scaled(ctx, (c, s) => ...)` instead.
  */
 
 /** A difficulty level. `medium` is vanilla's `normal`. */
 export type Difficulty = "easy" | "medium" | "hard";
 
-/** How one level changes a mob. Omitted fields leave it as summoned. */
+/** How one level changes a mob. Omitted fields leave it as authored. */
 export interface MobScaling {
   /** Movement speed multiplier. */
   speed?: number;
   /** Attack damage multiplier. Vanilla's own difficulty damage scaling still applies on top. */
   damage?: number;
-  /** Knockback added, not multiplied, since most mobs start at 0. */
+  /** Attack knockback multiplier. A mob with no base knockback stays at 0. */
   knockback?: number;
+  /** Gestures whose trigger never fires at this level. */
+  off?: string[];
+  /** The only gestures whose triggers fire at this level: the mob's moveset. Not with {@link off}. */
+  moves?: string[];
 }
 
-/** Scaling per level. A level left out is unscaled. */
+/**
+ * A mob's scaling per level. A level left out is as authored.
+ *
+ * Extra fields are the author's own knobs, read in `mob.scaled` bodies as `table[s.level]`.
+ */
 export type DifficultyConfig = Partial<Record<Difficulty, MobScaling>>;
 
-/** Types a difficulty config file. */
-export const defineDifficulty = (config: DifficultyConfig): DifficultyConfig => config;
+/** One level's resolved multipliers, handed to a `mob.scaled` body. */
+export interface LevelScaling {
+  level: Difficulty;
+  speed: number;
+  damage: number;
+  knockback: number;
+}
+
+/**
+ * Types a difficulty table. Name extra knobs for `mob.scaled` bodies as `X`: `defineDifficulty<{ shockwave: boolean }>(...)`.
+ *
+ * Every level listed must set every knob, so a body can read them without fallbacks.
+ */
+export const defineDifficulty = <X extends object = {}>(
+  config: Partial<Record<Difficulty, MobScaling & X>>,
+): Partial<Record<Difficulty, MobScaling & X>> => config;
 
 /** The `/difficulty` query result for each level. */
 export const DIFFICULTY_IDS: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
 
-let resolved: DifficultyConfig = {};
-
-/** Publish the pack-wide config. Called by `DatapackFactory.mount`; mobs read it when they register. */
-export function setDifficulty(config: DifficultyConfig): void {
-  resolved = config;
-}
-
-/** The pack-wide config, with `override` merged over it per level and field. */
-export function difficultyFor(override: DifficultyConfig = {}): DifficultyConfig {
-  const out: DifficultyConfig = {};
-  for (const level of Object.keys(DIFFICULTY_IDS) as Difficulty[]) {
-    const s = { ...resolved[level], ...override[level] };
-    if (Object.keys(s).length) out[level] = s;
-  }
-  return out;
+/** Resolves `level` from `config`, with unset multipliers at 1. */
+export function levelScaling(config: DifficultyConfig, level: Difficulty): LevelScaling {
+  const { speed = 1, damage = 1, knockback = 1 } = config[level] ?? {};
+  return { level, speed, damage, knockback };
 }
