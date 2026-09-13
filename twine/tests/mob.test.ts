@@ -6,6 +6,7 @@ import type { VersionProfile } from "helix";
 import { Module } from "../src/core/module.decorator";
 import { DatapackFactory } from "../src/core/factory";
 import { defineMob } from "../src/mob/builder";
+import { DIFFICULTY_IDS, setDifficulty } from "../src/core/difficulty";
 import type { Detector } from "helix";
 
 function build(version?: VersionProfile) {
@@ -104,8 +105,7 @@ describe("defineMob", () => {
     expect(all).toContain(
       "execute unless entity @s[tag=sentinel.finishing] unless score @s sentinel.swing matches 1.. if entity @a[distance=..3,limit=1] run function test:sentinel/swing",
     );
-    expect(all).toContain("execute if score @s sentinel.swing matches 1.. run function test:sentinel/zzz/swing_clock");
-    expect(all).toContain("scoreboard players remove @s sentinel.swing 1");
+    expect(all).toContain("execute if score @s sentinel.swing matches 1.. run scoreboard players remove @s sentinel.swing 1");
   });
 
   it("eases a rise in and holds it, pushing the sequence's step clock back", () => {
@@ -161,7 +161,7 @@ describe("defineMob", () => {
     // The hit moved out of the gesture function into its own, called from the poll
     // by whichever mobs are exactly 6 ticks past their raise.
     expect(all).toContain(
-      "execute if score @s sentinel.whirl matches 14 run function test:sentinel/zzz/whirl_hit",
+      "execute if score @s sentinel.whirl matches 14 run say hit",
     );
     expect([...files.keys()].find((k) => k.endsWith("whirl.mcfunction"))).toBeDefined();
     expect(files.get([...files.keys()].find((k) => k.endsWith("whirl.mcfunction"))!)).not.toContain(
@@ -211,10 +211,7 @@ describe("defineMob", () => {
     const all = [...files.values()].join("\n");
 
     expect(all).toContain(
-      "execute if score @s sentinel.fire matches 6 run function test:sentinel/zzz/fire_recover",
-    );
-    expect(files.get([...files.keys()].find((k) => k.endsWith("fire_recover.mcfunction"))!)).toContain(
-      "say reloaded",
+      "execute if score @s sentinel.fire matches 6 run say reloaded",
     );
   });
 
@@ -246,8 +243,7 @@ describe("defineMob", () => {
     expect(fn("tick_one")).not.toContain("@e");
     // Walked away mid-gesture: kept awake to finish it, but a looping one can't re-fire.
     expect(fn("wake_near")).toBe("tag @s add sentinel.awake\ntag @s remove sentinel.finishing");
-    expect(fn("tick_one")).toContain("function test:sentinel/zzz/on_tick");
-    expect(fn("on_tick")).toContain("say mine");
+    expect(fn("tick_one")).toContain("say mine");
   });
 
   it("rejects a sequence whose cooldown can't fit its rise as well as its steps", () => {
@@ -348,18 +344,16 @@ describe("mob checks written once", () => {
       [
         "scoreboard players operation #sentinel_state sentinel.state = @s sentinel.state",
         "execute if score #sentinel_state sentinel.state matches 1 run return run function test:sentinel/zzz/state/up",
-        "execute if score #sentinel_state sentinel.state matches 2 run return run function test:sentinel/zzz/state/down",
+        "execute if score #sentinel_state sentinel.state matches 2 run return run execute if entity @s[tag=hit] run scoreboard players set @s sentinel.state 0",
       ].join("\n"),
     );
     expect(fn("state/up")).toBe(
       [
         "scoreboard players remove @s sentinel.state_t 1",
         "say rising",
-        "execute if score @s sentinel.state matches 1 if score @s sentinel.state_t matches ..0 run function test:sentinel/zzz/state/up/done",
+        "execute if score @s sentinel.state matches 1 if score @s sentinel.state_t matches ..0 run function test:sentinel/enter/down",
       ].join("\n"),
     );
-    expect(fn("state/up/done")).toBe("function test:sentinel/enter/down");
-    expect(fn("state/down")).toContain("scoreboard players set @s sentinel.state 0");
     expect(fn("wake_one")).toContain("execute if score @s sentinel.state_t matches 1.. run function test:sentinel/zzz/wake_finish");
   });
 });
@@ -367,64 +361,43 @@ describe("mob checks written once", () => {
 describe("difficulty", () => {
   function scaled() {
     const mob = defineMob(Husk({}), Display(Block.STONE))
-      .difficulty({ easy: { speed: 0.5, off: ["swing"] }, hard: { damage: 2, knockback: 3 } })
-      .gesture("swing", { members: [0], pivot: [0, 0, 0], rotate: quat("x", -90), cooldown: 10, when: (c) => c.ifEntity(Selector.nearest()) })
-      .onTick((ctx, _dp, m) => m.scaled(ctx, (c, s) => c.damage(Selector.nearest(), 4 * s.damage)))
+      .onDifficulty((ctx, _dp, level) => ctx.say(`now ${level}`))
+      .onTick((ctx, _dp, m) => m.byDifficulty(ctx, (c, level) => c.damage(Selector.nearest(), DIFFICULTY_IDS[level] * 4)))
       .toModule("brute");
     @Module({ name: "root", imports: [mob] })
-    class Root {}
+    class Root {
+      onLoad() {
+        setDifficulty("hard");
+      }
+    }
     const dp = DatapackFactory.create(Root as never, { name: "test", version: v26_2 });
     return [...buildDatapack(dp).values()].join("\n");
   }
 
-  it("applies the world's difficulty at summon", () => {
+  it("seeds the level from /difficulty only while unset, then lets the pack set it", () => {
     const all = scaled();
-    expect(all).toContain("execute as @e[tag=brute,tag=brute.new,limit=1] run function test:brute/zzz/scale");
-    expect(all).toContain("execute store result score #difficulty brute.awake run difficulty");
-    expect(all).toContain("attribute @s minecraft:movement_speed modifier add twine:difficulty -0.5 add_multiplied_base");
-    expect(all).toContain("attribute @s minecraft:attack_damage modifier add twine:difficulty 1 add_multiplied_base");
-    expect(all).toContain("attribute @s minecraft:attack_knockback modifier add twine:difficulty 2 add_multiplied_base");
-    // Medium clears the modifiers, so a rescale from easy or hard resets them.
-    expect(all).toContain("attribute @s minecraft:movement_speed modifier remove twine:difficulty");
+    expect(all).toContain("execute unless score #level twine.difficulty matches 1.. store result score #level twine.difficulty run difficulty");
+    expect(all).toContain("scoreboard players set #level twine.difficulty 3");
   });
 
-  it("rescales live mobs when the world's difficulty changes", () => {
+  it("runs onDifficulty at summon and on live mobs when the level changes", () => {
     const all = scaled();
-    expect(all).toContain("execute unless score #difficulty brute.awake = #applied brute.awake run function test:brute/zzz/rescale");
-    expect(all).toMatch(/execute as @e\[type=minecraft:husk,tag=brute\] run function test:brute\/zzz\/scale\n/);
+    expect(all).toContain("execute as @e[tag=brute,tag=brute.new,limit=1] run function test:brute/zzz/on_difficulty");
+    expect(all).toContain("matches 1 run return run say now easy");
+    expect(all).toContain("say now hard");
+    expect(all).toContain("execute unless score #level twine.difficulty = #applied brute.awake run function test:brute/zzz/rescale");
+    expect(all).toMatch(/execute as @e\[type=minecraft:husk,tag=brute\] run function test:brute\/zzz\/on_difficulty\n/);
   });
 
-  it("turns a gesture's trigger off for the levels that list it", () => {
-    const all = scaled();
-    expect(all).toMatch(/unless score #difficulty brute\.awake matches 1 .* run function test:brute\/swing/);
-  });
-
-  it("builds a scaled body once per level, in its own function", () => {
+  it("builds a byDifficulty body once per level, in its own function", () => {
     const all = scaled();
     // The dispatch returns, which would cut off the rest of the caller.
-    expect(all).toContain("function test:brute/zzz/scaled_0\n");
-    expect(all).toContain("matches 1 run return run function test:brute/zzz/scaled_0/easy");
+    expect(all).toContain("function test:brute/zzz/by_difficulty_0\n");
     expect(all).toContain("damage @p 4");
-    expect(all).toContain("damage @p 8");
+    expect(all).toContain("damage @p 12");
   });
 
-  it("limits a level to its moveset", () => {
-    const mob = defineMob(Husk({}), Display(Block.STONE))
-      .difficulty({ easy: { moves: ["poke"] } })
-      .gesture("poke", { members: [0], pivot: [0, 0, 0], rotate: quat("x", -20), cooldown: 10, when: (c) => c.ifEntity(Selector.nearest()) })
-      .gesture("slam", { members: [0], pivot: [0, 0, 0], rotate: quat("x", -90), cooldown: 10, when: (c) => c.ifEntity(Selector.nearest()) })
-      .toModule("brute");
-    @Module({ name: "root", imports: [mob] })
-    class Root {}
-    const all = [...buildDatapack(DatapackFactory.create(Root as never, { name: "test", version: v26_2 })).values()].join("\n");
-    expect(all).toMatch(/unless score #difficulty brute\.awake matches 1 .* run function test:brute\/slam/);
-    expect(all).not.toMatch(/matches 1 .* run function test:brute\/poke/);
-  });
-
-  it("rejects turning off a gesture the mob doesn't have", () => {
-    const mob = defineMob(Husk({}), Display(Block.STONE)).difficulty({ hard: { off: ["nope"] } }).toModule("typo");
-    @Module({ name: "root", imports: [mob] })
-    class Root {}
-    expect(() => DatapackFactory.create(Root as never, { name: "test", version: v26_2 })).toThrow(/no such gesture/);
+  it("emits no difficulty plumbing for a mob without onDifficulty", () => {
+    expect(build()).not.toContain("#applied");
   });
 });

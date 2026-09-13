@@ -1,61 +1,39 @@
 /**
- * Per-mob difficulty tables, read from the world's `/difficulty`.
+ * The pack's difficulty level: one score the pack owns, seeded from `/difficulty` on first load.
+ *
+ * twine only stores the level and dispatches on it; what each level changes is written by hand.
  *
  *   // sword.difficulty.ts
- *   export default defineDifficulty({ easy: { damage: 0.6, off: ["whirl"] }, hard: { damage: 1.5 } });
+ *   export default defineDifficulty({ easy: { hitDamage: 3 }, medium: { hitDamage: 6 }, hard: { hitDamage: 9 } });
  *
- *   defineMob(...).difficulty(swordDifficulty)
+ *   // setting it
+ *   onLoad() { setDifficulty("hard"); }
+ *   dp.createFunction("difficulty/easy").build(() => setDifficulty("easy"));
+ *   // in game: /scoreboard players set #level twine.difficulty 3
  *
- * All checked at runtime, so changing the world's difficulty applies to live mobs within a second. Damage or knockback a mob deals by command goes
- * through `mob.scaled(ctx, (c, s) => ...)` instead.
+ *   // reading it
+ *   mob.byDifficulty(ctx, (c, level) => c.damage(Selector.nearest(), config[level].hitDamage));
+ *   when: (c) => c.unlessScoreMatches(DIFFICULTY, Range.exactly(DIFFICULTY_IDS.easy))
  */
+import { Objective, ScoreTarget } from "helix";
+import type { Score } from "helix";
 
 /** A difficulty level. `medium` is vanilla's `normal`. */
 export type Difficulty = "easy" | "medium" | "hard";
 
-/** How one level changes a mob. Omitted fields leave it as authored. */
-export interface MobScaling {
-  /** Movement speed multiplier. */
-  speed?: number;
-  /** Attack damage multiplier. Vanilla's own difficulty damage scaling still applies on top. */
-  damage?: number;
-  /** Attack knockback multiplier. A mob with no base knockback stays at 0. */
-  knockback?: number;
-  /** Gestures whose trigger never fires at this level. */
-  off?: string[];
-  /** The only gestures whose triggers fire at this level: the mob's moveset. Not with {@link off}. */
-  moves?: string[];
-}
+/** Every level, lowest first. */
+export const DIFFICULTIES: readonly Difficulty[] = ["easy", "medium", "hard"];
 
-/**
- * A mob's scaling per level. A level left out is as authored.
- *
- * Extra fields are the author's own knobs, read in `mob.scaled` bodies as `table[s.level]`.
- */
-export type DifficultyConfig = Partial<Record<Difficulty, MobScaling>>;
-
-/** One level's resolved multipliers, handed to a `mob.scaled` body. */
-export interface LevelScaling {
-  level: Difficulty;
-  speed: number;
-  damage: number;
-  knockback: number;
-}
-
-/**
- * Types a difficulty table. Name extra knobs for `mob.scaled` bodies as `X`: `defineDifficulty<{ shockwave: boolean }>(...)`.
- *
- * Every level listed must set every knob, so a body can read them without fallbacks.
- */
-export const defineDifficulty = <X extends object = {}>(
-  config: Partial<Record<Difficulty, MobScaling & X>>,
-): Partial<Record<Difficulty, MobScaling & X>> => config;
-
-/** The `/difficulty` query result for each level. */
+/** The score value for each level, matching the `/difficulty` query result. */
 export const DIFFICULTY_IDS: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
 
-/** Resolves `level` from `config`, with unset multipliers at 1. */
-export function levelScaling(config: DifficultyConfig, level: Difficulty): LevelScaling {
-  const { speed = 1, damage = 1, knockback = 1 } = config[level] ?? {};
-  return { level, speed, damage, knockback };
-}
+/** The pack's difficulty level score, `#level twine.difficulty`. */
+export const DIFFICULTY: Score = new Objective("twine.difficulty").score(ScoreTarget("#level"));
+
+/** Sets the pack's difficulty level, in the ambient function. */
+export const setDifficulty = (level: Difficulty): void => {
+  DIFFICULTY.set(DIFFICULTY_IDS[level]);
+};
+
+/** Types a difficulty config. Every level must be listed, so nothing falls back silently. */
+export const defineDifficulty = <T>(config: Record<Difficulty, T>): Record<Difficulty, T> => config;

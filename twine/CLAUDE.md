@@ -105,16 +105,15 @@ can't drift from what was summoned. An array `rotate` is a sequence stepped off 
 `Detector`. One cooldown **per gesture**, so an idle gesture can't gate the others.
 `resolveGesture` fills defaults and rejects timings that don't fit inside the cooldown.
 
-**Difficulty** is per mob: `.difficulty(table)` (usually a `defineDifficulty` config file next to
-the module), read from the world's `/difficulty` at runtime, so changing it mid-game applies
-to live mobs. `wake` re-reads it once a second into `#difficulty`; when it differs from
-`#applied`, every live mob reruns `<name>/zzz/scale` (also run at summon), which removes and
-re-adds attribute multipliers keyed `twine:difficulty` (1.21+). `off: ["g"]` (or a
-`moves: [...]` moveset) adds `unless score #difficulty matches <level>` to that gesture's trigger. Damage dealt by command (`damage`, launches, projectiles) doesn't
-see attributes, so bodies wrap it in `mob.scaled(ctx, (c, s) => ...)`, which re-reads the
-difficulty and builds the body once per level; the author's own table fields
-(`table[s.level].shockwave`) switch features off there. That dispatch `return`s, so it always
-gets its own function.
+**Difficulty** is a pack-owned level, not vanilla's: `#level twine.difficulty` (1/2/3,
+`core/difficulty.ts`). `mount` seeds it from `/difficulty` on load only while unset; after that
+only the pack changes it (`setDifficulty("hard")`, or a raw scoreboard set). twine applies
+nothing by itself - scaling is author code reading an author config (`defineDifficulty`, every
+level required). The mechanism: `mob.byDifficulty(ctx, (c, level) => ...)` builds a body once
+per level behind a dispatch on the score (its own function, since the dispatch `return`s);
+`.onDifficulty((ctx, dp, level) => ...)` becomes `<name>/zzz/on_difficulty`, run at summon and,
+when `wake` sees `#level` differ from `#applied`, on every live mob. Gesture switches are the
+author's own `when` clause on `DIFFICULTY`.
 
 `toModule` returns the module **plus handles** (`.summon`, `.spawn`, `.gestures.x`,
 `.states.x`, `.onTickFn`), so a consumer never looks a function name up. twine

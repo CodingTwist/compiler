@@ -4,7 +4,8 @@
 /** Folder all compiler-/engine-generated helper functions live under. */
 export const PRIVATE_ROOT = "zzz";
 
-function isPrivate(name: string): boolean {
+/** Whether `name` is under a `zzz/` helper folder. */
+export function isPrivate(name: string): boolean {
   return name.split("/").includes(PRIVATE_ROOT);
 }
 

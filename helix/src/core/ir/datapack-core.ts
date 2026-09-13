@@ -22,6 +22,8 @@ export class DatapackCore {
   functions: Map<string, FunctionNode> = new Map();
   protected objectives = new Map<string, Objective>();
   public files = new Map<string, string>();
+  /** Private functions folded into their callers; must not be regenerated on a rebuild. */
+  readonly inlined = new Set<string>();
   public tags = new Map<FunctionTag, Set<string>>();
   /** Debug-only build settings (source tracking); all off by default. */
   readonly debug: DebugOptions;

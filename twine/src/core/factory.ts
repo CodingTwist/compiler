@@ -1,9 +1,10 @@
 import "reflect-metadata";
 import path from "path";
-import { Datapack, ignoreSourceFrames, v1_20_4 } from "helix";
+import { Datapack, Range, ignoreSourceFrames, v1_20_4 } from "helix";
 import type { DebugOptions, FunctionContext, Id, VersionProfile, FunctionRef, RuntimeTarget } from "helix";
 import type { BuildEnv, ModuleClass, ModuleRef, ModuleScope } from "./module.interface";
 import { buildEnv, setBuildEnv } from "./env";
+import { DIFFICULTY } from "./difficulty";
 import { ActiveFlags } from "./flags";
 import { EventLatches, getEventHandlers } from "./events";
 import { buildGraph, needsTickMemo, resolveDimensions, type Node } from "./graph";
@@ -95,6 +96,11 @@ export class DatapackFactory {
     setBuildEnv(env);
 
     const graph = buildGraph(root, env);
+
+    // Seeded from /difficulty only while unset, so a level the pack chose survives /reload.
+    // ponytail: every twine pack gets this, used or not; gate on use if that ever matters.
+    dp.objective(DIFFICULTY.objective.getName());
+    dp.load((ctx) => ctx.execute().unlessScoreMatches(DIFFICULTY, Range.atLeast(1)).storeResultScore(DIFFICULTY).run((b) => b.difficulty()));
 
     // Each module's dimension, so its lifecycle, ticks and functions run where the module is.
     const dims = resolveDimensions(graph);

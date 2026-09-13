@@ -161,7 +161,7 @@ describe("Cutscene: compose clips + camera + events on one timeline", () => {
   it("master play kicks the smooth sub-clip and fans the camera frames", () => {
     const play = fn(files, "zzz/intro/play");
     expect(play).toContain("function anim:zzz/door/play"); // smooth clip kicked at 0
-    expect(play).toContain("function anim:zzz/intro/cam_0/frame_0");
+    expect(play).toContain("execute as @a run teleport 0 100 0"); // frame 0 inlined
     expect(play).toContain("schedule function anim:zzz/intro/cam_0/frame_1 1 append");
     expect(play).toContain("schedule function anim:zzz/intro/event_3 3");
   });

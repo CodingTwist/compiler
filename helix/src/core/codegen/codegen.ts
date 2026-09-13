@@ -6,6 +6,7 @@ import {
 } from "../ir/commandhandler";
 import { createCommandHandlers } from "../commands";
 import { generateFunction, generateSingleNode } from "../ir/generate";
+import { inlineSingleCommandFunctions } from "./inline";
 import { PackFormatSpec } from "../../versions/profile";
 
 // 24w44a (1.21.4) added `assets/<ns>/items/` item definitions. Older packs use
@@ -27,12 +28,6 @@ export function buildDatapack(dp: Datapack): Map<string, string> {
     generateFunction(fn, dp, dispatcher);
   }
 
-  for (const [name, content] of dp.files) {
-    files.set(
-      `data/${dp.name}/${dp.version.paths.function}/${name}.mcfunction`,
-      content,
-    );
-  }
 
   // Generate minecraft tag files (load, tick etc.)
   for (const [tag, fnNames] of dp.tags) {
@@ -109,7 +104,14 @@ export function buildDatapack(dp: Datapack): Map<string, string> {
     );
   }
 
-  return files;
+  // JSON may name functions, so inline once it's all rendered. Function files go first.
+  inlineSingleCommandFunctions(dp, files.values());
+  const out = new Map<string, string>();
+  for (const [name, content] of dp.files) {
+    out.set(`data/${dp.name}/${dp.version.paths.function}/${name}.mcfunction`, content);
+  }
+  for (const [path, content] of files) out.set(path, content);
+  return out;
 }
 
 /**

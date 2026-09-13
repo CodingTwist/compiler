@@ -131,6 +131,13 @@ suffix for non-vanilla; `debug` only in dev). Commands (`cli/run.ts`, flags via 
   `runClause` splices a body that is itself an `execute` chain into the parent's clauses
   (`execute A run execute B run c` → `execute A B run c`). An empty body renders `""` and the
   `execute`/`if` handlers drop the whole line, unless a `store` clause needs its result.
+- **Single-command inlining** (`codegen/inline.ts`, end of `buildDatapack`): a *private*
+  (`zzz/`) function with one command is spliced into its `function` / `execute … run function`
+  / `return run function` call sites, and dropped if nothing else names it (tags, JSON,
+  `schedule`, `if function`). Skipped: macro or `return` bodies, `store` callers, functions
+  with a `dp.allow`, and forking bodies (`as`/`at`/`on`/`summon`) under `return run`, which
+  stops after the first branch. Public functions are never touched. Dropped names go in
+  `dp.inlined` so a rebuild doesn't regenerate them.
 - **Entity-test limit** (`commands/selector.ts` `renderExistence`): every `if`/`unless entity`
   rendered by the execute chain, `if` links, and the entity/near guards gives an unbounded
   `@e`/`@a` `limit=1`, so the engine stops at the first match instead of scanning every entity.

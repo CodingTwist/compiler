@@ -51,7 +51,7 @@ export function generateFunction(
   dp: Datapack,
   dispatcher: Dispatcher,
 ): string {
-  if (dp.files.has(fn.name)) {
+  if (dp.files.has(fn.name) || dp.inlined.has(fn.name)) {
     return "";
   }
 
