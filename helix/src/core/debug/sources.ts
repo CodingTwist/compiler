@@ -60,28 +60,58 @@ export function sourceOf(fn: FunctionNode, node: ASTNode): SourceLoc | undefined
 
 const FRAME = /\(?(?:file:\/\/)?([^\s()]+):(\d+):(\d+)\)?$/;
 
+// Transpiled author position → its source-mapped `SourceLoc`. Formatting a stack
+// string is what costs (Node source-maps every frame of it); the structured
+// frames V8 hands `prepareStackTrace` are near free. So each push takes the
+// cheap frames, finds the author frame, and only formats a string the first
+// time that exact site is seen - a loop emitting thousands of commands from one
+// line pays once.
+const bySite = new Map<string, SourceLoc | null>();
+
 /** Record the author line pushing `node` into `fn`. Called by `FunctionNode.push`. */
 export function captureSource(fn: FunctionNode, node: ASTNode): void {
   if (!enabled) return;
   let byNode = locs.get(fn);
   if (!byNode) locs.set(fn, (byNode = new Map()));
   if (byNode.has(node)) return; // the same call twice in one function: first site wins
-  const limit = Error.stackTraceLimit;
-  Error.stackTraceLimit = 50; // twine's tick wiring runs deeper than the default 10
-  const stack = new Error().stack ?? "";
-  Error.stackTraceLimit = limit;
 
+  const limit = Error.stackTraceLimit;
+  const prepare = Error.prepareStackTrace;
+  Error.stackTraceLimit = 50; // twine's tick wiring runs deeper than the default 10
+  Error.prepareStackTrace = (_, sites) => sites;
+  const sites = new Error().stack as unknown as NodeJS.CallSite[];
+  Error.prepareStackTrace = prepare;
+  const site = sites.slice(1).find((c) => isAuthor(c.getFileName()));
+  const key = site
+    ? `${site.getFileName()}:${site.getLineNumber()}:${site.getColumnNumber()}`
+    : "";
+  let loc = bySite.get(key);
+  if (loc === undefined) {
+    // Same site, same depth: the string stack lines up 1:1 with `sites`.
+    loc = fromStack(new Error().stack ?? "");
+    bySite.set(key, loc);
+  }
+  Error.stackTraceLimit = limit;
+  if (loc) byNode.set(node, loc);
+}
+
+/** Whether a frame in file `name` counts as the author (vs. a library/runtime frame to skip). */
+function isAuthor(name: string | null | undefined): boolean {
+  if (!name || name.startsWith("node:") || name.includes("/node_modules/")) return false;
+  const file = name.replace(/^file:\/\//, "").replace(/\\/g, "/");
+  if (/\.test\.[cm]?[jt]s$/.test(file)) return true; // a test file is always the author
+  const lib = ignored.find((r) => file.startsWith(r.root));
+  return !lib || lib.framework; // the author, or a framework's own line
+}
+
+/** The first author frame's location out of a formatted (source-mapped) stack. */
+function fromStack(stack: string): SourceLoc | null {
   for (const frame of stack.split("\n").slice(1)) {
     const m = FRAME.exec(frame.trim());
-    if (!m || m[1].startsWith("node:") || m[1].includes("/node_modules/")) continue;
-    const file = m[1].replace(/\\/g, "/");
-    const loc = `${relative(file)}:${m[2]}:${m[3]}`;
-    // A test file is always the author, even inside helix's own tree.
-    if (/\.test\.[cm]?[jt]s$/.test(file)) return void byNode.set(node, loc);
-    const lib = ignored.find((r) => file.startsWith(r.root));
-    if (lib && !lib.framework) continue;
-    return void byNode.set(node, loc); // the author, or a framework's own line
+    if (!m || !isAuthor(m[1])) continue;
+    return `${relative(m[1].replace(/\\/g, "/"))}:${m[2]}:${m[3]}`;
   }
+  return null;
 }
 
 function relative(file: string): string {

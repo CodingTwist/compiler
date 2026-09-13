@@ -1,4 +1,4 @@
-import { generateSingleNode } from "../ir/generate";
+import { generateSingleNode, runClause } from "../ir/generate";
 import { ASTNode } from "../ir/node";
 import { SelectorNode } from "./selector";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
@@ -58,7 +58,7 @@ export class ExecuteAsHandler extends CommandHandler<ExecuteAsNode> {
         lit("execute"),
         lit("as"),
         arg(selector),
-        raw(`run ${command}`),
+        raw(runClause(command)),
       ]),
     );
   }

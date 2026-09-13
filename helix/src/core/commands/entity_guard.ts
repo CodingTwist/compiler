@@ -3,7 +3,7 @@
 // Used e.g. for idempotent spawns - only summon when the group isn't present,
 // so a /reload doesn't pile up duplicate copies. Registered via EXTRA_HANDLERS
 // in scripts/gen-commands.mjs, never regenerated.
-import { generateSingleNode } from "../ir/generate";
+import { generateSingleNode, runClause } from "../ir/generate";
 import { ASTNode, FunctionNode } from "../ir/node";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { arg, buildTokens, lit, raw } from "../ir/command-builder";
@@ -42,7 +42,7 @@ export class EntityGuardHandler extends CommandHandler<EntityGuardNode> {
         lit(node.mode),
         lit("entity"),
         arg(toCommandValue(node.selector).render(ctx.version)),
-        raw(`run ${command}`),
+        raw(runClause(command)),
       ]),
     );
   }

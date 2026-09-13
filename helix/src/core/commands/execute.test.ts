@@ -164,3 +164,23 @@ describe("ctx.execute() chain builder", () => {
     expect(b).toBe("teleport @s 0.0 0.0 0.0 0.0 0.0");
   });
 });
+
+describe("run-clause peepholes", () => {
+  it("splices a nested execute body into the parent's clauses", () => {
+    const lines = render((ctx) =>
+      ctx
+        .execute()
+        .as(Selector.allPlayers())
+        .run((b: any) => b.execute().at(Selector.self()).run((c: any) => c.say("x"))),
+    );
+    expect(lines).toEqual(["execute as @a at @s run say x"]);
+  });
+
+  it("drops the line for an empty body, unless a store clause reads its result", () => {
+    expect(render((ctx) => ctx.execute().as(Selector.allPlayers()).run(() => {}))).toEqual([""]);
+    const [line] = render((ctx) =>
+      ctx.execute().storeSuccessScore(D("#ok")).as(Selector.allPlayers()).run(() => {}),
+    );
+    expect(line).toBe("execute store success score #ok d as @a run function t:zzz/f/exec_0");
+  });
+});

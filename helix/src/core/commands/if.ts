@@ -1,7 +1,7 @@
 import { ASTNode, ExpressionNode, FunctionNode, Range } from "../ir/node";
 import type { Objective } from "../frontend/nodes/objective";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
-import { generateRunTarget, generateSingleNode } from "../ir/generate";
+import { generateRunTarget, generateSingleNode, runClause } from "../ir/generate";
 import { arg, buildTokens, lit, raw, Token } from "../ir/command-builder";
 import { VersionProfile } from "../../versions/profile";
 import { FunctionContext } from "../frontend/context";
@@ -98,6 +98,7 @@ export class IfHandler extends CommandHandler<IfElseNode> {
         ctx.datapack,
         ctx.dispatcher,
       );
+      if (!elifCall) continue;
       ctx.emit(
         this.execChain(
           ctx,
@@ -113,8 +114,9 @@ export class IfHandler extends CommandHandler<IfElseNode> {
         ctx.dispatcher,
       );
       if (
-        node.condition instanceof ScoreRangeNode ||
-        node.condition instanceof PredicateCheckNode
+        elseCall &&
+        (node.condition instanceof ScoreRangeNode ||
+          node.condition instanceof PredicateCheckNode)
       ) {
         ctx.emit(
           this.execChain(
@@ -123,7 +125,7 @@ export class IfHandler extends CommandHandler<IfElseNode> {
             elseCall,
           ),
         );
-      } // need to add more
+      }
     }
   }
 
@@ -153,7 +155,7 @@ export class IfHandler extends CommandHandler<IfElseNode> {
       }
     }
     const call = generateRunTarget(body, ctx.datapack, ctx.dispatcher);
-    ctx.emit(this.execChain(ctx, chain, call));
+    if (call) ctx.emit(this.execChain(ctx, chain, call));
   }
 
   /**
@@ -229,7 +231,7 @@ export class IfHandler extends CommandHandler<IfElseNode> {
     const [first, ...rest] = chain;
     const tail = [
       ...rest.map((link) => this.linkText(link, ctx.version)),
-      `run ${call}`,
+      runClause(call),
     ].join(" ");
     return buildTokens(ctx.version, [
       lit("execute"),

@@ -16,7 +16,7 @@
 // EXTRA_HANDLERS in scripts/gen-commands.mjs, never regenerated.
 import { ASTNode, FunctionNode, Range } from "../ir/node";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
-import { generateRunTarget } from "../ir/generate";
+import { generateRunTarget, runClause } from "../ir/generate";
 import { buildTokens, lit, raw } from "../ir/command-builder";
 import { VersionProfile } from "../../versions/profile";
 import { FunctionContext } from "../frontend/context";
@@ -329,8 +329,11 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
     const v = ctx.version;
     const parts = node.clauses.map((c) => this.clause(c, v, ctx.datapack.name));
     if (node.runBody) {
-      const cmd = generateRunTarget(node.runBody, ctx.datapack, ctx.dispatcher);
-      parts.push(`run ${cmd}`);
+      // An empty body is a no-op unless a `store` clause reads its result.
+      const keepEmpty = node.clauses.some((c) => c.k.startsWith("store"));
+      const cmd = generateRunTarget(node.runBody, ctx.datapack, ctx.dispatcher, { keepEmpty });
+      if (!cmd) return;
+      parts.push(runClause(cmd));
     }
     ctx.emit(buildTokens(v, [lit("execute"), raw(parts.join(" "))]));
   }
@@ -406,7 +409,7 @@ export class ReturnRunHandler extends CommandHandler<ReturnRunNode> {
 
   generate(node: ReturnRunNode, ctx: CodegenContext): void {
     if (!node.runBody) throw new Error("returnRun() body was never built");
-    const cmd = generateRunTarget(node.runBody, ctx.datapack, ctx.dispatcher);
+    const cmd = generateRunTarget(node.runBody, ctx.datapack, ctx.dispatcher, { keepEmpty: true });
     ctx.emit(buildTokens(ctx.version, [lit("return"), raw(`run ${cmd}`)]));
   }
 }

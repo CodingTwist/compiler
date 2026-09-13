@@ -67,6 +67,16 @@ export function generateFunction(
 }
 
 /**
+ * The `run …` tail of an `execute` chain for a {@link generateRunTarget} result.
+ * A body that is itself one `execute` chain is spliced in as more clauses
+ * (`execute A run execute B run c` ≡ `execute A B run c` - execute composes
+ * context exactly that way) instead of nesting a second `execute`.
+ */
+export function runClause(cmd: string): string {
+  return cmd.startsWith("execute ") ? cmd.slice("execute ".length) : `run ${cmd}`;
+}
+
+/**
  * Render a control-flow body for use after `execute … run`. A body of exactly one
  * command is returned **inline** (e.g. `setblock …`, or a nested `execute if … run
  * …`) so the caller can splice it straight into its `run` clause - no child
@@ -79,6 +89,7 @@ export function generateRunTarget(
   fn: FunctionNode,
   dp: Datapack,
   dispatcher: Dispatcher,
+  opts: { keepEmpty?: boolean } = {},
 ): string {
   const ctx = new CodegenContext(dp, dispatcher);
   dispatchAll(fn, ctx, dispatcher);
@@ -92,6 +103,9 @@ export function generateRunTarget(
     // `execute … run` (which expects a vanilla literal), so it gets its own file.
     return ctx.lines[0];
   }
+  // An empty body renders `""` so the caller can drop its whole line - unless
+  // it needs a real call there (a `store` reads the result, `return run`).
+  if (ctx.lines.length === 0 && !opts.keepEmpty) return "";
 
   commit(fn, dp, ctx);
   return `function ${dp.name}:${fn.name}`;

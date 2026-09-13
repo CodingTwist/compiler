@@ -4,7 +4,7 @@
 // Used for proximity triggers - e.g. start a door's cog spin when a player walks
 // up, gated on the cog not already existing so it doesn't restart every tick.
 // Registered via EXTRA_HANDLERS in scripts/gen-commands.mjs, never regenerated.
-import { generateSingleNode } from "../ir/generate";
+import { generateSingleNode, runClause } from "../ir/generate";
 import { ASTNode, FunctionNode, Range } from "../ir/node";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { arg, buildTokens, lit, raw } from "../ir/command-builder";
@@ -66,7 +66,7 @@ export class NearGuardHandler extends CommandHandler<NearGuardNode> {
         lit("execute"),
         lit("positioned"),
         arg(toCommandValue(node.pos).render(ctx.version)),
-        raw(`${match} run ${command}`),
+        raw(`${match} ${runClause(command)}`),
       ]),
     );
   }

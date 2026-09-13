@@ -110,6 +110,10 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
   `$` when inlining a body so the prefix ends up on the composed `execute … run` line, and
   the validator skips a leading `$`). Call one with `ctx.callWith(fn, Nbt({…}) | NbtRef)`
   (`MacroCallNode` in `commands/function.ts`).
+- **Run-clause peepholes** (`ir/generate.ts`): `generateRunTarget` inlines a one-line body, and
+  `runClause` splices a body that is itself an `execute` chain into the parent's clauses
+  (`execute A run execute B run c` → `execute A B run c`). An empty body renders `""` and the
+  `execute`/`if` handlers drop the whole line, unless a `store` clause needs its result.
 - **`src/core/codegen/codegen.ts`** - the **pure** build half: `buildDatapack`/`buildResourcePack`
   (→ in-memory `Map<path, contents>`), `buildPackMcmeta`, `createHandlerMap()` (just
   `createCommandHandlers()` → Map by node `type`); re-exports `generate*` from `ir/generate`. It (and
@@ -129,8 +133,10 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
   **namespace-aware** (`dp.biome("minecraft:plains", …)` overrides vanilla) - see
   `splitDefName` in `ir/datapack.ts`.
 - **`src/core/codegen/write.ts`** - the **disk** half, and the *only* codegen module that imports
-  `fs`/`path` (and, via `structure.ts`, `zlib`): `writeDatapack`/`writeResourcePack` (build then write,
-  clear stale generated trees, copy `addStructures`/`addAssets` files verbatim). `dp.writeDatapack()`
+  `fs`/`path` (and, via `structure.ts`, `zlib`): `writeDatapack`/`writeResourcePack` (build, then
+  `syncFiles` the owned trees - `data/<ns>/`, `assets/<ns>/models|items` - writing only files whose
+  content changed and deleting anything the build no longer produces; `addStructures`/`addAssets`
+  files are copied verbatim). `dp.writeDatapack()`
   /`dp.writeResourcePack()` reach it via a lazy **dynamic `import("./write.js")`** (so the methods are
   `async`), keeping Node built-ins off the pure graph. A resource pack is a **separate** output pack -
   `dp.writeResourcePack(path)`, not folded into `writeDatapack`.
@@ -165,7 +171,9 @@ caller knows better.
 `new Datapack(name, version, target, { debug: { sources, comments } })` maps each rendered
 command back to the TS line that authored it. The hook is `FunctionNode.push`: when a debug pack
 has enabled capture (process-wide flag), the push reads the JS stack and stores a location keyed
-by (parent function, node). A call node is the callee's shared `FunctionNode`, so a location
+by (parent function, node). Capture takes V8's structured frames (cheap) and formats the
+source-mapped string only once per distinct author site (`bySite` memo) - formatting is what
+costs, and a loop emitting thousands of commands from one line hits the memo. A call node is the callee's shared `FunctionNode`, so a location
 can't live on the node itself. `generate.ts` sets `CodegenContext.current` per node, so every
 line gets `ctx.sources[i]`. Validation runs first; then `comments` adds `# <loc>` lines, and
 `dp.sourceMap` is indexed by **file line** (`undefined` on comment lines). Uses:

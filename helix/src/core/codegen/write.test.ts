@@ -52,3 +52,26 @@ describe("writeDatapack", () => {
     expect(extracted).toBe(looseMcmeta);
   });
 });
+
+describe("writeDatapack sync", () => {
+  let outDir: string | undefined;
+  afterEach(() => {
+    if (outDir) fs.rmSync(outDir, { recursive: true, force: true });
+  });
+
+  it("leaves an unchanged file untouched on rebuild and prunes an emptied folder", async () => {
+    const dir = (outDir = fs.mkdtempSync(path.join(os.tmpdir(), "helix-write-sync-")));
+    const make = (...names: string[]) => {
+      const dp = new Datapack("t", v1_21_4);
+      for (const n of names) dp.advancement(n, new AdvancementDef().criterion("t", Trigger.impossible()));
+      return dp;
+    };
+    await make("keep", "old/gone").writeDatapack(dir);
+    const kept = path.join(dir, "data/t/advancement/keep.json");
+    const before = fs.statSync(kept).mtimeMs;
+    await new Promise((r) => setTimeout(r, 20));
+    await make("keep").writeDatapack(dir);
+    expect(fs.statSync(kept).mtimeMs).toBe(before);
+    expect(fs.existsSync(path.join(dir, "data/t/advancement/old"))).toBe(false);
+  });
+});
