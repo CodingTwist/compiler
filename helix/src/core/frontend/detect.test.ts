@@ -23,13 +23,13 @@ describe("Detect", () => {
 
   it("all() merges into a single chain, in call order", () => {
     expect(emit(Detect.all(Detect.entity(Selector.allPlayers()), Detect.block(AT, BUTTON)))).toEqual(
-      ["execute if entity @a if block 1 2 3 minecraft:stone_button[powered=true] run say fired"],
+      ["execute if entity @a[limit=1] if block 1 2 3 minecraft:stone_button[powered=true] run say fired"],
     );
   });
 
   it("near() puts the bounded distance check ahead of what it gates", () => {
     expect(emit(Detect.near(AT, 16, Detect.block(AT, BUTTON)))).toEqual([
-      "execute positioned 1 2 3 if entity @a[distance=..16] if block 1 2 3 minecraft:stone_button[powered=true] run say fired",
+      "execute positioned 1 2 3 if entity @a[distance=..16,limit=1] if block 1 2 3 minecraft:stone_button[powered=true] run say fired",
     ]);
   });
 
@@ -54,7 +54,7 @@ describe("Detect", () => {
   it("accepts a hand-written closure wherever a built-in goes", () => {
     const custom: Detector = (c) => void c.ifBlock(AT, BUTTON).ifEntity(Selector.allPlayers());
     expect(emit(Detect.all(custom))).toEqual([
-      "execute if block 1 2 3 minecraft:stone_button[powered=true] if entity @a run say fired",
+      "execute if block 1 2 3 minecraft:stone_button[powered=true] if entity @a[limit=1] run say fired",
     ]);
   });
 });

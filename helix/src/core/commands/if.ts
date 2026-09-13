@@ -11,6 +11,7 @@ import { toCommandValue } from "../values/value";
 import { EntityGuardNode } from "./entity_guard";
 import { NearGuardNode } from "./near_guard";
 import { Selector } from "../frontend/nodes/selector";
+import { renderExistence } from "./selector";
 import { Pos } from "../values";
 import { Id } from "../values/id";
 import { PredicateRef } from "../values/predicate";
@@ -243,7 +244,7 @@ export class IfHandler extends CommandHandler<IfElseNode> {
   /** Full rendered fragment for one chain link, including its own leading keyword(s). */
   private linkText(link: ChainLink, version: VersionProfile): string {
     if (link.kind === "entity") {
-      return `${link.mode} entity ${toCommandValue(link.selector).render(version)}`;
+      return `${link.mode} entity ${renderExistence(link.selector, version)}`;
     }
     if (link.kind === "near") {
       return this.nearLinkText(link, version);
@@ -257,9 +258,11 @@ export class IfHandler extends CommandHandler<IfElseNode> {
   ): string {
     const posStr = toCommandValue(link.pos).render(version);
     const near = Selector.allPlayers().distance(new Range(undefined, link.radius));
-    const nearStr = toCommandValue(near).render(version);
+    const nearStr = link.perPlayer
+      ? toCommandValue(near).render(version)
+      : renderExistence(near, version);
     const guard = link.unlessSelector
-      ? ` unless entity ${toCommandValue(link.unlessSelector).render(version)}`
+      ? ` unless entity ${renderExistence(link.unlessSelector, version)}`
       : "";
     const match = link.perPlayer ? `as ${nearStr}` : `if entity ${nearStr}`;
     return `positioned ${posStr} ${match}${guard}`;
@@ -290,7 +293,7 @@ export class IfHandler extends CommandHandler<IfElseNode> {
       return [
         lit(link.mode),
         lit("entity"),
-        arg(toCommandValue(link.selector).render(version)),
+        arg(renderExistence(link.selector, version)),
       ];
     }
     if (link.kind === "near") {
@@ -309,13 +312,13 @@ export class IfHandler extends CommandHandler<IfElseNode> {
       arg(toCommandValue(link.pos).render(version)),
       lit(link.perPlayer ? "as" : "if"),
       ...(link.perPlayer ? [] : [lit("entity")]),
-      arg(toCommandValue(near).render(version)),
+      arg(link.perPlayer ? toCommandValue(near).render(version) : renderExistence(near, version)),
     ];
     if (link.unlessSelector) {
       tokens.push(
         lit("unless"),
         lit("entity"),
-        arg(toCommandValue(link.unlessSelector).render(version)),
+        arg(renderExistence(link.unlessSelector, version)),
       );
     }
     return tokens;

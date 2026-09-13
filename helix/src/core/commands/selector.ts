@@ -35,7 +35,11 @@ export class SelectorNode extends ASTNode {
  * Single source of truth used by both the selector handler and `Selector`'s
  * own `toString`, so a `Selector` can be passed straight to any command method.
  */
-export function renderSelector(node: SelectorNode, version?: VersionProfile): string {
+export function renderSelector(
+  node: SelectorNode,
+  version?: VersionProfile,
+  opts: { existence?: boolean } = {},
+): string {
   const args: string[] = [];
 
   if (node.scores.size > 0) {
@@ -63,7 +67,11 @@ export function renderSelector(node: SelectorNode, version?: VersionProfile): st
   for (const predicate of node.predicates) args.push(`predicate=${predicate}`);
   if (node.team) args.push(`team=${node.team}`);
   if (node.playerName) args.push(`name=${node.playerName}`);
-  if (node.limit !== undefined) args.push(`limit=${node.limit}`);
+  // An existence test only needs one match: `limit=1` on an unbounded `@e`/`@a`
+  // lets the engine stop at the first hit instead of collecting every match.
+  const limit =
+    node.limit ?? (opts.existence && (node.base === "@e" || node.base === "@a") ? 1 : undefined);
+  if (limit !== undefined) args.push(`limit=${limit}`);
   if (node.sort !== undefined) args.push(`sort=${node.sort}`);
   if (node.nbt) {
     // The nbt arm renders version-aware. Reached without a version only via the
@@ -74,6 +82,21 @@ export function renderSelector(node: SelectorNode, version?: VersionProfile): st
   }
 
   return args.length > 0 ? `${node.base}[${args.join(",")}]` : node.base;
+}
+
+/**
+ * Render a selector for an `if`/`unless entity` test. Only the *presence* of a
+ * match matters there, so an unbounded `@e`/`@a` gets `limit=1` (see
+ * {@link renderSelector}). Safe only where the match count is never read - the
+ * chain must go on to `run` something, which every helix execute does (a bare
+ * `store result … if entity @e[…]` would count entities). A raw string is the
+ * escape hatch and passes through untouched.
+ */
+export function renderExistence(
+  sel: { build(): SelectorNode } | string,
+  version?: VersionProfile,
+): string {
+  return typeof sel === "string" ? sel : renderSelector(sel.build(), version, { existence: true });
 }
 
 export class SelectorCommand extends CommandHandler<SelectorNode> {

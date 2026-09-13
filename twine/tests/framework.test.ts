@@ -131,7 +131,7 @@ describe("triggers", () => {
     const { tick } = compileRoot(Root);
 
     expect(tick).toContain("if score #vaultlike active matches 0");
-    expect(tick).toContain("positioned 1 2 3 if entity @a[distance=..12]");
+    expect(tick).toContain("positioned 1 2 3 if entity @a[distance=..12,limit=1]");
     expect(tick).toContain("function test:vaultlike/activate");
   });
 
@@ -227,8 +227,8 @@ describe("triggers", () => {
 
     // Armed only while inactive, disarmed once the set empties.
     expect(tick).toContain("if score #occupied active matches 0");
-    expect(tick).toContain("if entity @a[tag=Inside] run function test:occupied/activate");
-    expect(tick).toContain("unless entity @a[tag=Inside] run function test:occupied/deactivate");
+    expect(tick).toContain("if entity @a[tag=Inside,limit=1] run function test:occupied/activate");
+    expect(tick).toContain("unless entity @a[tag=Inside,limit=1] run function test:occupied/deactivate");
   });
 
   it("latch: true holds a players area on once armed", () => {
@@ -296,7 +296,7 @@ describe("triggers", () => {
     const { all } = compileRoot(Root);
 
     // Lower corner + span, order-independent: from (0,64,0) span (4,2,4).
-    expect(all).toContain("if entity @a[x=0,y=64,z=0,dx=4,dy=2,dz=4]");
+    expect(all).toContain("if entity @a[x=0,y=64,z=0,dx=4,dy=2,dz=4,limit=1]");
     expect(all).toContain("function test:arena/activate");
     expect(all).toContain("function test:arena/deactivate");
   });
@@ -394,8 +394,8 @@ describe("triggers", () => {
     const { all } = compileRoot(Root);
 
     // One guarded activate per zone (box + sphere), both calling the same fn.
-    expect(all).toContain("if entity @a[x=100,y=64,z=100,dx=10,dy=6,dz=10]");
-    expect(all).toContain("positioned 200 64 200 if entity @a[distance=..5]");
+    expect(all).toContain("if entity @a[x=100,y=64,z=100,dx=10,dy=6,dz=10,limit=1]");
+    expect(all).toContain("positioned 200 64 200 if entity @a[distance=..5,limit=1]");
     expect(all.match(/function test:yard\/activate/g)?.length).toBeGreaterThanOrEqual(2);
   });
 

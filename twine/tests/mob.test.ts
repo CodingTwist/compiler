@@ -93,7 +93,7 @@ describe("defineMob", () => {
     );
     // Gated on its own cooldown, which only counts down for mobs that have one.
     expect(all).toContain(
-      "execute unless entity @s[tag=sentinel.finishing] unless score @s sentinel.swing matches 1.. if entity @a[distance=..3] run function test:sentinel/swing",
+      "execute unless entity @s[tag=sentinel.finishing] unless score @s sentinel.swing matches 1.. if entity @a[distance=..3,limit=1] run function test:sentinel/swing",
     );
     expect(all).toContain("execute if score @s sentinel.swing matches 1.. run function test:sentinel/zzz/swing_clock");
     expect(all).toContain("scoreboard players remove @s sentinel.swing 1");
@@ -179,7 +179,7 @@ describe("defineMob", () => {
     // The swing waits on its own countdown only - on the shared one it would be
     // starved by every bob.
     expect(all).toContain("unless score @s sentinel.swing matches 1..");
-    expect(all).not.toContain("unless score @s sentinel.bob matches 1.. if entity @a");
+    expect(all).not.toContain("unless score @s sentinel.bob matches 1.. if entity @a[limit=1]");
   });
 
   it("puts back on a later beat what the shot spent", () => {

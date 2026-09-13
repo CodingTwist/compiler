@@ -176,7 +176,7 @@ describe("IfHandler - nested if chains", () => {
 
     expect(ctx.lines).toHaveLength(1);
     expect(ctx.lines[0]).toBe(
-      "execute if score @s score matches 0 if entity @a run say hi",
+      "execute if score @s score matches 0 if entity @a[limit=1] run say hi",
     );
     expect(dp.files.size).toBe(0);
   });
@@ -196,7 +196,7 @@ describe("IfHandler - nested if chains", () => {
 
     expect(ctx.lines).toHaveLength(1);
     expect(ctx.lines[0]).toBe(
-      "execute if score @s score matches 1 if entity @a if score @s score matches 0 run say hi",
+      "execute if score @s score matches 1 if entity @a[limit=1] if score @s score matches 0 run say hi",
     );
     expect(dp.files.size).toBe(0);
   });
@@ -211,7 +211,7 @@ describe("IfHandler - nested if chains", () => {
 
     expect(ctx.lines).toHaveLength(1);
     expect(ctx.lines[0]).toBe(
-      "execute if score @s score matches 0 positioned 0 64 0 if entity @a[distance=..6] run say hi",
+      "execute if score @s score matches 0 positioned 0 64 0 if entity @a[distance=..6,limit=1] run say hi",
     );
     expect(dp.files.size).toBe(0);
   });
@@ -227,7 +227,7 @@ describe("IfHandler - nested if chains", () => {
 
     expect(ctx.lines).toHaveLength(1);
     expect(ctx.lines[0]).toContain(
-      "if entity @a[distance=..6] unless entity",
+      "if entity @a[distance=..6,limit=1] unless entity",
     );
     expect(dp.files.size).toBe(0);
   });

@@ -114,6 +114,12 @@ see new types/behaviour - a stale dist silently hides breaking type changes.
   `runClause` splices a body that is itself an `execute` chain into the parent's clauses
   (`execute A run execute B run c` → `execute A B run c`). An empty body renders `""` and the
   `execute`/`if` handlers drop the whole line, unless a `store` clause needs its result.
+- **Entity-test limit** (`commands/selector.ts` `renderExistence`): every `if`/`unless entity`
+  rendered by the execute chain, `if` links, and the entity/near guards gives an unbounded
+  `@e`/`@a` `limit=1`, so the engine stops at the first match instead of scanning every entity.
+  Only where the chain goes on to `run` - a bare `store result … if entity @e[…]` is the
+  entity-count idiom and is left alone. Guard bodies (`whenPlayerNear`/`whenEntity`) run under
+  `runInContext`, so ambient score verbs land inside the guard, not in the parent function.
 - **`src/core/codegen/codegen.ts`** - the **pure** build half: `buildDatapack`/`buildResourcePack`
   (→ in-memory `Map<path, contents>`), `buildPackMcmeta`, `createHandlerMap()` (just
   `createCommandHandlers()` → Map by node `type`); re-exports `generate*` from `ir/generate`. It (and

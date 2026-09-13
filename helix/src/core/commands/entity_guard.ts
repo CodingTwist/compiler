@@ -12,6 +12,8 @@ import { CommandPart, TreeCommandNode } from "../ir/node";
 import { litPart, argPart } from "./base";
 import { DisplayValue, EntityCondition } from "../values/display";
 import { Selector } from "../frontend/nodes/selector";
+import { renderExistence } from "./selector";
+import { runInContext } from "../frontend/context/ambient";
 import { toCommandValue } from "../values/value";
 import { VersionProfile } from "../../versions/profile";
 
@@ -41,7 +43,7 @@ export class EntityGuardHandler extends CommandHandler<EntityGuardNode> {
         lit("execute"),
         lit(node.mode),
         lit("entity"),
-        arg(toCommandValue(node.selector).render(ctx.version)),
+        arg(renderExistence(node.selector, ctx.version)),
         raw(runClause(command)),
       ]),
     );
@@ -102,7 +104,7 @@ FunctionContext.prototype.whenEntity = function (
     fn: FunctionNode,
     v: VersionProfile,
   ) => FunctionContext)(tmp, this.version);
-  build(child);
+  runInContext(child, build);
   for (const inner of tmp.nodes) {
     this.emit(new EntityGuardNode(mode, selector, inner));
   }

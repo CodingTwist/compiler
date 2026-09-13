@@ -81,8 +81,8 @@ describe("dp.grapple (kit)", () => {
     expect(start).toContain("execute at @s anchored eyes positioned ^ ^ ^ run function test:");
     expect(all).toContain("function test:raycast/grapple/web");
     // Attach + the miss feedback are both gated on the just-summoned anchor existing.
-    expect(start).toContain("execute if entity @e[tag=grapple._new] run function");
-    expect(start).toContain("execute unless entity @e[tag=grapple._new] run tellraw");
+    expect(start).toContain("execute if entity @e[tag=grapple._new,limit=1] run function");
+    expect(start).toContain("execute unless entity @e[tag=grapple._new,limit=1] run tellraw");
 
     const attach = attachBody(dp);
     // rope length² is written straight into the per-player score via lengthSquared.

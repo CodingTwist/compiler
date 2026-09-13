@@ -11,6 +11,8 @@ import { arg, buildTokens, lit, raw } from "../ir/command-builder";
 import { toCommandValue } from "../values/value";
 import { FunctionContext } from "../frontend/context";
 import { Selector } from "../frontend/nodes/selector";
+import { renderExistence } from "./selector";
+import { runInContext } from "../frontend/context/ambient";
 import { Pos } from "../values";
 import { VersionProfile } from "../../versions/profile";
 
@@ -49,9 +51,11 @@ export class NearGuardHandler extends CommandHandler<NearGuardNode> {
     // The proximity test is a real selector - `@a` within `distance=..radius` -
     // rendered by the selector layer, not a hand-built string.
     const near = Selector.allPlayers().distance(new Range(undefined, node.radius));
-    const nearStr = toCommandValue(near).render(ctx.version);
+    const nearStr = node.perPlayer
+      ? toCommandValue(near).render(ctx.version)
+      : renderExistence(near, ctx.version);
     const guard = node.unlessSelector
-      ? ` unless entity ${toCommandValue(node.unlessSelector).render(ctx.version)}`
+      ? ` unless entity ${renderExistence(node.unlessSelector, ctx.version)}`
       : "";
     // Presence check (`if entity`) runs the body once; per-player (`as`) runs it
     // once for each matching player with `@s` bound to them.
@@ -116,7 +120,7 @@ FunctionContext.prototype.whenPlayerNear = function (
     fn: FunctionNode,
     v: VersionProfile,
   ) => FunctionContext)(tmp, this.version);
-  build(child, Selector.self());
+  runInContext(child, (c) => build(c, Selector.self()));
   for (const inner of tmp.nodes) {
     this.emit(new NearGuardNode(pos, radius, unlessSelector, inner, perPlayer));
   }

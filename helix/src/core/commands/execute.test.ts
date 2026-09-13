@@ -184,3 +184,19 @@ describe("run-clause peepholes", () => {
     expect(line).toBe("execute store success score #ok d as @a run function t:zzz/f/exec_0");
   });
 });
+
+describe("entity-test limit peephole", () => {
+  it("clips an unbounded if/unless entity to limit=1 when the chain runs something", () => {
+    const [line] = render((ctx) =>
+      ctx.execute().unlessEntity(Selector.allEntities().tag("x")).run((b: any) => b.say("none")),
+    );
+    expect(line).toBe("execute unless entity @e[tag=x,limit=1] run say none");
+  });
+
+  it("leaves a bare store+if entity chain alone - its result is the match count", () => {
+    const [line] = render((ctx) =>
+      ctx.execute().storeResultScore(D("#n")).ifEntity(Selector.allEntities().tag("x")),
+    );
+    expect(line).toBe("execute store result score #n d if entity @e[tag=x]");
+  });
+});

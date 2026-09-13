@@ -47,7 +47,7 @@ describe("@On", () => {
     class Root {}
 
     const { all } = compile(Root);
-    expect(all).toContain("execute if entity @a run say hum");
+    expect(all).toContain("execute if entity @a[limit=1] run say hum");
     expect(all).not.toContain("#hum.ambience");
   });
 
@@ -67,7 +67,7 @@ describe("@On", () => {
     class Root {}
 
     expect(compile(Root).all).toContain(
-      "execute if entity @a[tag=inside] if block 1 2 3 minecraft:stone_button[powered=true] run say hit",
+      "execute if entity @a[tag=inside,limit=1] if block 1 2 3 minecraft:stone_button[powered=true] run say hit",
     );
   });
 

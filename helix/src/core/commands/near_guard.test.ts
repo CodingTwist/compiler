@@ -6,7 +6,8 @@ import { Datapack } from "../ir/datapack";
 import { createHandlerMap } from "../codegen/codegen";
 import { FunctionContext } from "../frontend/context";
 import { Selector } from "../frontend/nodes/selector";
-import { Pos } from "../values";
+import { Pos, ScoreTarget } from "../values";
+import { Objective } from "../frontend/nodes/objective";
 import { v1_21_4 } from "../../versions/profiles";
 
 function env() {
@@ -32,7 +33,7 @@ describe("whenPlayerNear", () => {
       ctx.say("near");
     });
     expect(render()).toEqual([
-      "execute positioned 0 64 0 if entity @a[distance=..6] run say near",
+      "execute positioned 0 64 0 if entity @a[distance=..6,limit=1] run say near",
     ]);
   });
 
@@ -55,6 +56,17 @@ describe("whenPlayerNear", () => {
       (ctx) => ctx.say("once"),
       guard,
     );
-    expect(render()[0]).toContain("if entity @a[distance=..6] unless entity");
+    expect(render()[0]).toContain("if entity @a[distance=..6,limit=1] unless entity");
+  });
+});
+
+describe("whenPlayerNear body context", () => {
+  it("routes ambient score verbs into the guarded body, not the parent", () => {
+    const { fnCtx, render } = env();
+    const near = new Objective("near").score(ScoreTarget("door"));
+    fnCtx.whenPlayerNear(Pos(0, 64, 0), 6, () => near.set(1));
+    expect(render()).toEqual([
+      "execute positioned 0 64 0 if entity @a[distance=..6,limit=1] run scoreboard players set door near 1",
+    ]);
   });
 });

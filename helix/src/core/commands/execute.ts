@@ -21,6 +21,7 @@ import { buildTokens, lit, raw } from "../ir/command-builder";
 import { VersionProfile } from "../../versions/profile";
 import { FunctionContext } from "../frontend/context";
 import { runInContext } from "../frontend/context/ambient";
+import { renderExistence } from "./selector";
 import { Score } from "../frontend/nodes/score";
 import { Selector } from "../frontend/nodes/selector";
 import { Block, EntityAnchor, Id, ItemSlot, NbtPath, Pos, Relation, Swizzle } from "../values";
@@ -327,7 +328,11 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
 
   generate(node: ExecuteNode, ctx: CodegenContext): void {
     const v = ctx.version;
-    const parts = node.clauses.map((c) => this.clause(c, v, ctx.datapack.name));
+    // A bare chain's result is observable (`store result … if entity @e[…]` is
+    // the entity-count idiom), so only a chain that goes on to `run` may clip its
+    // entity tests to one match.
+    const existence = !!node.runBody;
+    const parts = node.clauses.map((c) => this.clause(c, v, ctx.datapack.name, existence));
     if (node.runBody) {
       // An empty body is a no-op unless a `store` clause reads its result.
       const keepEmpty = node.clauses.some((c) => c.k.startsWith("store"));
@@ -342,7 +347,7 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
     return `${toCommandValue(s.target).render(v)} ${s.objective.objective}`;
   }
 
-  private clause(c: Clause, v: VersionProfile, ns: string): string {
+  private clause(c: Clause, v: VersionProfile, ns: string, existence: boolean): string {
     switch (c.k) {
       case "as":
         return `as ${toCommandValue(c.sel).render(v)}`;
@@ -371,7 +376,9 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
       case "scoreCompare":
         return `${c.mode} score ${this.score(c.a, v)} ${c.op} ${this.score(c.b, v)}`;
       case "entity":
-        return `${c.mode} entity ${toCommandValue(c.sel).render(v)}`;
+        return `${c.mode} entity ${
+          existence ? renderExistence(c.sel, v) : toCommandValue(c.sel).render(v)
+        }`;
       case "items":
         return `${c.mode} items entity ${toCommandValue(c.sel).render(v)} ${c.slot} ${c.item.render(v)}`;
       case "block":
