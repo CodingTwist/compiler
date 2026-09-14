@@ -28,7 +28,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.rotate = function (this: FunctionContext, target?: Selector, rotation?: Pos) {
-  const node = new TreeCommandNode("rotate", Effect.MOVES);
+  const node = new TreeCommandNode("rotate", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("rotate")];
   if (target !== undefined) parts.push(argPart(target));

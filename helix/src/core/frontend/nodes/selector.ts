@@ -216,6 +216,11 @@ export class Selector {
     return renderSelector(this.build());
   }
 
+  /** `self` for `@s`, whatever its filters, since it can only pick the executor. */
+  reach(): "self" | "world" {
+    return this.base === SelectorBase.SELF ? "self" : "world";
+  }
+
   /** Renders for a version, since an `nbt={…}` filter is version-dependent. */
   render(version?: VersionProfile): string {
     return renderSelector(this.build(), version);

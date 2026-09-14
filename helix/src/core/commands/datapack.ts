@@ -66,7 +66,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.datapack = function (this: FunctionContext) {
-  const node = new TreeCommandNode("datapack", Effect.MOVES);
+  const node = new TreeCommandNode("datapack", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("datapack")];
   node.parts = parts;

@@ -57,7 +57,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.tick = function (this: FunctionContext) {
-  const node = new TreeCommandNode("tick", Effect.EDITS);
+  const node = new TreeCommandNode("tick", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("tick")];
   node.parts = parts;

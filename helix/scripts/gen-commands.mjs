@@ -87,11 +87,16 @@ const EFFECT_OF = new Map(
 // Commands that return from their function.
 const EXITS = new Set(["return"]);
 
+// Commands that act only on the entities and blocks their arguments name, so they're local
+// when every argument is `@s`. Leave out anything with output or shared state.
+const LOCAL = new Set(["attribute", "clear", "enchant", "experience", "item", "tag"]);
+
 /** The \`new TreeCommandNode(...)\` arguments for \`cmd\`. */
 function nodeArgs(cmd) {
   const effect = EFFECT_OF.get(cmd);
   if (!effect) throw new Error(`gen-commands: add "${cmd}" to EFFECTS`);
-  return `"${cmd}", Effect.${effect}${EXITS.has(cmd) ? ", true" : ""}`;
+  const flags = `${EXITS.has(cmd) ? ", exits: true" : ""}${LOCAL.has(cmd) ? ", local: true" : ""}`;
+  return `"${cmd}", { effect: Effect.${effect}${flags} }`;
 }
 
 // Hand-refined files that register their own handler (their node isn't a plain

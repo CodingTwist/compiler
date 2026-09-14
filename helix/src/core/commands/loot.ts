@@ -243,7 +243,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.loot = function (this: FunctionContext) {
-  const node = new TreeCommandNode("loot", Effect.EDITS);
+  const node = new TreeCommandNode("loot", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("loot")];
   node.parts = parts;

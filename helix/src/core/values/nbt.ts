@@ -124,6 +124,15 @@ export class NbtValue implements CommandValue {
       ? this.value
       : toSnbt(this.value, version);
   }
+
+  /** The top-level keys of a compound, or `undefined` for raw SNBT or anything else. */
+  keys(_version: VersionProfile): string[] | undefined {
+    const v = this.value;
+    if (typeof v !== "object" || v === null || Array.isArray(v) || v instanceof NbtNum || v instanceof NbtIntArray || isCommandValue(v)) {
+      return undefined;
+    }
+    return Object.entries(v).flatMap(([k, x]) => (x === undefined ? [] : [k]));
+  }
 }
 
 export type Nbt = NbtValue;

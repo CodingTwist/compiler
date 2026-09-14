@@ -105,7 +105,8 @@ export class Datapack extends DatapackResources {
   /** Convenience: run {@link report} and print the formatted summary. */
   printReport(): CostReport {
     const report = this.report();
-    console.log(formatCostReport(report));
+    const color = !!globalThis.process?.stdout?.isTTY && !process.env.NO_COLOR;
+    console.log(formatCostReport(report, { color }));
     return report;
   }
 

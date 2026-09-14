@@ -32,7 +32,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.fetchprofile = function (this: FunctionContext) {
-  const node = new TreeCommandNode("fetchprofile", Effect.NONE);
+  const node = new TreeCommandNode("fetchprofile", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("fetchprofile")];
   node.parts = parts;

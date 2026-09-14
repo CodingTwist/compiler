@@ -1,6 +1,7 @@
 // HAND-WRITTEN PROTOTYPE of the grouped-builder + per-leaf-union shape.
 // Subset only; the generator will emit all ~100 modify leaves.
-import { commandLine, Effect, entityWriteEffect } from "../ir/line-info";
+import { commandLine, Effect, entityMergeEffect, entityWriteEffect, onlySelf } from "../ir/line-info";
+import type { VersionProfile } from "../../versions/profile";
 import { CommandNodeBase } from "../ir/node";
 import { CommandHandler, CodegenContext } from "../ir/commandhandler";
 import { renderArg, buildTokens, lit, arg, Token } from "../ir/command-builder";
@@ -175,12 +176,26 @@ export class DataHandler extends CommandHandler<DataNode> {
         throw new Error(`Incomplete \`data\` command: ${JSON.stringify(_exhaustive)}`);
       }
     }
-    ctx.emit(buildTokens(v, tokens), commandLine(dataEffect(a)));
+    ctx.emit(buildTokens(v, tokens), commandLine(dataEffect(a, v), { local: dataLocal(a) }));
+  }
+}
+
+/** Whether a `data` command only reads and writes `@s`. */
+function dataLocal(a: DataArgs): boolean {
+  switch (a.sub) {
+    case "getEntity":
+    case "removeEntity":
+    case "mergeEntity":
+      return onlySelf([a.target]);
+    case "modifyEntitySetFromEntity":
+      return onlySelf([a.target, a.source]);
+    default:
+      return false;
   }
 }
 
 /** What a `data` command does to entities. */
-function dataEffect(a: DataArgs): Effect {
+function dataEffect(a: DataArgs, v: VersionProfile): Effect {
   switch (a.sub) {
     case "getBlock":
     case "getEntity":
@@ -198,8 +213,9 @@ function dataEffect(a: DataArgs): Effect {
     case "modifyEntitySetFromEntity":
     case "modifyEntitySetFromBlock":
       return entityWriteEffect(a.targetPath);
+    case "mergeEntity":
+      return entityMergeEffect(a.value, v);
     default:
-      // A merged compound may hold `Pos` or `Rotation`.
       return Effect.MOVES;
   }
 }

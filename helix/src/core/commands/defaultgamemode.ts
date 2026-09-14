@@ -18,7 +18,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.defaultgamemode = function (this: FunctionContext, gamemode: Gamemode) {
-  const node = new TreeCommandNode("defaultgamemode", Effect.EDITS);
+  const node = new TreeCommandNode("defaultgamemode", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("defaultgamemode"), argPart(gamemode)];
   node.parts = parts;

@@ -22,7 +22,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.spreadplayers = function (this: FunctionContext, center?: Pos, spreadDistance?: number, maxRange?: number, respectTeams?: boolean, targets?: Selector) {
-  const node = new TreeCommandNode("spreadplayers", Effect.MOVES);
+  const node = new TreeCommandNode("spreadplayers", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("spreadplayers")];
   if (center !== undefined) parts.push(argPart(center));

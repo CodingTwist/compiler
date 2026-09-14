@@ -19,7 +19,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.clear = function (this: FunctionContext, targets?: Selector, item?: Item, maxCount?: number) {
-  const node = new TreeCommandNode("clear", Effect.EDITS);
+  const node = new TreeCommandNode("clear", { effect: Effect.EDITS, local: true });
   this.emit(node);
   const parts: CommandPart[] = [litPart("clear")];
   if (targets !== undefined) parts.push(argPart(targets));

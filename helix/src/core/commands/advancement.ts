@@ -69,7 +69,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.advancement = function (this: FunctionContext) {
-  const node = new TreeCommandNode("advancement", Effect.MOVES);
+  const node = new TreeCommandNode("advancement", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("advancement")];
   node.parts = parts;

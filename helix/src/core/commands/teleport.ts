@@ -28,7 +28,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.teleport = function (this: FunctionContext, targets?: Selector, location?: Pos, rotation?: Pos) {
-  const node = new TreeCommandNode("teleport", Effect.MOVES);
+  const node = new TreeCommandNode("teleport", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("teleport")];
   if (targets !== undefined) parts.push(argPart(targets));

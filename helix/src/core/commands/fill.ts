@@ -67,7 +67,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.fill = function (this: FunctionContext, from?: Pos, to?: Pos, block?: Block) {
-  const node = new TreeCommandNode("fill", Effect.EDITS);
+  const node = new TreeCommandNode("fill", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("fill")];
   if (from !== undefined) parts.push(argPart(from));

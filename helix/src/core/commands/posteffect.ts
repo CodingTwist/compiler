@@ -37,7 +37,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.posteffect = function (this: FunctionContext) {
-  const node = new TreeCommandNode("posteffect", Effect.NONE);
+  const node = new TreeCommandNode("posteffect", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("posteffect")];
   node.parts = parts;

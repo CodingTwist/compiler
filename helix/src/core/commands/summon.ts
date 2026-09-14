@@ -28,7 +28,7 @@ FunctionContext.prototype.summon = function (
 ) {
   // The one-argument form: the concept carries the id, so shift it into place.
   if (entity instanceof EntityNbtValue) [entity, nbt, pos] = [EntityType(entity.entity), entity, pos];
-  const node = new TreeCommandNode("summon", Effect.EDITS);
+  const node = new TreeCommandNode("summon", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("summon"), argPart(entity)];
   // Brigadier can't skip an optional argument, so NBT without a position fails to parse.

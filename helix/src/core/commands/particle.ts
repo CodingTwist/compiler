@@ -29,7 +29,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.particle = function (this: FunctionContext, name?: Particle, pos?: Pos, delta?: Pos, speed?: number, count?: number) {
-  const node = new TreeCommandNode("particle", Effect.NONE);
+  const node = new TreeCommandNode("particle", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("particle")];
   if (name !== undefined) parts.push(argPart(name));

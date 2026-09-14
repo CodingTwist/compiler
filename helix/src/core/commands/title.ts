@@ -47,7 +47,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.title = function (this: FunctionContext) {
-  const node = new TreeCommandNode("title", Effect.NONE);
+  const node = new TreeCommandNode("title", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("title")];
   node.parts = parts;

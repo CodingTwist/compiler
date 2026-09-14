@@ -127,7 +127,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.playsound = function (this: FunctionContext, sound?: SoundEvent) {
-  const node = new TreeCommandNode("playsound", Effect.NONE);
+  const node = new TreeCommandNode("playsound", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("playsound")];
   if (sound !== undefined) parts.push(argPart(sound));

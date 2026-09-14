@@ -723,7 +723,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.gamerule = function (this: FunctionContext) {
-  const node = new TreeCommandNode("gamerule", Effect.EDITS);
+  const node = new TreeCommandNode("gamerule", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("gamerule")];
   node.parts = parts;

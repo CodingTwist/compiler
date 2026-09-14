@@ -20,15 +20,14 @@ interface Run {
 
 /** Groups repeated `execute` prefixes in every function file of `dp`. */
 export function groupExecutePrefixes(dp: Datapack): void {
-  // Allowed functions keep their layout so the allow still matches.
-  const allowed = new Set([...dp.allowed.values()].flatMap((fns) => [...fns.keys()]));
-  const effectOf = effects(dp);
+  // Allowed functions are grouped too: an allow covers what its function calls.
+  const reachOf = reaches(dp);
 
   const queue = [...dp.files.keys()];
   // Group files are queued too, so a group can hold a smaller group.
   for (const name of queue) {
     const infos = dp.lineInfo.get(name);
-    if (allowed.has(name) || !infos) continue;
+    if (!infos) continue;
     const text = dp.files.get(name)!;
     const texts = text ? text.split("\n") : [];
     if (texts.length !== infos.length) {
@@ -59,8 +58,8 @@ export function groupExecutePrefixes(dp: Datapack): void {
     };
 
     const out: Line[] = [];
-    for (const run of findRuns(lines)) {
-      for (const part of splitAtBlockers(run, effectOf)) {
+    for (const run of findRuns(lines, reachOf)) {
+      for (const part of splitAtBlockers(run, reachOf)) {
         out.push(...(worthGrouping(part) ? call(part) : part.lines));
       }
     }
@@ -71,11 +70,18 @@ export function groupExecutePrefixes(dp: Datapack): void {
   }
 }
 
-/** Clauses `line` may share: none once it holds a `return`, which would exit the group instead. */
-const shareable = (line: Line): SharedClause[] => (line.info.exits ? [] : line.info.clauses);
+/**
+ * Clauses `line` may share: none once it holds a `return`, which would exit the group
+ * instead, and none from a forking clause on unless it's local.
+ */
+function shareable(line: Line, reachOf: ReachOf): SharedClause[] {
+  if (line.info.exits) return [];
+  const fork = line.info.clauses.findIndex((c) => c.forks);
+  return fork < 0 || reachOf(line.info).local ? line.info.clauses : line.info.clauses.slice(0, fork);
+}
 
 /** Splits `lines` into runs; a line that shares nothing is a run of its own. */
-function findRuns(lines: Line[]): Run[] {
+function findRuns(lines: Line[], reachOf: ReachOf): Run[] {
   const runs: Run[] = [];
   let run: Run = { lines: [], shared: [] };
   // Comments after the run's last command, which only join if another command does.
@@ -93,14 +99,14 @@ function findRuns(lines: Line[]): Run[] {
       pending.push(line);
       continue;
     }
-    const shared = commonPrefix(run.shared, shareable(line));
+    const shared = commonPrefix(run.shared, shareable(line, reachOf));
     if (run.lines.length && shared.length) {
       run.lines.push(...pending, line);
       run.shared = shared;
       pending = [];
     } else {
       close();
-      run = { lines: [line], shared: shareable(line) };
+      run = { lines: [line], shared: shareable(line, reachOf) };
     }
   }
   close();
@@ -108,7 +114,7 @@ function findRuns(lines: Line[]): Run[] {
 }
 
 /** Splits `run` after each line that could change what its shared clauses pick. */
-function splitAtBlockers(run: Run, effectOf: (info: LineInfo) => Effect): Run[] {
+function splitAtBlockers(run: Run, reachOf: ReachOf): Run[] {
   const self = run.shared.some((c) => c.kind === "self");
   const other = run.shared.some((c) => c.kind === "other");
   const lastCommand = run.lines.filter((l) => !l.info.comment).at(-1);
@@ -119,7 +125,7 @@ function splitAtBlockers(run: Run, effectOf: (info: LineInfo) => Effect): Run[] 
     part.push(line);
     // Nothing re-reads the prefix after the last line, so it may do anything.
     if (line.info.comment || line === lastCommand) continue;
-    const effect = effectOf(line.info);
+    const { effect } = reachOf(line.info);
     // A selector may pick another entity after any change; `@s` only moves with its entity.
     if ((other && effect !== Effect.NONE) || (self && effect === Effect.MOVES)) {
       parts.push({ lines: part, shared: run.shared });
@@ -130,48 +136,64 @@ function splitAtBlockers(run: Run, effectOf: (info: LineInfo) => Effect): Run[] 
   return parts;
 }
 
-/** Whether a call saves work: it costs one command, and a scanning selector costs more. */
+/** Whether a call saves work: it costs one command, and a scan or fork costs more. */
 function worthGrouping(part: Run): boolean {
   if (!part.shared.length) return false;
   const commands = part.lines.filter((l) => !l.info.comment).length;
-  return commands >= (part.shared.some((c) => c.scans) ? 2 : 3);
+  return commands >= (part.shared.some((c) => c.scans || c.forks) ? 2 : 3);
 }
 
-/** Returns what a line can do to entities, including the functions it calls. */
-function effects(dp: Datapack): (info: LineInfo) => Effect {
-  const memo = new Map<string, Effect>();
+/** What a line can do to entities, and whether it stays on `@s`, counting what it calls. */
+interface Reach {
+  effect: Effect;
+  local: boolean;
+}
+
+type ReachOf = (info: LineInfo) => Reach;
+
+/** Returns the {@link Reach} of a line, following the functions it calls. */
+function reaches(dp: Datapack): ReachOf {
+  const memo = new Map<string, Reach>();
   // Depth of each function still being visited, to spot recursion.
   const visiting = new Map<string, number>();
 
-  /** Effect of `name`, and the shallowest visiting function it reached back to. */
-  const visit = (name: string): [Effect, number] => {
+  /** Reach of `name`, and the shallowest visiting function it reached back to. */
+  const visit = (name: string): [Reach, number] => {
     const known = memo.get(name);
     if (known) return [known, Infinity];
     const depth = visiting.get(name);
-    if (depth !== undefined) return [Effect.NONE, depth];
+    if (depth !== undefined) return [{ effect: Effect.NONE, local: true }, depth];
     const infos = dp.lineInfo.get(name);
     // A call we can't read might do anything.
-    if (!infos) return [Effect.MOVES, Infinity];
+    if (!infos) return [{ effect: Effect.MOVES, local: false }, Infinity];
 
     const own = visiting.size;
     visiting.set(name, own);
-    let effect: Effect = Effect.NONE;
     let low = Infinity;
-    for (const info of infos) {
-      effect = worst(effect, info.effect);
-      for (const callee of info.calls) {
-        const [e, l] = visit(callee);
-        effect = worst(effect, e);
-        low = Math.min(low, l);
-      }
-    }
+    const reach = infos.reduce<Reach>((acc, info) => {
+      const [r, l] = combine(info);
+      low = Math.min(low, l);
+      return { effect: worst(acc.effect, r.effect), local: acc.local && r.local };
+    }, { effect: Effect.NONE, local: true });
     visiting.delete(name);
-    // Inside a loop through a caller, the result is missing that caller's effects.
-    if (low >= own) memo.set(name, effect);
-    return [effect, low];
+    // Inside a loop through a caller, the result is missing that caller's lines.
+    if (low >= own) memo.set(name, reach);
+    return [reach, low];
   };
 
-  return (info) => worst(info.effect, ...info.calls.map((c) => visit(c)[0]));
+  /** A line's own reach joined with its callees'. */
+  const combine = (info: LineInfo): [Reach, number] => {
+    let reach: Reach = { effect: info.effect, local: info.local };
+    let low = Infinity;
+    for (const callee of info.calls) {
+      const [r, l] = visit(callee);
+      reach = { effect: worst(reach.effect, r.effect), local: reach.local && r.local };
+      low = Math.min(low, l);
+    }
+    return [reach, low];
+  };
+
+  return (info) => combine(info)[0];
 }
 
 /** The longest run of clauses `a` and `b` both start with. */

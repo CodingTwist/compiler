@@ -50,7 +50,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.compute = function (this: FunctionContext) {
-  const node = new TreeCommandNode("compute", Effect.NONE);
+  const node = new TreeCommandNode("compute", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("compute")];
   node.parts = parts;

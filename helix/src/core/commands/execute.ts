@@ -343,8 +343,10 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
       case "facingEntity":
         return selectorClause(text, c.sel.build(), c.k === "as");
       case "on":
-        // `on passengers` can pick several entities.
-        return c.relation === Relation.PASSENGERS ? undefined : { text, kind: "other", scans: false };
+        // Only a move, dismount or kill changes who rides `@s`.
+        return c.relation === Relation.PASSENGERS
+          ? { text, kind: "self", scans: false, forks: true }
+          : { text, kind: "other", scans: false, forks: false };
       case "in":
       case "positioned":
       case "rotated":

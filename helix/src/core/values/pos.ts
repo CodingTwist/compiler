@@ -34,6 +34,11 @@ export class PosValue implements CommandValue {
     return this.parts.map((c) => component(c.n, c.mode)).join(" ");
   }
 
+  /** A position names a block or spot every entity shares. */
+  reach(): "world" {
+    return "world";
+  }
+
   /** The numeric coordinates. Throws unless every axis is absolute. */
   coords(): [number, number, number] {
     if (this.parts.length !== 3 || this.parts.some((c) => c.mode !== "absolute" && c.mode !== "exact")) {

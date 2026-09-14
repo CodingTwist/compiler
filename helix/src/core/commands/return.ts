@@ -20,7 +20,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.return_ = function (this: FunctionContext, value?: number) {
-  const node = new TreeCommandNode("return", Effect.NONE, true);
+  const node = new TreeCommandNode("return", { effect: Effect.NONE, exits: true });
   this.emit(node);
   const parts: CommandPart[] = [litPart("return")];
   if (value !== undefined) parts.push(argPart(value));

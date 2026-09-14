@@ -18,7 +18,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.kill = function (this: FunctionContext, targets?: Selector) {
-  const node = new TreeCommandNode("kill", Effect.MOVES);
+  const node = new TreeCommandNode("kill", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("kill")];
   if (targets !== undefined) parts.push(argPart(targets));

@@ -47,7 +47,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.waypoint = function (this: FunctionContext) {
-  const node = new TreeCommandNode("waypoint", Effect.EDITS);
+  const node = new TreeCommandNode("waypoint", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("waypoint")];
   node.parts = parts;

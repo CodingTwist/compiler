@@ -152,8 +152,9 @@ the `vscode/` extension), `profile [dump.json]`
   `dp.lineInfo`. Only when sound: every prefix selector picks one entity, never randomly, and
   tests no scores/NBT/predicates; no `return`/macro lines; and no line before the last can
   change what the prefix resolves to - `at @s`-style clauses block on `Effect.MOVES`, other
-  selectors on anything but `Effect.NONE` (calls followed through their bodies). Needs ≥3 lines,
-  or ≥2 when the prefix scans. Declined runs still show up as the `group-execute` lint.
+  selectors on anything but `Effect.NONE` (calls followed through their bodies). Forks (`on
+  passengers`, multi-entity `as`) are shared only when every line is `local` (touches only `@s`),
+  since the group then runs whole per entity. Needs ≥3 lines, or ≥2 when the prefix scans or forks. Runs declined as unsafe still show up as the `group-execute` lint.
 - **Turning passes off**: `new Datapack(..., { optimize: { inline: false, group: false } })` or
   `optimize` in `helix.config.ts` (every mode) skips that pass in `buildDatapack`.
 - **Entity-test limit** (`commands/selector.ts` `renderExistence`): every `if`/`unless entity`
@@ -221,7 +222,7 @@ an equivalent cheaper form and check every function: `vacuous-execute`, `fold-in
 `redundant-as` (an allowlist of multi-target commands), `macro-score-set`, `missing-type`
 (bare `@e` in tick code is an unbounded scan instead), `constant-condition` (a `matches` check
 on a fake player set earlier in the function; any call or other mention forgets the value) and
-`group-execute` (consecutive lines sharing an `if`/`unless`-free execute prefix). The last three
+`group-execute` (≥3 consecutive lines sharing an `if`/`unless`-free execute prefix, ≥2 when it scans). The last three
 mirror the datapack-optimization VS Code extension. **Tick-only**
 rules: `nbt-write` (only fields a command can set: item/Rotation/Pos/Tags/effects/attributes),
 `repeated-selector` (positional selectors are keyed by their execute context),
@@ -326,8 +327,10 @@ rebuild the handler map per version.
 - **`HAND_REFINED`** (currently `setblock`, `data`, `stopsound`, `summon`) = hand-written command files it must keep,
   not overwrite. If you hand-write a command file, add it here or the next run destroys it.
 - **`EFFECTS`** = what each generated command can do to entities, written into its
-  `TreeCommandNode`. Generation throws for a command missing from it, so a new Minecraft command
-  must be classified; pick `MOVES` when unsure (it only costs grouping). Hand-refined and
+  `TreeCommandNode`'s traits (`{ effect, exits?, local? }`). Generation throws for a command
+  missing from it, so a new Minecraft command must be classified; pick `MOVES` when unsure (it
+  only costs grouping). `LOCAL` lists commands that act only on their entity arguments; add one
+  only if it never reaches another entity or the world. Hand-refined and
   hand-written handlers pass their own `LineInfo` to `ctx.emit`.
 - **`HAND_WRITTEN_ELSEWHERE`** = vanilla command names whose frontend is the sugar layer; not
   generated.

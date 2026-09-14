@@ -19,7 +19,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.spawnpoint = function (this: FunctionContext, targets?: Selector, pos?: Pos, rotation?: Pos) {
-  const node = new TreeCommandNode("spawnpoint", Effect.EDITS);
+  const node = new TreeCommandNode("spawnpoint", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("spawnpoint")];
   if (targets !== undefined) parts.push(argPart(targets));

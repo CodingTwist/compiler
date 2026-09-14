@@ -121,6 +121,10 @@ export class EntityNbtValue extends NbtValue {
     return toSnbt(out, version);
   }
 
+  override keys(version: VersionProfile): string[] {
+    return Object.keys(renderFields(this.schema, this.fields, version));
+  }
+
   /** A copy that also writes its own `id`, for nested entities like `Passengers`. */
   asPassenger<T extends EntityNbtValue>(this: T): T {
     return new EntityNbtValue(this.schema, this.fields, this.entity, true) as T;

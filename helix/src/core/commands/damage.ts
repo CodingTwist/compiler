@@ -32,7 +32,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.damage = function (this: FunctionContext, target?: Selector, amount?: number, damageType?: DamageType) {
-  const node = new TreeCommandNode("damage", Effect.MOVES);
+  const node = new TreeCommandNode("damage", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("damage")];
   if (target !== undefined) parts.push(argPart(target));

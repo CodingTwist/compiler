@@ -27,7 +27,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.dialog = function (this: FunctionContext) {
-  const node = new TreeCommandNode("dialog", Effect.NONE);
+  const node = new TreeCommandNode("dialog", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("dialog")];
   node.parts = parts;

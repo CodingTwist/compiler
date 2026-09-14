@@ -1,7 +1,8 @@
 // Facts each handler records about the lines it emits, for passes that rewrite rendered
 // output (grouping, inlining) without re-parsing command text.
 import type { SelectorNode } from "../commands/selector";
-import { NbtPathValue } from "../values/nbt";
+import { NbtPath, NbtPathValue, type NbtValue } from "../values/nbt";
+import type { VersionProfile } from "../../versions/profile";
 import { Path } from "../values/paths";
 import type { CommandValue } from "../values/value";
 
@@ -20,6 +21,11 @@ export interface SharedClause {
   kind: ClauseKind;
   /** Resolving it scans entities, so sharing it saves more than one command. */
   scans: boolean;
+  /**
+   * It can pick several entities, so a group runs whole per entity instead of line by line.
+   * Only lines that are {@link LineInfo.local} may share it.
+   */
+  forks: boolean;
 }
 
 /**
@@ -45,6 +51,11 @@ export interface LineInfo {
   exits: boolean;
   /** A comment or blank line, which moves with the lines around it. */
   comment: boolean;
+  /**
+   * Its own commands only read and write the executing entity, so entities can run it in
+   * any order. Calls count only if their bodies are local too.
+   */
+  local: boolean;
 }
 
 const RANK: Record<Effect, number> = { none: 0, edits: 1, moves: 2 };
@@ -56,17 +67,17 @@ export function worst(...effects: Effect[]): Effect {
 
 /** A plain command with no `execute` clauses. */
 export function commandLine(effect: Effect, more: Partial<LineInfo> = {}): LineInfo {
-  return { clauses: [], open: true, effect, calls: [], exits: false, comment: false, ...more };
+  return { clauses: [], open: true, effect, calls: [], exits: false, comment: false, local: false, ...more };
 }
 
 /** A comment or blank line. */
-export const COMMENT_LINE: LineInfo = commandLine(Effect.NONE, { comment: true });
+export const COMMENT_LINE: LineInfo = commandLine(Effect.NONE, { comment: true, local: true });
 
 /** A line nothing is known about, e.g. a native plugin call. */
 export const UNKNOWN_LINE: LineInfo = commandLine(Effect.MOVES, { open: false });
 
 /** `function <ns>:<name>`. */
-export const callLine = (name: string): LineInfo => commandLine(Effect.NONE, { calls: [name] });
+export const callLine = (name: string): LineInfo => commandLine(Effect.NONE, { calls: [name], local: true });
 
 /**
  * `execute <prefix> run <body>` (or a bare chain when `body` is missing).
@@ -91,6 +102,8 @@ export function chainLine(
     calls: [...ownCalls, ...(body?.calls ?? [])],
     exits: body?.exits ?? false,
     comment: false,
+    // A condition, a store or another entity's clause reads or writes more than `@s`.
+    local: open && !!body?.local && lead.every((c) => c.kind !== "other"),
   };
 }
 
@@ -108,6 +121,7 @@ export function spliceCall(caller: LineInfo, callee: string, body: LineInfo, ret
     calls: [...caller.calls.filter((c) => c !== callee), ...body.calls],
     exits: caller.exits || body.exits || returns,
     comment: false,
+    local: caller.local && body.local,
   };
 }
 
@@ -120,19 +134,30 @@ export function spliceCall(caller: LineInfo, callee: string, body: LineInfo, ret
 export function selectorClause(text: string, sel: SelectorNode, executor = false): SharedClause | undefined {
   // Picked once for a group instead of once per line: a different entity each time.
   if (sel.picksRandomly()) return undefined;
-  // Several entities would run the whole group each instead of line by line.
-  if (!sel.picksOne()) return undefined;
   // Any line may touch the scores, NBT or state these test.
   if (sel.readsState()) return undefined;
-  if (sel.isBareSelf()) return { text, kind: executor ? "pure" : "self", scans: false };
-  return { text, kind: "other", scans: sel.scans() };
+  if (!sel.picksOne()) {
+    // Only `as` gives each entity its own `@s`; `at` would run every group at the same executor.
+    return executor ? { text, kind: "other", scans: sel.scans(), forks: true } : undefined;
+  }
+  if (sel.isBareSelf()) return { text, kind: executor ? "pure" : "self", scans: false, forks: false };
+  return { text, kind: "other", scans: sel.scans(), forks: false };
 }
 
 /** A clause that reads nothing a line could change, e.g. `in` or `positioned <pos>`. */
-export const pureClause = (text: string): SharedClause => ({ text, kind: "pure", scans: false });
+export const pureClause = (text: string): SharedClause => ({ text, kind: "pure", scans: false, forks: false });
+
+/** Whether a command's `args` point at nothing but the executing entity. */
+export const onlySelf = (args: CommandValue[]): boolean => args.every((a) => a.reach?.() !== "world");
 
 /** Effect of writing NBT `path` on an entity. A path that isn't a plain {@link NbtPathValue} may be anything. */
 export function entityWriteEffect(path: CommandValue): Effect {
   if (!(path instanceof NbtPathValue)) return Effect.MOVES;
   return [Path.Entity.Pos, Path.Entity.Rotation].some((p) => path.within(p)) ? Effect.MOVES : Effect.EDITS;
+}
+
+/** Effect of merging `value` into an entity. Raw SNBT may hold `Pos` or `Rotation`. */
+export function entityMergeEffect(value: NbtValue, version: VersionProfile): Effect {
+  const keys = value.keys(version);
+  return keys ? worst(...keys.map((k) => entityWriteEffect(NbtPath(k)))) : Effect.MOVES;
 }

@@ -37,7 +37,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.stopwatch = function (this: FunctionContext) {
-  const node = new TreeCommandNode("stopwatch", Effect.NONE);
+  const node = new TreeCommandNode("stopwatch", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("stopwatch")];
   node.parts = parts;

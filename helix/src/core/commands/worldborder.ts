@@ -58,7 +58,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.worldborder = function (this: FunctionContext) {
-  const node = new TreeCommandNode("worldborder", Effect.EDITS);
+  const node = new TreeCommandNode("worldborder", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("worldborder")];
   node.parts = parts;

@@ -531,7 +531,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.clone = function (this: FunctionContext, begin?: Pos, end?: Pos, destination?: Pos) {
-  const node = new TreeCommandNode("clone", Effect.EDITS);
+  const node = new TreeCommandNode("clone", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("clone")];
   if (begin !== undefined) parts.push(argPart(begin));

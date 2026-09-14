@@ -31,7 +31,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.locate = function (this: FunctionContext) {
-  const node = new TreeCommandNode("locate", Effect.NONE);
+  const node = new TreeCommandNode("locate", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("locate")];
   node.parts = parts;

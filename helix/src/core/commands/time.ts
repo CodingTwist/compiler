@@ -101,7 +101,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.time = function (this: FunctionContext) {
-  const node = new TreeCommandNode("time", Effect.NONE);
+  const node = new TreeCommandNode("time", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("time")];
   node.parts = parts;

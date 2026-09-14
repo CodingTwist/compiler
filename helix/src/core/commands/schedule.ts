@@ -36,7 +36,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.schedule = function (this: FunctionContext) {
-  const node = new TreeCommandNode("schedule", Effect.NONE);
+  const node = new TreeCommandNode("schedule", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("schedule")];
   node.parts = parts;

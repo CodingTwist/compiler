@@ -108,15 +108,20 @@ export abstract class CommandNodeBase extends ASTNode {
  * `TreeCommandHandler`.
  */
 export class TreeCommandNode extends CommandNodeBase {
-  /**
-   * @param effect What the command can do to entities, for output passes.
-   * @param exits Whether the command returns from its function.
-   */
   constructor(
     readonly type: string,
-    readonly effect: Effect,
-    readonly exits = false,
+    readonly traits: CommandTraits,
   ) {
     super();
   }
+}
+
+/** What a generated command can do, for output passes. */
+export interface CommandTraits {
+  /** What it can do to entities. */
+  effect: Effect;
+  /** It returns from its function. */
+  exits?: boolean;
+  /** It only acts on its entity arguments, so it's local when they're all `@s`. */
+  local?: boolean;
 }

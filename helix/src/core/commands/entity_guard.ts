@@ -76,7 +76,7 @@ FunctionContext.prototype.summonIf = function (
   cond: EntityCondition,
   display: DisplayValue,
 ) {
-  const summon = new TreeCommandNode("summon", Effect.EDITS);
+  const summon = new TreeCommandNode("summon", { effect: Effect.EDITS });
   const parts: CommandPart[] = [
     litPart("summon"),
     argPart(DisplayValue.id),

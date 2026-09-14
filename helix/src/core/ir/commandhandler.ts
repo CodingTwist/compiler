@@ -2,7 +2,7 @@ import type { Datapack } from "./datapack";
 import { ASTNode, TreeCommandNode } from "./node";
 import { Token, lit, arg, buildTokens } from "./command-builder";
 import type { SourceLoc } from "../debug/sources";
-import { commandLine, UNKNOWN_LINE, type LineInfo } from "./line-info";
+import { commandLine, onlySelf, UNKNOWN_LINE, type LineInfo } from "./line-info";
 
 export abstract class CommandHandler<N extends ASTNode = ASTNode> {
     abstract readonly type: N["type"];
@@ -38,7 +38,7 @@ export class CodegenContext {
         const macro = text.includes("$(");
         this.lines.push(macro ? `$${text}` : text);
         // A macro line's text isn't known until it runs, so nothing may be shared from it.
-        this.infos.push(macro ? { ...info, clauses: [], open: false } : info);
+        this.infos.push(macro ? { ...info, clauses: [], open: false, local: false } : info);
         this.sources.push(this.current);
     }
 
@@ -70,7 +70,9 @@ export class TreeCommandHandler extends CommandHandler<TreeCommandNode> {
         const tokens: Token[] = node.parts.map((p) =>
             p.kind === "literal" ? lit(p.value) : arg(p.value.render(ctx.version)),
         );
-        ctx.emit(buildTokens(ctx.version, tokens), commandLine(node.effect, { exits: node.exits }));
+        const { effect, exits = false, local = false } = node.traits;
+        const onSelf = local && onlySelf(node.parts.flatMap((p) => (p.kind === "arg" ? [p.value] : [])));
+        ctx.emit(buildTokens(ctx.version, tokens), commandLine(effect, { exits, local: onSelf }));
     }
 }
 

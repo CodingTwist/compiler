@@ -19,7 +19,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.enchant = function (this: FunctionContext, targets: Selector, enchantment: Enchantment, level?: number) {
-  const node = new TreeCommandNode("enchant", Effect.EDITS);
+  const node = new TreeCommandNode("enchant", { effect: Effect.EDITS, local: true });
   this.emit(node);
   const parts: CommandPart[] = [litPart("enchant"), argPart(targets), argPart(enchantment)];
   if (level !== undefined) parts.push(argPart(level));

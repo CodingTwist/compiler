@@ -138,7 +138,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.bossbar = function (this: FunctionContext) {
-  const node = new TreeCommandNode("bossbar", Effect.NONE);
+  const node = new TreeCommandNode("bossbar", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("bossbar")];
   node.parts = parts;

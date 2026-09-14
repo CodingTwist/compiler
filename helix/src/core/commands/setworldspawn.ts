@@ -18,7 +18,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.setworldspawn = function (this: FunctionContext, pos?: Pos, rotation?: Pos) {
-  const node = new TreeCommandNode("setworldspawn", Effect.EDITS);
+  const node = new TreeCommandNode("setworldspawn", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("setworldspawn")];
   if (pos !== undefined) parts.push(argPart(pos));

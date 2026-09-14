@@ -31,7 +31,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.swing = function (this: FunctionContext, targets?: Selector) {
-  const node = new TreeCommandNode("swing", Effect.EDITS);
+  const node = new TreeCommandNode("swing", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("swing")];
   if (targets !== undefined) parts.push(argPart(targets));

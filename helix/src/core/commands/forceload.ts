@@ -39,7 +39,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.forceload = function (this: FunctionContext) {
-  const node = new TreeCommandNode("forceload", Effect.EDITS);
+  const node = new TreeCommandNode("forceload", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("forceload")];
   node.parts = parts;

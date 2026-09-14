@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { Datapack, Id, Objective, Path, Pos, Relation, ScoreTarget, Selector, Sort, Range } from "../../index";
+import { Datapack, Id, Item, Slot, Objective, Path, Pos, Relation, ScoreTarget, Selector, Sort, Range } from "../../index";
 import type { FunctionContext } from "../frontend/context";
 import { v1_21_4 } from "../../versions/profiles";
 import { buildDatapack } from "./codegen";
@@ -61,6 +61,25 @@ test("a single-entity scan groups at two lines when every line but the last chan
       "f": "execute as @e[tag=aim,limit=1] run function p:zzz/f/group_0",
       "zzz/f/group_0": "scoreboard players add #n o 1
     tag @s remove aim",
+    }
+  `);
+});
+
+test("a fork groups when every line only touches `@s`", () => {
+  const files = build((c) => {
+    c.execute().on(Relation.PASSENGERS).run((b) => b.tag().add(self().tag("rig"), "posed"));
+    c.execute().on(Relation.PASSENGERS).run((b) => b.item().replaceEntityWith(self(), Slot.CONTENTS, Item.CROSSBOW));
+    // `tag @e` reaches past `@s`, so it can't join.
+    c.execute().on(Relation.PASSENGERS).run((b) => b.tag().add(Selector.allEntities(), "x"));
+    c.execute().on(Relation.PASSENGERS).run((b) => b.tag().add(self(), "y"));
+  });
+  expect(Object.fromEntries(files)).toMatchInlineSnapshot(`
+    {
+      "f": "execute on passengers run function p:zzz/f/group_0
+    execute on passengers run tag @e add x
+    execute on passengers run tag @s add y",
+      "zzz/f/group_0": "tag @s[tag=rig] add posed
+    item replace entity @s contents with minecraft:crossbow",
     }
   `);
 });

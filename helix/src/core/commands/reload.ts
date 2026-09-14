@@ -17,7 +17,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.reload = function (this: FunctionContext) {
-  const node = new TreeCommandNode("reload", Effect.MOVES);
+  const node = new TreeCommandNode("reload", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("reload")];
   node.parts = parts;

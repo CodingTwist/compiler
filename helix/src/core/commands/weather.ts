@@ -34,7 +34,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.weather = function (this: FunctionContext) {
-  const node = new TreeCommandNode("weather", Effect.NONE);
+  const node = new TreeCommandNode("weather", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("weather")];
   node.parts = parts;

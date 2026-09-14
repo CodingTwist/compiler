@@ -218,10 +218,13 @@ describe("cost report", () => {
     it("group-execute: consecutive lines sharing a condition-free prefix", () => {
       const r = lintsOf({
         tick: "say hi",
-        other: ["# comment", "execute on passengers run tag @s add a", "# comment", "execute on passengers store result score @s q run data get entity @s Air", "say break", "execute on passengers run say x"].join("\n"),
+        other: ["# comment", "execute on passengers run tag @s add a", "# comment", "execute on passengers store result score @s q run data get entity @s Air", "execute on passengers run tag @s add b", "say break", "execute on passengers run say x"].join("\n"),
       });
       expect(r.lints.map((l) => l.rule)).toEqual(["group-execute"]);
-      expect(r.lints[0].hint).toContain("2 lines");
+      expect(r.lints[0].hint).toContain("3 lines");
+      // Two lines only pay off when the prefix scans.
+      expect(rules({ tick: "say hi", other: "execute on passengers run say 1\nexecute on passengers run say 2" })).toEqual([]);
+      expect(rules({ tick: "say hi", other: "execute as @e[type=marker,tag=a,limit=1] run say 1\nexecute as @e[type=marker,tag=a,limit=1] run say 2" })).toEqual(["group-execute"]);
       expect(rules({ tick: "say hi", other: "execute if score #a q matches 1 run say 1\nexecute if score #a q matches 1 run say 2" })).toEqual([]);
       expect(rules({ tick: "say hi", other: "execute at @s run return run say 1\nexecute at @s run say 2" })).toEqual([]);
     });
