@@ -11,6 +11,11 @@ import { Datapack } from "../ir/datapack";
 import { buildDatapack } from "../codegen/codegen";
 
 describe("Selector rendering", () => {
+  it("renders near() as a fixed x/y/z origin plus distance", () => {
+    const sel = Selector.allEntities().tag("d").near([10.5, 64, 40.5], Range.atMost(1));
+    expect(sel.toString()).toBe("@e[x=10.5,y=64,z=40.5,distance=..1,tag=d]");
+  });
+
   it("renders a volume box as x/y/z/dx/dy/dz", () => {
     const sel = Selector.allPlayers().volume([4, 66, 4], [0, 64, 0]);
     expect(renderSelector(sel.build())).toBe("@a[x=0,y=64,z=0,dx=4,dy=2,dz=4]");

@@ -47,6 +47,7 @@ export class Selector extends SelectorFilters {
       this.entityTypeValue,
       this.yBandValue,
       this.notGamemodes,
+      this.originValue,
     );
   }
 

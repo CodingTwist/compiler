@@ -19,6 +19,7 @@ export class SelectorFilters {
   protected nameValue?: string;
   protected volumeBox?: SelectorVolume;
   protected distanceRange?: Range;
+  protected originValue?: readonly [number, number, number];
   protected nbtValue?: Nbt;
   protected predicateIds: string[] = [];
   protected xRotationRange?: Range;
@@ -77,6 +78,17 @@ export class SelectorFilters {
    */
   span(dx: number, dy: number, dz: number): this {
     this.volumeBox = { dx, dy, dz };
+    return this;
+  }
+
+  /**
+   * Matches entities within `range` of a fixed point (`x=,y=,z=,distance=`).
+   * Unlike a bare `distance`, it doesn't depend on where the command runs, and the engine
+   * only searches nearby chunks.
+   */
+  near(pos: readonly [number, number, number], range: Range): this {
+    this.originValue = pos;
+    this.distanceRange = range;
     return this;
   }
 

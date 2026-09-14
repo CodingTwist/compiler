@@ -31,7 +31,10 @@ export interface ModelTarget {
 export function modelTarget(model: DisplayValue): ModelTarget {
   const name = model.getName(); // throws if unnamed - required for tag addressing
   const members = model.members().map((m, i): TransformMember => ({
-    selector: model.memberSelector(i).limit(1),
+    // A getter, so an `.at()` set after the clip is made still narrows the selector.
+    get selector() {
+      return model.memberSelector(i).limit(1);
+    },
     translation: m.transform.translation ?? [0, 0, 0],
     scale: m.transform.scale ?? UNIT_SCALE,
     leftRotation: m.transform.leftRotation ?? IDENTITY_QUAT,

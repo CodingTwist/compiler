@@ -39,9 +39,14 @@ export class PosValue implements CommandValue {
     return "world";
   }
 
+  /** Whether every axis is absolute, so {@link coords} won't throw. */
+  isAbsolute(): boolean {
+    return this.parts.length === 3 && this.parts.every((c) => c.mode === "absolute" || c.mode === "exact");
+  }
+
   /** The numeric coordinates. Throws unless every axis is absolute. */
   coords(): [number, number, number] {
-    if (this.parts.length !== 3 || this.parts.some((c) => c.mode !== "absolute" && c.mode !== "exact")) {
+    if (!this.isAbsolute()) {
       throw new Error(`Pos "${this.render()}" has no absolute coordinates`);
     }
     return this.parts.map((c) => c.n) as [number, number, number];

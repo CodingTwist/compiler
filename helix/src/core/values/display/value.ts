@@ -10,6 +10,7 @@ import type { ItemDisplayFields } from "../entities.generated";
 import { CommandValue } from "../value";
 import { Pos, PosValue } from "../pos";
 import { Relation } from "../enums";
+import { Range } from "../../ir/node";
 import { EntityType } from "../resource.generated";
 import { DisplayBuilder } from "./builder";
 import { entityFor, groupNbt } from "./nbt";
@@ -72,10 +73,20 @@ export class DisplayValue extends DisplayBuilder implements CommandValue {
     return this.memberSelector(0);
   }
 
-  /** Typed selector for member `i` (`@e[type=<its display>,tag=<name>_<i>]`), in {@link members} order. */
+  /**
+   * Typed selector for member `i` (`@e[type=<its display>,tag=<name>_<i>]`), in {@link members} order.
+   *
+   * With an absolute {@link at} position it adds `x/y/z,distance=..1`, so the engine only
+   * searches nearby chunks. Members ride the root, so they all share its spot. Don't `tp` a
+   * display summoned this way, or these selectors stop finding it.
+   */
   memberSelector(i: number): Selector {
     const kind = i === 0 ? this.content.kind : this.children[i - 1].content.kind;
-    return Selector.allEntities().type(entityFor(kind)).tag(`${this.getName()}_${i}`);
+    const sel = Selector.allEntities().type(entityFor(kind)).tag(`${this.getName()}_${i}`);
+    const pos = this.getPos();
+    // ..1 covers summon's +0.5 centring of whole x/z coordinates.
+    if (pos instanceof PosValue && pos.isAbsolute()) sel.near(pos.coords(), Range.atMost(1));
+    return sel;
   }
 
   /** Remove every member of the group: one typed scan for the root, the rest ride it. */

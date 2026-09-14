@@ -36,6 +36,7 @@ export class SelectorNode extends ASTNode {
     public readonly entityType?: string,
     public readonly yBand?: { y: number; dy: number },
     public readonly notGamemodes: string[] = [],
+    public readonly origin?: readonly [number, number, number],
   ) {
     super();
   }
@@ -75,7 +76,8 @@ export class SelectorNode extends ASTNode {
       this.gamemode === undefined &&
       this.entityType === undefined &&
       this.yBand === undefined &&
-      this.notGamemodes.length === 0
+      this.notGamemodes.length === 0 &&
+      this.origin === undefined
     );
   }
 
@@ -107,6 +109,11 @@ export function renderSelector(
     // Both set `y`/`dy`; vanilla rejects a selector with a repeated key.
     throw new Error("Selector has both a volume/span and a yBand - they both set y/dy, pick one.");
   }
+
+  if (node.origin && (node.volume?.x !== undefined || node.yBand)) {
+    throw new Error("Selector has both near() and a volume/yBand - they both set x/y/z, pick one.");
+  }
+  if (node.origin) args.push(`x=${node.origin[0]}`, `y=${node.origin[1]}`, `z=${node.origin[2]}`);
 
   if (node.volume) {
     const v = node.volume;
