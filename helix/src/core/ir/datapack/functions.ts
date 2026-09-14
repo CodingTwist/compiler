@@ -6,6 +6,10 @@ import type { FunctionContext, Score } from "../../frontend";
 import { supportsCommand } from "../../../versions/capabilities";
 import { FunctionId } from "../../values/resource.generated";
 import { DatapackCore, type FunctionTag } from "./core";
+import { ScoreTarget } from "../../values/score_target";
+
+/** The objective every `dp.variable` lives on; separate from locals so names can't collide. */
+export const VARIABLES_OBJECTIVE = "helix.global";
 
 export class DatapackFunctions extends DatapackCore {
   objective(name: string, kind: ObjectiveKind = "dummy") {
@@ -23,6 +27,15 @@ export class DatapackFunctions extends DatapackCore {
     const obj = new Objective(name, kind);
     this.objectives.set(name, obj);
     return obj;
+  }
+
+  /**
+   * A pack-wide score named `name`, on an objective the pack owns.
+   *
+   * The same name returns the same score, so two callers asking for one name share it.
+   */
+  variable(name: string): Score {
+    return this.objective(VARIABLES_OBJECTIVE).score(ScoreTarget(`#${name}`));
   }
 
   /** Declared objectives, for the load-time init injection. */
