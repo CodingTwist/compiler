@@ -11,7 +11,7 @@ export class MobParts<S extends string> {
   readonly fns = new Map<string, FunctionRef>();
   /** One cooldown per gesture, so one gesture's cooldown doesn't block the others. */
   readonly cooldowns = new Map<string, Objective>();
-  /** `#wake` counts polls to the next wake; `#awake` is how many mobs it found. */
+  /** `#awake`: how many mobs the last wake found. */
   awakeObj!: Objective;
   /** `<mob>.state`: the 1-based index of the state a mob is in, 0 for none. */
   stateObj!: Objective;

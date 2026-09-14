@@ -216,7 +216,7 @@ describe("defineMob", () => {
     );
   });
 
-  it("costs a counter and a score check per poll until a player is near", () => {
+  it("costs a score check per poll until a player is near", () => {
     const dp = DatapackFactory.create(
       (() => {
         const mob = defineMob(Husk({}), Display(Block.STONE)).onTick((c) => c.say("mine")).toModule("sentinel", { tickEvery: 1, wakeRange: 30 });
@@ -230,9 +230,8 @@ describe("defineMob", () => {
     const fn = (n: string) => files.get([...files.keys()].find((k) => k.endsWith(`/${n}.mcfunction`))!)!;
     expect(fn("sentinel/tick")).toBe(
       [
-        "scoreboard players add #wake sentinel.awake 1",
-        "execute if score #wake sentinel.awake matches 20.. run function test:sentinel/zzz/wake",
         "execute if score #awake sentinel.awake matches 1.. as @e[tag=sentinel,tag=sentinel.awake,type=minecraft:husk] at @s run function test:sentinel/zzz/tick_one",
+        "execute if score t20 clock matches 0 run function test:sentinel/zzz/wake",
       ].join("\n"),
     );
     // One reset scan, one near scan per player - each a call, not a scan per tag.

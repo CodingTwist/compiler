@@ -57,7 +57,6 @@ export function wakeBody<S extends string>(m: MobParts<S>, ctx: FunctionContext,
     .execute()
     .as(m.rigRoots.tag(orphan))
     .run((b) => b.call(killRig));
-  m.awakeObj.score(ScoreTarget("#wake")).set(0);
 }
 
 /** Reruns `on_difficulty` on every live mob when the pack's difficulty changed since last applied. */

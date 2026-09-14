@@ -1,6 +1,7 @@
 // The DatapackModule a mob compiles to. Wiring only: each job lives in its own file.
-import { Range, ScoreTarget, Selector, atLeast, privateName } from "helix";
+import { Range, ScoreTarget, Selector, TICKS_PER_SECOND, atLeast, privateName } from "helix";
 import type { Datapack, FunctionContext, FunctionRef } from "helix";
+import { every } from "../../core/events";
 import type { DatapackModule, ModuleScope } from "../../core/module.interface";
 import { registerGesture } from "./gestures";
 import { MobParts } from "./parts";
@@ -18,6 +19,8 @@ export class MobModule<S extends string> implements DatapackModule {
 
   constructor(def: MobDef<S>) {
     this.m = new MobParts(def);
+    // On the shared clock, so each mob's scans get their own phase instead of all firing on one tick.
+    every(this, "wake", TICKS_PER_SECOND, (c) => c.call(this.m.fnRef("wake")));
   }
 
   fnRef(short: string): FunctionRef {
@@ -52,15 +55,9 @@ export class MobModule<S extends string> implements DatapackModule {
     m.add("tick_one", m.internal("tick_one", (ctx) => tickOneBody(m, ctx, scope)));
   }
 
-  /** While no mob is near a player this costs a counter and a score check; scans run in `wake`, once a second. */
+  /** While no mob is near a player this costs a score check; scans run in `wake`, once a second. */
   onTick(ctx: FunctionContext): void {
     const m = this.m;
-    const wake = m.awakeObj.score(ScoreTarget("#wake"));
-    wake.add(1);
-    ctx
-      .execute()
-      .ifScoreMatches(wake, Range.atLeast(Math.ceil(20 / m.def.tickEvery)))
-      .run((b) => b.call(m.fnRef("wake")));
     ctx
       .execute()
       .ifScoreMatches(m.awakeObj.score(ScoreTarget("#awake")), Range.atLeast(1))
