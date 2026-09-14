@@ -148,6 +148,10 @@ the `vscode/` extension), `profile [dump.json]`
   the else under `return run`): `if cond run return run function pass`, then the exit. `pass` is
   the body plus `execute <advance> run return run function <loop>`, so a `return` in the body or
   exit reaches the loop's caller. Needs `return run`; throws on 1.20.1.
+- **Score functions** (`dp.fn` in `ir/datapack/functions.ts`, `ctx.invoke` in
+  `commands/function.ts`): params are the callee's first locals, counted from `body.length`; a
+  returned score becomes `return run scoreboard players get`, stored by the caller with
+  `execute store result score`. A result needs `return run`, so it throws on 1.20.1.
 - **Conditions** (`commands/if/normalize.ts`): `ctx.if` takes score nodes, `Detector`s, and
   `and`/`or`/`not` of them. Detectors run once in `ctx.if` to record their clauses. `toChains`
   flattens everything to OR-of-AND clause chains, pushing `not` down to `unless` (forking or store

@@ -7,7 +7,8 @@ import { FunctionTagRef } from "../values/function-tag";
 import { NbtValue } from "../values/nbt";
 import { NbtRef } from "../frontend/nodes/nbt_ref";
 // Type-only, or it would close the command-file import cycle.
-import type { FunctionRef } from "../function_ref";
+import type { CallableFn, FunctionRef } from "../function_ref";
+import type { Score } from "../frontend/nodes/score";
 
 export class FunctionCommand extends CommandHandler<FunctionNode> {
   generate(node: FunctionNode, ctx: CodegenContext): void {
@@ -114,4 +115,29 @@ FunctionContext.prototype.callTag = function (
   tag: FunctionTagRef,
 ) {
   this.emit(new FunctionTagCallNode(tag));
+};
+
+declare module "../frontend/context" {
+  interface FunctionContext {
+    /** Calls a `dp.fn` function with `args` copied into its params, storing its result in `into`. */
+    invoke<P extends Score[]>(fn: CallableFn<P>, args: { [K in keyof P]: number | Score }, into?: Score): void;
+  }
+}
+
+FunctionContext.prototype.invoke = function (
+  this: FunctionContext,
+  fn: CallableFn,
+  args: readonly (number | Score)[],
+  into?: Score,
+) {
+  const name = fn.getName();
+  if (args.length !== fn.params.length) throw new Error(`${name} takes ${fn.params.length} args, got ${args.length}`);
+  if (into && !fn.returns) throw new Error(`${name} returns nothing to store`);
+  fn.params.forEach((p, i) => {
+    const arg = args[i];
+    if (typeof arg === "number") p.set(arg, this);
+    else p.assign(arg, this);
+  });
+  if (into) this.execute().storeResultScore(into).run((c) => c.call(fn));
+  else this.call(fn);
 };

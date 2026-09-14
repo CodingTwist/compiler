@@ -1,7 +1,9 @@
 // `Datapack` layer: objectives, functions and the load/tick function tags.
 import { Objective, ObjectiveKind } from "../../frontend";
 import { FunctionNode } from "../node";
-import { FunctionRef } from "../../function_ref";
+import { CallableFn, FunctionRef } from "../../function_ref";
+import type { FunctionContext, Score } from "../../frontend";
+import { supportsCommand } from "../../../versions/capabilities";
 import { FunctionId } from "../../values/resource.generated";
 import { DatapackCore, type FunctionTag } from "./core";
 
@@ -33,6 +35,29 @@ export class DatapackFunctions extends DatapackCore {
     this.functions.set(name, fn);
     this.tagFunction(name, tags);
     return new FunctionRef(fn, this.version);
+  }
+
+  /**
+   * A function whose params are scores and whose result is the score `body` returns.
+   *
+   * Params are counted from `body.length`, so they can't have defaults or be a rest param.
+   * They are locals, so a recursive call overwrites them.
+   */
+  fn<P extends Score[]>(name: string, body: (ctx: FunctionContext, ...params: P) => Score | void): CallableFn<P> {
+    const ref = this.createFunction(name);
+    let params = [] as unknown as P;
+    let returns = false;
+    ref.build((ctx) => {
+      params = Array.from({ length: body.length - 1 }, () => ctx.let()) as P;
+      const result = body(ctx, ...params);
+      if (!result) return;
+      if (!supportsCommand(this.version, ["return", "run"])) {
+        throw new Error(`dp.fn("${name}") returns a score, which needs \`return run\` (${this.version.id} lacks it)`);
+      }
+      returns = true;
+      ctx.returnRun(() => void result.get());
+    });
+    return new CallableFn(ref.node, this.version, params, returns);
   }
 
   /**

@@ -91,6 +91,12 @@ export class Score extends TellrawPart implements ExpressionNode {
     return this;
   }
 
+  /** `scoreboard players get <this>`: the score as the command's result. */
+  get(ctx?: FunctionContext): this {
+    this.emitter(ctx).emit(playersNode("get", this));
+    return this;
+  }
+
   /** `scoreboard players reset <this>` - un-set this holder's score entirely. */
   reset(ctx?: FunctionContext): this {
     this.emitter(ctx).emit(playersNode("reset", this));
