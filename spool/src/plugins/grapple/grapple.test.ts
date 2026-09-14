@@ -41,13 +41,18 @@ describe("dp.grapple (kit)", () => {
     expect(dp.files.has("internal/launch/main")).toBe(true);
   });
 
+  /** The web ray's loop: its check, then its pass and exit functions. */
+  const LOOP = "raycast/zzz/grapple/web/return_0/while_0";
+  const rayFiles = (dp: Datapack) => [LOOP, `${LOOP}/pass_0`, `${LOOP}/else_0`].map((f) => dp.files.get(f) ?? "").join("\n");
+
   it("the web ray (raycast plugin) marches along ^ while air remains and anchors by summoning the marker", () => {
     const { dp } = build();
-    const ray = dp.files.get("raycast/grapple/web")!;
+    const ray = rayFiles(dp);
     expect(ray).toContain(
-      "execute if block ~ ~ ~ #minecraft:air if score #grapple_web_steps raycast.work matches 1.. positioned ^ ^ ^0.5 run return run function test:raycast/grapple/web",
+      `execute if block ~ ~ ~ #minecraft:air if score #grapple_web_steps raycast.work matches 1.. run return run function test:${LOOP}/pass_0`,
     );
-    // With no block filter the on-hit body (summon + read) inlines into the marcher.
+    expect(ray).toContain(`execute positioned ^ ^ ^0.5 run return run function test:${LOOP}`);
+    // With no block filter the on-hit body (summon + read) is the loop's exit.
     expect(ray).toContain('summon minecraft:marker ~ ~ ~ {Tags:["grapple.anchor","grapple._new"]}');
     expect(ray).toContain("store result score @s grapple.anchor_x run data get entity @e[type=minecraft:marker,tag=grapple._new,limit=1] Pos[0] 10");
   });
@@ -55,18 +60,18 @@ describe("dp.grapple (kit)", () => {
   it("default reach is 100 steps and anchors on any block (no block gate)", () => {
     const { dp } = build();
     const all = [...dp.files.values()].join("\n");
-    const ray = dp.files.get("raycast/grapple/web")!;
+    const ray = dp.files.get(`${LOOP}/else_0`)!;
     // start seeds the ray's step budget (via the raycast plugin's step slot) before marching.
     expect(all).toContain("scoreboard players set #grapple_web_steps raycast.work 100");
     // unconditional summon - no `if block` prefix on the summon line.
-    expect(ray).toContain("\nsummon minecraft:marker ~ ~ ~ {Tags:");
+    expect(ray.startsWith("summon minecraft:marker ~ ~ ~ {Tags:")).toBe(true);
     expect(ray).not.toContain("if block ~ ~ ~ #minecraft:logs");
   });
 
   it("anchorOn restricts the anchor block and maxReach sets the step count", () => {
     const { dp } = build({ anchorOn: Block("#minecraft:logs"), maxReach: 30 });
     const all = [...dp.files.values()].join("\n");
-    const ray = dp.files.get("raycast/grapple/web")!;
+    const ray = rayFiles(dp);
     expect(all).toContain("scoreboard players set #grapple_web_steps raycast.work 60"); // 30 blocks * 2 steps
     // the hit is gated on the block; the summon+read is the raycast plugin's gated on-hit branch.
     expect(ray).toContain("execute if block ~ ~ ~ #minecraft:logs run function test:");

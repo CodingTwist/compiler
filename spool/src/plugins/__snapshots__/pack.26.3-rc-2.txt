@@ -357,14 +357,20 @@ execute if score #z player_motion.internal.dummy matches 1.. run scoreboard play
 === load
 function test:zzz/init_objectives
 === raycast/grapple/web
-scoreboard players remove #grapple_web_steps raycast.work 1
-execute if block ~ ~ ~ #minecraft:air if score #grapple_web_steps raycast.work matches 1.. positioned ^ ^ ^0.5 run return run function test:raycast/grapple/web
+return run function test:raycast/zzz/grapple/web/return_0/while_0
+=== raycast/init
+scoreboard objectives add raycast.work dummy
+=== raycast/zzz/grapple/web/return_0/while_0
+execute if block ~ ~ ~ #minecraft:air if score #grapple_web_steps raycast.work matches 1.. run return run function test:raycast/zzz/grapple/web/return_0/while_0/pass_0
+return run function test:raycast/zzz/grapple/web/return_0/while_0/else_0
+=== raycast/zzz/grapple/web/return_0/while_0/else_0
 summon minecraft:marker ~ ~ ~ {Tags:["grapple.anchor","grapple._new"]}
 execute store result score @s grapple.anchor_x run data get entity @e[type=minecraft:marker,tag=grapple._new,limit=1] Pos[0] 10
 execute store result score @s grapple.anchor_y run data get entity @e[type=minecraft:marker,tag=grapple._new,limit=1] Pos[1] 10
 execute store result score @s grapple.anchor_z run data get entity @e[type=minecraft:marker,tag=grapple._new,limit=1] Pos[2] 10
-=== raycast/init
-scoreboard objectives add raycast.work dummy
+=== raycast/zzz/grapple/web/return_0/while_0/pass_0
+scoreboard players remove #grapple_web_steps raycast.work 1
+execute positioned ^ ^ ^0.5 run return run function test:raycast/zzz/grapple/web/return_0/while_0
 === tick
 execute as @a[tag=ballistics.tracked] run function test:zzz/track_targets
 === zzz/fire/group_0

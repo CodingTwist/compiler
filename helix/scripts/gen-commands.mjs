@@ -127,6 +127,7 @@ const EXTRA_HANDLERS = [
   { module: "entity_guard", cls: "EntityGuardHandler" },
   { module: "near_guard", cls: "NearGuardHandler" },
   { module: "native", cls: "NativeCallHandler" },
+  { module: "loop", cls: "LoopHandler" },
 ];
 
 // Hand-written modules that install `ctx.<method>` augmentations but register no

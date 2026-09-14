@@ -21,6 +21,7 @@ import { ReturnRunHandler } from "./execute";
 import { EntityGuardHandler } from "./entity_guard";
 import { NearGuardHandler } from "./near_guard";
 import { NativeCallHandler } from "./native";
+import { LoopHandler } from "./loop";
 import { DataHandler } from "./data";
 import { SetblockHandler } from "./setblock";
 
@@ -96,6 +97,7 @@ export * from "./execute";
 export * from "./entity_guard";
 export * from "./near_guard";
 export * from "./native";
+export * from "./loop";
 export * from "./local";
 
 /**
@@ -127,6 +129,7 @@ export function createCommandHandlers(): CommandHandler[] {
     new EntityGuardHandler(),
     new NearGuardHandler(),
     new NativeCallHandler(),
+    new LoopHandler(),
     new DataHandler(),
     new SetblockHandler(),
   ];

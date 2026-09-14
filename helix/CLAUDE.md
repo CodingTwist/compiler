@@ -143,6 +143,11 @@ the `vscode/` extension), `profile [dump.json]`
   `helix.var`. Child bodies share their root's counter via `FunctionNode.root`, so any code that
   makes a scratch `FunctionNode` must set `root`. The objective is declared at load only if some
   function used a local. Not safe under recursion.
+- **Loops** (`commands/loop.ts`): `ctx.while(cond, body, { advance }).else(exit)` and
+  `ctx.repeat(n, body)`. The loop function is the if handler's branch lines (`branchLines`, with
+  the else under `return run`): `if cond run return run function pass`, then the exit. `pass` is
+  the body plus `execute <advance> run return run function <loop>`, so a `return` in the body or
+  exit reaches the loop's caller. Needs `return run`; throws on 1.20.1.
 - **Conditions** (`commands/if/normalize.ts`): `ctx.if` takes score nodes, `Detector`s, and
   `and`/`or`/`not` of them. Detectors run once in `ctx.if` to record their clauses. `toChains`
   flattens everything to OR-of-AND clause chains, pushing `not` down to `unless` (forking or store

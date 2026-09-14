@@ -24,6 +24,19 @@ declare module "../../frontend/context" {
   }
 }
 
+/** `c` with its detectors run into clause nodes; they run on a chain that is never emitted. */
+export function resolveCondition(ctx: FunctionContext, c: Condition): ExpressionNode {
+  if (typeof c === "function") {
+    const chain = new ExecuteNode();
+    c(new ExecuteBuilder(ctx, chain));
+    return new ClausesNode(chain.clauses);
+  }
+  if (c instanceof AndNode) return new AndNode(c.conds.map((x) => resolveCondition(ctx, x)));
+  if (c instanceof OrNode) return new OrNode(c.conds.map((x) => resolveCondition(ctx, x)));
+  if (c instanceof NotNode) return new NotNode(resolveCondition(ctx, c.cond));
+  return c;
+}
+
 FunctionContext.prototype.if = function (
   this: FunctionContext,
   condition: Condition,
@@ -39,20 +52,7 @@ FunctionContext.prototype.if = function (
   const thenBody = this.createChildFunction("if");
   runInContext(newChild(thenBody), thenFn);
 
-  // Detectors run now, on a chain that is never emitted, to record their clauses.
-  const resolve = (c: Condition): ExpressionNode => {
-    if (typeof c === "function") {
-      const chain = new ExecuteNode();
-      c(new ExecuteBuilder(this, chain));
-      return new ClausesNode(chain.clauses);
-    }
-    if (c instanceof AndNode) return new AndNode(c.conds.map(resolve));
-    if (c instanceof OrNode) return new OrNode(c.conds.map(resolve));
-    if (c instanceof NotNode) return new NotNode(resolve(c.cond));
-    return c;
-  };
-
-  const node = new IfElseNode(resolve(condition), thenBody);
+  const node = new IfElseNode(resolveCondition(this, condition), thenBody);
   this.emit(node);
   // Without `return run`, an or() or elif/else records the branch that ran in a local.
   const tracks = !supportsCommand(this.version, ["return", "run"]);
@@ -65,7 +65,7 @@ FunctionContext.prototype.if = function (
     elif: (cond, fn) => {
       const body = this.createChildFunction("elif");
       runInContext(newChild(body), fn);
-      node.elifs.push({ condition: resolve(cond), body });
+      node.elifs.push({ condition: resolveCondition(this, cond), body });
       track();
       return builder;
     },

@@ -30,6 +30,16 @@ export class IfHandler extends CommandHandler<IfElseNode> {
    * most one runs and each condition is checked before any body has run.
    */
   private emitBranches(node: IfElseNode, ctx: CodegenContext): void {
+    const call = commitLines(`${node.thenBody.name}_chain`, ctx.datapack, this.branchLines(node, ctx));
+    ctx.emit(call.cmd, call.info);
+  }
+
+  /**
+   * The lines of {@link emitBranches}' branch function, uncommitted.
+   *
+   * `returnElse` returns the else body's result too, so a loop's exit value reaches its caller.
+   */
+  branchLines(node: IfElseNode, ctx: CodegenContext, returnElse = false): CodegenContext {
     const { datapack: dp, dispatcher } = ctx;
     const branch = new CodegenContext(dp, dispatcher);
     // `return run` stops a forking command after its first entity, and a body's own
@@ -45,11 +55,11 @@ export class IfHandler extends CommandHandler<IfElseNode> {
       }
     }
     if (node.elseBody) {
-      const call = generateRunTargetLine(node.elseBody, dp, dispatcher);
-      if (call.cmd) branch.emit(call.cmd, call.info);
+      const call = generateRunTargetLine(node.elseBody, dp, dispatcher, returnElse ? { inline } : {});
+      if (call.cmd && returnElse) branch.emit(`return run ${call.cmd}`, { ...call.info, exits: true });
+      else if (call.cmd) branch.emit(call.cmd, call.info);
     }
-    const call = commitLines(`${node.thenBody.name}_chain`, dp, branch);
-    ctx.emit(call.cmd, call.info);
+    return branch;
   }
 
   /**

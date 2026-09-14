@@ -17,6 +17,8 @@ function build(opts?: Partial<Parameters<Datapack["raycast"]>[0]>) {
   return { dp, ref };
 }
 
+const LOOP = "raycast/zzz/web/return_0/while_0";
+
 describe("dp.raycast (kit)", () => {
   it("registers raycast/<name> and a load-tagged init that creates raycast.work", () => {
     const { dp } = build();
@@ -25,33 +27,33 @@ describe("dp.raycast (kit)", () => {
     expect(dp.files.get("raycast/init")).toContain("scoreboard objectives add raycast.work dummy");
   });
 
-  it("marches ^ through air while its own step budget remains, then tail-recurses", () => {
+  it("loops ^ through air while its own step budget remains, returning the loop's result", () => {
     const { dp } = build();
-    const ray = dp.files.get("raycast/web")!;
-    expect(ray).toContain("scoreboard players remove #web_steps raycast.work 1");
-    expect(ray).toContain(
-      "execute if block ~ ~ ~ #minecraft:air if score #web_steps raycast.work matches 1.. positioned ^ ^ ^0.5 run return run function test:raycast/web",
+    expect(dp.files.get("raycast/web")).toBe(`return run function test:${LOOP}`);
+    expect(dp.files.get(LOOP)).toContain(
+      `execute if block ~ ~ ~ #minecraft:air if score #web_steps raycast.work matches 1.. run return run function test:${LOOP}/pass_0`,
     );
+    expect(dp.files.get(`${LOOP}/pass_0`)!.split("\n")).toEqual([
+      "scoreboard players remove #web_steps raycast.work 1",
+      `execute positioned ^ ^ ^0.5 run return run function test:${LOOP}`,
+    ]);
   });
 
   it("runs onHit unconditionally when no hitOn filter is set", () => {
     const { dp } = build();
-    const ray = dp.files.get("raycast/web")!;
-    // the on-hit body renders at top level (not behind an `if block`)
-    expect(ray).toContain('tellraw @a {"text":"ray hit"}');
-    expect(ray).not.toContain("if block ~ ~ ~ #minecraft:logs");
+    expect(dp.files.get(LOOP)).toContain('return run tellraw @a {"text":"ray hit"}');
   });
 
   it("gates onHit behind the block filter when hitOn is set", () => {
     const { dp } = build({ hitOn: Block("#minecraft:logs") });
-    const ray = dp.files.get("raycast/web")!;
-    expect(ray).toContain('execute if block ~ ~ ~ #minecraft:logs run tellraw @a {"text":"ray hit"}');
+    expect(dp.files.get(LOOP)).toContain(
+      'return run execute if block ~ ~ ~ #minecraft:logs run tellraw @a {"text":"ray hit"}',
+    );
   });
 
   it("stepBlocks overrides the stride along ^", () => {
     const { dp } = build({ stepBlocks: 1 });
-    const ray = dp.files.get("raycast/web")!;
-    expect(ray).toContain("positioned ^ ^ ^1 run return run function test:raycast/web");
+    expect(dp.files.get(`${LOOP}/pass_0`)).toContain(`positioned ^ ^ ^1 run return run function test:${LOOP}`);
   });
 
   it("fire seeds the reach budget then calls the marcher", () => {
@@ -67,16 +69,14 @@ describe("dp.raycast (kit)", () => {
 });
 
 describe("dp.raycast stopAt (line of sight)", () => {
-  it("ends the march at the target and tail-calls the reach body with its result", () => {
+  it("ends the loop at the target and returns the reach body's result", () => {
     const { dp } = build({
       stopAt: Selector.nearest().distance(new Range(undefined, 2)),
       onReach: (ctx) => ctx.return_(1),
     });
-    const ray = dp.files.get("raycast/web")!;
-    // Checked BEFORE the step, so the target's own cell never counts as a block hit.
-    // Not inlined despite being one command: the call site is a `return run`, which the
-    // inliner skips.
-    expect(ray.trim().split("\n")[0]).toBe(
+    // The target stops the loop, and is checked before the hit so its cell never counts as a block.
+    expect(dp.files.get(LOOP)).toContain("unless entity @p[distance=..2] run return run");
+    expect(dp.files.get(`${LOOP}/else_0`)!.split("\n")[0]).toBe(
       "execute if entity @p[distance=..2] run return run function test:raycast/zzz/web_reach",
     );
     expect(dp.files.get("raycast/zzz/web_reach")).toContain("return 1");
