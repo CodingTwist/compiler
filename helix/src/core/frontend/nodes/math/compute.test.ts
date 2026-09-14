@@ -141,6 +141,19 @@ describe("math`` on /compute (26.3+)", () => {
     expect(intOnly).not.toContain("from_float");
   });
 
+  it("skips /compute for a plain `dest ± literal`, even on 26.3", () => {
+    const [add] = emit(() => math`${sc("a")} + 5`.into(sc("a")), v26_3_rc_2);
+    expect(add).toBe("scoreboard players add #a work 5");
+    const [sub] = emit(() => math`${sc("a")} - 5`.into(sc("a")), v26_3_rc_2);
+    expect(sub).toBe("scoreboard players remove #a work 5");
+    // Not the destination on both sides, or not a bare literal: still /compute.
+    const [other] = emit(
+      () => math`${sc("b")} + 5`.into(sc("a")),
+      v26_3_rc_2,
+    );
+    expect(other).toContain("compute default integer");
+  });
+
   it("hands a formula to a non-score destination as a provider", () => {
     const lines = emit(
       () =>

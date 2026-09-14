@@ -74,14 +74,16 @@ describe("dp.raycast stopAt (line of sight)", () => {
     });
     const ray = dp.files.get("raycast/web")!;
     // Checked BEFORE the step, so the target's own cell never counts as a block hit.
+    // Not inlined despite being one command: the call site is a `return run`, which the
+    // inliner skips.
     expect(ray.trim().split("\n")[0]).toBe(
-      "execute if entity @p[distance=..2] run return run function test:raycast/web_reach",
+      "execute if entity @p[distance=..2] run return run function test:raycast/zzz/web_reach",
     );
-    expect(dp.files.get("raycast/web_reach")).toContain("return 1");
+    expect(dp.files.get("raycast/zzz/web_reach")).toContain("return 1");
   });
 
   it("leaves the march untouched when no target is given", () => {
     const { dp } = build();
-    expect(dp.files.has("raycast/web_reach")).toBe(false);
+    expect(dp.files.has("raycast/zzz/web_reach")).toBe(false);
   });
 });
