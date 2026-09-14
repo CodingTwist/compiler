@@ -70,20 +70,22 @@ export class DatapackData extends DatapackTags {
    * Emits the advancement and a reward function that revokes it, so it can't be left firing
    * only once:
    *
-   *   dp.event("exit/eat_chorus", Trigger.consumeItem(Item.CHORUS_FRUIT),
-   *     (ctx) => { ... });
+   *   dp.event(Trigger.consumeItem(Item.CHORUS_FRUIT), (ctx) => { ... });
    *
+   * Only pass a name if something grants or revokes the advancement by id.
    * For conditions you could test on a tick, use a {@link Predicate} instead.
    */
+  event(trigger: Trigger, body: (ctx: FunctionContext) => void): { advancement: Advancement; fn: FunctionRef };
+  event(name: string, trigger: Trigger, body: (ctx: FunctionContext) => void): { advancement: Advancement; fn: FunctionRef };
   event(
-    name: string,
-    trigger: Trigger,
-    body: (ctx: FunctionContext) => void,
+    ...args: [Trigger, (ctx: FunctionContext) => void] | [string, Trigger, (ctx: FunctionContext) => void]
   ): { advancement: Advancement; fn: FunctionRef } {
+    const [name, trigger, body] = args.length === 3 ? args : [undefined, ...args];
     const fn = this.createFunction(name);
+    const path = fn.getName();
     const advancement = this.advancement(
-      name,
-      new AdvancementDef().criterion("trigger", trigger).reward(`${this.name}:${name}`),
+      path,
+      new AdvancementDef().criterion("trigger", trigger).reward(`${this.name}:${path}`),
     );
     fn.build((ctx) => {
       body(ctx);

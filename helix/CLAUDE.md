@@ -154,7 +154,8 @@ the `vscode/` extension), `profile [dump.json]`
   exit reaches the loop's caller. Needs `return run`; throws on 1.20.1.
 - **Nameless functions** (`ir/datapack/functions.ts`): `dp.createFunction()` / `dp.fn(body)`
   with no name get a private one - `privateChild(<function being built>, "fn_N")`, or
-  `zzz/fn_N` outside a build - so authors only name functions whose id is used outside the code.
+  `<group>/zzz/fn_N` inside `dp.group(name, body)`, else `zzz/fn_N` - so authors only name
+  functions whose id is used outside the code, and the output still groups by feature.
 - **Score functions** (`dp.fn` in `ir/datapack/functions.ts`, `ctx.invoke` in
   `commands/function.ts`): params are the callee's first locals, counted from `body.length`; a
   returned score becomes `return run scoreboard players get`, stored by the caller with

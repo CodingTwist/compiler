@@ -92,6 +92,17 @@ describe("Datapack.advancement registration", () => {
     expect(lines.at(-1)).toBe("advancement revoke @s only mypack:exit/eat_chorus");
   });
 
+  it("nameless event is auto-named in the current group", () => {
+    const dp = new Datapack("mypack", v1_21_4);
+    const { advancement, fn } = dp.group("exit", () =>
+      dp.event(Trigger.consumeItem(Item("chorus_fruit")), (ctx) => ctx.say("hi")),
+    );
+    expect(fn.getName()).toBe("exit/zzz/fn_0");
+    expect(advancement.render()).toBe("mypack:exit/zzz/fn_0");
+    const json = JSON.parse(buildDatapack(dp).get("data/mypack/advancement/exit/zzz/fn_0.json")!);
+    expect(json.rewards).toEqual({ function: "mypack:exit/zzz/fn_0" });
+  });
+
   it("rejects re-registering a name with a different definition", () => {
     const dp = new Datapack("mypack", v1_21_4);
     dp.advancement("foo", new AdvancementDef().criterion("t", Trigger.of("minecraft:tick")));
