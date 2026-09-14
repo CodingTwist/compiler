@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { Datapack, EntityType, Selector, buildDatapack, v1_21_4, type Vec3 } from "helix";
 import { installKit } from "../../kit";
 import { ballistics, type RuntimeShotOptions } from "./index";
-import { PROJECTILES, closestApproach, simulate, trajectoryBasis } from "./physics";
+import { closestApproach, simulate, trajectoryBasis } from "./physics";
+import { PROJECTILES } from "./projectiles";
 
 installKit([ballistics]);
 

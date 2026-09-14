@@ -1,89 +1,14 @@
-// Optional validation of a pack's emitted JSON against the vanilla schema, using Spyglass.
-//
-// Mainly for `dp.registryFile(...)` resources, where helix hands out raw JSON. Reads
-// rendered output.
-// Spyglass packages are optional and loaded lazily; `validateDatapack` explains how to
-// install them.
-// The first run per version downloads schemas into the cache; later runs are offline.
-
+// `validateDatapack`: writes the pack's JSON to a temp folder and checks it with Spyglass.
 import os from "os";
 import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
 import { Datapack } from "../core/ir/datapack";
-import { buildDatapack, buildPackMcmeta } from "../core/codegen/codegen";
-
-export interface McdocDiagnostic {
-  /** Datapack-relative path of the offending file, e.g. `data/foo/dimension/x.json`. */
-  file: string;
-  /** 1-based line/column of the problem within that file. */
-  line: number;
-  column: number;
-  severity: "error" | "warning" | "info" | "hint";
-  message: string;
-}
-
-export interface ValidateOptions {
-  /**
-   * Minecraft version to validate against. Defaults to `dp.version.id`; override for
-   * snapshot aliases.
-   */
-  gameVersion?: string;
-  /** Spyglass cache folder. Default `~/.cache/helix-mcdoc`; delete it to re-download. */
-  cacheDir?: string;
-  /**
-   * Only validate `dp.registryFile(...)` resources. Default false, which also checks typed
-   * builders' output.
-   */
-  registryFilesOnly?: boolean;
-}
-
-// Spyglass's `ErrorSeverity` enum (note: inverted from LSP's numbering).
-const SEVERITY: Record<number, McdocDiagnostic["severity"]> = {
-  0: "hint",
-  1: "info",
-  2: "warning",
-  3: "error",
-};
-
-/** Map a 0-based character offset in `text` to a 1-based line/column. */
-function offsetToLineCol(text: string, offset: number): { line: number; column: number } {
-  let line = 1;
-  let last = 0;
-  for (let i = 0; i < offset && i < text.length; i++) {
-    if (text[i] === "\n") {
-      line++;
-      last = i + 1;
-    }
-  }
-  return { line, column: offset - last + 1 };
-}
-
-// Spyglass is loaded lazily with no usable types, so `any` is contained to this loader.
-/* eslint-disable @typescript-eslint/no-explicit-any */
-async function loadSpyglass(): Promise<{
-  core: any;
-  mcdoc: any;
-  je: any;
-  NodeJsExternals: any;
-}> {
-  try {
-    const [core, mcdoc, je, nodejs] = await Promise.all([
-      import("@spyglassmc/core"),
-      import("@spyglassmc/mcdoc"),
-      import("@spyglassmc/java-edition"),
-      import("@spyglassmc/core/lib/nodejs.js"),
-    ]);
-    return { core, mcdoc, je, NodeJsExternals: (nodejs as any).NodeJsExternals };
-  } catch (e) {
-    throw new Error(
-      "helix JSON validation needs the optional Spyglass packages. Install them with:\n" +
-        "  npm i -D @spyglassmc/core @spyglassmc/mcdoc @spyglassmc/java-edition\n" +
-        `(underlying error: ${(e as Error).message})`,
-    );
-  }
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
+import { buildDatapack } from "../core/codegen/codegen";
+import { buildPackMcmeta } from "../core/codegen/mcmeta";
+import { loadSpyglass, SEVERITY } from "./spyglass";
+import { declaredSymbols, isDeclaredByPack, isRegistryFile, offsetToLineCol } from "./symbols";
+import type { McdocDiagnostic, ValidateOptions } from "./types";
 
 /**
  * Validates a pack's emitted JSON against the vanilla schema. Returns diagnostics (empty =
@@ -174,46 +99,4 @@ export async function validateDatapack(
   }
 
   return diagnostics;
-}
-
-// Only JSON is validated, so collect the functions and objectives the pack defines to avoid
-// false errors.
-function declaredSymbols(files: Map<string, string>): Set<string> {
-  const declared = new Set<string>();
-  for (const [rel, content] of files) {
-    const fn = /^data\/([^/]+)\/functions?\/(.+)\.mcfunction$/.exec(rel);
-    if (!fn) continue;
-    declared.add(`function ${fn[1]}:${fn[2]}`);
-    for (const m of content.matchAll(/scoreboard objectives add (\S+)/g)) {
-      declared.add(`objective ${m[1]}`);
-    }
-  }
-  return declared;
-}
-
-/** Is this an undeclared-symbol diagnostic for something the pack defines? */
-function isDeclaredByPack(message: string, declared: Set<string>): boolean {
-  const m = /Cannot find (function|objective) “(.+?)”/.exec(message);
-  return !!m && declared.has(`${m[1]} ${m[2]}`);
-}
-
-/** Is `rel` one of the pack's `dp.registryFile(...)` resources? */
-function isRegistryFile(dp: Datapack, rel: string): boolean {
-  const prefix = `data/${dp.name}/`;
-  if (!rel.startsWith(prefix)) return false;
-  const inner = rel.slice(prefix.length, -".json".length);
-  return dp.registryFileDefs.has(inner);
-}
-
-/** Render diagnostics as a compact, `file:line:col` block for logging. */
-export function formatMcdocDiagnostics(diagnostics: McdocDiagnostic[]): string {
-  if (diagnostics.length === 0) return "mcdoc: no problems found.";
-  const lines = diagnostics.map(
-    (d) => `  ${d.file}:${d.line}:${d.column} [${d.severity}] ${d.message}`,
-  );
-  const errors = diagnostics.filter((d) => d.severity === "error").length;
-  return (
-    `mcdoc: ${diagnostics.length} problem(s), ${errors} error(s):\n` +
-    lines.join("\n")
-  );
 }

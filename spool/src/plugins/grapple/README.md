@@ -37,7 +37,7 @@ who depends on what), then follow the flow below.
 
 | file | role | holds |
 | --- | --- | --- |
-| `physics.ts` | **library** | the pure swing math - `ScoreVec3` algebra + the `Fixed` constraint solver (SENSE / CONSTRAIN / RELEASE). Reads the repo + scratch; no selectors-beyond-`self`, no particles, no function wiring |
+| `physics/` | **library** | the pure swing math - `ScoreVec3` algebra + the `Fixed` constraint solver (SENSE / CONSTRAIN / RELEASE). Reads the repo + scratch; no selectors-beyond-`self`, no particles, no function wiring |
 | `anchor.service.ts` | service | the raycast's on-hit payload: summon the marker, read its Pos → anchor scores |
 | `attach.service.ts` | service | `latch` - on a placed anchor: fix the rope length, stamp the shared id, tag `grappling`, zero gravity |
 | `swing.service.ts` | service | builds `grapple/drive` + `grapple/constrain`; `driveAll` fans the tick over every grappler |
@@ -51,7 +51,7 @@ The **web raycast is a separate plugin** (`spool/plugins/raycast`): `grapple.mod
 registers `dp.raycast({ name: "grapple/web", … onHit: anchor.place })`, so the recursive
 marcher lives at `raycast/grapple/web`, not in this folder.
 
-**library vs service:** `physics.ts` is the only pure-logic file - algebra on the
+**library vs service:** `physics/` is the only pure-logic code - algebra on the
 repo/scratch slots. Everything else is a *service* wiring those slots into actual
 `.mcfunction`s (selectors, execute chains, summons, particles), and the *controller* is
 the thin entry that calls a service.
@@ -87,7 +87,7 @@ RELEASE
 
 ## Where the math connects
 
-The physics is two helix primitives composed in `physics.ts`, nothing hand-rolled:
+The physics is two helix primitives composed in `physics/`, nothing hand-rolled:
 
 - **`ScoreVec3`** (helix) - three `Score`s as a vector. Positions, velocity,
   `toAnchor`, the anchor/prev state, and `player_motion`'s `launchInput` are all

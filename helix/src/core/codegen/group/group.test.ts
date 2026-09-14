@@ -1,8 +1,8 @@
 import { expect, test } from "vitest";
-import { Datapack, Id, Item, Slot, Objective, Path, Pos, Relation, ScoreTarget, Selector, Sort, Range } from "../../index";
-import type { FunctionContext } from "../frontend/context";
-import { v1_21_4 } from "../../versions/profiles";
-import { buildDatapack } from "./codegen";
+import { Datapack, Id, Item, Slot, Objective, Path, Pos, Relation, ScoreTarget, Selector, Sort, Range } from "../../../index";
+import type { FunctionContext } from "../../frontend/context";
+import { v1_21_4 } from "../../../versions/profiles";
+import { buildDatapack } from "../codegen";
 
 /** Builds pack `p` with one function `f` and returns every function file. */
 function build(body: (c: FunctionContext) => void, dp = new Datapack("p", v1_21_4)): Map<string, string> {

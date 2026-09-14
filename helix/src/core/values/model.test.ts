@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Datapack } from "../ir/datapack";
-import { buildResourcePack, buildPackMcmeta } from "../codegen/codegen";
+import { buildResourcePack } from "../codegen/resource-pack";
+import { buildPackMcmeta } from "../codegen/mcmeta";
 import { v26_2 } from "../../versions/profiles";
 import { v1_21_4 } from "../../versions/profiles";
 import { v1_20_4 } from "../../versions/profiles";

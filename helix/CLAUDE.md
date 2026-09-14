@@ -77,7 +77,7 @@ the `vscode/` extension), `profile [dump.json]`
   The only shared node vocabulary - base classes (`ASTNode`, `ExpressionNode`, `CommandNodeBase`,
   `CommandPart`, `FunctionNode`, `Range`) - lives in **`src/core/ir/node.ts`**. The `SelectorNode`
   value node lives in `commands/selector.ts`; the score *expression* nodes (`ScoreCompareNode`,
-  `ScoreRangeNode`, conditions with no command of their own) live in `commands/if.ts`.
+  `ScoreRangeNode`, conditions with no command of their own) live in `commands/if/`.
 - **`src/core/frontend/`** - the author-facing fluent API.
   - `context/` - only `base.ts` (`ContextBase`: emit/call/version/child-function plumbing) and
     `index.ts` (`FunctionContext extends ContextBase`). **No command methods live here.** Every
@@ -89,8 +89,8 @@ the `vscode/` extension), `profile [dump.json]`
     `Id`, `Path`) that render version-aware at codegen.
 - **`src/core/ir/`** - codegen infrastructure: `commandhandler.ts` (`CommandHandler` base,
   `CodegenContext`, `Dispatcher`, and the shared `TreeCommandHandler` every mechanical command
-  renders through), `command-builder.ts`, `command-validator.ts`, `generate.ts`
-  (`generateFunction`/`generateSingleNode` - leaf, no barrel import), `datapack.ts`.
+  renders through), `command-builder/`, `command-validator.ts`, `generate.ts`
+  (`generateFunction`/`generateSingleNode` - leaf, no barrel import), `datapack/`.
 - **`src/core/commands/`** - **the single home for every command's node + builder + handler.** All
   registered through the generated `createCommandHandlers()` in `index.ts`:
   1. **Generated** (~51 files): the 1:1 vanilla-command mirror, produced by `scripts/gen-commands.mjs`
@@ -104,10 +104,10 @@ the `vscode/` extension), `profile [dump.json]`
      chain, plus the `atEntity`/`whenItems` sugar), `execute_as`, `entity_guard`, `near_guard`,
      `selector`, `data_op`, `native`. These are NOT 1:1 vanilla commands - their nodes are emitted
      by the frontend mixins. Registered via the generator's `EXTRA_HANDLERS` list, never regenerated.
-  3. **`score-expr`** - the one handler that picks a *backend*. `math\`…\`` (frontend/nodes/math.ts,
+  3. **`score-expr`** - the one handler that picks a *backend*. `math\`…\`` (frontend/nodes/math/,
      jsep-parsed infix → the `ExprNode` tree in `frontend/nodes/expr.ts`) emits one `ScoreExprNode`
      per destination slot; the handler lowers it to a single `/compute` on 26.3+ and to the
-     equivalent `scoreboard players operation` chain below it. Both lowerings live in `score-expr.ts`
+     equivalent `scoreboard players operation` chain below it. Both lowerings live in `score-expr/`
      (`toProvider` / `toScoreOps`) so an op is written once, not once per version. `COMPUTE_ONLY_OPS`
      in expr.ts (`sqrt`, `sin`, `cos`, `pow`, `avg`, `round`, `floor`, `ceil`, `len`) and the
      `provider` leaf kind (a `ContextInt`/`ContextFloat` tree interpolated as a `${}` hole - how
@@ -146,7 +146,7 @@ the `vscode/` extension), `profile [dump.json]`
   (`SelectorNode.picksOne()`/`picksRandomly()`/`isBareSelf()`, `NbtPath.within`, `Relation`),
   never by reading text. `ctx.emit(line)` without info is unknown and blocks every pass;
   inlining and grouping keep it up to date.
-- **Execute-prefix grouping** (`codegen/group.ts`, right after inlining): consecutive lines
+- **Execute-prefix grouping** (`codegen/group/`, right after inlining): consecutive lines
   sharing leading context clauses (`at`/`as`/`positioned`/`rotated`/`facing`/`in`/`align`/
   `anchored`/`on`) become `execute <prefix> run function <fn>/zzz/group_<n>`, read entirely from
   `dp.lineInfo`. Only when sound: every prefix selector picks one entity, never randomly, and
@@ -163,8 +163,9 @@ the `vscode/` extension), `profile [dump.json]`
   Only where the chain goes on to `run` - a bare `store result … if entity @e[…]` is the
   entity-count idiom and is left alone. Guard bodies (`whenPlayerNear`/`whenEntity`) run under
   `runInContext`, so ambient score verbs land inside the guard, not in the parent function.
-- **`src/core/codegen/codegen.ts`** - the **pure** build half: `buildDatapack`/`buildResourcePack`
-  (→ in-memory `Map<path, contents>`), `buildPackMcmeta`, `createHandlerMap()` (just
+- **`src/core/codegen/codegen.ts`** - the **pure** build half: `buildDatapack` (plus
+  `resource-pack.ts`'s `buildResourcePack` and `mcmeta.ts`'s `buildPackMcmeta`, all → in-memory
+  `Map<path, contents>`), `createHandlerMap()` (just
   `createCommandHandlers()` → Map by node `type`); re-exports `generate*` from `ir/generate`. It (and
   the whole authoring import graph) imports **no Node built-ins** - that's what lets helix run in a
   browser (see the browser entry below). The resource pack is built here too: `buildResourcePack`
@@ -173,16 +174,16 @@ the `vscode/` extension), `profile [dump.json]`
   `pack.mcmeta` (`profile.resourcePack`, distinct from the datapack `pack_format`).
 - **Data resources.** Each typed builder in `values/` registers on the `Datapack` and is
   serialized by a loop in `codegen.ts` into its version-aware folder (`paths.lootTable`, …).
-  `values/biome.ts` (`BiomeDef`) is the one that carries real format drift - `carvers` became a
+  `values/biome/` (`BiomeDef`) is the one that carries real format drift - `carvers` became a
   flat list in 1.21.2 (4058), `music` a weighted list in 1.21.4 (4174), `dry_foliage_color`
   arrived in 1.21.5 (4316), and in 1.21.11 / 25w42a (4654) the ambience fields left `effects`
   for the **environment-attribute map** (`attributes`, keyed `minecraft:visual/fog_color`,
   `minecraft:audio/ambient_sounds`, …). The author-facing setters are version-agnostic;
   `toJson` decides the half. Biomes are also the one registry whose registered name is
   **namespace-aware** (`dp.biome("minecraft:plains", …)` overrides vanilla) - see
-  `splitDefName` in `ir/datapack.ts`.
-- **`src/core/codegen/write.ts`** - the **disk** half, and the *only* codegen module that imports
-  `fs`/`path` (and, via `structure.ts`, `zlib`): `writeDatapack`/`writeResourcePack` (build, then
+  `splitDefName` in `ir/datapack/data.ts`.
+- **`src/core/codegen/write/`** - the **disk** half, and the *only* codegen module that imports
+  `fs`/`path` (and, via `structure/`, `zlib`): `writeDatapack`/`writeResourcePack` (build, then
   `syncFiles` the owned trees - `data/<ns>/`, `assets/<ns>/models|items` - writing only files whose
   content changed and deleting anything the build no longer produces; `addStructures`/`addAssets`
   files are copied verbatim). `dp.writeDatapack()`
@@ -198,7 +199,7 @@ the `vscode/` extension), `profile [dump.json]`
   Attach a model to an item with `Item.X.model(dp.model(...))` → the `item_model` component (1.21.4+)
   or a legacy `custom_model_data` fallback - never a magic number. The `assets/<ns>/items/<name>.json`
   **item definition** is a first-class value: `dp.model(name, Model)` is the flat single-model case,
-  `dp.itemDefinition(name, ItemModel)` the full typed union (`values/item-model.ts` - `ItemModel`
+  `dp.itemDefinition(name, ItemModel)` the full typed union (`values/item-model/` - `ItemModel`
   `model`/`composite`/`condition`/`select`/`range_dispatch`/`empty`/`special`, `TintSource`,
   `SpecialModel`, property-id enums, each with a `.raw()` escape). Both feed one `itemDefinitionDefs`
   registry that codegen serializes via `serializeItemDef`. `dp.blockModel`/`dp.blockState`
@@ -262,7 +263,7 @@ two behaviours:
 `*.test.ts` frames always count as the author. Both flags off means no capture and output
 byte-identical to a normal build.
 
-### JSON validation (`src/validate/mcdoc.ts`) - optional
+### JSON validation (`src/validate/`) - optional
 
 `validateDatapack(dp, opts?)` checks the pack's emitted JSON resources against the *vanilla
 schema* for `dp.version.id`, returning `McdocDiagnostic[]` (`formatMcdocDiagnostics` pretty-prints).
@@ -364,7 +365,7 @@ rebuild the handler map per version.
   never string-interpolated (`@a[distance=..6]`, `0 64 0`, `{Health:20f}`, …). If a handler needs a
   concept the typed API can't yet express, **add it to that API first** (e.g. `Selector.distance()`
   was added so `near_guard` didn't hand-build `@a[distance=..r]`), then compose it. The only allowed
-  `raw(...)` is execute grammar the token validator can't follow past a redirect (see `execute.ts`
+  `raw(...)` is execute grammar the token validator can't follow past a redirect (see `execute/`
   / `near_guard.ts`) - and even then the embedded selectors/values are still rendered through their
   typed classes, only the `as`/`if entity`/`run` keywords are raw.
 - Tests are colocated `*.test.ts` (vitest), excluded from `tsc` build. Pattern: build a `Datapack`

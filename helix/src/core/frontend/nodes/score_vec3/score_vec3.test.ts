@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { Datapack } from "../../ir/datapack";
-import { v1_21_4 } from "../../../versions/profiles";
-import { Objective } from "./objective";
-import { ScoreVec3 } from "./score_vec3";
-import { ScoreTarget } from "../../values/score_target";
-import { Selector } from "./selector";
-import { Path } from "../../values/paths";
-import "../../commands";
+import { Datapack } from "../../../ir/datapack";
+import { v1_21_4 } from "../../../../versions/profiles";
+import { Objective } from "../objective";
+import { ScoreVec3 } from "./vec";
+import { ScoreTarget } from "../../../values/score_target";
+import { Selector } from "../selector";
+import { Path } from "../../../values/paths";
+import "../../../commands";
 
 /** Build one function body and return its rendered command lines. */
 function emit(build: (vec: (p: string) => ScoreVec3, sc: (n: string) => any) => void): string {

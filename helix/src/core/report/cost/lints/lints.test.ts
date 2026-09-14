@@ -1,7 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { Datapack } from "../../../ir/datapack";
-import { Selector } from "../../../frontend/nodes/selector";
-import { Nbt, Byte } from "../../../values/nbt";
 import { analyzeCost, formatCostReport, type LintRule } from "..";
 import { v1_21_4 } from "../../../../versions/profiles";
 

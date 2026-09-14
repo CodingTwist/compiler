@@ -28,21 +28,22 @@ compiles to a **module** (the `DatapackModule` that emits commands).
 - [src/core/](src/core/) - the framework itself.
   - `module.decorator.ts` / `module.interface.ts` - `@Module`, `defineModule`, the
     `DatapackModule` lifecycle contract and metadata types.
-  - `factory.ts` - `DatapackFactory`. `mount(dp, Root, { env })` wires the tree into a Datapack
+  - `factory/` - `DatapackFactory`. `mount(dp, Root, { env })` wires the tree into a Datapack
     the `helix` CLI created (how lab builds); `create(Root, opts)` is `mount` over a fresh one.
-  - `graph.ts` / `tick-wiring.ts` / `flags.ts` - module-graph resolution, the tick tree, and
+  - `graph.ts` / `tick-wiring/` / `flags.ts` - module-graph resolution, the tick tree, and
     the `active` flag objective.
   - `area.ts` / `regions.ts` - area triggers and zone geometry.
-  - `events.ts` - `@On` / `@Every`, `EventLatches`, `rearmEvents`, `HandlerGroup`.
+  - `events/` - `@On` / `@Every`, `EventLatches`, `rearmEvents`, `HandlerGroup`.
   - `env.ts` - the build's one resolved `BuildEnv`. `buildEnv()` falls back to `TWINE_ENV`,
     the factory publishes what it pruned by (`setBuildEnv`), and module bodies gate on `isDev()`,
     so "which modules survive" and "which commands they emit" can't disagree. Never re-read
     `process.env.TWINE_ENV` in a pack.
 - [src/mob/](src/mob/) - `defineMob`: custom mobs (see below). `index.ts` is the entry;
-  `builder.ts`, `gesture.ts` (gesture defaults, pose timeline, preview data - pure, no
-  commands), `module/` (`MobModule` wiring in `index.ts`, shared state in `parts.ts`, one file
+  `builder.ts`, `types.ts` (public mob types), `gesture.ts` (gesture defaults and pose
+  timeline - pure, no commands), `module/` (`MobModule` wiring in `index.ts`, shared state in `parts.ts`, one file
   per emitted job: `summon`, `states`, `gestures`, `wake`, `tick-one`) and `preview/`
-  (`writeMobPreview`; the HTML rig viewer's script split into string modules).
+  (`writeMobPreview`, `rig.ts` preview data; the HTML rig viewer's script split into string
+  modules).
 - [src/boss/](src/boss/) - `defineBoss`: boss fights (see below).
 - [src/item/](src/item/) - `defineItem` behavioural items (`builder.ts`, `module.ts`), and
   `registry.ts`: dev-only `debug/give/<name>` functions for plain `ItemValue`s.
@@ -146,7 +147,7 @@ A `DatapackModule` may implement any of:
 **root** may be an area itself - it gets the same trigger / `active` gate / presence
 disarm a child area does, so a pack that is one gated area needs no wrapper module.
 
-### Event handlers: `@On` / `@Every` ([src/core/events.ts](src/core/events.ts))
+### Event handlers: `@On` / `@Every` ([src/core/events/](src/core/events/))
 
 `@On(detector, opts?)` marks a method as the body that runs when a condition holds.
 Vanilla has no change hook, so this compiles to **poll + latch**: one `execute` per
@@ -194,7 +195,7 @@ helix's `dp.untag(name, tag)` / `dp.functionRef(name)` mechanism primitives.
 
 **One call per module, never inlined.** Each ticking module's subtree (its `onTick`, `@On`
 polls, child modules, area presence checks) lands in its own `<name>/tick`
-(`moduleTick` in `core/tick-wiring.ts`). The root tick and each area's `active == 1` gate just
+(`moduleTick` in `core/tick-wiring/module-tick.ts`). The root tick and each area's `active == 1` gate just
 call it, so `tick.mcfunction` stays a short list and each module's cost sits under its own
 name. A module imported by several parents is built once. A `<name>/tick` that clashes with
 an existing function throws. Tests reading "the tick" should join every
@@ -207,7 +208,7 @@ emitted it:
 - `# loc` comments in the pack
 - `helix-sources.json`
 
-`core/factory.ts` registers twine (root found as `__dirname/../..`, so moving that file means updating it) with `ignoreSourceFrames(root, { framework: true })`, so framework
+`core/factory/factory.ts` registers twine (root found as `__dirname/../../..`, so moving that file means updating it) with `ignoreSourceFrames(root, { framework: true })`, so framework
 plumbing (tick wiring, mob internals) points at `twine/src/*.ts`, and module bodies point at the
 author's module. `sourceMap: true` in tsconfig is what turns the dist frames back into `.ts` lines.
 See helix/CLAUDE.md.

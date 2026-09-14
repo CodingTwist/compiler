@@ -52,7 +52,7 @@ const CONSOLE_ONLY = new Set([
   "setidletimeout", "spectate", "me", "msg", "teammsg",
 ]);
 
-// Commands whose src/core/commands/<c>.ts is hand-refined: keep the file as-is
+// Commands whose src/core/commands/<c>.ts (or <c>/ folder) is hand-refined: keep it as-is
 // (don't overwrite) but still import/register it in the barrel.
 const HAND_REFINED = new Set(["setblock", "data", "stopsound", "summon"]);
 

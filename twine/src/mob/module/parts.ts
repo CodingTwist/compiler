@@ -1,6 +1,6 @@
 import { EntityType, Relation, Selector, displayPose, privateName } from "helix";
 import type { Datapack, FunctionContext, FunctionRef, Objective, Quat, Score } from "helix";
-import type { MobStates } from "../builder";
+import type { MobStates } from "../types";
 import { memberPose, type ResolvedGesture } from "../gesture";
 import type { MobDef } from "./types";
 

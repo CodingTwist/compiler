@@ -1,42 +1,24 @@
-// Top of `Datapack`: entry points (`load`, `tick`, `after`, periodic hooks) and output.
-import { buildDatapack } from "../codegen/codegen";
-import {
-  analyzeCost,
-  CostReport,
-  formatCostReport,
-  type LintRule,
-} from "../report/cost";
+// Top of `Datapack`: writing the packs, reports and periodic hooks.
+import { buildDatapack } from "../../codegen/codegen";
+import { analyzeCost, CostReport, formatCostReport, type LintRule } from "../../report/cost";
 import {
   analyzeProfile,
   formatProfileReport,
   type ProfileReport,
   type ProfileDump,
-} from "../report/profile-report";
-import { FunctionNode } from "./node";
-import { scoreInitNode } from "../commands/scoreboard";
-import { FunctionRef } from "../function_ref";
-import type { FunctionContext } from "../frontend/context";
-import { TICKS_PER_SECOND } from "../timing/scoreboard-timing";
-import { privateName } from "../private-fn";
-import { Time } from "../values/time";
-import { DatapackResources } from "./datapack-resources";
+} from "../../report/profile";
+import { FunctionRef } from "../../function_ref";
+import { TICKS_PER_SECOND } from "../../timing/scoreboard-timing";
+import { DatapackEntry } from "./entry";
 
-export type { FunctionTag } from "./datapack-core";
-export {
-  splitDefName,
-  serializeItemDef,
-  type RegistryTag,
-  type ItemDefinition,
-} from "./datapack-resources";
-
-export class Datapack extends DatapackResources {
+export class Datapack extends DatapackEntry {
   /**
    * Writes the datapack to `outputPath`.
    * Async because the disk code is imported lazily, keeping helix browser-safe.
    */
   async writeDatapack(outputPath: string, opts?: { zip?: boolean }) {
     this.prepareForCodegen();
-    const { writeDatapack } = await import("../codegen/write.js");
+    const { writeDatapack } = await import("../../codegen/write/index.js");
     writeDatapack(this, outputPath, opts); //call back codegen
   }
 
@@ -46,14 +28,8 @@ export class Datapack extends DatapackResources {
    */
   async writeResourcePack(outputPath: string) {
     this.prepareForCodegen();
-    const { writeResourcePack } = await import("../codegen/write.js");
+    const { writeResourcePack } = await import("../../codegen/write/index.js");
     writeResourcePack(this, outputPath);
-  }
-
-  /** Runs finalizers and injects load setup before codegen. Idempotent. */
-  private prepareForCodegen() {
-    this.runFinalizers();
-    this.ensureLoadInitializers();
   }
 
   /**
@@ -129,88 +105,5 @@ export class Datapack extends DatapackResources {
    */
   everyTicks(ticks: number, phase = 0): FunctionRef {
     return this.timing.everyTicks(this, ticks, `${ticks}t`, phase);
-  }
-
-  // `dp.clip()` and friends are added by `spool`, not part of the core.
-
-  /** Append to the `load` function (runs on pack load / `/reload`). */
-  load(builder: (ctx: FunctionContext) => void): FunctionRef {
-    const ref = this.getOrCreateFunction("load", "load");
-    ref.build(builder);
-    return ref;
-  }
-
-  /**
-   * Runs `build` once after `time`:
-   *
-   *   dp.after(ctx, Time.seconds(3), (c) => c.say("done"));
-   *
-   * The body goes in an auto-named child function, so you don't invent a name. `append`
-   * queues
-   * instead of replacing a pending run. Not a coroutine: the body runs later at the world
-   * origin
-   * as the server, so it must set its own `as`/`at`.
-   */
-  after(
-    ctx: FunctionContext,
-    time: Time,
-    build: (ctx: FunctionContext) => void,
-    append = false,
-  ): FunctionRef {
-    const ref = this.getOrCreateFunction(ctx.createChildFunction("after").name);
-    ref.build(build);
-    const id = this.idOf(ref);
-    const schedule = ctx.schedule();
-    if (append) schedule.functionAppend(id, time);
-    else schedule.function_(id, time);
-    return ref;
-  }
-
-  /** Append to the `tick` function (runs every game tick). */
-  tick(builder: (ctx: FunctionContext) => void): FunctionRef {
-    const ref = this.getOrCreateFunction("tick", "tick");
-    ref.build(builder);
-    return ref;
-  }
-
-  private ensureLoadInitializers() {
-    // Ensure load function exists
-    let loadFn = this.functions.get("load");
-
-    if (!loadFn) {
-      loadFn = new FunctionNode("load");
-      this.functions.set("load", loadFn);
-
-      // tag it properly
-      if (!this.tags.has("load")) {
-        this.tags.set("load", new Set());
-      }
-      this.tags.get("load")!.add("load");
-    }
-
-    // Ensure objective init function exists
-    const initName = privateName("init_objectives");
-
-    let initFn = this.functions.get(initName);
-    if (!initFn) {
-      initFn = new FunctionNode(initName);
-      this.functions.set(initName, initFn);
-    }
-
-    // Rebuild from the current objectives each time, since more may be added between
-    // codegen calls.
-    initFn.nodes.length = 0;
-    for (const obj of this.objectiveDefs.values()) {
-      initFn.nodes.push(scoreInitNode(obj));
-    }
-
-    // Inject call at start of load function
-    const alreadyInjected = loadFn.nodes.some(
-      (n) => n instanceof FunctionNode && n.name === initName,
-    );
-
-    if (!alreadyInjected) {
-      loadFn.nodes.unshift(new FunctionNode(initName));
-    }
   }
 }

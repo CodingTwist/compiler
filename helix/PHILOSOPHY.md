@@ -41,13 +41,13 @@ of the same shape.
 
 | Concept | Type | Location |
 | --- | --- | --- |
-| Selector | `Selector` | [src/core/frontend/nodes/selector.ts](src/core/frontend/nodes/selector.ts) |
+| Selector | `Selector` | [src/core/frontend/nodes/selector/](src/core/frontend/nodes/selector/) |
 | Resource location (generic) | `Id` / `IdValue` | [src/core/values/id.ts](src/core/values/id.ts) |
 | Registry entry (biome, enchantment, …) | `Biome`, `Enchantment`, … - branded `ResourceId<R>` | [src/core/values/resource.ts](src/core/values/resource.ts) + generated [resource.generated.ts](src/core/values/resource.generated.ts) |
-| NBT + NBT path | `Nbt` / `NbtPath` | [src/core/values/nbt.ts](src/core/values/nbt.ts) |
+| NBT + NBT path | `Nbt` / `NbtPath` | [src/core/values/nbt/](src/core/values/nbt/) |
 | Position | `Pos` | [src/core/values/pos.ts](src/core/values/pos.ts) |
 | Block | `Block` | [src/core/values/block.ts](src/core/values/block.ts) |
-| Item | `Item` | [src/core/values/item.ts](src/core/values/item.ts) |
+| Item | `Item` | [src/core/values/item/](src/core/values/item/) |
 
 **Don't flatten distinct concepts to a generic type either.** A `biome` argument is
 `Biome`, not `Id`; an `enchantment` is `Enchantment`. The Brigadier tree records the
@@ -109,24 +109,24 @@ this list - new code must comply.**
 
 - [x] [src/core/display/frames.ts:49](src/core/display/frames.ts#L49) - was a selector
       built by string interpolation; now uses the `Selector` builder.
-- [x] [src/core/commands/data.ts:15-24](src/core/commands/data.ts#L15-L24) - `DataArgs`
+- [x] [src/core/commands/data/args.ts](src/core/commands/data/args.ts) - `DataArgs`
       `| string` arms removed; concept-only.
 - [x] All generated command builders (`teleport`, …) - the `| string` / `| number`
       escape-hatch arms were removed at the source in
       [scripts/gen-commands.mjs](scripts/gen-commands.mjs) (the `PARSERS` map) and the
       78 files regenerated. Hand-refined `setblock` tightened to match.
 - [x] Display-layer callers of the tightened builders (`src/core/display/{clip,slide,effect}.ts`,
-      `src/core/values/display.ts`) updated to pass objects: selectors via the
+      `src/core/values/display/`) updated to pass objects: selectors via the
       `Selector` builder, function ids via `FunctionId`, structure ids via `Id`,
       entity types via `EntityType`, schedule delays via `Time`. The legacy
       `Pos | string` author inputs are coerced at the boundary with `Pos.raw(...)`
       ([src/core/values/pos.ts](src/core/values/pos.ts)) rather than leaking strings
       into the strict command API.
 - [x] [src/core/frontend/data.ts](src/core/frontend/data.ts) - the `ctx.data()` /
-      `storage`/`entity`/`block` sugar (the frontend twin of `commands/data.ts`) had
+      `storage`/`entity`/`block` sugar (the frontend twin of `commands/data/`) had
       `| string` on every verb (`NbtPath | string`, `Selector | string`, `Pos | string`,
       `Id | string`, `Nbt | string`); all tightened to the concept type.
-- [x] `atEntity` (now a clause on [src/core/commands/execute.ts](src/core/commands/execute.ts)) and
+- [x] `atEntity` (now a clause on [src/core/commands/execute/](src/core/commands/execute/)) and
       [src/core/commands/near_guard.ts](src/core/commands/near_guard.ts) - the
       `atEntity`/`whenPlayerNear` sugar took raw selector/position strings; now
       `Selector` and `Pos`. (Handlers render via `toCommandValue(x).render(version)`.)

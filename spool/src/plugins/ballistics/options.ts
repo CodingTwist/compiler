@@ -1,6 +1,6 @@
 import { Selector } from "helix";
 import type { EntityType, FunctionContext, Score } from "helix";
-import { PROJECTILES } from "./physics";
+import { PROJECTILES } from "./projectiles";
 import type { ShellOptions, ShellSpec } from "./shell";
 
 /**

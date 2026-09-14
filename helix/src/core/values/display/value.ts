@@ -1,85 +1,19 @@
-import { VersionProfile } from "../../versions/profile";
-import type { FunctionContext } from "../frontend/context";
+// `DisplayValue`: a summonable display group, plus the `Display` factory.
+import { VersionProfile } from "../../../versions/profile";
+import type { FunctionContext } from "../../frontend/context";
 // Only used inside methods, so this value import doesn't trip the frontend/values cycle.
-import { Selector } from "../frontend/nodes/selector";
-import { BlockValue } from "./block";
-import { Float, NbtInput } from "./nbt";
-import type { IdentifiedEntityNbt } from "./entity-nbt";
-import type { ItemValue } from "./item";
-import { BlockDisplay, DisplayBase, Interaction, ItemDisplay } from "./entities.generated";
-import type { ItemDisplayFields } from "./entities.generated";
-import { CommandValue } from "./value";
-import { Pos, PosValue } from "./pos";
-import { Relation } from "./enums";
-import { EntityType } from "./resource.generated";
-import { Vec3, Quat, add } from "./transform-math";
-
-export type { Vec3, Quat };
-
-/**
- * An entity condition: a selector tested with `if` or `unless`. From `display.exists` /
- * `notExist`,
- * used by `ctx.summonIf`.
- */
-export interface EntityCondition {
-  selector: Selector;
-  mode: "if" | "unless";
-}
-
-/** Per-display transform; any omitted field falls back to identity. */
-export interface Transform {
-  translation?: Vec3;
-  scale?: Vec3;
-  leftRotation?: Quat;
-  rightRotation?: Quat;
-}
-
-/**
- * What one display member renders. `context` is the item model's display section (`fixed`,
- * `head`…).
- */
-export type DisplayContent =
-  | { readonly kind: "block"; readonly block: BlockValue }
-  | {
-      readonly kind: "item";
-      readonly item: ItemValue;
-      readonly context?: ItemDisplayFields["itemDisplay"];
-    };
-
-export interface DisplayChild {
-  content: DisplayContent;
-  transform: Transform;
-}
-
-/** The display entity type for a member's content. */
-const entityFor = (kind: DisplayContent["kind"]): EntityType =>
-  kind === "block" ? EntityType.BLOCK_DISPLAY : EntityType.ITEM_DISPLAY;
-
-const IDENTITY_QUAT: Quat = [0, 0, 0, 1];
-const UNIT_SCALE: Vec3 = [1, 1, 1];
-
-function transformNbt(t: Transform): NbtInput {
-  const vec = (v: Vec3 | Quat) => v.map(Float);
-  return {
-    left_rotation: vec(t.leftRotation ?? IDENTITY_QUAT),
-    right_rotation: vec(t.rightRotation ?? IDENTITY_QUAT),
-    scale: vec(t.scale ?? UNIT_SCALE),
-    translation: vec(t.translation ?? [0, 0, 0]),
-  };
-}
-
-/**
- * One member's transform as display NBT for `data merge`. `interpolationDuration` 0 snaps.
- * Matches the summon NBT, so a pose from {@link DisplayValue.members} lands exactly on the
- * original.
- */
-export function displayPose(t: Transform, interpolationDuration = 0) {
-  return DisplayBase({
-    transformation: transformNbt(t),
-    startInterpolation: 0,
-    interpolationDuration,
-  });
-}
+import { Selector } from "../../frontend/nodes/selector";
+import { BlockValue } from "../block";
+import type { IdentifiedEntityNbt } from "../entity-nbt";
+import type { ItemValue } from "../item";
+import type { ItemDisplayFields } from "../entities.generated";
+import { CommandValue } from "../value";
+import { Pos, PosValue } from "../pos";
+import { Relation } from "../enums";
+import { EntityType } from "../resource.generated";
+import { DisplayBuilder } from "./builder";
+import { entityFor, groupNbt } from "./nbt";
+import type { EntityCondition, Transform, Vec3 } from "./types";
 
 /**
  * A display group: a root plus child members as `Passengers`, each a block or item display,
@@ -89,53 +23,9 @@ export function displayPose(t: Transform, interpolationDuration = 0) {
  *     .add(Block.WAXED_COPPER_BLOCK, { translation: [-0.5, -3.5, -0.5] });
  *   ctx.summon("minecraft:block_display", Pos.rel(0, 10, 0), d);
  */
-export class DisplayValue implements CommandValue {
-  readonly children: DisplayChild[] = [];
-  private _pivot: Vec3 = [0, 0, 0];
-  private _offset: Vec3 = [0, 0, 0];
-  private _name?: string;
-  private _pos: Pos | string = "~ ~ ~";
-  private _brightness?: { block: number; sky: number };
-  private _hitbox?: { width: number; height: number; response: boolean };
-  private _interpolation?: number;
-  private _teleportDuration?: number;
-
-  constructor(
-    private content: DisplayContent,
-    private readonly rootTransform: Transform = {},
-  ) {}
-
+export class DisplayValue extends DisplayBuilder implements CommandValue {
   /** The entity id to summon this with (`ctx.summon(Display.id, ...)`). */
   static readonly id = EntityType.BLOCK_DISPLAY;
-
-  /** Replace the root member with a block. */
-  setBlock(block: BlockValue): this {
-    this.content = { kind: "block", block };
-    return this;
-  }
-
-  /** Replace the root member with an item. */
-  setItem(item: ItemValue, context?: ItemDisplayFields["itemDisplay"]): this {
-    this.content = { kind: "item", item, context };
-    return this;
-  }
-
-  /** Append a child block display at the given transform. */
-  add(block: BlockValue, transform: Transform = {}): this {
-    this.children.push({ content: { kind: "block", block }, transform });
-    return this;
-  }
-
-  /** Adds an item display child. One custom-model item replaces many block members. */
-  addItem(
-    item: ItemValue,
-    transform: Transform = {},
-    context?: ItemDisplayFields["itemDisplay"],
-  ): this {
-    this.children.push({ content: { kind: "item", item, context }, transform });
-    return this;
-  }
-
   /**
    * Adds a hitbox: an `interaction` entity riding the root, since displays can't be hit.
    *
@@ -146,96 +36,15 @@ export class DisplayValue implements CommandValue {
     const [bx, by, bz] = this.boundsSize();
     // ponytail: the box starts at the group origin, since passengers can't be offset.
     // Models not starting at the origin need explicit sizes.
-    this._hitbox = { width: width ?? Math.max(bx, bz), height: height ?? by, response };
+    this.s.hitbox = { width: width ?? Math.max(bx, bz), height: height ?? by, response };
     return this;
   }
 
   /** A selector for the hitbox alone - what an attack-relay reads. */
   hitboxSelector(): Selector {
-    if (!this._hitbox) throw new Error("Display has no hitbox - call .hitbox() first.");
+    if (!this.s.hitbox) throw new Error("Display has no hitbox - call .hitbox() first.");
     return Selector.allEntities().type(EntityType.INTERACTION).tag(`${this.getName()}_hitbox`);
   }
-
-  /**
-   * Default interpolation ticks for transform changes, so plain `data merge` updates move
-   * smoothly.
-   */
-  interpolation(ticks: number): this {
-    this._interpolation = ticks;
-    return this;
-  }
-
-  /**
-   * Ticks to glide when teleported. Separate from {@link interpolation}; matters for rigs
-   * moved by `tp`.
-   */
-  teleportDuration(ticks: number): this {
-    this._teleportDuration = ticks;
-    return this;
-  }
-
-  /**
-   * Fixes the light level (0–15) so displays match nearby blocks instead of rendering dark.
-   * `sky` defaults to `block`. Applies to every member.
-   */
-  brightness(block: number, sky: number = block): this {
-    this._brightness = { block, sky };
-    return this;
-  }
-
-  /**
-   * Shifts every member by `v`, e.g. to cancel a vehicle's mount point height. The hitbox
-   * doesn't move.
-   */
-  offset(v: Vec3): this {
-    this._offset = v;
-    return this;
-  }
-
-  /** The shift {@link offset} applied - what {@link members} already carries. */
-  getOffset(): Vec3 {
-    return this._offset;
-  }
-
-  /** Set the local-space pivot the group rotates about (default origin). */
-  pivot(p: Vec3): this {
-    this._pivot = p;
-    return this;
-  }
-
-  getPivot(): Vec3 {
-    return this._pivot;
-  }
-
-  /**
-   * Tags every member `<name>` and `<name>_<i>` (root is 0). Required before summoning,
-   * killing or animating.
-   */
-  named(name: string): this {
-    this._name = name;
-    return this;
-  }
-
-  /** The display's name/tag; throws if {@link named} was never called. */
-  getName(): string {
-    if (this._name === undefined) {
-      throw new Error(
-        "Display has no name - call .named(...) before summoning/animating it.",
-      );
-    }
-    return this._name;
-  }
-
-  /** Set the position this display is summoned at. */
-  at(pos: Pos | string): this {
-    this._pos = pos;
-    return this;
-  }
-
-  getPos(): Pos | string {
-    return this._pos;
-  }
-
   /** Condition: the group is currently spawned. */
   get exists(): EntityCondition {
     // The root is summoned and killed with the group, so it stands in for all of it.
@@ -283,18 +92,8 @@ export class DisplayValue implements CommandValue {
    */
   killAll(ctx: FunctionContext): void {
     const types = [...new Set(this.members().map((m) => m.content.kind))].map(entityFor);
-    if (this._hitbox) types.push(EntityType.INTERACTION);
+    if (this.s.hitbox) types.push(EntityType.INTERACTION);
     for (const type of types) ctx.kill(Selector.allEntities().type(type).tag(this.getName()));
-  }
-
-  /** Members in order, root first. The hitbox isn't included, since it has no transform. */
-  members(): DisplayChild[] {
-    const all = [{ content: this.content, transform: this.rootTransform }, ...this.children];
-    if (this._offset.every((n) => n === 0)) return all;
-    return all.map((m) => ({
-      ...m,
-      transform: { ...m.transform, translation: add(m.transform.translation ?? [0, 0, 0], this._offset) },
-    }));
   }
 
   /**
@@ -318,47 +117,7 @@ export class DisplayValue implements CommandValue {
 
   /** The `block_display` NBT to summon, built through the entity schema. */
   toNbt(): IdentifiedEntityNbt {
-    const tags = (suffix: string) =>
-      this._name ? [this._name, `${this._name}_${suffix}`] : undefined;
-
-    const hitboxNbt = (): IdentifiedEntityNbt[] =>
-      this._hitbox
-        ? [
-            Interaction({
-              width: this._hitbox.width,
-              height: this._hitbox.height,
-              response: this._hitbox.response,
-              tags: tags("hitbox"),
-            }).asPassenger(),
-          ]
-        : [];
-
-    // Through `members()`, so a group `offset` reaches the emitted NBT.
-    const all = this.members();
-    const member = (c: DisplayChild, idx: number): IdentifiedEntityNbt => {
-      // A passenger names its own entity type; the root's comes from the summon.
-      const riders =
-        idx === 0 ? [...all.slice(1).map((c, i) => member(c, i + 1)), ...hitboxNbt()] : [];
-      const common = {
-        transformation: transformNbt(c.transform),
-        brightness: this._brightness,
-        interpolationDuration: this._interpolation,
-        teleportDuration: this._teleportDuration,
-        tags: tags(String(idx)),
-        passengers: riders.length > 0 ? riders : undefined,
-      };
-      // Content first, so a block group renders byte-identically to before items existed.
-      const nbt =
-        c.content.kind === "block"
-          ? BlockDisplay({ blockState: c.content.block, ...common })
-          : ItemDisplay({
-              item: c.content.item.stackNbt(),
-              itemDisplay: c.content.context,
-              ...common,
-            });
-      return idx === 0 ? nbt : nbt.asPassenger();
-    };
-    return member(all[0], 0);
+    return groupNbt(this.members(), this.s);
   }
 
   render(version: VersionProfile): string {

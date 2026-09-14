@@ -7,7 +7,8 @@
 import { Pos, round6 } from "helix";
 import type { FunctionContext, Vec3 } from "helix";
 import { shellFuse, summonShell, type ShellOptions } from "./shell";
-import { solveLaunch, type LaunchOptions, type LaunchSolution } from "./solve";
+import { solveLaunch } from "./solve";
+import type { LaunchOptions, LaunchSolution } from "./launch";
 
 /** {@link FunctionContext.ballistic}'s options: how to aim, plus what to throw. */
 export interface BallisticOptions extends LaunchOptions, ShellOptions {}

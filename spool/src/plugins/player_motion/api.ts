@@ -1,6 +1,6 @@
 import { Pos, NbtPath, Range } from "helix";
 import type { PlayerMotionInternals } from "./context";
-import { globalConversionTail } from "./math";
+import { globalConversionTail } from "./global-conversion";
 
 /**
  * The public entry points `api/launch_local_xyz` and `api/launch_global_xyz`, reading

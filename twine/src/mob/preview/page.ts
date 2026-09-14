@@ -1,4 +1,4 @@
-import type { MobPreview } from "../builder";
+import type { MobPreview } from "./rig";
 import { DRAFT } from "./draft";
 import { EDITOR } from "./editor";
 import { LOOP } from "./loop";

@@ -3,7 +3,7 @@
 import type { Datapack } from "../core/ir/datapack";
 import type { RuntimeTarget } from "../core/ir/target";
 import type { DebugOptions } from "../core/debug/sources";
-import type { OptimizeOptions } from "../core/ir/datapack-core";
+import type { OptimizeOptions } from "../core/ir/datapack";
 import type { VersionProfile } from "../versions/profile";
 
 export type BuildMode = "dev" | "prod";

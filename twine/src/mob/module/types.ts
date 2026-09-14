@@ -1,5 +1,5 @@
 import type { DamageType, DisplayValue, IdentifiedEntityNbt } from "helix";
-import type { MobDifficulty, MobState, MobTick } from "../builder";
+import type { MobDifficulty, MobState, MobTick } from "../types";
 import type { ResolvedGesture } from "../gesture";
 
 export type Relay = { damage: number; type?: DamageType };

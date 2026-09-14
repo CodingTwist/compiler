@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { Datapack } from "../ir/datapack";
-import { formatProfileReport, toFoldedStacks, type ProfileDump } from "./profile-report";
-import { v1_21_4 } from "../../versions/profiles";
+import { Datapack } from "../../ir/datapack";
+import { formatProfileReport, toFoldedStacks, type ProfileDump } from ".";
+import { v1_21_4 } from "../../../versions/profiles";
 
 /** The line this is called from, in the same (source-mapped) numbering capture uses. */
 const here = () => Number(/:(\d+):\d+\)?$/.exec(new Error().stack!.split("\n")[2])![1]);
@@ -63,7 +63,7 @@ describe("profile report", () => {
     const report = dp.profileReport(raw);
     const hot = report.commands[0];
     expect(hot).toMatchObject({ fn: "heavy", command: "say heavy", selfNs: 9_000, line: 1 });
-    expect(hot.source).toMatch(new RegExp(`profile-report\\.test\\.ts:${sayHeavy}:`));
+    expect(hot.source).toMatch(new RegExp(`profile\\.test\\.ts:${sayHeavy}:`));
     expect(report.commands.find((c) => c.fn === "other:thing")!.line).toBeUndefined();
     expect(report.worstTick.commands[0]).toMatchObject({ fn: "heavy", selfNs: 8_000 });
 

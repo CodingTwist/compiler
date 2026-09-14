@@ -1,6 +1,6 @@
 import { Range, ScoreTarget, Selector } from "helix";
 import type { Datapack } from "helix";
-import type { MobStates } from "../builder";
+import type { MobStates } from "../types";
 import type { MobParts } from "./parts";
 import { byDifficulty } from "./summon";
 

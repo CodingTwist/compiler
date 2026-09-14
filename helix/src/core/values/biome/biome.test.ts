@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { Datapack } from "../ir/datapack";
-import { buildDatapack } from "../codegen/codegen";
-import { v1_20_4 } from "../../versions/profiles";
-import { v1_21_4 } from "../../versions/profiles";
-import { v26_2 } from "../../versions/profiles";
-import { EntityType, Particle } from "./resource.generated";
-import { SoundEvent } from "./sound";
+import { Datapack } from "../../ir/datapack";
+import { buildDatapack } from "../../codegen/codegen";
+import { v1_20_4 } from "../../../versions/profiles";
+import { v1_21_4 } from "../../../versions/profiles";
+import { v26_2 } from "../../../versions/profiles";
+import { EntityType, Particle } from "../resource.generated";
+import { SoundEvent } from "../sound";
 import {
   BiomeDef,
   CarveStep,
@@ -13,7 +13,7 @@ import {
   GrassColorModifier,
   SpawnCategory,
   TemperatureModifier,
-} from "./biome";
+} from ".";
 
 /** Build `dp` and return the parsed JSON at `path` (fails if missing). */
 function emitted(dp: Datapack, path: string): any {

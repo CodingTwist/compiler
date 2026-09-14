@@ -1,7 +1,7 @@
 // Finds the profile dump the helix-profiler mod wrote. Node-only.
 import fs from "fs";
 import path from "path";
-import type { ProfileDump } from "./profile-report";
+import type { ProfileDump } from "./profile";
 
 /** Folder, under the world root, the mod's `/helixprof stop` writes into. */
 export const PROFILE_DIR = "helix-profile";

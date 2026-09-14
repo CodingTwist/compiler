@@ -14,7 +14,7 @@
  */
 import { Tnt } from "helix";
 import type { FunctionContext, IdentifiedEntityNbt, Pos } from "helix";
-import type { ProjectileProfile } from "./physics";
+import type { ProjectileProfile } from "./projectiles";
 
 /** What the solver knows about the shot, handed to the {@link ShellFactory}. */
 export interface ShellSpec {

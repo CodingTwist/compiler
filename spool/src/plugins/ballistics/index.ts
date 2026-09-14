@@ -1,11 +1,11 @@
 import { Datapack, FunctionContext } from "helix";
 import type { FunctionRef, Vec3 } from "helix";
 import type { KitPlugin } from "../../plugin";
-import { PROJECTILES } from "./physics";
+import { PROJECTILES } from "./projectiles";
 import { defineRuntimeShot } from "./runtime";
 import type { RuntimeShotOptions } from "./options";
 import { emitStaticShot, type BallisticOptions } from "./static";
-import type { LaunchSolution } from "./solve";
+import type { LaunchSolution } from "./launch";
 
 export { defineRuntimeShot } from "./runtime";
 export type { RuntimeShotOptions } from "./options";
@@ -14,22 +14,12 @@ export type { BallisticOptions } from "./static";
 export { DEFAULT_SHELL } from "./shell";
 export type { ShellOptions, ShellSpec, ShellFactory } from "./shell";
 
-export {
-  PROJECTILES,
-  MOTION_AXIS_LIMIT,
-  simulate,
-  stepOnce,
-  trajectoryBasis,
-  closestApproach,
-} from "./physics";
-export type {
-  ProjectileProfile,
-  TrajectoryBasis,
-  Approach,
-  Motion,
-} from "./physics";
+export { simulate, stepOnce, trajectoryBasis, closestApproach } from "./physics";
+export { PROJECTILES, MOTION_AXIS_LIMIT } from "./projectiles";
+export type { TrajectoryBasis, Approach, Motion } from "./physics";
+export type { ProjectileProfile } from "./projectiles";
 export { solveLaunch } from "./solve";
-export type { LaunchOptions, LaunchSolution } from "./solve";
+export type { LaunchOptions, LaunchSolution } from "./launch";
 
 /**
  * `ballistics`: fire a projectile from A so it lands on B.

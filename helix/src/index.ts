@@ -30,6 +30,6 @@ export {
   formatMcdocDiagnostics,
   type McdocDiagnostic,
   type ValidateOptions,
-} from "./validate/mcdoc";
+} from "./validate";
 
 // export * from "./core/visualize";

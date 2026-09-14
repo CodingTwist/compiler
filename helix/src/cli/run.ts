@@ -3,7 +3,7 @@
 import fs from "fs";
 import { parseArgs } from "util";
 import type { RuntimeTarget } from "../core/ir/target";
-import type { ProfileDump } from "../core/report/profile-report";
+import type { ProfileDump } from "../core/report/profile";
 import { latestProfile, PROFILE_DIR } from "../core/report/profile-file";
 import { loadPack, worldDir, type LoadResult } from "./load";
 
@@ -112,7 +112,7 @@ function profile(loaded: LoadResult, dumpFile?: string): number {
 }
 
 async function validate({ packs }: LoadResult): Promise<number> {
-  const { validateDatapack, formatMcdocDiagnostics } = await import("../validate/mcdoc.js");
+  const { validateDatapack, formatMcdocDiagnostics } = await import("../validate/index.js");
   let errors = false;
   for (const { dp } of packs) {
     const problems = await validateDatapack(dp);

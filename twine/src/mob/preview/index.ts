@@ -2,7 +2,8 @@ import { execFileSync } from "child_process";
 import { mkdirSync, writeFileSync } from "fs";
 import { dirname } from "path";
 import { page } from "./page";
-import type { MobModuleRef, MobPreview } from "../builder";
+import type { MobModuleRef } from "../types";
+import type { MobPreview } from "./rig";
 
 export interface MobPreviewOpts {
   /**

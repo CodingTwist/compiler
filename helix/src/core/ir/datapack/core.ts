@@ -1,14 +1,13 @@
-// Base of `Datapack`: identity, functions, objectives, finalizers and structures.
+// Base of `Datapack`: identity, build options, finalizers and shipped structures.
 // Split across files for size only; it's one class to authors.
-import { Objective, ObjectiveKind } from "../frontend";
-import { FunctionNode } from "./node";
-import { FunctionRef } from "../function_ref";
-import { VersionProfile } from "../../versions/profile";
-import type { ClearFill } from "../codegen/structure";
-import { ScoreboardTiming } from "../timing/scoreboard-timing";
-import { DEFAULT_TARGET, RuntimeTarget } from "./target";
-import type { LineInfo } from "./line-info";
-import { enableSourceTracking, type DebugOptions, type SourceLoc } from "../debug/sources";
+import { Objective } from "../../frontend";
+import { FunctionNode } from "../node";
+import { VersionProfile } from "../../../versions/profile";
+import type { ClearFill } from "../../codegen/structure";
+import { ScoreboardTiming } from "../../timing/scoreboard-timing";
+import { DEFAULT_TARGET, RuntimeTarget } from "../target";
+import type { LineInfo } from "../line-info";
+import { enableSourceTracking, type DebugOptions, type SourceLoc } from "../../debug/sources";
 
 export type FunctionTag = "load" | "tick";
 
@@ -136,72 +135,5 @@ export class DatapackCore {
       throw new Error(`${kind} "${name}" already registered with a different definition`);
     }
     map.set(name, def);
-  }
-
-  objective(name: string, kind: ObjectiveKind = "dummy") {
-    const existing = this.objectives.get(name);
-
-    if (existing) {
-      if (existing.kind !== kind) {
-        throw new Error(
-          `Objective "${name}" already declared as ${existing.kind}`,
-        );
-      }
-      return existing;
-    }
-
-    const obj = new Objective(name, kind);
-    this.objectives.set(name, obj);
-    return obj;
-  }
-
-  /** Declared objectives, for the load-time init injection. */
-  protected get objectiveDefs(): ReadonlyMap<string, Objective> {
-    return this.objectives;
-  }
-
-  createFunction(name: string, ...tags: FunctionTag[]): FunctionRef {
-    const fn = new FunctionNode(name);
-    this.functions.set(name, fn);
-    this.tagFunction(name, tags);
-    return new FunctionRef(fn, this.version);
-  }
-
-  /**
-   * Like {@link createFunction}, but reuses an existing function so several authors can
-   * append to it.
-   */
-  getOrCreateFunction(name: string, ...tags: FunctionTag[]): FunctionRef {
-    let fn = this.functions.get(name);
-    if (!fn) {
-      fn = new FunctionNode(name);
-      this.functions.set(name, fn);
-    }
-    this.tagFunction(name, tags);
-    return new FunctionRef(fn, this.version);
-  }
-
-  /** A ref to an already-created function, or `undefined` if none exists. */
-  functionRef(name: string): FunctionRef | undefined {
-    const fn = this.functions.get(name);
-    return fn ? new FunctionRef(fn, this.version) : undefined;
-  }
-
-  /** Removes `name` from a function tag without deleting the function. */
-  untag(name: string, tag: FunctionTag): void {
-    this.tags.get(tag)?.delete(name);
-  }
-
-  private tagFunction(name: string, tags: FunctionTag[]) {
-    const autoTags = new Set<FunctionTag>([...tags]);
-    if (name === "tick") autoTags.add("tick");
-    if (name === "load") autoTags.add("load");
-
-    for (const tag of autoTags) {
-      if (!this.tags.has(tag)) {
-        this.tags.set(tag, new Set());
-      }
-      this.tags.get(tag)!.add(name);
-    }
   }
 }

@@ -11,7 +11,8 @@ import {
 } from "helix";
 import type { FunctionContext, FunctionRef, Score } from "helix";
 import { DEFAULT_SHELL, shellFuse, summonShell } from "./shell";
-import { MOTION_AXIS_LIMIT, trajectoryBasis } from "./physics";
+import { trajectoryBasis } from "./physics";
+import { MOTION_AXIS_LIMIT } from "./projectiles";
 import { OBJECTIVE, POS_SCALE, V_SCALE } from "./constants";
 import { resolveShotOptions, type RuntimeShotOptions } from "./options";
 import type { ShellSpec } from "./shell";

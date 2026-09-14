@@ -1,86 +1,12 @@
-import { ASTNode, ExpressionNode, FunctionNode, Range } from "../ir/node";
-import type { Objective } from "../frontend/nodes/objective";
-import { CodegenContext, CommandHandler } from "../ir/commandhandler";
-import { generateRunTargetLine, generateSingleNodeLine, runClause } from "../ir/generate";
-import { chainLine, type LineInfo } from "../ir/line-info";
-import { arg, buildTokens, lit, raw, Token } from "../ir/command-builder";
-import { VersionProfile } from "../../versions/profile";
-import { FunctionContext } from "../frontend/context";
-import { runInContext } from "../frontend/context/ambient";
-import { ScoreTarget } from "../values/score_target";
-import { toCommandValue } from "../values/value";
-import { EntityGuardNode } from "./entity_guard";
-import { NearGuardNode } from "./near_guard";
-import { Selector } from "../frontend/nodes/selector";
-import { renderExistence } from "./selector";
-import { Pos } from "../values";
-import { Id } from "../values/id";
-import { PredicateRef } from "../values/predicate";
-
-/** The `elif`/`else` continuation returned by `ctx.if(...)`. */
-export interface IfBuilder {
-  elif(condition: ExpressionNode, fn: (ctx: FunctionContext) => void): IfBuilder;
-  else(fn: (ctx: FunctionContext) => void): void;
-}
-
-// Score conditions for `if` and selector scores. Not commands; the `if` handler reads them.
-export class ScoreCompareNode extends ExpressionNode {
-  type = "score_compare";
-
-  constructor(
-    public target: ScoreTarget,
-    public targetObjective: Objective,
-    public operator: "<" | "<=" | "=" | ">=" | ">",
-    public source: ScoreTarget,
-    public sourceObjective: Objective,
-  ) {
-    super();
-  }
-}
-
-export class ScoreRangeNode extends ExpressionNode {
-  type = "score_range";
-
-  constructor(
-    public target: ScoreTarget,
-    public targetObjective: Objective,
-    public range: Range,
-  ) {
-    super();
-  }
-}
-
-/** `if predicate <id>` - defers the test to a registered predicate file. */
-export class PredicateCheckNode extends ExpressionNode {
-  type = "predicate_check";
-
-  constructor(public predicateId: string) {
-    super();
-  }
-}
-
-/**
- * A condition that passes when a {@link Predicate} passes, for `ctx.if(...)`.
- * Compiles to `execute if predicate <id>`.
- */
-export function predicateCheck(ref: PredicateRef | Id | string): PredicateCheckNode {
-  const id =
-    ref instanceof PredicateRef ? ref.id : typeof ref === "string" ? Id(ref).render() : ref.render();
-  return new PredicateCheckNode(id);
-}
-
-export class IfElseNode extends ASTNode {
-  type = "if_else";
-
-  constructor(
-    public condition: ExpressionNode,
-    public thenBody: FunctionNode,
-    public elifs: { condition: ExpressionNode; body: FunctionNode }[] = [],
-    public elseBody?: FunctionNode,
-  ) {
-    super();
-  }
-}
+// Lowers `ctx.if(...)` to `execute if … run` lines, folding nested guards into one chain.
+import { ASTNode, FunctionNode } from "../../ir/node";
+import { CodegenContext, CommandHandler } from "../../ir/commandhandler";
+import { generateRunTargetLine, generateSingleNodeLine, runClause } from "../../ir/generate";
+import { chainLine, type LineInfo } from "../../ir/line-info";
+import { buildTokens, lit, raw } from "../../ir/command-builder";
+import { foldLink, type ChainLink } from "./links";
+import { IfElseNode, PredicateCheckNode, ScoreRangeNode } from "./nodes";
+import { linkText, linkTokens } from "./render";
 
 export class IfHandler extends CommandHandler<IfElseNode> {
   type = "if_else";
@@ -128,7 +54,7 @@ export class IfHandler extends CommandHandler<IfElseNode> {
     body: FunctionNode,
   ): void {
     if (body.nodes.length === 1) {
-      const folded = this.foldLink(body.nodes[0]);
+      const folded = foldLink(body.nodes[0]);
       if (folded) {
         if (folded.next.kind === "body") {
           this.emitBodyChain(ctx, [...chain, folded.link], folded.next.body);
@@ -152,7 +78,7 @@ export class IfHandler extends CommandHandler<IfElseNode> {
     chain: ChainLink[],
     node: ASTNode,
   ): void {
-    const folded = this.foldLink(node);
+    const folded = foldLink(node);
     if (folded) {
       if (folded.next.kind === "body") {
         this.emitBodyChain(ctx, [...chain, folded.link], folded.next.body);
@@ -162,37 +88,6 @@ export class IfHandler extends CommandHandler<IfElseNode> {
       return;
     }
     this.emitChain(ctx, chain, generateSingleNodeLine(node, ctx.datapack, ctx.dispatcher));
-  }
-
-  /** Recognize one foldable guard layer and what's inside it, or nothing. */
-  private foldLink(
-    node: ASTNode,
-  ): { link: ChainLink; next: { kind: "body"; body: FunctionNode } | { kind: "node"; node: ASTNode } } | undefined {
-    if (node instanceof IfElseNode && node.elifs.length === 0 && !node.elseBody) {
-      return {
-        link: { kind: "score", mode: "if", cond: node.condition },
-        next: { kind: "body", body: node.thenBody },
-      };
-    }
-    if (node instanceof EntityGuardNode) {
-      return {
-        link: { kind: "entity", mode: node.mode, selector: node.selector },
-        next: { kind: "node", node: node.command },
-      };
-    }
-    if (node instanceof NearGuardNode) {
-      return {
-        link: {
-          kind: "near",
-          pos: node.pos,
-          radius: node.radius,
-          unlessSelector: node.unlessSelector,
-          perPlayer: node.perPlayer,
-        },
-        next: { kind: "node", node: node.command },
-      };
-    }
-    return undefined;
   }
 
   /**
@@ -207,184 +102,15 @@ export class IfHandler extends CommandHandler<IfElseNode> {
   ): void {
     const [first, ...rest] = chain;
     const tail = [
-      ...rest.map((link) => this.linkText(link, ctx.version)),
+      ...rest.map((link) => linkText(link, ctx.version)),
       runClause(call.cmd),
     ].join(" ");
     const line = buildTokens(ctx.version, [
       lit("execute"),
-      ...this.linkTokens(first, ctx.version),
+      ...linkTokens(first, ctx.version),
       raw(tail),
     ]);
     // Every chain starts with a condition, which can't be shared.
     ctx.emit(line, chainLine([undefined], call.info));
   }
-
-  /** Full rendered fragment for one chain link, including its own leading keyword(s). */
-  private linkText(link: ChainLink, version: VersionProfile): string {
-    if (link.kind === "entity") {
-      return `${link.mode} entity ${renderExistence(link.selector, version)}`;
-    }
-    if (link.kind === "near") {
-      return this.nearLinkText(link, version);
-    }
-    return `${link.mode} ${this.conditionText(link.cond, version)}`;
-  }
-
-  private nearLinkText(
-    link: Extract<ChainLink, { kind: "near" }>,
-    version: VersionProfile,
-  ): string {
-    const posStr = toCommandValue(link.pos).render(version);
-    const near = Selector.allPlayers().distance(new Range(undefined, link.radius));
-    const nearStr = link.perPlayer
-      ? toCommandValue(near).render(version)
-      : renderExistence(near, version);
-    const guard = link.unlessSelector
-      ? ` unless entity ${renderExistence(link.unlessSelector, version)}`
-      : "";
-    const match = link.perPlayer ? `as ${nearStr}` : `if entity ${nearStr}`;
-    return `positioned ${posStr} ${match}${guard}`;
-  }
-
-  private conditionText(cond: ExpressionNode, version: VersionProfile): string {
-    if (cond instanceof PredicateCheckNode) {
-      return `predicate ${cond.predicateId}`;
-    }
-    if (cond instanceof ScoreRangeNode) {
-      return `score ${toCommandValue(cond.target).render(version)} ${
-        cond.targetObjective.objective
-      } matches ${cond.range ?? "*"}`;
-    }
-    if (cond instanceof ScoreCompareNode) {
-      return `score ${toCommandValue(cond.target).render(version)} ${
-        cond.targetObjective.objective
-      } ${cond.operator} ${toCommandValue(cond.source).render(version)} ${
-        cond.sourceObjective.objective
-      }`;
-    }
-    throw new Error("Unsupported condition");
-  }
-
-  /** Full token sequence for one chain link, including its own leading keyword(s). */
-  private linkTokens(link: ChainLink, version: VersionProfile): Token[] {
-    if (link.kind === "entity") {
-      return [
-        lit(link.mode),
-        lit("entity"),
-        arg(renderExistence(link.selector, version)),
-      ];
-    }
-    if (link.kind === "near") {
-      return this.nearLinkTokens(link, version);
-    }
-    return [lit(link.mode), ...this.condition(link.cond, version)];
-  }
-
-  private nearLinkTokens(
-    link: Extract<ChainLink, { kind: "near" }>,
-    version: VersionProfile,
-  ): Token[] {
-    const near = Selector.allPlayers().distance(new Range(undefined, link.radius));
-    const tokens: Token[] = [
-      lit("positioned"),
-      arg(toCommandValue(link.pos).render(version)),
-      lit(link.perPlayer ? "as" : "if"),
-      ...(link.perPlayer ? [] : [lit("entity")]),
-      arg(link.perPlayer ? toCommandValue(near).render(version) : renderExistence(near, version)),
-    ];
-    if (link.unlessSelector) {
-      tokens.push(
-        lit("unless"),
-        lit("entity"),
-        arg(renderExistence(link.unlessSelector, version)),
-      );
-    }
-    return tokens;
-  }
-
-  private condition(cond: ExpressionNode, version: VersionProfile): Token[] {
-    if (cond instanceof PredicateCheckNode) {
-      return [lit("predicate"), arg(cond.predicateId)];
-    }
-    if (cond instanceof ScoreRangeNode) {
-      return [
-        lit("score"),
-        arg(toCommandValue(cond.target).render(version)),
-        arg(cond.targetObjective.objective),
-        lit("matches"),
-        arg(`${cond.range ?? "*"}`),
-      ];
-    }
-    if (cond instanceof ScoreCompareNode) {
-      return [
-        lit("score"),
-        arg(toCommandValue(cond.target).render(version)),
-        arg(cond.targetObjective.objective),
-        lit(cond.operator),
-        arg(toCommandValue(cond.source).render(version)),
-        arg(cond.sourceObjective.objective),
-      ];
-    }
-    throw new Error("Unsupported condition");
-  }
 }
-
-/**
- * One link in an `execute` chain: a score condition, an entity guard, or a near-player
- * guard.
- */
-type ChainLink =
-  | { kind: "score"; mode: "if" | "unless"; cond: ExpressionNode }
-  | { kind: "entity"; mode: "if" | "unless"; selector: Selector | string }
-  | {
-      kind: "near";
-      pos: Pos;
-      radius: number;
-      unlessSelector?: Selector;
-      perPlayer: boolean;
-    };
-
-declare module "../frontend/context" {
-  interface FunctionContext {
-    /** `if`/`elif`/`else` control flow; bodies compile to child functions. */
-    if(
-      condition: ExpressionNode,
-      thenFn: (ctx: FunctionContext) => void,
-    ): IfBuilder;
-  }
-}
-
-FunctionContext.prototype.if = function (
-  this: FunctionContext,
-  condition: ExpressionNode,
-  thenFn: (ctx: FunctionContext) => void,
-): IfBuilder {
-  // A fully-composed child context over `fn`, carrying this context's version.
-  const newChild = (fn: FunctionNode): FunctionContext =>
-    new (this.constructor as new (
-      fn: FunctionNode,
-      v: VersionProfile,
-    ) => FunctionContext)(fn, this.version);
-
-  const thenBody = this.createChildFunction("if");
-  runInContext(newChild(thenBody), thenFn);
-
-  const node = new IfElseNode(condition, thenBody);
-  this.emit(node);
-
-  const builder: IfBuilder = {
-    elif: (cond, fn) => {
-      const body = this.createChildFunction("elif");
-      runInContext(newChild(body), fn);
-      node.elifs.push({ condition: cond, body });
-      return builder;
-    },
-    else: (fn) => {
-      const body = this.createChildFunction("else");
-      runInContext(newChild(body), fn);
-      node.elseBody = body;
-    },
-  };
-
-  return builder;
-};

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { Datapack, NbtPath, Pos, Selector } from "../../index";
-import { v26_2 } from "../../versions/profiles";
-import { buildDatapack } from "../codegen/codegen";
+import { Datapack, NbtPath, Pos, Selector } from "../../../index";
+import { v26_2 } from "../../../versions/profiles";
+import { buildDatapack } from "../../codegen/codegen";
 
 function render(build: (ctx: any) => void): string {
   const dp = new Datapack("t", v26_2);
