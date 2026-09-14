@@ -86,14 +86,10 @@ export class Logger {
   private emit(ctx: FunctionContext, level: LogLevel, namespace: string, message: string) {
     if (!this.objective) return;
     const { label, color } = LEVEL_STYLE[level];
-    ctx.execute()
-      .as(Selector.allPlayers().score(this.objective, new Range(0, SEVERITY[level])))
-      .run((c) =>
-        c.tellraw(Selector.self(), [
-          text(`[${label}] `).color(color),
-          text(`[${namespace}] `).color(Color.GRAY),
-          text(message),
-        ]),
-      );
+    ctx.tellraw(Selector.allPlayers().score(this.objective, new Range(0, SEVERITY[level])), [
+      text(`[${label}] `).color(color),
+      text(`[${namespace}] `).color(Color.GRAY),
+      text(message),
+    ]);
   }
 }

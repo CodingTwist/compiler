@@ -58,7 +58,7 @@ Packs don't create or write a Datapack themselves. A pack has a `helix.config.ts
 (`defineConfig({ name, version, entry, targets?, out: { datapack, resourcePack? }, world?, debug? })`)
 and an entry whose default export is `definePack((dp, build) => …)`. `loadPack` (`cli/load.ts`) loads
 `.env` beside the config, imports both, and creates one `Datapack` per target (`-<target>` output
-suffix for non-vanilla; `debug` only in dev). Commands (`cli/run.ts`, flags via `util.parseArgs`):
+suffix for non-vanilla; an `out.datapack` ending in `.zip` is zipped; `debug` only in dev). Commands (`cli/run.ts`, flags via `util.parseArgs`):
 `build [--prod]`, `dev` (build under `tsx watch`), `report [--strict] [--json]` (`--json` forces `debug.sources`, prints `{ root, packs: [{ target,
 lints, warnings, staleAllows }] }` as the only stdout line - pack `console.log`s go to stderr - for
 the `vscode/` extension), `profile [dump.json]`
@@ -152,6 +152,9 @@ the `vscode/` extension), `profile [dump.json]`
   the else under `return run`): `if cond run return run function pass`, then the exit. `pass` is
   the body plus `execute <advance> run return run function <loop>`, so a `return` in the body or
   exit reaches the loop's caller. Needs `return run`; throws on 1.20.1.
+- **Nameless functions** (`ir/datapack/functions.ts`): `dp.createFunction()` / `dp.fn(body)`
+  with no name get a private one - `privateChild(<function being built>, "fn_N")`, or
+  `zzz/fn_N` outside a build - so authors only name functions whose id is used outside the code.
 - **Score functions** (`dp.fn` in `ir/datapack/functions.ts`, `ctx.invoke` in
   `commands/function.ts`): params are the callee's first locals, counted from `body.length`; a
   returned score becomes `return run scoreboard players get`, stored by the caller with

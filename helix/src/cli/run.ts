@@ -135,7 +135,7 @@ export async function runCli(argv: string[]): Promise<number> {
 
 async function build({ config, packs }: LoadResult): Promise<number> {
   for (const { target, dp, out } of packs) {
-    await dp.writeDatapack(out.datapack);
+    await dp.writeDatapack(out.datapack, { zip: out.datapack.endsWith(".zip") });
     if (out.resourcePack) await dp.writeResourcePack(out.resourcePack);
     const rp = out.resourcePack ? `  (+ resource pack -> ${out.resourcePack})` : "";
     console.log(`[${config.name}:${target}] datapack -> ${out.datapack}${rp}`);

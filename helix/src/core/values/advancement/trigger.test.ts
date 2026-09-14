@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { Trigger } from ".";
 import { Item } from "../item";
+import { Block } from "../block";
+import { Dimension } from "../resource.generated";
 import { Predicate } from "../predicate";
 import { v1_21_4 } from "../../../versions/profiles";
 
@@ -41,6 +43,12 @@ describe("Trigger location/entity/block helpers", () => {
       trigger: "minecraft:enter_block",
       conditions: { block: "minecraft:end_gateway" },
     });
+  });
+
+  it("placedBlock takes a Block, and a typed Dimension in its location", () => {
+    const json = Trigger.placedBlock(Block.STONE_BUTTON, { dimension: Dimension.THE_END }).toJson(v1_21_4);
+    expect(json.conditions?.block).toBe("minecraft:stone_button");
+    expect(JSON.stringify(json.conditions?.location)).toContain('"dimension":"minecraft:the_end"');
   });
 
   it("consumeItem renders the item's predicate form", () => {

@@ -100,9 +100,9 @@ export class Trigger {
   }
 
   /** `minecraft:placed_block`: fires when the player places `block`, optionally at `at`. */
-  static placedBlock(block: string | Id, at?: LocationSpec): Trigger {
+  static placedBlock(block: string | Id | BlockValue, at?: LocationSpec): Trigger {
     return new Trigger((v) => {
-      const conditions: Record<string, unknown> = { block: idStr(block) };
+      const conditions: Record<string, unknown> = { block: typeof block === "string" ? idStr(block) : block.render() };
       if (at) conditions.location = [Predicate.location(at).toJson(v)];
       return { trigger: "minecraft:placed_block", conditions };
     });

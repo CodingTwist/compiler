@@ -16,7 +16,10 @@ export interface HelixConfig {
   entry: string;
   /** Runtimes to build. Default `["vanilla"]`; others write to `<out>-<target>`. */
   targets?: RuntimeTarget[];
-  /** Output folders, relative to the config. `resourcePack` is only written when set. */
+  /**
+   * Output folders, relative to the config. A `datapack` path ending in `.zip` is zipped.
+   * `resourcePack` is only written when set.
+   */
   out: { datapack: string; resourcePack?: string };
   /**
    * World save folder, where `helix profile` finds dumps. Default: two levels above

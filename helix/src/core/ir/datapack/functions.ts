@@ -7,6 +7,8 @@ import { supportsCommand } from "../../../versions/capabilities";
 import { FunctionId } from "../../values/resource.generated";
 import { DatapackCore, type FunctionTag } from "./core";
 import { ScoreTarget } from "../../values/score_target";
+import { currentContext } from "../../frontend/context/ambient";
+import { privateChild, privateName } from "../../private-fn";
 
 /** The objective every `dp.variable` lives on; separate from locals so names can't collide. */
 export const VARIABLES_OBJECTIVE = "helix.global";
@@ -43,7 +45,12 @@ export class DatapackFunctions extends DatapackCore {
     return this.objectives;
   }
 
-  createFunction(name: string, ...tags: FunctionTag[]): FunctionRef {
+  /**
+   * Creates a function; with no `name` it gets a private generated one.
+   *
+   * Only name a function whose id is used outside the code (`/function`, a tag in another pack).
+   */
+  createFunction(name: string = this.autoName(), ...tags: FunctionTag[]): FunctionRef {
     const fn = new FunctionNode(name);
     this.functions.set(name, fn);
     this.tagFunction(name, tags);
@@ -56,8 +63,15 @@ export class DatapackFunctions extends DatapackCore {
    * Params are counted from `body.length`, so they can't have defaults or be a rest param.
    * They are locals, so a recursive call overwrites them.
    */
-  fn<P extends Score[]>(name: string, body: (ctx: FunctionContext, ...params: P) => Score | void): CallableFn<P> {
-    const ref = this.createFunction(name);
+  fn<P extends Score[]>(body: (ctx: FunctionContext, ...params: P) => Score | void): CallableFn<P>;
+  fn<P extends Score[]>(name: string, body: (ctx: FunctionContext, ...params: P) => Score | void): CallableFn<P>;
+  fn<P extends Score[]>(
+    nameOrBody: string | ((ctx: FunctionContext, ...params: P) => Score | void),
+    maybeBody?: (ctx: FunctionContext, ...params: P) => Score | void,
+  ): CallableFn<P> {
+    const ref = this.createFunction(typeof nameOrBody === "string" ? nameOrBody : undefined);
+    const body = typeof nameOrBody === "string" ? maybeBody! : nameOrBody;
+    const name = ref.getName();
     let params = [] as unknown as P;
     let returns = false;
     ref.build((ctx) => {
@@ -87,10 +101,43 @@ export class DatapackFunctions extends DatapackCore {
     return new FunctionRef(fn, this.version);
   }
 
+  private readonly groups: string[] = [];
+
+  /**
+   * Runs `body` with nameless functions created outside a build placed under `name/zzz/`.
+   *
+   * Groups nest (`a` then `b` → `a/zzz/b/fn_0`), so the output folder shows which feature made a helper.
+   */
+  group<T>(name: string, body: () => T): T {
+    this.groups.push(name);
+    try {
+      return body();
+    } finally {
+      this.groups.pop();
+    }
+  }
+
   /** A ref to an already-created function, or `undefined` if none exists. */
   functionRef(name: string): FunctionRef | undefined {
     const fn = this.functions.get(name);
     return fn ? new FunctionRef(fn, this.version) : undefined;
+  }
+
+  /**
+   * A free private name: under the function being built (`a/b` → `a/zzz/b/fn_0`), else under
+   * the current {@link group}, else `zzz/fn_0`.
+   *
+   * Checked against every function so far, since two contexts can build into the same parent.
+   */
+  private autoName(): string {
+    const parent = (currentContext() as { fn?: FunctionNode } | undefined)?.fn?.name;
+    const group = this.groups.join("/");
+    for (let n = 0; ; n++) {
+      const name = parent
+        ? privateChild(parent, `fn_${n}`)
+        : privateName(group ? `${group}/fn_${n}` : `fn_${n}`);
+      if (!this.functions.has(name)) return name;
+    }
   }
 
   /** Removes `name` from a function tag without deleting the function. */
