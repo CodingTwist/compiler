@@ -132,7 +132,7 @@ export class StateMachine {
   /** Per-tick body: freeze the state, clear the guard, then run the matching state. */
   private dispatch(ctx: FunctionContext): void {
     this.snap.copy(ctx, this.cur);
-    this.done.set(0);
+    if (this.needsGuard()) this.done.set(0);
     for (const from of this.order) {
       ctx.if(this.snap.equal(this.id(from)), (sc) => this.runState(sc, from));
     }
@@ -142,16 +142,23 @@ export class StateMachine {
   private runState(ctx: FunctionContext, from: string): void {
     const cfg = this.states.get(from)!;
     cfg.onTick?.(ctx);
-    for (const t of this.transitions) {
-      if (t.from !== from) continue;
-      // Gate on the settled flag so only the first matching transition fires.
-      ctx.if(this.done.equal(0), (g) =>
-        g.if(t.when, (hit) => {
-          cfg.onExit?.(hit);
-          this.enter(hit, t.to);
-          this.done.set(1, hit);
-        }),
-      );
-    }
+    const outs = this.transitions.filter((t) => t.from === from);
+    outs.forEach((t, i) => {
+      const fire = (hit: FunctionContext) => {
+        cfg.onExit?.(hit);
+        this.enter(hit, t.to);
+        if (outs.length > 1) this.done.set(1, hit);
+      };
+      // Later transitions gate on the settled flag so only the first match fires; the first can't
+      // be settled yet.
+      if (i === 0) ctx.if(t.when, fire);
+      else ctx.if(this.done.equal(0), (g) => g.if(t.when, fire));
+    });
+  }
+
+  /** Whether any state has more than one transition, so the first-match flag is needed. */
+  private needsGuard(): boolean {
+    const froms = this.transitions.map((t) => t.from);
+    return new Set(froms).size < froms.length;
   }
 }

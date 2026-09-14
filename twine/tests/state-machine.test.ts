@@ -28,27 +28,26 @@ describe("StateMachine", () => {
     const dispatch = [...files].find(([p]) =>
       p.endsWith("quest/dispatch.mcfunction"),
     )![1];
-    // Snapshot of the live state into the frozen holder, then clear the guard.
+    // Snapshot of the live state into the frozen holder; one transition needs no guard.
     expect(dispatch).toContain("operation #quest.cur quest = #quest quest");
-    expect(dispatch).toContain("scoreboard players set #quest.done quest 0");
+    expect(dispatch).not.toContain("#quest.done");
   });
 
   it("evaluates transitions against the snapshot behind the settled guard", () => {
     const files = compile((dp) => {
+      const flag = dp.objective("flag").score(Selector.self());
       const sm = new StateMachine(dp, "quest");
-      sm.state("a").state("b").initial("a").transition(
-        "a",
-        "b",
-        dp.objective("flag").score(Selector.self()).equal(1),
-      );
+      sm.state("a").state("b").state("c").initial("a")
+        .transition("a", "b", flag.equal(1))
+        .transition("a", "c", flag.equal(2));
       sm.build();
     });
     // Transition bodies are multi-command, so they live in child functions -
     // match across the whole pack rather than just the dispatch file.
     const all = [...files.values()].join("\n");
 
-    // State block keys off the snapshot; the transition off the settled guard;
-    // on firing it sets the live holder to b (id 2) and marks settled.
+    // State block keys off the snapshot; the second transition off the settled guard;
+    // on firing the first sets the live holder to b (id 2) and marks settled.
     expect(all).toContain("if score #quest.cur quest matches 1");
     expect(all).toContain("if score #quest.done quest matches 0");
     expect(all).toContain("scoreboard players set #quest quest 2");
