@@ -107,7 +107,10 @@ function fromStack(stack: string): SourceLoc | null {
   return null;
 }
 
+/** `file` relative to cwd, or `@<pkg>/...` when it's under an ignored library root. */
 function relative(file: string): string {
+  const lib = ignored.find((r) => file.startsWith(r.root));
+  if (lib) return `@${lib.root.split("/").at(-2)}/${file.slice(lib.root.length)}`;
   const cwd = (globalThis as { process?: { cwd(): string } }).process?.cwd().replace(/\\/g, "/");
   return cwd && file.startsWith(`${cwd}/`) ? file.slice(cwd.length + 1) : file;
 }
