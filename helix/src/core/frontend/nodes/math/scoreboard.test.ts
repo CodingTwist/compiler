@@ -29,6 +29,10 @@ describe("math`` as a scoreboard chain", () => {
     );
 
 
+  it("drops + 0 and * 1", () => {
+    expect(emit(() => math`${sc("a")} * ${1} - ${sc("b")} - ${0}`.into(sc("a")))).toEqual([op("a", "-=", "b")]);
+  });
+
   it("is a scoreboard chain on 1.21.4", () => {
     expect(emit(coef, v1_21_4)).toEqual([
       "scoreboard players set #coef work 0",

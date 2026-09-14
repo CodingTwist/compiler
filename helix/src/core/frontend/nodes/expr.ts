@@ -76,8 +76,15 @@ export const scoreE = (score: Score): ExprNode => ({ kind: "score", score });
 export const providerE = (
   provider: ContextIntProvider | ContextFloatProvider,
 ): ExprNode => ({ kind: "provider", provider });
-export const opE = (op: ExprOp, ...args: ExprNode[]): ExprNode => ({
-  kind: "op",
-  op,
-  args,
-});
+/** An op node, with `x + 0`, `x - 0` and `x * 1` dropped since each would emit a no-op command. */
+export const opE = (op: ExprOp, ...args: ExprNode[]): ExprNode => {
+  const isLit = (e: ExprNode, v: number) => e.kind === "lit" && e.value === v;
+  if (args.length === 2) {
+    const [a, b] = args;
+    if ((op === "add" || op === "sub") && isLit(b, 0)) return a;
+    if (op === "add" && isLit(a, 0)) return b;
+    if (op === "mul" && isLit(b, 1)) return a;
+    if (op === "mul" && isLit(a, 1)) return b;
+  }
+  return { kind: "op", op, args };
+};

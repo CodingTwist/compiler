@@ -84,6 +84,7 @@ export default defineConfig({
             { text: "Score vectors", link: "/guide/concepts/score-vectors" },
             { text: "Fixed-point numbers", link: "/guide/concepts/fixed" },
             { text: "Math and /compute", link: "/guide/concepts/math-and-compute" },
+            { text: "Conditions, loops & functions", link: "/guide/concepts/control-flow" },
             { text: "Rotations", link: "/guide/concepts/rotations" },
             { text: "Text & tellraw", link: "/guide/concepts/text" },
             { text: "Execute chains", link: "/guide/concepts/execute" },

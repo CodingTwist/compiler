@@ -77,8 +77,8 @@ tick.build((ctx) => {
 });
 ```
 
-(Score-to-score comparisons aren't wired up yet - `greaterThan(otherScore)` throws. Feed
-a literal, or diff into a scratch score first.)
+They take another score too (`hp.lessThan(shield)`). For `elif`/`else`, `and`/`or`,
+locals, loops and functions, see [Conditions, locals, loops and functions](/guide/concepts/control-flow).
 
 ## Capturing a command's result
 
