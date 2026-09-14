@@ -69,6 +69,7 @@ export class Selector extends SelectorFilters {
     return (ctx: FunctionContext) => {
       // build a scratch function to capture the inner commands
       const inner = new FunctionNode(`__execute_as`);
+      inner.root = ctx.fn.root;
       const innerCtx = new FunctionContext(inner, ctx.version);
       runInContext(innerCtx, fn);
 

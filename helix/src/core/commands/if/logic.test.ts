@@ -72,9 +72,14 @@ describe("condition algebra", () => {
     ).toThrow(/can't negate/);
   });
 
-  it("refuses or() with elif on a version without return run", () => {
-    expect(() =>
-      build((ctx, { a, b }) => ctx.if(or(a.equal(1), b.equal(1)), (c) => c.say("x")).else((c) => c.say("y")), v1_20_1),
-    ).toThrow(/return run/);
+  it("records which branch an or() took on a version without return run", () => {
+    const { f } = build((ctx, { a, b }) => ctx.if(or(a.equal(1), b.equal(1)), (c) => c.say("x")).else((c) => c.say("y")), v1_20_1);
+    expect(f).toEqual([
+      "scoreboard players set #f.0 helix.var 0",
+      "execute if score #f.0 helix.var matches 0 if score #a v matches 1 run scoreboard players set #f.0 helix.var 1",
+      "execute if score #f.0 helix.var matches 0 if score #b v matches 1 run scoreboard players set #f.0 helix.var 1",
+      "execute if score #f.0 helix.var matches 1 run say x",
+      "execute if score #f.0 helix.var matches 0 run say y",
+    ]);
   });
 });

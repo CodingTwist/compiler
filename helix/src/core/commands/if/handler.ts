@@ -1,12 +1,13 @@
 // Lowers `ctx.if(...)` to `execute if … run` lines, folding nested guards into one chain.
-import { ASTNode, FunctionNode } from "../../ir/node";
+import { ASTNode, FunctionNode, Range } from "../../ir/node";
+import { scoreLitNode } from "../scoreboard";
 import { CodegenContext, CommandHandler } from "../../ir/commandhandler";
 import { commitLines, FORKS, generateRunTargetLine, generateSingleNodeLine, runClause } from "../../ir/generate";
 import { supportsCommand } from "../../../versions/capabilities";
 import { chainLine, type LineInfo } from "../../ir/line-info";
 import { buildTokens, lit, raw } from "../../ir/command-builder";
 import { foldLink, type ChainLink } from "./links";
-import { IfElseNode, not } from "./nodes";
+import { IfElseNode } from "./nodes";
 import { toChains } from "./normalize";
 import { linkText } from "./render";
 
@@ -20,7 +21,7 @@ export class IfHandler extends CommandHandler<IfElseNode> {
     } else if (supportsCommand(ctx.version, ["return", "run"])) {
       this.emitBranches(node, ctx);
     } else {
-      this.emitUnguarded(node, ctx);
+      this.emitTracked(node, ctx);
     }
   }
 
@@ -52,20 +53,25 @@ export class IfHandler extends CommandHandler<IfElseNode> {
   }
 
   /**
-   * Pre-`return run` lowering: one guarded line per branch.
-   * Wrong when a body changes a later branch's condition; fixed once locals exist.
+   * Pre-`return run` lowering: every condition sets `taken` to its branch number unless an
+   * earlier one did, then each body runs under its number, so conditions are all checked first.
    */
-  private emitUnguarded(node: IfElseNode, ctx: CodegenContext): void {
-    const branches = [
-      ...[{ condition: node.condition, body: node.thenBody }, ...node.elifs],
-      ...(node.elseBody ? [{ condition: not(node.condition), body: node.elseBody }] : []),
-    ];
-    for (const { condition, body } of branches) {
-      const chains = toChains(condition);
-      if (chains.length > 1) throw new Error(`or() in an if needs \`return run\`, which ${ctx.version.id} lacks`);
-      const call = generateRunTargetLine(body, ctx.datapack, ctx.dispatcher);
-      if (call.cmd && chains.length) this.emitChain(ctx, [{ kind: "clauses", clauses: chains[0] }], call);
-    }
+  private emitTracked(node: IfElseNode, ctx: CodegenContext): void {
+    const { taken } = node;
+    if (!taken) throw new Error(`if/elif/else on ${ctx.version.id} needs a local, which ctx.if allocates`);
+    const { datapack: dp, dispatcher } = ctx;
+    const is = (n: number): ChainLink => ({
+      kind: "clauses",
+      clauses: [{ k: "scoreMatches", mode: "if", score: taken, range: Range.exactly(n) }],
+    });
+    dispatcher.dispatch(scoreLitNode("set", taken, 0), ctx);
+    const branches = [{ condition: node.condition, body: node.thenBody }, ...node.elifs];
+    branches.forEach(({ condition }, i) => {
+      const mark = generateSingleNodeLine(scoreLitNode("set", taken, i + 1), dp, dispatcher);
+      for (const clauses of toChains(condition)) this.emitChain(ctx, [is(0), { kind: "clauses", clauses }], mark);
+    });
+    branches.forEach(({ body }, i) => this.emitBodyChain(ctx, [is(i + 1)], body));
+    if (node.elseBody) this.emitBodyChain(ctx, [is(0)], node.elseBody);
   }
 
   /**

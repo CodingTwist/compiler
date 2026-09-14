@@ -96,6 +96,7 @@ export * from "./execute";
 export * from "./entity_guard";
 export * from "./near_guard";
 export * from "./native";
+export * from "./local";
 
 /**
  * Handlers for nodes that need custom lowering. Generated commands all use

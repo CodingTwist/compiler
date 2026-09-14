@@ -5,6 +5,9 @@ import { FunctionContext } from "../../frontend/context";
 import { runInContext } from "../../frontend/context/ambient";
 import { ExecuteBuilder } from "../execute/builder";
 import { ExecuteNode } from "../execute/types";
+import { supportsCommand } from "../../../versions/capabilities";
+import { allocLocal } from "../local";
+import { toChains } from "./normalize";
 import { AndNode, ClausesNode, IfElseNode, NotNode, OrNode, type Condition, type IfBuilder } from "./nodes";
 
 declare module "../../frontend/context" {
@@ -51,18 +54,26 @@ FunctionContext.prototype.if = function (
 
   const node = new IfElseNode(resolve(condition), thenBody);
   this.emit(node);
+  // Without `return run`, an or() or elif/else records the branch that ran in a local.
+  const tracks = !supportsCommand(this.version, ["return", "run"]);
+  const track = () => {
+    if (tracks) node.taken ??= allocLocal(this.fn);
+  };
+  if (tracks && toChains(node.condition).length > 1) track();
 
   const builder: IfBuilder = {
     elif: (cond, fn) => {
       const body = this.createChildFunction("elif");
       runInContext(newChild(body), fn);
       node.elifs.push({ condition: resolve(cond), body });
+      track();
       return builder;
     },
     else: (fn) => {
       const body = this.createChildFunction("else");
       runInContext(newChild(body), fn);
       node.elseBody = body;
+      track();
     },
   };
 

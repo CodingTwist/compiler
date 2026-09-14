@@ -1,6 +1,7 @@
 // The condition nodes `ctx.if(...)` takes, and the if/elif/else node it emits.
 import { ASTNode, ExpressionNode, FunctionNode, Range } from "../../ir/node";
 import type { Objective } from "../../frontend/nodes/objective";
+import type { Score } from "../../frontend/nodes/score";
 import type { FunctionContext } from "../../frontend/context";
 import { ScoreTarget } from "../../values/score_target";
 import { Id } from "../../values/id";
@@ -127,6 +128,8 @@ export class IfElseNode extends ASTNode {
     public thenBody: FunctionNode,
     public elifs: { condition: ExpressionNode; body: FunctionNode }[] = [],
     public elseBody?: FunctionNode,
+    /** The local that records which branch ran, on versions without `return run`. */
+    public taken?: Score,
   ) {
     super();
   }

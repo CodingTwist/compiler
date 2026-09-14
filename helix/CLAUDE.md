@@ -137,7 +137,12 @@ the `vscode/` extension), `profile [dump.json]`
   `elif`/`else` the whole chain becomes a private `<then>_chain` function of `execute if <cond> run
   return run <body>` lines ending in the `else` body, so exactly one branch runs and no condition is
   checked after a body changed it. Bodies that fork or `return` stay function calls under `return
-  run`. Versions without `return run` (1.20.1) still get one guarded line per branch.
+  run`. Versions without `return run` (1.20.1) record the branch number in a local: every
+  condition sets it unless an earlier one did, then each body runs under its number.
+- **Locals** (`commands/local.ts`): `ctx.let(init?)` returns a Score `#<root fn>.<n>` on
+  `helix.var`. Child bodies share their root's counter via `FunctionNode.root`, so any code that
+  makes a scratch `FunctionNode` must set `root`. The objective is declared at load only if some
+  function used a local. Not safe under recursion.
 - **Conditions** (`commands/if/normalize.ts`): `ctx.if` takes score nodes, `Detector`s, and
   `and`/`or`/`not` of them. Detectors run once in `ctx.if` to record their clauses. `toChains`
   flattens everything to OR-of-AND clause chains, pushing `not` down to `unless` (forking or store

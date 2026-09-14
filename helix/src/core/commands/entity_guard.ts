@@ -95,6 +95,7 @@ FunctionContext.prototype.whenEntity = function (
 ): void {
   // Capture the commands into a throwaway function, then re-emit each with the guard.
   const tmp = new FunctionNode(this.fn.name);
+  tmp.root = this.fn.root;
   const child = new (this.constructor as new (
     fn: FunctionNode,
     v: VersionProfile,

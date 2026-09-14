@@ -132,7 +132,7 @@ const EXTRA_HANDLERS = [
 // Hand-written modules that install `ctx.<method>` augmentations but register no
 // handler of their own (their nodes are plain TreeCommandNodes). The barrel only
 // has to re-export them so the augmentation reaches consumers' .d.ts.
-const AUGMENT_ONLY = [];
+const AUGMENT_ONLY = ["local"];
 
 // FunctionContext members a generated `ctx.<method>()` must never shadow.
 const RESERVED_ENTRY = new Set([

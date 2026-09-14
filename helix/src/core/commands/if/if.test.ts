@@ -7,7 +7,7 @@ import { CodegenContext, Dispatcher } from "../../ir/commandhandler";
 import { Datapack } from "../../ir/datapack";
 import { createHandlerMap } from "../../codegen/codegen";
 import { Objective } from "../../frontend";
-import { v1_20_1, v1_21_4 } from "../../../versions/profiles";
+import { v1_21_4 } from "../../../versions/profiles";
 import { buildDatapack } from "../../codegen/codegen";
 import { Selector } from "../../frontend/nodes/selector";
 
@@ -126,19 +126,6 @@ it("an empty then body still stops the else", () => {
   expect(dp.files.get("then_chain")).toBe(
     "execute if score @s score < #max score run return 0\nsay no",
   );
-});
-
-it("keeps one guarded line per branch on versions without return run", () => {
-  const dp = new Datapack("testpack", v1_20_1);
-  const ctx = new CodegenContext(dp, new Dispatcher(createHandlerMap()));
-  const ob = new Objective("score");
-  const cond = new ScoreRangeNode("@s", ob, new Range(1));
-  const node = new IfElseNode(cond, buildBody("then", new SayNode("yes")), [], buildBody("else", new SayNode("no")));
-  new IfHandler().generate(node, ctx);
-  expect(ctx.lines).toEqual([
-    "execute if score @s score matches 1.. run say yes",
-    "execute unless score @s score matches 1.. run say no",
-  ]);
 });
 
 it("throws on unsupported condition type", () => {

@@ -15,6 +15,10 @@ export abstract class ExpressionNode extends ASTNode {
 export class FunctionNode extends ASTNode {
   type = "function";
   public nodes: ASTNode[] = [];
+  /** The authored function this one was split from; it numbers the locals of all its parts. */
+  root: FunctionNode = this;
+  /** Locals allocated so far, counted on the root. */
+  locals = 0;
   constructor(public name: string) {
     super();
   }

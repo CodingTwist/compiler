@@ -50,6 +50,8 @@ export class ContextBase {
   createChildFunction(suffix: string): FunctionNode {
     const count = this.suffixCounters.get(suffix) ?? 0;
     this.suffixCounters.set(suffix, count + 1);
-    return new FunctionNode(privateChild(this.fn.name, `${suffix}_${count}`));
+    const child = new FunctionNode(privateChild(this.fn.name, `${suffix}_${count}`));
+    child.root = this.fn.root;
+    return child;
   }
 }

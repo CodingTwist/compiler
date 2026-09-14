@@ -1,6 +1,7 @@
 // `Datapack` layer: the `load`/`tick`/`after` entry points, and the load setup codegen injects.
 import { FunctionNode } from "../node";
 import { scoreInitNode } from "../../commands/scoreboard";
+import { LOCALS_OBJECTIVE } from "../../commands/local";
 import { FunctionRef } from "../../function_ref";
 import type { FunctionContext } from "../../frontend/context";
 import { privateName } from "../../private-fn";
@@ -77,6 +78,8 @@ export class DatapackEntry extends DatapackAssets {
       initFn = new FunctionNode(initName);
       this.functions.set(initName, initFn);
     }
+
+    if ([...this.functions.values()].some((fn) => fn.locals > 0)) this.objective(LOCALS_OBJECTIVE);
 
     // Rebuild from the current objectives each time, since more may be added between
     // codegen calls.
