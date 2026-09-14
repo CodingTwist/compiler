@@ -50,7 +50,7 @@ export function buildLifecycle({ dp, graph, flags, latches, dims, areas }: Lifec
     const latched = getEventHandlers(instance).filter((h) => h.opts.once !== false);
     if (latched.length === 0) continue;
     dp.createFunction(`${meta.name}/rearm`).build((ctx) => {
-      for (const h of latched) latches.score(meta.name, h.method).set(0);
+      for (const h of latched) latches.score(meta.name, h.method!).set(0);
     });
   }
 

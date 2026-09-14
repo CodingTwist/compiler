@@ -92,10 +92,10 @@ describe("@On", () => {
     expect(all).toContain("40");
   });
 
-  it("`name` gives the body its own function, called from the guard", () => {
+  it("`own` gives the body its own function under the module, called from the guard", () => {
     @Module({ name: "named" })
     class Named {
-      @On(Detect.block(AT, PRESSED), { name: "water" })
+      @On(Detect.block(AT, PRESSED), { own: true })
       water(ctx: FunctionContext) {
         ctx.say("one");
         ctx.say("two");
@@ -105,8 +105,8 @@ describe("@On", () => {
     class Root {}
 
     const { files, all } = compile(Root);
-    expect([...files.keys()].some((p) => p.endsWith("/water.mcfunction"))).toBe(true);
-    expect(all).toContain("function test:water");
+    expect(files.get("data/test/functions/named/zzz/fn_0.mcfunction")).toContain("say two");
+    expect(all).toContain("function test:named/zzz/fn_0");
   });
 
   it("rearmEvents clears every once-latch on the module", () => {
@@ -180,6 +180,30 @@ describe("handler groups", () => {
     expect(all).toContain("#mod.first/hit");
     expect(all).toContain("#mod.second/hit");
     expect(all.indexOf("alpha")).toBeLessThan(all.indexOf("beta"));
+  });
+
+  it("puts a keyless `own` handler's body in the group's folder", () => {
+    class Hum extends HandlerGroup {
+      readonly ns = "hum";
+      registerHandlers() {
+        // Two commands, since a one-command function is inlined.
+        const hum = (c: FunctionContext) => {
+          c.say("hmm");
+          c.say("mm");
+        };
+        this.every(20, hum, { own: true });
+      }
+    }
+    @Module({ name: "mod" })
+    class Mod {
+      hum = new Hum();
+    }
+    @Module({ name: "root", imports: [Mod] })
+    class Root {}
+
+    const { files, all } = compile(Root);
+    expect(files.get("data/test/functions/hum/zzz/fn_0.mcfunction")).toContain("say hmm");
+    expect(all).toContain("function test:hum/zzz/fn_0");
   });
 });
 

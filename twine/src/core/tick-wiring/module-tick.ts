@@ -45,12 +45,8 @@ export function emitTick(w: Wiring, node: Node, ctx: FunctionContext): void {
 }
 
 /** `dp.createFunction` + build, when a module has no `defineFunction` of its own. */
-function defaultDefine(
-  dp: Datapack,
-  name: string,
-  build: (ctx: FunctionContext) => void,
-): FunctionRef {
-  const fn = dp.createFunction(name);
+function defaultDefine(dp: Datapack, build: (ctx: FunctionContext) => void): FunctionRef {
+  const fn = dp.createFunction();
   fn.build(build);
   return fn;
 }
@@ -62,15 +58,15 @@ function emitHandlerOf(w: Wiring, node: Node, handler: EventHandler, ctx: Functi
   // ones name a method on the instance.
   const body0 = handler.fn ?? resolveMethodBody(instance, meta, handler);
   const latch =
-    handler.opts.once === false ? undefined : w.latches.score(meta.name, handler.method);
-  // A named body is created once, and every guard calls it.
-  let named: FunctionRef | undefined;
-  if (handler.opts.name) {
-    named = instance.defineFunction
-      ? instance.defineFunction(w.dp, handler.opts.name, body0)
-      : defaultDefine(w.dp, handler.opts.name, body0);
+    handler.opts.once === false ? undefined : w.latches.score(meta.name, handler.method!);
+  // An own body is created once, and every guard calls it.
+  let own: FunctionRef | undefined;
+  if (handler.opts.own) {
+    own = w.dp.group(handler.group ?? meta.name, () =>
+      instance.defineFunction ? instance.defineFunction(w.dp, body0) : defaultDefine(w.dp, body0),
+    );
   }
-  const body = named ? (c: FunctionContext) => c.call(named) : body0;
+  const body = own ? (c: FunctionContext) => c.call(own) : body0;
   emitHandler(ctx, handler, latch, body);
 }
 
@@ -81,7 +77,7 @@ function resolveMethodBody(
   handler: EventHandler,
 ): (c: FunctionContext) => void {
   const method = (instance as unknown as Record<string, (c: FunctionContext) => void>)[
-    handler.method
+    handler.method!
   ];
   if (typeof method !== "function") {
     throw new Error(`@On marked ${meta.name}.${handler.method}, which is not a method`);

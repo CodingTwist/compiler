@@ -18,7 +18,7 @@ export function rearmEvents(
   const latches = new EventLatches(dp);
   for (const h of getEventHandlers(instance)) {
     if (h.opts.once === false) continue;
-    if (methods && !methods.includes(h.method)) continue;
-    latches.score(moduleName, h.method).set(0);
+    if (methods && !methods.includes(h.method!)) continue;
+    latches.score(moduleName, h.method!).set(0);
   }
 }

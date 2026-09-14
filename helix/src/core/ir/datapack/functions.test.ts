@@ -52,6 +52,16 @@ describe("nameless functions", () => {
     expect(dp.createFunction().getName()).toBe("zzz/fn_0");
   });
 
+  it("a group opened inside a build names that build's helpers", () => {
+    const dp = new Datapack("p", v1_21_4);
+    const names: string[] = [];
+    dp.createFunction("a/tick").build(() => {
+      names.push(dp.group("s4", () => dp.createFunction().getName()));
+      names.push(dp.createFunction().getName());
+    });
+    expect(names).toEqual(["s4/zzz/fn_0", "a/zzz/tick/fn_0"]);
+  });
+
   it("dp.fn takes just a body", () => {
     const dp = new Datapack("p", v1_21_4);
     const f = dp.fn((ctx) => ctx.say("hi"));

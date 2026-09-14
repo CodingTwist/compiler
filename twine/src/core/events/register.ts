@@ -3,7 +3,7 @@ import "reflect-metadata";
 import { Detect } from "helix";
 import type { Detector, FunctionContext } from "helix";
 import { HandlerGroup } from "./group";
-import type { EventHandler, OnOptions } from "./types";
+import { handlerOf, type EventHandler, type HandlerArgs, type OnOptions } from "./types";
 
 const HANDLERS = Symbol("datapack:event-handlers");
 
@@ -13,7 +13,7 @@ const HANDLERS = Symbol("datapack:event-handlers");
  * ```ts
  * @Module({ name: "stage1", area: true, tickEvery: 10 })
  * export class Stage1Module {
- *   @On(Detect.in(THE_END, Detect.block(BUTTON_POS, PRESSED)), { name: "stage1/water" })
+ *   @On(Detect.in(THE_END, Detect.block(BUTTON_POS, PRESSED)), { own: true })
  *   waterButton(ctx: FunctionContext) {
  *     ctx.execute().in(THE_END).run((c) => c.setblock(GAP, Block.AIR));
  *   }
@@ -52,39 +52,50 @@ const INSTANCE_HANDLERS = Symbol("datapack:instance-event-handlers");
 /**
  * Registers a handler on `instance` without a decorated method.
  *
- * Prefer {@link on} / {@link every}. The key must be unique in the module, since it names the
+ * Prefer {@link on} / {@link every}. A key must be unique in the module, since it names the
  * latch; a duplicate throws.
  */
 export function addEventHandler(instance: object, handler: EventHandler): void {
   const store = instance as { [INSTANCE_HANDLERS]?: EventHandler[] };
   const list = (store[INSTANCE_HANDLERS] ??= []);
-  if (list.some((h) => h.method === handler.method)) {
+  if (handler.method !== undefined && list.some((h) => h.method === handler.method)) {
     throw new Error(`duplicate event handler key "${handler.method}"`);
   }
   list.push(handler);
 }
 
-/** Imperative {@link On}: runs `fn` when `detector` holds. See {@link addEventHandler}. */
+/**
+ * Imperative {@link On}: runs `fn` when `detector` holds. See {@link addEventHandler}.
+ *
+ * A latched handler needs a key, since its latch is saved in the world under it.
+ */
 export function on(
   instance: object,
   key: string,
   detector: Detector,
   fn: (c: FunctionContext) => void,
-  opts: OnOptions = {},
-): void {
-  addEventHandler(instance, { method: key, detector, opts, fn });
+  opts?: OnOptions,
+): void;
+export function on(
+  instance: object,
+  detector: Detector,
+  fn: (c: FunctionContext) => void,
+  opts: OnOptions & { once: false },
+): void;
+export function on(instance: object, ...args: HandlerArgs): void {
+  addEventHandler(instance, handlerOf(args));
 }
 
-/** Imperative {@link Every}: run `fn` every `ticks` ticks, keyed by `key`. */
+/** Imperative {@link Every}: run `fn` every `ticks` ticks. */
 export function every(
   instance: object,
-  key: string,
   ticks: number,
   fn: (c: FunctionContext) => void,
   opts: Omit<OnOptions, "once" | "every"> = {},
 ): void {
-  on(instance, key, Detect.always(), fn, { ...opts, once: false, every: ticks });
+  on(instance, Detect.always(), fn, { ...opts, once: false, every: ticks });
 }
+
 
 /**
  * Every handler on `instance`: decorated, imperatively added, then those of each

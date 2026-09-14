@@ -2,7 +2,7 @@
 import { Detect } from "helix";
 import type { Datapack, Detector, FunctionContext } from "helix";
 import { EventLatches } from "./latches";
-import type { EventHandler, OnOptions } from "./types";
+import { handlerOf, type EventHandler, type HandlerArgs, type OnOptions } from "./types";
 
 /**
  * A set of event handlers on a helper object the module holds as a field.
@@ -11,7 +11,7 @@ import type { EventHandler, OnOptions } from "./types";
  * keys by {@link ns}. The group needs no reference to the module.
  */
 export abstract class HandlerGroup {
-  /** This group's namespace: every key and named function is prefixed `${ns}/`. */
+  /** This group's namespace: every key is prefixed `${ns}/`, and `own` bodies go in its folder. */
   abstract readonly ns: string;
 
   /**
@@ -30,27 +30,32 @@ export abstract class HandlerGroup {
     this.registerHandlers();
   }
 
-  /** Register a handler keyed by `key` (bare - {@link ns} is prepended on harvest). */
+  /**
+   * Register a handler. A latched one needs a key (bare - {@link ns} is prepended on harvest), since
+   * its latch is saved in the world under it.
+   */
   protected on(
     key: string,
     detector: Detector,
     fn: (c: FunctionContext) => void,
-    opts: OnOptions = {},
-  ): void {
-    if (this.handlers.some((h) => h.method === key)) {
-      throw new Error(`duplicate handler key "${key}" in group "${this.ns}"`);
+    opts?: OnOptions,
+  ): void;
+  protected on(detector: Detector, fn: (c: FunctionContext) => void, opts: OnOptions & { once: false }): void;
+  protected on(...args: HandlerArgs): void {
+    const handler = handlerOf(args);
+    if (handler.method !== undefined && this.handlers.some((h) => h.method === handler.method)) {
+      throw new Error(`duplicate handler key "${handler.method}" in group "${this.ns}"`);
     }
-    this.handlers.push({ method: key, detector, opts, fn });
+    this.handlers.push(handler);
   }
 
-  /** {@link Every} as a group method: run `fn` every `ticks` ticks, keyed by `key`. */
+  /** {@link Every} as a group method: run `fn` every `ticks` ticks. */
   protected every(
-    key: string,
     ticks: number,
     fn: (c: FunctionContext) => void,
     opts: Omit<OnOptions, "once" | "every"> = {},
   ): void {
-    this.on(key, Detect.always(), fn, { ...opts, once: false, every: ticks });
+    this.on(Detect.always(), fn, { ...opts, once: false, every: ticks });
   }
 
   /** Re-arms this group's latched handlers in `keys`, or all of them if omitted. */
@@ -64,7 +69,7 @@ export abstract class HandlerGroup {
     const latches = new EventLatches(dp);
     for (const h of this.handlers) {
       if (h.opts.once === false) continue;
-      if (keys && !keys.includes(h.method)) continue;
+      if (keys && !keys.includes(h.method!)) continue;
       latches.score(moduleName, `${this.ns}/${h.method}`).set(0);
     }
   }
@@ -73,10 +78,9 @@ export abstract class HandlerGroup {
   collect(): EventHandler[] {
     this.ensureRegistered();
     return this.handlers.map((h) => ({
-      method: `${this.ns}/${h.method}`,
-      detector: h.detector,
-      opts: h.opts.name ? { ...h.opts, name: `${this.ns}/${h.opts.name}` } : h.opts,
-      fn: h.fn,
+      ...h,
+      method: h.method === undefined ? undefined : `${this.ns}/${h.method}`,
+      group: this.ns,
     }));
   }
 }

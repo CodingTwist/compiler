@@ -20,7 +20,7 @@ export class MobModule<S extends string> implements DatapackModule {
   constructor(def: MobDef<S>) {
     this.m = new MobParts(def);
     // On the shared clock, so each mob's scans get their own phase instead of all firing on one tick.
-    every(this, "wake", TICKS_PER_SECOND, (c) => c.call(this.m.fnRef("wake")));
+    every(this, TICKS_PER_SECOND, (c) => c.call(this.m.fnRef("wake")));
   }
 
   fnRef(short: string): FunctionRef {

@@ -101,15 +101,17 @@ export class DatapackFunctions extends DatapackCore {
     return new FunctionRef(fn, this.version);
   }
 
-  private readonly groups: string[] = [];
+  private readonly groups: { name: string; parent: string | undefined }[] = [];
 
   /**
-   * Runs `body` with nameless functions created outside a build placed under `name/zzz/`.
+   * Runs `body` with the nameless functions it creates placed under `name/zzz/`.
    *
    * Groups nest (`a` then `b` → `a/zzz/b/fn_0`), so the output folder shows which feature made a helper.
+   * A group only covers the build it was opened in, so helpers of a function built inside it still
+   * nest under that function.
    */
   group<T>(name: string, body: () => T): T {
-    this.groups.push(name);
+    this.groups.push({ name, parent: this.buildParent() });
     try {
       return body();
     } finally {
@@ -124,20 +126,30 @@ export class DatapackFunctions extends DatapackCore {
   }
 
   /**
-   * A free private name: under the function being built (`a/b` → `a/zzz/b/fn_0`), else under
-   * the current {@link group}, else `zzz/fn_0`.
+   * A free private name: under a {@link group} opened in this build, else under the function being
+   * built (`a/b` → `a/zzz/b/fn_0`), else `zzz/fn_0`.
    *
    * Checked against every function so far, since two contexts can build into the same parent.
    */
   private autoName(): string {
-    const parent = (currentContext() as { fn?: FunctionNode } | undefined)?.fn?.name;
-    const group = this.groups.join("/");
+    const parent = this.buildParent();
+    const group = this.groups
+      .filter((g) => g.parent === parent)
+      .map((g) => g.name)
+      .join("/");
     for (let n = 0; ; n++) {
-      const name = parent
-        ? privateChild(parent, `fn_${n}`)
-        : privateName(group ? `${group}/fn_${n}` : `fn_${n}`);
+      const name = group
+        ? privateName(`${group}/fn_${n}`)
+        : parent
+          ? privateChild(parent, `fn_${n}`)
+          : privateName(`fn_${n}`);
       if (!this.functions.has(name)) return name;
     }
+  }
+
+  /** The name of the function being built, if any. */
+  private buildParent(): string | undefined {
+    return (currentContext() as { fn?: FunctionNode } | undefined)?.fn?.name;
   }
 
   /** Removes `name` from a function tag without deleting the function. */
