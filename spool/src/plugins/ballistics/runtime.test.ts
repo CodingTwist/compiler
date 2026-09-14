@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Datapack, Selector, buildDatapack, v1_21_4, type Vec3 } from "helix";
+import { Datapack, EntityType, Selector, buildDatapack, v1_21_4, type Vec3 } from "helix";
 import { installKit } from "../../kit";
 import { ballistics, type RuntimeShotOptions } from "./index";
 import { PROJECTILES, closestApproach, simulate, trajectoryBasis } from "./physics";
@@ -62,7 +62,7 @@ describe("runtime ballistics", () => {
         `execute store result score ${p} ballistics run data get entity @e[tag=gun,limit=1] Pos[${axis}] 100`,
       );
       expect(lines).toContain(
-        `execute store result entity @e[tag=art.shot,limit=1] Motion[${axis}] double 0.0001 ` +
+        `execute store result entity @e[type=minecraft:tnt,tag=art.shot,limit=1] Motion[${axis}] double 0.0001 ` +
           `run scoreboard players get ${v} ballistics`,
       );
     }
@@ -70,7 +70,7 @@ describe("runtime ballistics", () => {
     // to have its Motion written.
     expect(lines.some((l) => l.startsWith("execute at @e[tag=gun,limit=1] run summon minecraft:tnt ~ ~ ~ "))).toBe(true);
     expect(lines.some((l) => l.includes("fuse:40s"))).toBe(true);
-    expect(lines).toContain("tag @e[tag=art.shot,limit=1] remove art.shot");
+    expect(lines).toContain("tag @e[type=minecraft:tnt,tag=art.shot,limit=1] remove art.shot");
     // Nothing fires unless every axis is within ±10; the return value says which happened.
     expect(lines).toContain(
       "execute unless score #vx ballistics matches -100000..100000 run return 0",
@@ -179,4 +179,21 @@ it("a shellFunction callback places the shell and is given the shot's spec", () 
   const shot = new Map(buildDatapack(dp)).get("data/art/function/throw.mcfunction")!;
   expect(shot).not.toContain("summon");
   expect(shot).toContain("execute at @s run tag @e[tag=ammo,limit=1] add art.shot");
+});
+
+it("shellTypes types the shot selector for a callback shell", () => {
+  const dp = new Datapack("art", v1_21_4);
+  const shellFunction = () => {};
+  dp.ballisticRuntime("untyped", { shellFunction });
+  dp.ballisticRuntime("one", { shellFunction, shellTypes: [EntityType.ZOMBIE] });
+  dp.ballisticRuntime("mixed", { shellFunction, shellTypes: [EntityType.TNT, EntityType.ZOMBIE] });
+  const files = new Map(buildDatapack(dp));
+  const fn = (name: string) => files.get(`data/art/function/${name}.mcfunction`)!;
+  expect(fn("untyped")).toContain("tag @e[tag=art.shot,limit=1] remove art.shot");
+  expect(fn("one")).toContain("tag @e[type=minecraft:zombie,tag=art.shot,limit=1] remove art.shot");
+  expect(fn("mixed")).toContain("tag @e[type=#art:ballistics/shot,tag=art.shot,limit=1] remove art.shot");
+  expect(JSON.parse(files.get("data/art/tags/entity_type/ballistics/shot.json")!).values).toEqual([
+    "minecraft:tnt",
+    "minecraft:zombie",
+  ]);
 });

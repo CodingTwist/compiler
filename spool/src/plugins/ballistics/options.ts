@@ -1,5 +1,5 @@
 import { Selector } from "helix";
-import type { FunctionContext, Score } from "helix";
+import type { EntityType, FunctionContext, Score } from "helix";
 import { PROJECTILES } from "./physics";
 import type { ShellOptions, ShellSpec } from "./shell";
 
@@ -48,6 +48,11 @@ export interface RuntimeShotOptions extends ShellOptions {
    * e.g. for a macro shell or an existing entity.
    */
   readonly shellFunction?: string | ((ctx: FunctionContext, spec: ShellSpec) => void);
+  /**
+   * Every type a callback `shellFunction` can summon, so finding the shot doesn't scan other
+   * entities. Several types share one entity type tag.
+   */
+  readonly shellTypes?: readonly EntityType[];
   // What to throw - `projectile` (the maths) and `shell` (the NBT) - comes from
   // `ShellOptions`, shared with the build-time half so a shell is described the same way
   // whichever solver fires it.

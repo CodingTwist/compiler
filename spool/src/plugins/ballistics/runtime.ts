@@ -1,5 +1,6 @@
 import {
   Datapack,
+  EntityType,
   Path,
   Pos,
   Range,
@@ -9,10 +10,11 @@ import {
   math,
 } from "helix";
 import type { FunctionContext, FunctionRef, Score } from "helix";
-import { shellFuse, summonShell } from "./shell";
+import { DEFAULT_SHELL, shellFuse, summonShell } from "./shell";
 import { MOTION_AXIS_LIMIT, trajectoryBasis } from "./physics";
 import { OBJECTIVE, POS_SCALE, V_SCALE } from "./constants";
 import { resolveShotOptions, type RuntimeShotOptions } from "./options";
+import type { ShellSpec } from "./shell";
 import { targetVelocity } from "./tracking";
 
 export type { RuntimeShotOptions } from "./options";
@@ -55,10 +57,13 @@ export function defineRuntimeShot(
 
   const fuse = shellFuse(opts, profile, ticks);
   const shotTag = `${dp.name}.shot`;
-  // A function because selectors change in place.
-  const shotSelector = () => Selector.allEntities().tag(shotTag).limit(1);
-
   const shellSpec = { motion: [0, 0, 0], fuse, tags: [shotTag] } as const;
+  const shotType = shellType(dp, opts, shellSpec);
+  // A function because selectors change in place.
+  const shotSelector = () => {
+    const sel = Selector.allEntities().tag(shotTag).limit(1);
+    return shotType ? sel.type(shotType) : sel;
+  };
   // `motion` is zeroed rather than omitted: `store … entity Motion[i]` below needs the
   // list to already exist.
   let spawnShell = (c: FunctionContext) =>
@@ -141,4 +146,17 @@ export function defineRuntimeShot(
     ctx.return_(1);
   });
   return shotFn;
+}
+
+/** The type the shot is summoned as, or `undefined` for a callback shell with no `shellTypes`. */
+function shellType(
+  dp: Datapack,
+  opts: RuntimeShotOptions,
+  spec: ShellSpec,
+): EntityType | undefined {
+  if (typeof opts.shellFunction !== "function") return EntityType((opts.shell ?? DEFAULT_SHELL)(spec).entity);
+  const types = opts.shellTypes ?? [];
+  if (types.length <= 1) return types[0];
+  // Shared by every runtime shot in the pack, so it holds all their types.
+  return dp.entityTypeTag("ballistics/shot", types);
 }

@@ -5,6 +5,8 @@ import { Nbt } from "../values/nbt";
 import { v1_21_4 } from "../../versions/profiles";
 import { EntityType } from "../values/resource.generated";
 import { Gamemode } from "../values/enums";
+import { Datapack } from "../ir/datapack";
+import { buildDatapack } from "../codegen/codegen";
 
 describe("Selector rendering", () => {
   it("renders a volume box as x/y/z/dx/dy/dz", () => {
@@ -31,6 +33,18 @@ describe("Selector rendering", () => {
     expect(Selector.allEntities().type("#tunnel:removable").toString()).toBe(
       "@e[type=#tunnel:removable]",
     );
+  });
+
+  it("matches several types through a declared entity type tag", () => {
+    const dp = new Datapack("p", v1_21_4);
+    const shot = dp.entityTypeTag("shot", [EntityType.TNT, EntityType.ZOMBIE]);
+    dp.entityTypeTag("shot", [EntityType.TNT, EntityType.ARMOR_STAND]);
+    expect(Selector.allEntities().type(shot).toString()).toBe("@e[type=#p:shot]");
+    expect(JSON.parse(buildDatapack(dp).get("data/p/tags/entity_type/shot.json")!).values).toEqual([
+      "minecraft:tnt",
+      "minecraft:zombie",
+      "minecraft:armor_stand",
+    ]);
   });
 
   it("renders a partial vertical band (y/dy, no x/z)", () => {

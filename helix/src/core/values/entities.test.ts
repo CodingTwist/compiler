@@ -5,6 +5,7 @@ import { Blaze, Tnt, Villager, Zombie } from "./entities.generated";
 import { Display } from "./display";
 import { v1_20_1, v1_21_4, v26_2 } from "../../versions/profiles";
 import { Datapack } from "../ir/datapack";
+import { buildDatapack } from "../codegen/codegen";
 
 describe("entity NBT schemas", () => {
   it("writes a renamed key in the target version's spelling", () => {
@@ -76,9 +77,23 @@ describe("entity NBT schemas", () => {
     expect(d.render(v26_2)).toContain(
       `{width:3.0f,height:4.0f,response:1b,Tags:["boss","boss_hitbox"],id:"minecraft:interaction"}`,
     );
-    expect(d.hitboxSelector()).toBe("@e[tag=boss_hitbox]");
+    expect(d.hitboxSelector().toString()).toBe("@e[type=minecraft:interaction,tag=boss_hitbox]");
     // The hitbox is not an animatable member - only the two displays are.
     expect(d.members()).toHaveLength(2);
+  });
+
+  it("kills every member with one typed kill per entity type", () => {
+    const d = Display.item(Item.NETHERITE_SWORD).add(Block.STONE).add(Block.DIRT).named("rig").hitbox(1, 1);
+    const dp = new Datapack("p", v26_2);
+    dp.createFunction("clear").build((c) => d.killAll(c));
+    expect(buildDatapack(dp).get("data/p/function/clear.mcfunction")).toBe(
+      [
+        "kill @e[type=minecraft:item_display,tag=rig]",
+        "kill @e[type=minecraft:block_display,tag=rig]",
+        "kill @e[type=minecraft:interaction,tag=rig]",
+      ].join("\n"),
+    );
+    expect(d.notExist.selector.toString()).toBe("@e[type=minecraft:item_display,tag=rig_0]");
   });
 
   it("shifts every member by the group offset, leaving the hitbox anchored", () => {

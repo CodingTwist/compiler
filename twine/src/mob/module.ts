@@ -1,4 +1,4 @@
-import { NbtPath, Pos, Range, Relation, ScoreTarget, Selector, atLeast, displayPose, privateName } from "helix";
+import { EntityType, NbtPath, Pos, Range, Relation, ScoreTarget, Selector, atLeast, displayPose, privateName } from "helix";
 import type {
   DamageType,
   Datapack,
@@ -74,12 +74,11 @@ export class MobModule<S extends string> implements DatapackModule {
     return `${this.name}_rig`;
   }
   private get mobs(): Selector {
-    return Selector.allEntities().type(this.def.nbt.entity).tag(this.name);
+    return Selector.allEntities().type(EntityType(this.def.nbt.entity)).tag(this.name);
   }
   /** Member 0 is the group root: the entity that actually rides the mob. */
   private get rigRoots(): Selector {
-    const root = this.def.model.members()[0].content.kind;
-    return Selector.allEntities().type(`minecraft:${root}_display`).tag(`${this.rig}_0`);
+    return this.def.model.rootSelector();
   }
   private get awakeTag(): string {
     return `${this.name}.awake`;
@@ -156,11 +155,13 @@ export class MobModule<S extends string> implements DatapackModule {
         ctx.summon(this.def.model.toNbt().tagged(fresh), Pos.rel(0, 0, 0));
         ctx
           .execute()
-          .as(Selector.allEntities().tag(`${this.rig}_0`).tag(fresh))
-          .run((b) => b.ride().mount(Selector.self(), Selector.allEntities().tag(this.name).tag(fresh).limit(1)));
+          .as(this.rigRoots.tag(fresh))
+          .run((b) => b.ride().mount(Selector.self(), this.mobs.tag(fresh).limit(1)));
         const scale = this.onDifficultyFn();
-        if (scale) ctx.execute().as(Selector.allEntities().tag(this.name).tag(fresh).limit(1)).run((b) => b.call(scale));
-        ctx.tag().remove(Selector.allEntities().tag(fresh), fresh);
+        if (scale) ctx.execute().as(this.mobs.tag(fresh).limit(1)).run((b) => b.call(scale));
+        // Only the mob and the rig root carry `fresh`.
+        ctx.tag().remove(this.mobs.tag(fresh), fresh);
+        ctx.tag().remove(this.rigRoots.tag(fresh), fresh);
       }),
     );
   }
@@ -470,7 +471,7 @@ export class MobModule<S extends string> implements DatapackModule {
       // Older versions copy Rotation[0] through NBT. The rig tags itself so it's still
       // findable after `on vehicle` switches `@s`.
       const cur = `${this.name}.cur`;
-      const me = Selector.allEntities().tag(cur).limit(1);
+      const me = this.rigRoots.tag(cur).limit(1);
       c.tag().add(Selector.self(), cur);
       c.execute()
         .on(Relation.VEHICLE)

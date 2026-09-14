@@ -71,10 +71,10 @@ execute unless score #vx ballistics matches -100000..100000 run return 0
 execute unless score #vy ballistics matches -100000..100000 run return 0
 execute unless score #vz ballistics matches -100000..100000 run return 0
 execute at @s run summon minecraft:tnt ~ ~ ~ {Motion:[0.0d,0.0d,0.0d],fuse:40s,Tags:["test.shot"]}
-execute store result entity @e[tag=test.shot,limit=1] Motion[0] double 0.0001 run scoreboard players get #vx ballistics
-execute store result entity @e[tag=test.shot,limit=1] Motion[1] double 0.0001 run scoreboard players get #vy ballistics
-execute store result entity @e[tag=test.shot,limit=1] Motion[2] double 0.0001 run scoreboard players get #vz ballistics
-tag @e[tag=test.shot,limit=1] remove test.shot
+execute store result entity @e[type=minecraft:tnt,tag=test.shot,limit=1] Motion[0] double 0.0001 run scoreboard players get #vx ballistics
+execute store result entity @e[type=minecraft:tnt,tag=test.shot,limit=1] Motion[1] double 0.0001 run scoreboard players get #vy ballistics
+execute store result entity @e[type=minecraft:tnt,tag=test.shot,limit=1] Motion[2] double 0.0001 run scoreboard players get #vz ballistics
+tag @e[type=minecraft:tnt,tag=test.shot,limit=1] remove test.shot
 return 1
 === grapple/constrain
 scoreboard players set #coef grapple.work 0

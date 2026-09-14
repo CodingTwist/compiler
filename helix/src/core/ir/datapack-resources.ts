@@ -5,7 +5,7 @@ import { FunctionRef } from "../function_ref";
 import { Predicate, PredicateRef } from "../values/predicate";
 import { AdvancementDef, Trigger } from "../values/advancement";
 import { Selector } from "../frontend/nodes/selector";
-import { Advancement, Biome, FunctionId } from "../values/resource.generated";
+import { Advancement, Biome, EntityType, FunctionId } from "../values/resource.generated";
 import { FunctionTagRef } from "../values/function-tag";
 import { BiomeDef } from "../values/biome";
 import { LootTableDef, LootTableRef } from "../values/loot-table";
@@ -234,6 +234,16 @@ export class DatapackResources extends DatapackCore {
       replace: spec.replace,
     });
     return FunctionTagRef(this.name, name);
+  }
+
+  /**
+   * Declares an entity type tag and returns it as a type for `Selector.type(...)`, so one
+   * selector can match several types. Registering again appends.
+   */
+  entityTypeTag(name: string, types: readonly EntityType[]): EntityType {
+    const known = this.registryTags.get(`entity_type/${name}`)?.values ?? [];
+    this.tag("entity_type", name, { values: [...new Set(types.map((t) => t.render()))].filter((t) => !known.includes(t)) });
+    return EntityType(`#${this.name}:${name}`);
   }
 
   /** The typed id (`<ns>:<name>`) of a function in this pack. */

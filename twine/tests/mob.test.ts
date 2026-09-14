@@ -26,9 +26,10 @@ describe("defineMob", () => {
     expect(all).toContain(`summon minecraft:husk ~ ~ ~ {Silent:1b,Tags:["sentinel","sentinel.new"]}`);
     expect(all).toContain(`Tags:["sentinel_rig","sentinel_rig_0","sentinel.new"]`);
     expect(all).toContain(
-      "execute as @e[tag=sentinel_rig_0,tag=sentinel.new] run ride @s mount @e[tag=sentinel,tag=sentinel.new,limit=1]",
+      "execute as @e[type=minecraft:block_display,tag=sentinel_rig_0,tag=sentinel.new] run ride @s mount @e[type=minecraft:husk,tag=sentinel,tag=sentinel.new,limit=1]",
     );
-    expect(all).toContain("tag @e[tag=sentinel.new] remove sentinel.new");
+    expect(all).toContain("tag @e[type=minecraft:husk,tag=sentinel,tag=sentinel.new] remove sentinel.new");
+    expect(all).toContain("tag @e[type=minecraft:block_display,tag=sentinel_rig_0,tag=sentinel.new] remove sentinel.new");
   });
 
   it("sweeps rigs whose mob died - a killed vehicle only dismounts its riders", () => {
@@ -55,11 +56,11 @@ describe("defineMob", () => {
     // Exactly the rig's own vehicle, and yaw only - a copied pitch tilts the model.
     expect(all).toContain("execute on passengers if entity @s[tag=sentinel_rig_0] run function test:sentinel/zzz/face_one");
     expect(all).toContain(
-      "execute on vehicle run data modify entity @e[tag=sentinel.cur,limit=1] Rotation[0] set from entity @s Rotation[0]",
+      "execute on vehicle run data modify entity @e[type=minecraft:block_display,tag=sentinel_rig_0,tag=sentinel.cur,limit=1] Rotation[0] set from entity @s Rotation[0]",
     );
     // ...and on down to the members riding the root, which keep their own rotation.
     expect(all).toContain(
-      "execute on passengers run data modify entity @s Rotation[0] set from entity @e[tag=sentinel.cur,limit=1] Rotation[0]",
+      "execute on passengers run data modify entity @s Rotation[0] set from entity @e[type=minecraft:block_display,tag=sentinel_rig_0,tag=sentinel.cur,limit=1] Rotation[0]",
     );
   });
 
@@ -382,7 +383,7 @@ describe("difficulty", () => {
 
   it("runs onDifficulty at summon and on live mobs when the level changes", () => {
     const all = scaled();
-    expect(all).toContain("execute as @e[tag=brute,tag=brute.new,limit=1] run function test:brute/zzz/on_difficulty");
+    expect(all).toContain("execute as @e[type=minecraft:husk,tag=brute,tag=brute.new,limit=1] run function test:brute/zzz/on_difficulty");
     expect(all).toContain("matches 1 run return run say now easy");
     expect(all).toContain("say now hard");
     expect(all).toContain("execute unless score #level twine.difficulty = #applied brute.awake run function test:brute/zzz/rescale");

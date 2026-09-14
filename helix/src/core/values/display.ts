@@ -11,6 +11,7 @@ import type { ItemDisplayFields } from "./entities.generated";
 import { CommandValue } from "./value";
 import { Pos, PosValue } from "./pos";
 import { Relation } from "./enums";
+import { EntityType } from "./resource.generated";
 import { Vec3, Quat, add } from "./transform-math";
 
 export type { Vec3, Quat };
@@ -21,7 +22,7 @@ export type { Vec3, Quat };
  * used by `ctx.summonIf`.
  */
 export interface EntityCondition {
-  selector: string;
+  selector: Selector;
   mode: "if" | "unless";
 }
 
@@ -50,8 +51,9 @@ export interface DisplayChild {
   transform: Transform;
 }
 
-/** The root entity type, taken from the generated schema. */
-const ROOT_ENTITY = BlockDisplay({}).entity;
+/** The display entity type for a member's content. */
+const entityFor = (kind: DisplayContent["kind"]): EntityType =>
+  kind === "block" ? EntityType.BLOCK_DISPLAY : EntityType.ITEM_DISPLAY;
 
 const IDENTITY_QUAT: Quat = [0, 0, 0, 1];
 const UNIT_SCALE: Vec3 = [1, 1, 1];
@@ -104,7 +106,7 @@ export class DisplayValue implements CommandValue {
   ) {}
 
   /** The entity id to summon this with (`ctx.summon(Display.id, ...)`). */
-  static readonly id = ROOT_ENTITY;
+  static readonly id = EntityType.BLOCK_DISPLAY;
 
   /** Replace the root member with a block. */
   setBlock(block: BlockValue): this {
@@ -149,9 +151,9 @@ export class DisplayValue implements CommandValue {
   }
 
   /** A selector for the hitbox alone - what an attack-relay reads. */
-  hitboxSelector(): string {
+  hitboxSelector(): Selector {
     if (!this._hitbox) throw new Error("Display has no hitbox - call .hitbox() first.");
-    return `@e[tag=${this.getName()}_hitbox]`;
+    return Selector.allEntities().type(EntityType.INTERACTION).tag(`${this.getName()}_hitbox`);
   }
 
   /**
@@ -234,19 +236,15 @@ export class DisplayValue implements CommandValue {
     return this._pos;
   }
 
-  /** A selector matching the whole group: `@e[tag=<name>]`. */
-  selector(): string {
-    return `@e[tag=${this.getName()}]`;
-  }
-
   /** Condition: the group is currently spawned. */
   get exists(): EntityCondition {
-    return { selector: this.selector(), mode: "if" };
+    // The root is summoned and killed with the group, so it stands in for all of it.
+    return { selector: this.rootSelector(), mode: "if" };
   }
 
   /** Condition: the group is not currently spawned. */
   get notExist(): EntityCondition {
-    return { selector: this.selector(), mode: "unless" };
+    return { selector: this.rootSelector(), mode: "unless" };
   }
 
   /** Summon the display at its {@link at} position. */
@@ -268,8 +266,7 @@ export class DisplayValue implements CommandValue {
   /** Typed selector for member `i` (`@e[type=<its display>,tag=<name>_<i>]`), in {@link members} order. */
   memberSelector(i: number): Selector {
     const kind = i === 0 ? this.content.kind : this.children[i - 1].content.kind;
-    const entity = kind === "block" ? ROOT_ENTITY : ItemDisplay({}).entity;
-    return Selector.allEntities().type(entity).tag(`${this.getName()}_${i}`);
+    return Selector.allEntities().type(entityFor(kind)).tag(`${this.getName()}_${i}`);
   }
 
   /** Remove every member of the group: one typed scan for the root, the rest ride it. */
@@ -278,6 +275,16 @@ export class DisplayValue implements CommandValue {
       c.execute().on(Relation.PASSENGERS).run((p) => p.kill(Selector.self()));
       c.kill(Selector.self());
     });
+  }
+
+  /**
+   * Removes every member, riding or not, with one typed `kill` per entity type in the group.
+   * For cleanup after a crash or `/reload`, when members may have come off the root.
+   */
+  killAll(ctx: FunctionContext): void {
+    const types = [...new Set(this.members().map((m) => m.content.kind))].map(entityFor);
+    if (this._hitbox) types.push(EntityType.INTERACTION);
+    for (const type of types) ctx.kill(Selector.allEntities().type(type).tag(this.getName()));
   }
 
   /** Members in order, root first. The hitbox isn't included, since it has no transform. */

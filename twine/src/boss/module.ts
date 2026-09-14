@@ -1,4 +1,4 @@
-import { Id, Path, Pos, Range, ScoreTarget, Selector, math } from "helix";
+import { EntityType, Id, Path, Pos, Range, ScoreTarget, Selector, math } from "helix";
 import type { Datapack, FunctionContext, FunctionRef, IdentifiedEntityNbt, Objective, Score } from "helix";
 import type { AreaTrigger, DatapackModule, ModuleScope, Vec3 } from "../core/module.interface";
 import { rearmEvents } from "../core/events";
@@ -49,13 +49,13 @@ export class BossModule implements DatapackModule {
 
   /** The single boss entity, found by the tag the framework injects at summon. */
   private get boss(): Selector {
-    return Selector.allEntities().tag(this.name).limit(1);
+    return this.allBosses.limit(1);
   }
   /**
    * Every entity with the boss tag, for cleanup. No `limit=1`, so duplicate bosses get killed too.
    */
   private get allBosses(): Selector {
-    return Selector.allEntities().tag(this.name);
+    return Selector.allEntities().type(EntityType(this.nbt.entity)).tag(this.name);
   }
   /** Everyone in the arena, recomputed each poll. */
   private get participants(): Selector {
