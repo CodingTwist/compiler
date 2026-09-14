@@ -2,10 +2,25 @@
 // directory.
 import fs from "fs";
 import { parseArgs } from "util";
-import type { RuntimeTarget } from "../core/ir/target";
+import { RUNTIME_TARGETS, type RuntimeTarget } from "../core/ir/target";
 import type { ProfileDump } from "../core/report/profile";
 import { latestProfile, PROFILE_DIR } from "../core/report/profile-file";
 import { loadPack, worldDir, type LoadResult } from "./load";
+import * as profiles from "../versions/profiles";
+import type { VersionProfile } from "../versions/profile";
+
+/** Looks up a known {@link VersionProfile} by its human id, e.g. "1.21.4". */
+function versionById(id: string): VersionProfile {
+  const found = knownVersions().find((p) => p.id === id);
+  if (!found) {
+    throw new Error(`helix: unknown --version "${id}" - known versions: ${knownVersions().map((p) => p.id).join(", ")}`);
+  }
+  return found;
+}
+
+function knownVersions(): VersionProfile[] {
+  return Object.values(profiles);
+}
 
 const USAGE = `usage: helix <command> [options]
 
@@ -16,9 +31,15 @@ const USAGE = `usage: helix <command> [options]
   profile [dump.json]     measured profile from the newest /helixprof dump (or the given one)
   validate                check emitted JSON against the vanilla schema
   data [--force]          download the Minecraft version data (not shipped; needs network)
+  versions                list known Minecraft versions (for --version)
 
   --target <t>            build only this runtime target
-  --prod                  prod mode (debug off, twine prunes dev modules)`;
+  --prod                  prod mode (debug off, twine prunes dev modules)
+  --version <id>          force a Minecraft version, e.g. "1.21.4" (overrides the config)
+  --no-inline             disable the single-command inlining pass
+  --no-group              disable the execute-prefix grouping pass
+  --comments              write "# <file>:<line>" source comments above commands
+  --no-comments           strip them, even if helix.config.ts turns them on`;
 
 /** Runs a CLI invocation; resolves to the process exit code. */
 export async function runCli(argv: string[]): Promise<number> {
@@ -30,6 +51,11 @@ export async function runCli(argv: string[]): Promise<number> {
       strict: { type: "boolean" },
       json: { type: "boolean" },
       target: { type: "string" },
+      version: { type: "string" },
+      "no-inline": { type: "boolean" },
+      "no-group": { type: "boolean" },
+      comments: { type: "boolean" },
+      "no-comments": { type: "boolean" },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -39,8 +65,24 @@ export async function runCli(argv: string[]): Promise<number> {
     return command || values.help ? 0 : 1;
   }
   const mode = values.prod ? "prod" : "dev";
+  if (values.target && !RUNTIME_TARGETS.includes(values.target as RuntimeTarget)) {
+    console.error(
+      `helix: unknown --target "${values.target}" - expected one of ${RUNTIME_TARGETS.join(", ")} (for a Minecraft version, use --version)`,
+    );
+    return 1;
+  }
   const target = values.target as RuntimeTarget | undefined;
-  const load = () => loadPack({ mode, target });
+  const version = values.version ? versionById(values.version) : undefined;
+  const optimize = {
+    ...(values["no-inline"] ? { inline: false } : {}),
+    ...(values["no-group"] ? { group: false } : {}),
+  };
+  const debug = values.comments
+    ? { comments: true }
+    : values["no-comments"]
+      ? { sources: false, comments: false }
+      : undefined;
+  const load = () => loadPack({ mode, target, version, optimize, debug });
   // Source tracking is forced on so every finding carries its TS line.
   const reportJson = async (strict?: boolean) => {
     // Pack code that logs must not corrupt the JSON on stdout.
@@ -49,7 +91,7 @@ export async function runCli(argv: string[]): Promise<number> {
     let warned = false;
     let result;
     try {
-      const { root, packs } = await loadPack({ mode, target, debug: { sources: true } });
+      const { root, packs } = await loadPack({ mode, target, version, optimize, debug: { sources: true } });
       result = {
         root,
         packs: packs.map(({ target, dp }) => {
@@ -66,6 +108,9 @@ export async function runCli(argv: string[]): Promise<number> {
   };
 
   switch (command) {
+    case "versions":
+      for (const p of knownVersions()) console.log(p.id);
+      return 0;
     case "build":
     case "dev":
       return build(await load());

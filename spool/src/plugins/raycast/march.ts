@@ -1,4 +1,4 @@
-import { Pos, Block, BLOCK_TAGS, Range } from "helix";
+import { Pos, Block, BLOCK_TAGS, Range, privateName } from "helix";
 import type { FunctionRef } from "helix";
 import type { RaycastState } from "./context";
 import type { RaycastOptions } from "./index";
@@ -19,8 +19,10 @@ export function buildMarcher(state: RaycastState, fn: FunctionRef, opts: Raycast
   const stepBlocks = opts.stepBlocks ?? 0.5;
 
   // Its own function so the marcher can `return run` it, stopping the recursion and
-  // returning its result.
-  const reach = opts.stopAt ? state.dp.createFunction(`raycast/${opts.name}_reach`) : undefined;
+  // returning its result. Private: it's plumbing, not a name callers reach for.
+  const reach = opts.stopAt
+    ? state.dp.createFunction(privateName(`raycast/${opts.name}_reach`))
+    : undefined;
   reach?.build((ctx) => opts.onReach?.(ctx));
 
   fn.build((ctx) => {

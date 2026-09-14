@@ -5,5 +5,8 @@
  */
 export type RuntimeTarget = "vanilla" | "paper";
 
+/** All valid {@link RuntimeTarget} values, for CLI validation. */
+export const RUNTIME_TARGETS: RuntimeTarget[] = ["vanilla", "paper"];
+
 /** The default runtime when none is specified: a portable vanilla datapack. */
 export const DEFAULT_TARGET: RuntimeTarget = "vanilla";

@@ -7,6 +7,8 @@ import { Datapack } from "../core/ir/datapack";
 import type { RuntimeTarget } from "../core/ir/target";
 import type { BuildMode, HelixConfig, PackEntry } from "./config";
 import type { DebugOptions } from "../core/debug/sources";
+import type { OptimizeOptions } from "../core/ir/datapack";
+import type { VersionProfile } from "../versions/profile";
 
 export const CONFIG_FILE = "helix.config.ts";
 
@@ -36,6 +38,10 @@ export async function loadPack(opts: {
   target?: RuntimeTarget;
   /** Overrides `config.debug`, in any mode. */
   debug?: DebugOptions;
+  /** Overrides the config/entry version, e.g. from `--version`. */
+  version?: VersionProfile;
+  /** Merged over `config.optimize`, e.g. from `--no-inline`/`--no-group`. */
+  optimize?: OptimizeOptions;
 }): Promise<LoadResult> {
   const root = path.resolve(opts.root ?? process.cwd());
   const configFile = path.join(root, CONFIG_FILE);
@@ -52,7 +58,7 @@ export async function loadPack(opts: {
   if (entry.version && config.version) {
     throw new Error(`helix: version is set in both ${CONFIG_FILE} and ${config.entry} - keep one`);
   }
-  const version = entry.version ?? config.version;
+  const version = opts.version ?? entry.version ?? config.version;
   if (!version) throw new Error(`helix: no version - set it in ${CONFIG_FILE} or definePack({ version }, ...)`);
 
   const targets = opts.target ? [opts.target] : (config.targets ?? ["vanilla"]);
@@ -61,7 +67,7 @@ export async function loadPack(opts: {
     const suffix = target === "vanilla" ? "" : `-${target}`;
     const dp = new Datapack(config.name, version, target, {
       debug: opts.debug ?? (opts.mode === "dev" ? config.debug : undefined),
-      optimize: config.optimize,
+      optimize: { ...config.optimize, ...opts.optimize },
     });
     await entry(dp, { mode: opts.mode, target });
     packs.push({
