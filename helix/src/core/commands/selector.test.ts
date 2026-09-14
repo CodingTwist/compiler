@@ -30,7 +30,7 @@ describe("Selector rendering", () => {
   });
 
   it("passes a #tag entity type through as a registry tag reference", () => {
-    expect(Selector.allEntities().type("#tunnel:removable").toString()).toBe(
+    expect(Selector.allEntities().type(EntityType("#tunnel:removable")).toString()).toBe(
       "@e[type=#tunnel:removable]",
     );
   });

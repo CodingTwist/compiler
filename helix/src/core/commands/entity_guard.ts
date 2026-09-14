@@ -20,8 +20,8 @@ export class EntityGuardNode extends ASTNode {
   type = "entity_guard" as const;
   constructor(
     public readonly mode: "if" | "unless",
-    /** The entity to test for. A raw string is accepted as an escape hatch. */
-    public readonly selector: Selector | string,
+    /** The entity to test for. */
+    public readonly selector: Selector,
     public readonly command: ASTNode,
   ) {
     super();

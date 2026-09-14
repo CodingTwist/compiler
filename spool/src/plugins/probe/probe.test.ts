@@ -11,8 +11,8 @@ function build(enabled: boolean): Map<string, string> {
   suite.case("tnt exists", {
     setup: (ctx) => void ctx.summon(EntityType.TNT, Pos.here()),
     after: 40,
-    expect: Detect.entity(Selector.allEntities().type("tnt")),
-    teardown: (ctx) => void ctx.kill(Selector.allEntities().type("tnt")),
+    expect: Detect.entity(Selector.allEntities().type(EntityType.TNT)),
+    teardown: (ctx) => void ctx.kill(Selector.allEntities().type(EntityType.TNT)),
   });
   suite.case("second", { expect: Detect.entity(Selector.allPlayers()) });
   suite.run();
@@ -24,7 +24,7 @@ const text = (files: Map<string, string>): string => [...files.values()].join("\
 describe("probe", () => {
   it("captures the condition as a 0/1 score with no run clause", () => {
     expect(text(build(true))).toContain(
-      "execute store success score #ok Probe if entity @e[type=tnt]",
+      "execute store success score #ok Probe if entity @e[type=minecraft:tnt]",
     );
   });
 

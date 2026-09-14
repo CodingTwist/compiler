@@ -5,6 +5,7 @@ import { TellrawPart } from "../../frontend/nodes/tellraw_part";
 import { FireworkValue } from "../firework";
 import { ModelRef } from "../model";
 import { CommandValue } from "../value";
+import type { Enchantment } from "../resource.generated";
 import type { ItemState } from "./state";
 import type { TextComponent } from "./text";
 import type { ItemValue } from "./value";
@@ -58,7 +59,7 @@ export class ItemBuilder {
   }
 
   /** Add an enchantment + level (repeatable). */
-  enchant(enchantment: string | CommandValue, level: number): this {
+  enchant(enchantment: Enchantment, level: number): this {
     this.s.enchantments.push([enchantment, level]);
     return this;
   }

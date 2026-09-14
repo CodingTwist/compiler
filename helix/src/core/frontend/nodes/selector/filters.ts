@@ -119,9 +119,9 @@ export class SelectorFilters {
     return this;
   }
 
-  /** Matches one entity type. A string starting with `#` is passed through as a tag. */
-  type(entityType: EntityType | string): this {
-    this.entityTypeValue = typeof entityType === "string" ? entityType : entityType.render();
+  /** Matches one entity type, or a tag via `EntityType("#ns:tag")` / `dp.entityTypeTag`. */
+  type(entityType: EntityType): this {
+    this.entityTypeValue = entityType.render();
     return this;
   }
 

@@ -1,4 +1,4 @@
-import { Item, Id, Range, math } from "helix";
+import { Item, Enchantment, Range, math } from "helix";
 import type { PlayerMotionInternals } from "./context";
 
 /**
@@ -17,7 +17,7 @@ export function defineLaunch(I: PlayerMotionInternals): void {
     // Apply the dummy saddle carrying the apply_impulse enchantment.
     const saddle = Item.SADDLE
       .component("equippable", '{slot: "saddle", equip_sound: "intentionally_empty"}')
-      .enchant(Id(`${ns}:internal/apply_impulse`), 1);
+      .enchant(Enchantment(`${ns}:internal/apply_impulse`), 1);
     ctx.item().replaceEntityWith(self(), "saddle", saddle);
 
     ctx.call(fStoreX);
