@@ -68,7 +68,7 @@ it("builds scoreboard tellraw node", () => {
         const { ctx } = createCommandTestEnv();
 
   const ob = new Objective("test");
-  const score = new Score(ob, "test", 10);
+  const score = new Score(ob, "test");
   const node = new TellrawNode(new Selector("@a").build(), new TellrawText([score]));
 
     const command = new TellrawCommand();
@@ -96,7 +96,7 @@ it("emits multi-part tellraw", () => {
 
 it("emits scoreboard tellraw", () => {
   const ob = new Objective("test");
-  const score = new Score(ob, "player", 10);
+  const score = new Score(ob, "player");
 
   const { ctx } = createCommandTestEnv();
 
@@ -117,7 +117,7 @@ it("emits mixed tellraw", () => {
 
   const message = new TellrawText([
     text("Score: ").bold().color(Color.BLUE),
-    new Score(ob, "temp1", 0),
+    new Score(ob, "temp1"),
     text("!"),
   ]);
 

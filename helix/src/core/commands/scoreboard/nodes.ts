@@ -54,16 +54,11 @@ export const scoreLitNode = (
   });
 
 /**
- * `scoreboard players <verb> <target> <objective> [<value>]`. The holder arg is `targets`,
+ * `scoreboard players get|reset|enable <target> <objective>`. The holder arg is `targets`,
  * except `get` uses `target`.
  */
-export const playersNode = (
-  verb: string,
-  score: Score,
-  withValue = false,
-): ScoreboardNode =>
+export const playersNode = (verb: "get" | "reset" | "enable", score: Score): ScoreboardNode =>
   new ScoreboardNode(["players", verb], {
     [verb === "get" ? "target" : "targets"]: score.target,
     objective: score.objective.getName(),
-    ...(withValue ? { score: Number(score.value) } : {}),
   });

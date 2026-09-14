@@ -90,12 +90,12 @@ describe("ctx.execute() chain builder", () => {
     );
   });
 
-  it("supports store result storage and scoreGet run targets", () => {
+  it("supports store result storage and score get run targets", () => {
     const [line] = render((ctx) =>
       ctx
         .execute()
         .storeResultStorage(Id("t:temp"), NbtPath("matrix.x"), "double", 1)
-        .run((b: any) => b.scoreGet(D("#x"))),
+        .run((b: any) => D("#x").get(b)),
     );
     expect(line).toBe(
       "execute store result storage t:temp matrix.x double 1 run scoreboard players get #x d",
@@ -107,7 +107,7 @@ describe("ctx.execute() chain builder", () => {
       ctx
         .execute()
         .storeResultBossbar(Id("t:king"), "value")
-        .run((b: any) => b.scoreGet(D("#hp"))),
+        .run((b: any) => D("#hp").get(b)),
     );
     expect(line).toBe("execute store result bossbar t:king value run scoreboard players get #hp d");
   });
@@ -149,8 +149,8 @@ describe("ctx.execute() chain builder", () => {
     expect(line).toBe("execute on target run say you");
   });
 
-  it("scoreOp emits every operator", () => {
-    const [line] = render((ctx) => ctx.scoreOp(D("#x"), "><", D("#z")));
+  it("swap emits the >< operator", () => {
+    const [line] = render((ctx) => void D("#x").swap(D("#z"), ctx));
     expect(line).toBe("scoreboard players operation #x d >< #z d");
   });
 

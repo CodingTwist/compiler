@@ -131,7 +131,7 @@ export class StateMachine {
 
   /** Per-tick body: freeze the state, clear the guard, then run the matching state. */
   private dispatch(ctx: FunctionContext): void {
-    this.snap.copy(ctx, this.cur);
+    this.snap.assign(this.cur, ctx);
     if (this.needsGuard()) this.done.set(0);
     for (const from of this.order) {
       ctx.if(this.snap.equal(this.id(from)), (sc) => this.runState(sc, from));

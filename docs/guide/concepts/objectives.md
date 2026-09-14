@@ -25,9 +25,9 @@ paper over.
 
 ## Declaring vs. using
 
-`dp.objective(...)` registers the objective in TS, but the scoreboard command that *creates*
-it in-game is `ctx.scoreInit(obj)` - call it once from your load function. After that,
-`obj.score(target)` gives you a cell to read and write:
+`dp.objective(...)` registers the objective, and the pack creates it in-game at load (an
+objective built with `new Objective(...)` isn't registered; create it with `obj.init()` in a
+load function). `obj.score(target)` gives you a cell to read and write:
 
 ```ts compile
 import { Datapack, v26_2, ScoreTarget, Selector } from "helix";
@@ -37,7 +37,6 @@ const game = dp.objective("game");
 
 const load = dp.createFunction("load");
 load.build((ctx) => {
-  ctx.scoreInit(game);                    // scoreboard objectives add game dummy
   game.score(ScoreTarget("#round")).set(0);
 });
 
@@ -58,7 +57,7 @@ holders, so both are first-class here - a fake player is a concept, not a string
 ## Triggers: letting players write their own score
 
 A `"trigger"` objective is the one score players can change themselves, via `/trigger`. You
-enable it per player (`ctx.scoreEnable` / `obj.enable(ctx, sel)`), they run the command, and
+enable it per player (`obj.score(sel).enable()`), they run the command, and
 you read the result next tick, then re-enable. It's the standard "menu click" / player-input
 primitive.
 
@@ -70,8 +69,7 @@ const home = dp.objective("home", "trigger");
 
 const setup = dp.createFunction("setup");
 setup.build((ctx) => {
-  ctx.scoreInit(home);
-  ctx.scoreEnable(Selector.allPlayers(), home);   // players may now /trigger home
+  home.score(Selector.allPlayers()).enable();     // players may now /trigger home
 });
 
 const poll = dp.createFunction("poll");

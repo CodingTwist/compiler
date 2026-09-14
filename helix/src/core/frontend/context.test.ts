@@ -28,25 +28,24 @@ describe("FunctionContext", () => {
     expect((fn.nodes[0] as SayNode).value).toBe("hello");
   });
 
-  it("scoreInit() pushes the objectives-add command", () => {
+  it("Objective.init() pushes the objectives-add command", () => {
     const fn = new FunctionNode("main");
     const ctx = new FunctionContext(fn, v1_21_4);
     const obj = new Objective("kills");
 
-    ctx.scoreInit(obj);
+    obj.init(ctx);
 
     const node = fn.nodes[0] as ScoreboardNode;
     expect(node.spine).toEqual(["objectives", "add"]);
     expect(node.args).toEqual({ objective: "kills", criteria: "dummy" });
   });
 
-  it("scoreSet() pushes the players-set command", () => {
+  it("Score.set() pushes the players-set command", () => {
     const fn = new FunctionNode("main");
     const ctx = new FunctionContext(fn, v1_21_4);
     const obj = new Objective("kills");
 
-    const score = new Score(obj, "player", 5);
-    ctx.scoreSet(score);
+    new Score(obj, "player").set(5, ctx);
 
     const node = fn.nodes[0] as ScoreboardNode;
     expect(node.spine).toEqual(["players", "set"]);

@@ -34,9 +34,9 @@ export function defineApi(I: PlayerMotionInternals): void {
       .ifEntity(self().xRotation(new Range(-90, -90)))
       .run((b) => b.returnRun((r) => r.call(fPolarGlobal)));
 
-    ctx.execute().storeResultStorage(temp, MATRIX.child("x"), "double", 1).run((b) => b.scoreGet(workX));
-    ctx.execute().storeResultStorage(temp, MATRIX.child("y"), "double", 1).run((b) => b.scoreGet(workY));
-    ctx.execute().storeResultStorage(temp, MATRIX.child("z"), "double", 1).run((b) => b.scoreGet(workZ));
+    ctx.execute().storeResultStorage(temp, MATRIX.child("x"), "double", 1).run((b) => workX.get(b));
+    ctx.execute().storeResultStorage(temp, MATRIX.child("y"), "double", 1).run((b) => workY.get(b));
+    ctx.execute().storeResultStorage(temp, MATRIX.child("z"), "double", 1).run((b) => workZ.get(b));
 
     globalConversionTail(I, ctx, 0);
   });

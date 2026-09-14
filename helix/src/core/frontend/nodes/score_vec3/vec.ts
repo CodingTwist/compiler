@@ -83,7 +83,7 @@ export class ScoreVec3 extends ScoreVec3Ops {
       if (opts.at) chain.at(opts.at);
       chain
         .storeResultEntity(who, path.index(axis), type, scale)
-        .run((c) => c.scoreGet(score));
+        .run((c) => score.get(c));
     });
     return this;
   }

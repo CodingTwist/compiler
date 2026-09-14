@@ -20,7 +20,7 @@ export class BossFight extends BossParts {
       ctx
         .execute()
         .storeResultBossbar(this.barId, "value")
-        .run((b) => b.scoreGet(hp));
+        .run((b) => hp.get(b));
     }
   }
 

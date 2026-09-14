@@ -17,7 +17,7 @@ export function createRaycastState(dp: Datapack) {
 
   // One load-init for the whole plugin, wired the first time a pack casts.
   const init: FunctionRef = dp.createFunction("raycast/init", "load");
-  init.build((ctx) => ctx.scoreInit(work));
+  init.build(() => work.init());
 
   return { dp, work, steps };
 }

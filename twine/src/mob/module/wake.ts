@@ -65,7 +65,7 @@ function watchDifficulty<S extends string>(m: MobParts<S>, ctx: FunctionContext)
   const applied = m.awakeObj.score(ScoreTarget("#applied"));
   const rescale = m.internal("rescale", (c) => {
     c.execute().as(m.mobs).run((b) => b.call(onDifficultyFn(m)!));
-    c.scoreOp(applied, "=", DIFFICULTY);
+    applied.assign(DIFFICULTY, c);
   });
   ctx.execute().unlessScore(DIFFICULTY, "=", applied).run((b) => b.call(rescale));
 }

@@ -17,7 +17,6 @@ const game = dp.objective("game");
 
 const load = dp.createFunction("load");
 load.build((ctx) => {
-  ctx.scoreInit(game);                       // scoreboard objectives add game dummy
   game.score(ScoreTarget("#round")).set(0);
 });
 

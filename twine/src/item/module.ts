@@ -112,7 +112,7 @@ export class ItemModule implements DatapackModule {
     const holder = holdingPredicate(dp, this.item, { exact: this.opts.exact });
     const clicked = Selector.allPlayers().score(rc, Range.atLeast(1)).predicate(holder);
 
-    dp.createFunction(`${base}/rc_load`, "load").build((ctx) => ctx.scoreInit(rc));
+    dp.createFunction(`${base}/rc_load`, "load").build(() => rc.init());
     dp.createFunction(tickName, "tick").build((ctx) => {
       ctx.execute().as(clicked).at(Selector.self()).run((b) => body(b));
       // Reset every player so this tick's use doesn't fire again next tick.

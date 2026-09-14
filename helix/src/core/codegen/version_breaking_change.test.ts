@@ -53,13 +53,11 @@ describe("fake future version: breaking grammar changes are absorbed", () => {
     expect(futureOrder).toBe("scoreboard players set 5 obj @s");
   });
 
-  it("the UNCHANGED scoreSet entry follows the new order end-to-end", () => {
+  it("the UNCHANGED score set entry follows the new order end-to-end", () => {
     // Compiled against the fake version; the handler doesn't know the order changed.
     const dp = new Datapack("pack", reordered);
     const fn = new FunctionNode("main");
-    new FunctionContext(fn, reordered).scoreSet(
-      new Score(new Objective("obj", "dummy"), ScoreTarget("@s"), 5),
-    );
+    new Score(new Objective("obj", "dummy"), ScoreTarget("@s")).set(5, new FunctionContext(fn, reordered));
     dp.functions.set("main", fn);
 
     const out = buildDatapack(dp).get("data/pack/function/main.mcfunction");

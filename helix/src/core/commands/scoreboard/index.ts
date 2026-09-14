@@ -8,5 +8,3 @@
 // Registered via EXTRA_HANDLERS in scripts/gen-commands.mjs.
 export * from "./nodes";
 export * from "./handler";
-// `export *` keeps the `declare module` augmentation in the public types.
-export * from "./method";

@@ -1,5 +1,7 @@
 import { FunctionContext } from "..";
 import { Score } from "./score";
+import { scoreInitNode } from "../../commands/scoreboard";
+import { currentContext } from "../context/ambient";
 import { Selector } from "./selector";
 import { ScoreTarget } from "../../values/score_target";
 import type { ItemValue } from "../../values/item";
@@ -56,7 +58,15 @@ export class Objective {
     return new Score(this, target instanceof Selector ? ScoreTarget(target) : target);
   }
 
-  enable(ctx: FunctionContext, selector: Selector) {
-    return ctx.scoreEnable(selector, this);
+  /**
+   * `scoreboard objectives add`: creates this objective, into the ambient context or `ctx`.
+   *
+   * Objectives from `dp.objective` are already created at load; this is for ones built with `new`.
+   */
+  init(ctx?: FunctionContext): this {
+    const target = ctx ?? currentContext();
+    if (!target) throw new Error("Objective.init has no active context: call it inside a build() callback, or pass ctx.");
+    target.emit(scoreInitNode(this));
+    return this;
   }
 }

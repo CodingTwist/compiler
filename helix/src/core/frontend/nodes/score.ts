@@ -11,14 +11,11 @@ import { ScoreTarget } from "../../values/score_target";
 export class Score extends TellrawPart implements ExpressionNode {
   type: string = "score";
 
-  value?: number;
   constructor(
     public objective: Objective,
     public target: ScoreTarget,
-    value?: number,
   ) {
     super();
-    if (value !== undefined) this.value = value;
   }
 
   /** `matches <range>`: true when the score is in `range`. */
@@ -72,21 +69,18 @@ export class Score extends TellrawPart implements ExpressionNode {
 
   /** `scoreboard players set <this> <value>`. */
   set(value: number, ctx?: FunctionContext): this {
-    this.value = value;
     this.emitter(ctx).emit(scoreLitNode("set", this, value));
     return this;
   }
 
   /** `scoreboard players add <this> <value>`. */
   add(value: number, ctx?: FunctionContext): this {
-    this.value = value;
     this.emitter(ctx).emit(scoreLitNode("add", this, value));
     return this;
   }
 
   /** `scoreboard players remove <this> <value>`. */
   remove(value: number, ctx?: FunctionContext): this {
-    this.value = value;
     this.emitter(ctx).emit(scoreLitNode("remove", this, value));
     return this;
   }
@@ -103,8 +97,11 @@ export class Score extends TellrawPart implements ExpressionNode {
     return this;
   }
 
-  copy(ctx: FunctionContext, score: Score) {
-    ctx.scoreSetScore(this, score)
+  /** `scoreboard players enable <this>`: lets the holder run `/trigger` on this trigger objective once. */
+  enable(ctx?: FunctionContext): this {
+    if (this.objective.kind !== "trigger") throw new Error(`Objective "${this.objective.getName()}" must be trigger to enable`);
+    this.emitter(ctx).emit(playersNode("enable", this));
+    return this;
   }
 
   /**

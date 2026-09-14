@@ -17,7 +17,7 @@ itself*, and a `scoreboard players operation` operand must be a score, not a lit
 const work = dp.objective("work");
 const scaleScore = work.score(ScoreTarget("#scale"));
 const x = new Fixed(work.score(ScoreTarget("x")), 1000, scaleScore);
-// at load: ctx.scoreSet(scaleScore.set(1000));
+// at load: scaleScore.set(1000);
 ```
 
 It's a **hint, not a requirement**. Omit it and the arithmetic is identical - one command
