@@ -131,7 +131,8 @@ export const Slot = {
 export type ScoreboardSlot = string; // `scoreboard_slot`
 export type Objective = string; // `objective` (objective name)
 export type Team = string; // `team`
-export type TeamColor = string; // `team_color`
+/** A `team_color`: one of the named `Color`s; closed so a typo fails to compile. */
+export type TeamColor = Color;
 export type HexColor = string; // `hex_color`
 export type Uuid = string; // `uuid`
 export type ObjectiveCriteria = string; // `objective_criteria`
