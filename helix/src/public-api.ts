@@ -53,6 +53,7 @@ export {
 } from "./core/debug/sources";
 // Exported explicitly since command-file exports aren't at the package root.
 export { triggerCmd } from "./core/commands/trigger";
+export { and, not, or, predicateCheck, type Condition } from "./core/commands/if";
 
 // Profile types and `profileFromRaw` work anywhere; disk-loaded constants are in `index.ts`
 // only.

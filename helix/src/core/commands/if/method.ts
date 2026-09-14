@@ -3,13 +3,19 @@ import { ExpressionNode, FunctionNode } from "../../ir/node";
 import { VersionProfile } from "../../../versions/profile";
 import { FunctionContext } from "../../frontend/context";
 import { runInContext } from "../../frontend/context/ambient";
-import { IfElseNode, type IfBuilder } from "./nodes";
+import { ExecuteBuilder } from "../execute/builder";
+import { ExecuteNode } from "../execute/types";
+import { AndNode, ClausesNode, IfElseNode, NotNode, OrNode, type Condition, type IfBuilder } from "./nodes";
 
 declare module "../../frontend/context" {
   interface FunctionContext {
-    /** `if`/`elif`/`else` control flow; bodies compile to child functions. */
+    /**
+     * `if`/`elif`/`else` control flow; bodies compile to child functions.
+     *
+     * Takes a condition node, a {@link Detector}, or `and`/`or`/`not` of them.
+     */
     if(
-      condition: ExpressionNode,
+      condition: Condition,
       thenFn: (ctx: FunctionContext) => void,
     ): IfBuilder;
   }
@@ -17,7 +23,7 @@ declare module "../../frontend/context" {
 
 FunctionContext.prototype.if = function (
   this: FunctionContext,
-  condition: ExpressionNode,
+  condition: Condition,
   thenFn: (ctx: FunctionContext) => void,
 ): IfBuilder {
   // A fully-composed child context over `fn`, carrying this context's version.
@@ -30,14 +36,27 @@ FunctionContext.prototype.if = function (
   const thenBody = this.createChildFunction("if");
   runInContext(newChild(thenBody), thenFn);
 
-  const node = new IfElseNode(condition, thenBody);
+  // Detectors run now, on a chain that is never emitted, to record their clauses.
+  const resolve = (c: Condition): ExpressionNode => {
+    if (typeof c === "function") {
+      const chain = new ExecuteNode();
+      c(new ExecuteBuilder(this, chain));
+      return new ClausesNode(chain.clauses);
+    }
+    if (c instanceof AndNode) return new AndNode(c.conds.map(resolve));
+    if (c instanceof OrNode) return new OrNode(c.conds.map(resolve));
+    if (c instanceof NotNode) return new NotNode(resolve(c.cond));
+    return c;
+  };
+
+  const node = new IfElseNode(resolve(condition), thenBody);
   this.emit(node);
 
   const builder: IfBuilder = {
     elif: (cond, fn) => {
       const body = this.createChildFunction("elif");
       runInContext(newChild(body), fn);
-      node.elifs.push({ condition: cond, body });
+      node.elifs.push({ condition: resolve(cond), body });
       return builder;
     },
     else: (fn) => {

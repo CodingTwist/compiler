@@ -1,7 +1,7 @@
 // Inlines private helper functions that render to a single command into their call sites.
 import type { Datapack } from "../ir/datapack";
 import { isPrivate } from "../private-fn";
-import { runClause } from "../ir/generate";
+import { FORKS, runClause } from "../ir/generate";
 import { spliceCall, UNKNOWN_LINE, type LineInfo } from "../ir/line-info";
 
 /** The lone command of `text` and its line index, or `undefined` if it has more, none, or can't be inlined. */
@@ -31,8 +31,6 @@ export function inlineSingleCommandFunctions(dp: Datapack, otherFiles: Iterable<
   const allowed = new Set([...dp.allowed.values()].flatMap((fns) => [...fns.keys()]));
   // `store` reads the call's result, which a function without `return` doesn't have.
   const callRe = /^(execute (?!.*\bstore\b).*? run )?(return run )?function (\S+)$/;
-  // `return run` stops after the first branch of a fork, so those can't go under it.
-  const forks = /\s(as|at|on|summon)\s|facing entity/;
   const bodies = new Map<string, { cmd: string; info: LineInfo }>();
   // Only functions that lost a call are dropped; an uncalled one may be run by hand.
   const replaced = new Set<string>();
@@ -56,7 +54,7 @@ export function inlineSingleCommandFunctions(dp: Datapack, otherFiles: Iterable<
         const [, exec, ret, ref] = m;
         const callee = ref.slice(prefix.length);
         const found = bodies.get(callee);
-        if (found === undefined || callee === name || (ret && forks.test(found.cmd))) return;
+        if (found === undefined || callee === name || (ret && FORKS.test(found.cmd))) return;
         const body = found.cmd;
         if (ret) lines[i] = `${exec ?? ""}return run ${body}`;
         else if (exec) lines[i] = `${exec.slice(0, -" run ".length)} ${runClause(body)}`;

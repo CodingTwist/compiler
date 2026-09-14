@@ -5,10 +5,15 @@ import type { FunctionContext } from "../../frontend/context";
 import { ScoreTarget } from "../../values/score_target";
 import { Id } from "../../values/id";
 import { PredicateRef } from "../../values/predicate";
+import type { Detector } from "../../frontend/detect";
+import type { Clause } from "../execute/types";
+
+/** What `ctx.if(...)` and `and`/`or`/`not` take: a condition node or a {@link Detector}. */
+export type Condition = ExpressionNode | Detector;
 
 /** The `elif`/`else` continuation returned by `ctx.if(...)`. */
 export interface IfBuilder {
-  elif(condition: ExpressionNode, fn: (ctx: FunctionContext) => void): IfBuilder;
+  elif(condition: Condition, fn: (ctx: FunctionContext) => void): IfBuilder;
   else(fn: (ctx: FunctionContext) => void): void;
 }
 
@@ -56,6 +61,62 @@ export function predicateCheck(ref: PredicateRef | Id | string): PredicateCheckN
   const id =
     ref instanceof PredicateRef ? ref.id : typeof ref === "string" ? Id(ref).render() : ref.render();
   return new PredicateCheckNode(id);
+}
+
+/** Passes when every condition passes. Built by {@link and}. */
+export class AndNode extends ExpressionNode {
+  type = "and";
+
+  constructor(public conds: Condition[]) {
+    super();
+  }
+}
+
+/** Passes when any condition passes. Built by {@link or}. */
+export class OrNode extends ExpressionNode {
+  type = "or";
+
+  constructor(public conds: Condition[]) {
+    super();
+  }
+}
+
+/** Passes when its condition fails. Built by {@link not}. */
+export class NotNode extends ExpressionNode {
+  type = "not";
+
+  constructor(public cond: Condition) {
+    super();
+  }
+}
+
+/** A detector's `execute` clauses, recorded when `ctx.if` runs it. */
+export class ClausesNode extends ExpressionNode {
+  type = "clauses";
+
+  constructor(public clauses: Clause[]) {
+    super();
+  }
+}
+
+/** Passes when every condition passes; folds into one `execute` chain. */
+export function and(...conds: Condition[]): AndNode {
+  return new AndNode(conds);
+}
+
+/** Passes when any condition passes. The body still runs at most once. */
+export function or(...conds: Condition[]): OrNode {
+  return new OrNode(conds);
+}
+
+/**
+ * Passes when `cond` fails.
+ *
+ * Throws at build if `cond` forks (`as`, `at`, `on`…) or stores, since "no entity passes"
+ * has no `unless` form.
+ */
+export function not(cond: Condition): NotNode {
+  return new NotNode(cond);
 }
 
 export class IfElseNode extends ASTNode {

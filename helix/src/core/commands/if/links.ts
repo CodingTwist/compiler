@@ -1,17 +1,18 @@
 // Chain links: the guards an `if` chain folds into one `execute … if … if … run`.
-import { ASTNode, ExpressionNode, FunctionNode } from "../../ir/node";
+import { ASTNode, FunctionNode } from "../../ir/node";
 import { Selector } from "../../frontend/nodes/selector";
 import { Pos } from "../../values";
 import { EntityGuardNode } from "../entity_guard";
 import { NearGuardNode } from "../near_guard";
 import { IfElseNode } from "./nodes";
+import { toChains, type Chain } from "./normalize";
 
 /**
- * One link in an `execute` chain: a score condition, an entity guard, or a near-player
+ * One link in an `execute` chain: condition clauses, an entity guard, or a near-player
  * guard.
  */
 export type ChainLink =
-  | { kind: "score"; mode: "if" | "unless"; cond: ExpressionNode }
+  | { kind: "clauses"; clauses: Chain }
   | { kind: "entity"; mode: "if" | "unless"; selector: Selector | string }
   | {
       kind: "near";
@@ -25,9 +26,11 @@ export type ChainLink =
 export function foldLink(
   node: ASTNode,
 ): { link: ChainLink; next: { kind: "body"; body: FunctionNode } | { kind: "node"; node: ASTNode } } | undefined {
-  if (node instanceof IfElseNode && node.elifs.length === 0 && !node.elseBody) {
+  // An `or` needs its own `return run` lines, so only a single chain folds.
+  const chains = node instanceof IfElseNode && !node.elifs.length && !node.elseBody && toChains(node.condition);
+  if (node instanceof IfElseNode && chains && chains.length === 1) {
     return {
-      link: { kind: "score", mode: "if", cond: node.condition },
+      link: { kind: "clauses", clauses: chains[0] },
       next: { kind: "body", body: node.thenBody },
     };
   }

@@ -7,7 +7,9 @@ import { CodegenContext, Dispatcher } from "../../ir/commandhandler";
 import { Datapack } from "../../ir/datapack";
 import { createHandlerMap } from "../../codegen/codegen";
 import { Objective } from "../../frontend";
-import { v1_21_4 } from "../../../versions/profiles";
+import { v1_20_1, v1_21_4 } from "../../../versions/profiles";
+import { buildDatapack } from "../../codegen/codegen";
+import { Selector } from "../../frontend/nodes/selector";
 
 function createCommandTestEnv() {
   const dp = new Datapack("testpack", v1_21_4);
@@ -35,15 +37,34 @@ describe("IfHandler - ScoreRangeNode", () => {
     );
   });
 
-  it("emits execute unless for else branch on range condition", () => {
-    const { ctx } = createCommandTestEnv();
+  it("puts if/else in a branch function so else never sees the then body's changes", () => {
+    const { dp, ctx } = createCommandTestEnv();
     const ob = new Objective("health");
     const cond = new ScoreRangeNode("@s", ob, new Range(10,20));
     const node = new IfElseNode(cond, buildBody("then", new SayNode("yes")), [], buildBody("else", new SayNode("no")));
     new IfHandler().generate(node, ctx);
-    expect(ctx.lines[1]).toBe(
-      "execute unless score @s health matches 10..20 run say no"
+    expect(ctx.lines).toEqual(["function testpack:then_chain"]);
+    expect(dp.files.get("then_chain")).toBe(
+      "execute if score @s health matches 10..20 run return run say yes\nsay no"
     );
+  });
+
+  it("keeps a forking or returning body in its own function under return run", () => {
+    const dp = new Datapack("testpack", v1_21_4);
+    const flag = dp.objective("flag").score("@s");
+    dp.createFunction("f").build((ctx) => {
+      ctx
+        .if(flag.equal(1), (c) => void c.return_(1))
+        .elif(flag.equal(2), (c) => c.execute().as(Selector.allPlayers()).run((b) => b.say("a")))
+        .else((c) => c.say("no"));
+    });
+    buildDatapack(dp);
+    const call = dp.files.get("f")!;
+    const chain = call.slice(call.indexOf(":") + 1);
+    const lines = dp.files.get(chain)!.split("\n");
+    expect(lines[0]).toMatch(/matches 1 run return run function testpack:\S+$/);
+    expect(lines[1]).toMatch(/matches 2 run return run function testpack:\S+$/);
+    expect(lines[2]).toBe("say no");
   });
 
   it("commits a multi-command body to a child function and calls it", () => {
@@ -78,24 +99,46 @@ describe("IfHandler - ScoreCompareNode", () => {
   });
 });
 
-it("emits one line per elif branch", () => {
-  const { ctx } = createCommandTestEnv();
+it("checks elif branches in order and stops at the first match", () => {
+  const { dp, ctx } = createCommandTestEnv();
   const ob = new Objective("score");
   const cond1 = new ScoreRangeNode("@s", ob, new Range(1));
   const cond2 = new ScoreRangeNode("@s", ob, new Range(2));
-  const cond3 = new ScoreRangeNode("@s", ob, new Range(3));
   const node = new IfElseNode(
     cond1,
     buildBody("then", new SayNode("one")),
-    [
-      { condition: cond2, body: buildBody("elif1", new SayNode("two")) },
-      { condition: cond3, body: buildBody("elif2", new SayNode("three")) },
-    ]
+    [{ condition: cond2, body: buildBody("elif1", new SayNode("two")) }],
   );
   new IfHandler().generate(node, ctx);
-  expect(ctx.lines).toHaveLength(3);
-  expect(ctx.lines[1]).toContain("matches 2");
-  expect(ctx.lines[2]).toContain("matches 3");
+  expect(ctx.lines).toEqual(["function testpack:then_chain"]);
+  expect(dp.files.get("then_chain")).toBe(
+    "execute if score @s score matches 1.. run return run say one\n" +
+      "execute if score @s score matches 2.. run return run say two",
+  );
+});
+
+it("an empty then body still stops the else", () => {
+  const { dp, ctx } = createCommandTestEnv();
+  const ob = new Objective("score");
+  const cond = new ScoreCompareNode("@s", ob, "<", "#max", ob);
+  const node = new IfElseNode(cond, buildBody("then"), [], buildBody("else", new SayNode("no")));
+  new IfHandler().generate(node, ctx);
+  expect(dp.files.get("then_chain")).toBe(
+    "execute if score @s score < #max score run return 0\nsay no",
+  );
+});
+
+it("keeps one guarded line per branch on versions without return run", () => {
+  const dp = new Datapack("testpack", v1_20_1);
+  const ctx = new CodegenContext(dp, new Dispatcher(createHandlerMap()));
+  const ob = new Objective("score");
+  const cond = new ScoreRangeNode("@s", ob, new Range(1));
+  const node = new IfElseNode(cond, buildBody("then", new SayNode("yes")), [], buildBody("else", new SayNode("no")));
+  new IfHandler().generate(node, ctx);
+  expect(ctx.lines).toEqual([
+    "execute if score @s score matches 1.. run say yes",
+    "execute unless score @s score matches 1.. run say no",
+  ]);
 });
 
 it("throws on unsupported condition type", () => {

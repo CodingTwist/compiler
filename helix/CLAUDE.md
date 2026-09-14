@@ -133,6 +133,17 @@ the `vscode/` extension), `profile [dump.json]`
   `runClause` splices a body that is itself an `execute` chain into the parent's clauses
   (`execute A run execute B run c` → `execute A B run c`). An empty body renders `""` and the
   `execute`/`if` handlers drop the whole line, unless a `store` clause needs its result.
+- **if/elif/else** (`commands/if/handler.ts`): a lone `if` folds into one `execute` chain. With
+  `elif`/`else` the whole chain becomes a private `<then>_chain` function of `execute if <cond> run
+  return run <body>` lines ending in the `else` body, so exactly one branch runs and no condition is
+  checked after a body changed it. Bodies that fork or `return` stay function calls under `return
+  run`. Versions without `return run` (1.20.1) still get one guarded line per branch.
+- **Conditions** (`commands/if/normalize.ts`): `ctx.if` takes score nodes, `Detector`s, and
+  `and`/`or`/`not` of them. Detectors run once in `ctx.if` to record their clauses. `toChains`
+  flattens everything to OR-of-AND clause chains, pushing `not` down to `unless` (forking or store
+  clauses can't be negated). One chain folds like before; an `or` goes through the `_chain`
+  function, one `return run` line per chain, so the body runs once. `and` puts a chain that moves
+  position last so it can't shift the other guards.
 - **Single-command inlining** (`codegen/inline.ts`, end of `buildDatapack`): a *private*
   (`zzz/`) function with one command is spliced into its `function` / `execute … run function`
   / `return run function` call sites, and dropped if nothing else names it (tags, JSON,

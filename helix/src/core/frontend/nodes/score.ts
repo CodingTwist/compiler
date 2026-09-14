@@ -1,7 +1,7 @@
 import { TellrawPart } from "./tellraw_part";
 
 import { ExpressionNode, Range } from "../../ir/node";
-import { ScoreRangeNode } from "../../commands/if";
+import { ScoreCompareNode, ScoreRangeNode } from "../../commands/if";
 import { scoreOpNode, scoreLitNode, playersNode, ScoreOperator } from "../../commands/scoreboard";
 import { currentContext, type EmitContext } from "../context/ambient";
 import { Objective } from "./objective";
@@ -26,34 +26,38 @@ export class Score extends TellrawPart implements ExpressionNode {
     return new ScoreRangeNode(this.target, this.objective, range);
   }
 
+  /** `this = input`. */
   equal(input: number | Score): ExpressionNode {
-    if (input instanceof Score)
-      throw new Error("Score-to-Score comparison not implemented.");
-    return new ScoreRangeNode(
-      this.target,
-      this.objective,
-      new Range(input, input),
-    );
+    return this.compare("=", input);
   }
 
+  /** `this > input`. */
   greaterThan(input: number | Score): ExpressionNode {
-    if (input instanceof Score)
-      throw new Error("Score-to-Score comparison not implemented.");
-    return new ScoreRangeNode(
-      this.target,
-      this.objective,
-      new Range(input, undefined),
-    );
+    return this.compare(">", input);
   }
 
+  /** `this < input`. */
   lessThan(input: number | Score): ExpressionNode {
-    if (input instanceof Score)
-      throw new Error("Score-to-Score comparison not implemented.");
-    return new ScoreRangeNode(
-      this.target,
-      this.objective,
-      new Range(undefined, input),
-    );
+    return this.compare("<", input);
+  }
+
+  /** `this >= input`. */
+  atLeast(input: number | Score): ExpressionNode {
+    return this.compare(">=", input);
+  }
+
+  /** `this <= input`. */
+  atMost(input: number | Score): ExpressionNode {
+    return this.compare("<=", input);
+  }
+
+  /** A compare against another score, or `matches <range>` for a literal. */
+  private compare(op: ScoreCompareNode["operator"], input: number | Score): ExpressionNode {
+    if (input instanceof Score) return new ScoreCompareNode(this.target, this.objective, op, input.target, input.objective);
+    // Scores are integers, so strict bounds are one step in.
+    const min = op === ">" ? input + 1 : op === "=" || op === ">=" ? input : undefined;
+    const max = op === "<" ? input - 1 : op === "=" || op === "<=" ? input : undefined;
+    return new ScoreRangeNode(this.target, this.objective, new Range(min, max));
   }
 
   /** The explicit `ctx` if given, else the ambient one. */

@@ -90,6 +90,15 @@ export function withoutClauses(line: string, clauses: string[]): string {
   return rest.startsWith("run ") ? rest.slice("run ".length) : `execute ${rest}`;
 }
 
+/** Matches a command that can run once per entity, which `return run` would stop after the first. */
+export const FORKS = /\s(as|at|on|summon)\s|facing entity/;
+
+/** Stores `ctx`'s lines as the function `name` and returns the call to it. */
+export function commitLines(name: string, dp: Datapack, ctx: CodegenContext): { cmd: string; info: LineInfo } {
+  commit(new FunctionNode(name), dp, ctx);
+  return { cmd: functionCall(dp, name), info: callLine(name) };
+}
+
 /** `function <pack>:<name>`. */
 export function functionCall(dp: Datapack, name: string): string {
   return `function ${dp.name}:${name}`;
@@ -113,12 +122,13 @@ export function generateRunTargetLine(
   fn: FunctionNode,
   dp: Datapack,
   dispatcher: Dispatcher,
-  opts: { keepEmpty?: boolean } = {},
+  opts: { keepEmpty?: boolean; inline?: (cmd: string, info: LineInfo) => boolean } = {},
 ): { cmd: string; info: LineInfo } {
   const ctx = new CodegenContext(dp, dispatcher);
   dispatchAll(fn, ctx, dispatcher);
 
-  if (ctx.lines.length === 1 && ctx.externalLines.size === 0) {
+  const inlinable = ctx.lines.length === 1 && (opts.inline?.(ctx.lines[0], ctx.infos[0]) ?? true);
+  if (inlinable && ctx.externalLines.size === 0) {
     // A macro line's `$` must go at the front of the whole composed line, so drop it here.
     if (ctx.lines[0].startsWith("$")) return { cmd: ctx.lines[0].slice(1), info: ctx.infos[0] };
     // Native calls aren't vanilla literals, so they can't follow `run` inline.

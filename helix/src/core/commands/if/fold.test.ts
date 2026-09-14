@@ -78,13 +78,13 @@ describe("IfHandler - nested if chains", () => {
     const outer = new IfElseNode(condA, buildBody("outer_then", inner));
     new IfHandler().generate(outer, ctx);
 
-    // Not flattened: the inner if+else is 2 lines, so it gets its own function.
+    // Not flattened: the inner if+else becomes its own branch function.
     expect(ctx.lines[0]).toBe(
-      "execute if score @s score matches 0 run function testpack:outer_then",
+      "execute if score @s score matches 0 run function testpack:inner_then_chain",
     );
-    expect(dp.files.get("outer_then")).toBe(
-      "execute if score @s score matches 1 run say hi\n" +
-        "execute unless score @s score matches 1 run say bye",
+    expect(dp.files.get("inner_then_chain")).toBe(
+      "execute if score @s score matches 1 run return run say hi\n" +
+        "say bye",
     );
   });
 
