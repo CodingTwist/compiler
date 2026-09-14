@@ -1,3 +1,4 @@
+import type { SlotRange } from "./predicate/types";
 // Small fixed vocabularies, typed for autocomplete and typo checks.
 
 /** The four game modes. Use `Gamemode.SURVIVAL`; the type is the union of their ids. */
@@ -103,7 +104,8 @@ export type Swizzle = "x" | "y" | "z" | "xy" | "xz" | "yz" | "xyz";
 
 // Free-text / open-vocabulary parsers kept as `string` (with a meaningful name).
 export type Message = string; // `message`
-export type ItemSlot = string; // `item_slot` / `item_slots`
+/** A slot name or range for `item`, `loot` and `execute if items`; closed so a typo like `*` fails to compile. */
+export type ItemSlot = SlotRange;
 
 /**
  * Typed slot names for `item replace`/`item modify`, e.g. `Slot.MAINHAND`. Use
