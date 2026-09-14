@@ -54,7 +54,7 @@ const CONSOLE_ONLY = new Set([
 
 // Commands whose src/core/commands/<c>.ts (or <c>/ folder) is hand-refined: keep it as-is
 // (don't overwrite) but still import/register it in the barrel.
-const HAND_REFINED = new Set(["setblock", "data", "stopsound", "summon"]);
+const HAND_REFINED = new Set(["setblock", "data", "stopsound", "summon", "particle", "playsound"]);
 
 // What each generated command can do to entities (an \`Effect\` member), which output
 // passes such as execute grouping rely on. Generation fails for a command missing here, so
@@ -191,6 +191,8 @@ const RESOURCE_TYPES = new Map(); // ident -> registry id
 // selector.type(), biome spawners and entity-nbt - disappears from the public API.
 const EXTRA_RESOURCE_TYPES = {
   EntityType: "minecraft:entity_type",
+  // `particle` is hand-refined.
+  Particle: "minecraft:particle_type",
 };
 
 // Pick the concept type for an argument, considering registry properties.
@@ -292,7 +294,7 @@ const PARSERS = {
 // and a typo fails to compile, the same as every other concept slot.
 const ARG_OVERRIDES = {
   "playsound.sound": V("SoundEvent"),
-  // (`stopsound` is HAND_REFINED, so its own file carries the same type.)
+  // (`stopsound` and `playsound` are HAND_REFINED, so their own files carry the same type.)
 };
 
 const RESERVED = new Set([

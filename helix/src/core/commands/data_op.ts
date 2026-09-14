@@ -3,7 +3,8 @@ import { CommandValue } from "../values/value";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { VersionProfile } from "../../versions/profile";
 import { Token, lit, arg, buildTokens } from "../ir/command-builder";
-import { commandLine, Effect, entityWriteEffect } from "../ir/line-info";
+import { commandLine, Effect, entityMergeEffect, entityWriteEffect } from "../ir/line-info";
+import { NbtValue } from "../values/nbt";
 
 /** What kind of thing holds the NBT a `data` command reads or writes. */
 export type NbtKind = "storage" | "entity" | "block";
@@ -112,15 +113,15 @@ export class DataOpCommand extends CommandHandler<DataOpNode> {
         break;
     }
 
-    ctx.emit(buildTokens(v, tokens), commandLine(dataOpEffect(op)));
+    ctx.emit(buildTokens(v, tokens), commandLine(dataOpEffect(op, v)));
   }
 }
 
 /** What a `data` operation does to entities. Only entity writes do anything. */
-function dataOpEffect(op: DataOp): Effect {
+function dataOpEffect(op: DataOp, version: VersionProfile): Effect {
   if (op.op === "get" || op.target.kind === "storage") return Effect.NONE;
   if (op.target.kind === "block") return Effect.EDITS;
   // A merged compound may hold `Pos` or `Rotation`.
-  if (op.op === "mergeAll") return Effect.MOVES;
+  if (op.op === "mergeAll") return op.value instanceof NbtValue ? entityMergeEffect(op.value, version) : Effect.MOVES;
   return entityWriteEffect(op.path);
 }

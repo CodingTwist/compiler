@@ -34,6 +34,22 @@ export const SwingAnimation = {
 } as const;
 export type SwingAnimation = (typeof SwingAnimation)[keyof typeof SwingAnimation];
 
+/** The volume slider a sound plays under. Use `SoundSource.HOSTILE`. */
+export const SoundSource = {
+  MASTER: "master",
+  MUSIC: "music",
+  RECORD: "record",
+  WEATHER: "weather",
+  BLOCK: "block",
+  HOSTILE: "hostile",
+  NEUTRAL: "neutral",
+  PLAYER: "player",
+  AMBIENT: "ambient",
+  VOICE: "voice",
+  UI: "ui",
+} as const;
+export type SoundSource = (typeof SoundSource)[keyof typeof SoundSource];
+
 /**
  * `execute on <relation>`: switch the executor to a related entity.
  *
