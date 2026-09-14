@@ -66,7 +66,7 @@ export class Range extends ASTNode {
       return this.min === this.max ? `${this.min}` : `${this.min}..${this.max}`;
     if (this.min !== undefined) return `${this.min}..`; // min and above
     if (this.max !== undefined) return `..${this.max}`; // max and below
-    return `${this.min}..${this.max}`; // all values
+    return ".."; // all values
   }
 
   contains(value: number) {

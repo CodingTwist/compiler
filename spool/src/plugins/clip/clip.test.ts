@@ -97,6 +97,18 @@ describe("Clip: smooth move (native tween)", () => {
     bad.load((ctx) => c.play(ctx));
     expect(() => buildDatapack(bad)).toThrow(/mixes a native-tween track/);
   });
+
+  it("accepts a snap that evenly divides the spin's per-frame step", () => {
+    const dp = new Datapack("anim", v1_21_4);
+    dp.clip(cog()).spin("z", 90).snap(180); // 90deg/tick, snap every 180deg
+    expect(() => buildDatapack(dp)).not.toThrow();
+  });
+
+  it("rejects a snap that doesn't divide the spin's per-frame step", () => {
+    const dp = new Datapack("anim", v1_21_4);
+    dp.clip(cog()).spin("z", 90).snap(45); // 90deg/tick never lands on a 45deg multiple
+    expect(() => buildDatapack(dp)).toThrow(/doesn't divide the spin evenly/);
+  });
 });
 
 describe("Clip: continuous loop driver", () => {

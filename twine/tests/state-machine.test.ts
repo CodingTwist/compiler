@@ -64,4 +64,28 @@ describe("StateMachine", () => {
     buildDatapack(dp);
     expect(dp.files.get("probe")).toContain("if score #quest quest matches 2");
   });
+
+  it("rejects a duplicate state label", () => {
+    const sm = new StateMachine(new Datapack("test", v1_21_4), "quest");
+    sm.state("a");
+    expect(() => sm.state("a")).toThrow(/Duplicate state "a"/);
+  });
+
+  it("rejects is()/transition() referencing an undeclared state", () => {
+    const sm = new StateMachine(new Datapack("test", v1_21_4), "quest");
+    sm.state("a");
+    expect(() => sm.is("nope")).toThrow(/Unknown state "nope"/);
+  });
+
+  it("go() runs the current state's onExit before the target's onEnter, for an event-driven jump", () => {
+    const seen: string[] = [];
+    const dp = new Datapack("test", v1_21_4);
+    const sm = new StateMachine(dp, "quest");
+    sm.state("a", { onExit: () => seen.push("exit-a") }).state("b", {
+      onEnter: () => seen.push("enter-b"),
+    });
+    dp.createFunction("jump").build((ctx) => sm.go(ctx, "b"));
+    buildDatapack(dp);
+    expect(seen).toEqual(["exit-a", "enter-b"]);
+  });
 });

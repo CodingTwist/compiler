@@ -103,6 +103,11 @@ export function renderSelector(
     args.push(`scores={${scoreStr}}`);
   }
 
+  if (node.volume && node.yBand) {
+    // Both set `y`/`dy`; vanilla rejects a selector with a repeated key.
+    throw new Error("Selector has both a volume/span and a yBand - they both set y/dy, pick one.");
+  }
+
   if (node.volume) {
     const v = node.volume;
     if (v.x !== undefined) args.push(`x=${v.x}`, `y=${v.y}`, `z=${v.z}`);
