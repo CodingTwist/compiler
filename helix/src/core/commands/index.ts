@@ -26,6 +26,7 @@ import { DataHandler } from "./data";
 import { SetblockHandler } from "./setblock";
 
 export * from "./advancement";
+export * from "./allow";
 export * from "./attribute";
 export * from "./bossbar";
 export * from "./clear";

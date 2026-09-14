@@ -51,6 +51,20 @@ describe("nbt read warnings", () => {
     expect(r.nbtReads.find((n) => n.fn === "child")!.allowed).toBe("landing check");
   });
 
+  it("ctx.allow silences its own function from inside a nested body", () => {
+    const dp = new Datapack("testpack", v1_21_4);
+    const hot = dp.createFunction("hot");
+    hot.build((ctx) => {
+      read(ctx);
+      ctx.if(dp.timing.phaseGate(dp, 2), (c) => c.allow("nbt-read", "landing check"));
+    });
+    dp.tick((ctx) => ctx.call(hot));
+    const r = dp.report();
+    expect(r.warnings).toEqual([]);
+    expect(r.staleAllows).toEqual([]);
+    expect(formatCostReport(r)).toContain("hot (landing check)");
+  });
+
   it("still warns on a callee reached another way without the allow", () => {
     const dp = new Datapack("testpack", v1_21_4);
     const shared = dp.createFunction("shared");

@@ -7,8 +7,9 @@ import type { PackFacts } from "./types";
 /** Returns why `rule` is allowed for `fn`, following each allow down the call tree. */
 export function allowLookup(dp: Datapack, roots: string[]) {
   const allowWalks = new Map<LintRule, Map<string, string | undefined>>();
+  const allowed = dp.allowed;
   return (rule: LintRule, fn: string): string | undefined => {
-    const allows = dp.allowed.get(rule);
+    const allows = allowed.get(rule);
     if (!allows?.size) return undefined;
     if (!allowWalks.has(rule)) allowWalks.set(rule, cadence(dp, roots, allows).allowedBy);
     return allowWalks.get(rule)!.get(fn) ?? allows.get(fn);

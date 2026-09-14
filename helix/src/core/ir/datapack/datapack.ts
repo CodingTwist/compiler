@@ -60,17 +60,28 @@ export class Datapack extends DatapackEntry {
     return report;
   }
 
-  /** Per lint rule, the functions whose hits are intentional, with why - see {@link allow}. */
-  readonly allowed = new Map<LintRule, Map<string, string>>();
+  private explicitAllows = new Map<LintRule, Map<string, string>>();
+
+  /** Per lint rule, the functions whose hits are intentional, with why - from {@link allow} and `ctx.allow`. */
+  get allowed(): Map<LintRule, Map<string, string>> {
+    const all = new Map([...this.explicitAllows].map(([rule, fns]) => [rule, new Map(fns)]));
+    for (const fn of this.functions.values()) {
+      for (const [rule, reason] of fn.allows) {
+        all.set(rule, (all.get(rule) ?? new Map()).set(fn.name, reason));
+      }
+    }
+    return all;
+  }
 
   /**
    * Marks `fn`'s hits of lint `rule` as intentional, including functions it calls.
    * Keep the expensive commands in their own function so new ones elsewhere still warn.
+   * Inside the function's builder, `ctx.allow` does the same without naming it.
    */
   allow(rule: LintRule, fn: FunctionRef | string, reason: string): void {
-    const fns = this.allowed.get(rule) ?? new Map<string, string>();
+    const fns = this.explicitAllows.get(rule) ?? new Map<string, string>();
     fns.set(typeof fn === "string" ? fn : fn.getName(), reason);
-    this.allowed.set(rule, fns);
+    this.explicitAllows.set(rule, fns);
   }
 
   /** {@link allow} for `"nbt-read"`: NBT reads faster than the t5 clock. */

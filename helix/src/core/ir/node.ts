@@ -3,6 +3,7 @@
 import { CommandValue } from "../values/value";
 import { captureSource } from "../debug/sources";
 import type { Effect } from "./line-info";
+import type { LintRule } from "../report/cost/types";
 
 export abstract class ASTNode {
   abstract type: string;
@@ -21,6 +22,8 @@ export class FunctionNode extends ASTNode {
   locals = 0;
   /** Ref tags allocated so far, counted on the root. */
   refs = 0;
+  /** Lint rules silenced for this function and what it calls, with why. Set on the root by `ctx.allow`. */
+  readonly allows = new Map<LintRule, string>();
   constructor(public name: string) {
     super();
   }
