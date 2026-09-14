@@ -1,6 +1,18 @@
 import { Score } from "./score";
 import type { FunctionContext } from "../context";
+import { currentContext } from "../context/ambient";
+import type { Selector } from "./selector";
+import type { NbtPath } from "../../values/nbt";
+// Type-only, to avoid the import cycle (see CLAUDE.md).
+import type { StoreNumType } from "../../commands/execute";
 import { math } from "./math";
+
+/** The explicit `ctx` if given, else the ambient one; NBT reads need `execute`. */
+function emitInto(ctx?: FunctionContext): FunctionContext {
+  const target = ctx ?? (currentContext() as FunctionContext | undefined);
+  if (!target) throw new Error("Fixed: no active function context - pass `ctx` outside a builder callback.");
+  return target;
+}
 
 /**
  * A fixed-point number: one integer {@link Score} holding `realValue × scale`.
@@ -23,6 +35,24 @@ export class Fixed {
 
   private operand(other: Fixed | Score): Score {
     return other instanceof Fixed ? other.score : other;
+  }
+
+  /** Reads the number at `path` on `who` into this, at this scale. */
+  read(who: Selector, path: NbtPath, ctx?: FunctionContext): this {
+    emitInto(ctx)
+      .execute()
+      .storeResultScore(this.score)
+      .run((c) => c.entity(who).get(path, this.scale));
+    return this;
+  }
+
+  /** Writes this to `path` on `who` as a real number, times a unitless `factor`. */
+  store(who: Selector, path: NbtPath, type: StoreNumType = "double", factor = 1, ctx?: FunctionContext): this {
+    emitInto(ctx)
+      .execute()
+      .storeResultEntity(who, path, type, factor / this.scale)
+      .run((c) => this.score.get(c));
+    return this;
   }
 
   /** `this = other` (same scale; `other` may be a raw `Score` already at this scale). */

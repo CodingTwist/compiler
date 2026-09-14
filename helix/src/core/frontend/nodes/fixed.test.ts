@@ -4,6 +4,8 @@ import { v1_21_4 } from "../../../versions/profiles";
 import { Objective } from "./objective";
 import { Fixed } from "./fixed";
 import { ScoreTarget } from "../../values/score_target";
+import { NbtPath } from "../../values/nbt";
+import { Selector } from "./selector";
 
 /** Build one function body and return its rendered command lines. */
 function emit(build: (sc: (n: string) => any) => void): string {
@@ -16,6 +18,15 @@ function emit(build: (sc: (n: string) => any) => void): string {
 }
 
 describe("Fixed", () => {
+  it("reads and stores entity NBT at its own scale", () => {
+    const out = emit((sc) => {
+      const y = new Fixed(sc("y"), 1000);
+      y.read(Selector.self(), NbtPath("Pos[1]")).store(Selector.self(), NbtPath("Motion[1]"), "double", 2);
+    });
+    expect(out).toContain("execute store result score #y work run data get entity @s Pos[1] 1000");
+    expect(out).toContain("execute store result entity @s Motion[1] double 0.002 run scoreboard players get #y work");
+  });
+
   it("negate multiplies by the -1 slot; add/sub are plain integer ops", () => {
     const out = emit((sc) => {
       const v = new Fixed(sc("v"), 1000);
