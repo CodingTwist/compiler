@@ -10,7 +10,7 @@ import type { Emit, Wiring } from "./types";
 export function emitTick(w: Wiring, node: Node, ctx: FunctionContext): void {
   // Everything this module runs per tick, grouped by period. Each period shares one throttle check.
   const modulePeriod = node.meta.tickEvery ?? 1;
-  const modulePhase = w.phaseOf(node);
+  const modulePhase = w.phaseOf(node, modulePeriod, node.meta.tickPhase);
   const buckets = new Map<string, { period: number; phase: number; bodies: Emit[] }>();
   const bucket = (period: number, phase: number, body: Emit): void => {
     const key = `${period}:${phase}`;
@@ -25,7 +25,11 @@ export function emitTick(w: Wiring, node: Node, ctx: FunctionContext): void {
   }
   for (const handler of getEventHandlers(node.instance)) {
     const period = handler.opts.every ?? modulePeriod;
-    bucket(period, handler.opts.phase ?? modulePhase % period, (c) =>
+    const phase =
+      period === modulePeriod && handler.opts.phase === undefined
+        ? modulePhase
+        : w.phaseOf(node, period, handler.opts.phase);
+    bucket(period, phase, (c) =>
       emitHandlerOf(w, node, handler, c),
     );
   }

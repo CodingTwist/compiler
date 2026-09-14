@@ -19,8 +19,8 @@ export interface Wiring {
   deactivateOf: Map<ModuleRef, FunctionRef>;
   /** Each area's effective dimension (own or inherited); `undefined` if none. */
   dims: Map<ModuleRef, Id | undefined>;
-  /** Resolve a throttled module's fire phase within its `tickEvery` period. */
-  phaseOf: (node: Node) => number;
+  /** A module's fire phase at a period; an explicit phase is used as-is. */
+  phaseOf: (node: Node, period: number, explicit?: number) => number;
   /** Each module's `<name>/tick`, built once however many parents call it. */
   ticks: Map<ModuleRef, { fn: FunctionRef; dim?: Id }>;
 }
