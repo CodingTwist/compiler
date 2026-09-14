@@ -5,7 +5,7 @@ import {
   CostReport,
   formatCostReport,
   type LintRule,
-} from "../report/cost-report";
+} from "../report/cost";
 import {
   analyzeProfile,
   formatProfileReport,

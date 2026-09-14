@@ -205,7 +205,10 @@ the `vscode/` extension), `profile [dump.json]`
   are the block-side file mechanism (blockstate files *override an existing block's* appearance -
   there is no vanilla "new block", so the custom-block *technique* is spool policy, not core).
 
-### Cost report NBT-read warnings (`src/core/report/cost-report.ts`)
+### Cost report NBT-read warnings (`src/core/report/cost/`)
+
+`index.ts` is the entry; `analyze.ts` builds the report, `format.ts` prints it, and the wiki
+lints live in `lints/` (`exact.ts` for every function, `tick.ts` for tick-reachable code).
 
 `dp.report()` also lists every entity/block NBT read (`nbt=`, `data get`, `if data`,
 `from entity|block`) reachable from `tick`, with its cadence read off helix's own clock

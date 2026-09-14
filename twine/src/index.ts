@@ -25,10 +25,8 @@ export { DIFFICULTIES, DIFFICULTY, DIFFICULTY_IDS, defineDifficulty, setDifficul
 export type { Difficulty } from "./core/difficulty";
 export { defineItem, ItemBuilder } from "./item/builder";
 export { defineBoss, BossBuilder } from "./boss/builder";
-export { defineMob, MobBuilder } from "./mob/builder";
-export { writeMobPreview } from "./mob/preview";
-export type { MobPreviewOpts } from "./mob/preview";
-export type { MobModuleOpts, MobModuleRef, MobPreview } from "./mob/builder";
+export { defineMob, MobBuilder, writeMobPreview } from "./mob";
+export type { MobModuleOpts, MobModuleRef, MobPreview, MobPreviewOpts } from "./mob";
 export type {
   AbilityOpts,
   BarStyle,

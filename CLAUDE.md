@@ -47,6 +47,12 @@ the **built `dist/`**, symlinked into `node_modules`, not the source. So:
   entity-only events, scores and timers still need a poll; `location` is checked ~once
   a second per player (≤1s latency) and matches a box, not a radius. If `Trigger` lacks
   the event you need, add it to helix first.
+- **One file, one job.** A feature with more than one job is a folder whose `index.ts` is
+  the entry point: a short header saying what it is, then its exports. Behind it, files are
+  named by role (`types.ts`, `analyze.ts`, `format.ts`, …) and stay under ~150 lines. Tests
+  sit beside the file they test. Generated files are exempt. Examples:
+  `helix/src/core/report/cost/`, `helix/src/core/values/predicate/`, `twine/src/mob/`,
+  `spool/src/plugins/<name>/`.
 - **Tests are colocated `*.test.ts`** (vitest), excluded from the `tsc` build.
 - Don't commit unless asked.
 

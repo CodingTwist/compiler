@@ -6,7 +6,7 @@ import { Datapack } from "../ir/datapack";
 import { Selector } from "../frontend/nodes/selector";
 import { Nbt, Byte } from "../values/nbt";
 import { buildDatapack } from "../codegen/codegen";
-import { formatCostReport } from "../report/cost-report";
+import { formatCostReport } from "../report/cost";
 import { v1_21_4 } from "../../versions/profiles";
 import type { DebugOptions } from "./sources";
 

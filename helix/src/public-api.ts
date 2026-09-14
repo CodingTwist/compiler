@@ -30,7 +30,7 @@ export {
   type Lint,
   type LintRule,
   NBT_READ_MIN_PERIOD,
-} from "./core/report/cost-report";
+} from "./core/report/cost";
 // Measured profile report (`dp.profileReport(raw)`).
 export {
   analyzeProfile,

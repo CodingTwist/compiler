@@ -4,7 +4,7 @@
 // `debug.sources`) TS lines. Browser-safe: takes parsed JSON.
 import type { Datapack } from "../ir/datapack";
 import type { SourceLoc } from "../debug/sources";
-import { analyzeCost, type FunctionCost } from "./cost-report";
+import { analyzeCost, type FunctionCost } from "./cost";
 
 /** One attributed command: its function stack (outermost first) and the command text. */
 export interface ProfileDumpFrame {

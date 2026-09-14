@@ -38,9 +38,11 @@ compiles to a **module** (the `DatapackModule` that emits commands).
     the factory publishes what it pruned by (`setBuildEnv`), and module bodies gate on `isDev()`,
     so "which modules survive" and "which commands they emit" can't disagree. Never re-read
     `process.env.TWINE_ENV` in a pack.
-- [src/mob/](src/mob/) - `defineMob`: custom mobs (see below). `builder.ts`, `module.ts`,
-  `gesture.ts` (gesture defaults, pose timeline, preview data - pure, no commands) and
-  `preview.ts` (`writeMobPreview`, the HTML rig viewer).
+- [src/mob/](src/mob/) - `defineMob`: custom mobs (see below). `index.ts` is the entry;
+  `builder.ts`, `gesture.ts` (gesture defaults, pose timeline, preview data - pure, no
+  commands), `module/` (`MobModule` wiring in `index.ts`, shared state in `parts.ts`, one file
+  per emitted job: `summon`, `states`, `gestures`, `wake`, `tick-one`) and `preview/`
+  (`writeMobPreview`; the HTML rig viewer's script split into string modules).
 - [src/boss/](src/boss/) - `defineBoss`: boss fights (see below).
 - [src/item/](src/item/) - `defineItem` behavioural items (`builder.ts`, `module.ts`), and
   `registry.ts`: dev-only `debug/give/<name>` functions for plain `ItemValue`s.
