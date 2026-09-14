@@ -26,19 +26,19 @@ describe("defineMob", () => {
     expect(all).toContain(`summon minecraft:husk ~ ~ ~ {Silent:1b,Tags:["sentinel","sentinel.new"]}`);
     expect(all).toContain(`Tags:["sentinel_rig","sentinel_rig_0","sentinel.new"]`);
     expect(all).toContain(
-      "execute as @e[type=minecraft:block_display,tag=sentinel_rig_0,tag=sentinel.new] run ride @s mount @e[type=minecraft:husk,tag=sentinel,tag=sentinel.new,limit=1]",
+      "execute as @e[distance=..1,tag=sentinel_rig_0,tag=sentinel.new,type=minecraft:block_display] run ride @s mount @e[distance=..1,tag=sentinel,tag=sentinel.new,limit=1,type=minecraft:husk]",
     );
-    expect(all).toContain("tag @e[type=minecraft:husk,tag=sentinel,tag=sentinel.new] remove sentinel.new");
-    expect(all).toContain("tag @e[type=minecraft:block_display,tag=sentinel_rig_0,tag=sentinel.new] remove sentinel.new");
+    expect(all).toContain("tag @e[distance=..1,tag=sentinel,tag=sentinel.new,type=minecraft:husk] remove sentinel.new");
+    expect(all).toContain("execute as @e[distance=..1,tag=sentinel,tag=sentinel.new,limit=1,type=minecraft:husk] on passengers run tag @s remove sentinel.new");
   });
 
   it("sweeps rigs whose mob died - a killed vehicle only dismounts its riders", () => {
     const all = build();
-    expect(all).toContain("tag @e[type=minecraft:block_display,tag=sentinel_rig_0] add sentinel.orphan");
+    expect(all).toContain("tag @e[tag=sentinel_rig_0,type=minecraft:block_display] add sentinel.orphan");
     // Claimed inside wake_one, so the husks are scanned once, not twice.
     expect(all).toContain("execute on passengers run tag @s remove sentinel.orphan");
     expect(all).toContain(
-      "execute as @e[type=minecraft:block_display,tag=sentinel_rig_0,tag=sentinel.orphan] run function test:sentinel/zzz/kill_rig",
+      "execute as @e[tag=sentinel_rig_0,tag=sentinel.orphan,type=minecraft:block_display] run function test:sentinel/zzz/kill_rig",
     );
     // The rig root's own passengers (children + hitbox) have to be killed first.
     expect(all).toContain("execute on passengers run kill @s");
@@ -56,11 +56,11 @@ describe("defineMob", () => {
     // Exactly the rig's own vehicle, and yaw only - a copied pitch tilts the model.
     expect(all).toContain("execute on passengers if entity @s[tag=sentinel_rig_0] run function test:sentinel/zzz/face_one");
     expect(all).toContain(
-      "execute on vehicle run data modify entity @e[type=minecraft:block_display,tag=sentinel_rig_0,tag=sentinel.cur,limit=1] Rotation[0] set from entity @s Rotation[0]",
+      "execute on vehicle run data modify entity @e[tag=sentinel_rig_0,tag=sentinel.cur,limit=1,type=minecraft:block_display] Rotation[0] set from entity @s Rotation[0]",
     );
     // ...and on down to the members riding the root, which keep their own rotation.
     expect(all).toContain(
-      "execute on passengers run data modify entity @s Rotation[0] set from entity @e[type=minecraft:block_display,tag=sentinel_rig_0,tag=sentinel.cur,limit=1] Rotation[0]",
+      "execute on passengers run data modify entity @s Rotation[0] set from entity @e[tag=sentinel_rig_0,tag=sentinel.cur,limit=1,type=minecraft:block_display] Rotation[0]",
     );
   });
 
@@ -232,15 +232,15 @@ describe("defineMob", () => {
       [
         "scoreboard players add #wake sentinel.awake 1",
         "execute if score #wake sentinel.awake matches 20.. run function test:sentinel/zzz/wake",
-        "execute if score #awake sentinel.awake matches 1.. as @e[type=minecraft:husk,tag=sentinel,tag=sentinel.awake] at @s run function test:sentinel/zzz/tick_one",
+        "execute if score #awake sentinel.awake matches 1.. as @e[tag=sentinel,tag=sentinel.awake,type=minecraft:husk] at @s run function test:sentinel/zzz/tick_one",
       ].join("\n"),
     );
     // One reset scan, one near scan per player - each a call, not a scan per tag.
     expect(fn("wake").split("\n").slice(1, 3)).toEqual([
-      "execute as @e[type=minecraft:husk,tag=sentinel] run function test:sentinel/zzz/wake_one",
-      "execute at @a as @e[distance=..30,type=minecraft:husk,tag=sentinel] run function test:sentinel/zzz/wake_near",
+      "execute as @e[tag=sentinel,type=minecraft:husk] run function test:sentinel/zzz/wake_one",
+      "execute at @a as @e[distance=..30,tag=sentinel,type=minecraft:husk] run function test:sentinel/zzz/wake_near",
     ]);
-    expect(fn("wake").match(/@e\[type=minecraft:husk,tag=sentinel\]/g)).toHaveLength(1);
+    expect(fn("wake").match(/@e\[tag=sentinel,type=minecraft:husk\]/g)).toHaveLength(1);
     expect(fn("tick_one")).not.toContain("@e");
     // Walked away mid-gesture: kept awake to finish it, but a looping one can't re-fire.
     expect(fn("wake_near")).toBe("tag @s add sentinel.awake\ntag @s remove sentinel.finishing");
@@ -383,11 +383,13 @@ describe("difficulty", () => {
 
   it("runs onDifficulty at summon and on live mobs when the level changes", () => {
     const all = scaled();
-    expect(all).toContain("execute as @e[type=minecraft:husk,tag=brute,tag=brute.new,limit=1] run function test:brute/zzz/on_difficulty");
+    // Grouped with the rig's tag removal under one scan for the fresh mob.
+    expect(all).toContain("execute as @e[distance=..1,tag=brute,tag=brute.new,limit=1,type=minecraft:husk] run function test:brute/zzz/summon/group_0");
+    expect(all).toContain("function test:brute/zzz/on_difficulty\nexecute on passengers run tag @s remove brute.new");
     expect(all).toContain("matches 1 run return run say now easy");
     expect(all).toContain("say now hard");
     expect(all).toContain("execute unless score #level twine.difficulty = #applied brute.awake run function test:brute/zzz/rescale");
-    expect(all).toMatch(/execute as @e\[type=minecraft:husk,tag=brute\] run function test:brute\/zzz\/on_difficulty\n/);
+    expect(all).toMatch(/execute as @e\[tag=brute,type=minecraft:husk\] run function test:brute\/zzz\/on_difficulty\n/);
   });
 
   it("builds a byDifficulty body once per level, in its own function", () => {

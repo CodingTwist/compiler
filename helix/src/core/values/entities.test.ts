@@ -3,6 +3,7 @@ import { Block } from "./block";
 import { Item } from "./item";
 import { Blaze, Tnt, Villager, Zombie } from "./entities.generated";
 import { Display } from "./display";
+import { Pos } from "./pos";
 import { v1_20_1, v1_21_4, v26_2 } from "../../versions/profiles";
 import { Datapack } from "../ir/datapack";
 import { buildDatapack } from "../codegen/codegen";
@@ -77,9 +78,16 @@ describe("entity NBT schemas", () => {
     expect(d.render(v26_2)).toContain(
       `{width:3.0f,height:4.0f,response:1b,Tags:["boss","boss_hitbox"],id:"minecraft:interaction"}`,
     );
-    expect(d.hitboxSelector().toString()).toBe("@e[type=minecraft:interaction,tag=boss_hitbox]");
+    expect(d.hitboxSelector().toString()).toBe("@e[tag=boss_hitbox,type=minecraft:interaction]");
     // The hitbox is not an animatable member - only the two displays are.
     expect(d.members()).toHaveLength(2);
+  });
+
+  it("limits the hitbox selector to an absolute summon position", () => {
+    const d = Display(Block.STONE).named("boss").hitbox(1, 1).at(Pos(10.5, 64, 40.5));
+    expect(d.hitboxSelector().toString()).toBe(
+      "@e[x=10.5,y=64,z=40.5,distance=..1,tag=boss_hitbox,type=minecraft:interaction]",
+    );
   });
 
   it("kills every member with one typed kill per entity type", () => {
@@ -88,12 +96,12 @@ describe("entity NBT schemas", () => {
     dp.createFunction("clear").build((c) => d.killAll(c));
     expect(buildDatapack(dp).get("data/p/function/clear.mcfunction")).toBe(
       [
-        "kill @e[type=minecraft:item_display,tag=rig]",
-        "kill @e[type=minecraft:block_display,tag=rig]",
-        "kill @e[type=minecraft:interaction,tag=rig]",
+        "kill @e[tag=rig,type=minecraft:item_display]",
+        "kill @e[tag=rig,type=minecraft:block_display]",
+        "kill @e[tag=rig,type=minecraft:interaction]",
       ].join("\n"),
     );
-    expect(d.notExist.selector.toString()).toBe("@e[type=minecraft:item_display,tag=rig_0]");
+    expect(d.notExist.selector.toString()).toBe("@e[tag=rig_0,type=minecraft:item_display]");
   });
 
   it("shifts every member by the group offset, leaving the hitbox anchored", () => {
@@ -117,7 +125,7 @@ describe("entity NBT schemas", () => {
     const dp = new Datapack("test", v1_21_4);
     dp.createFunction("f").build((ctx) => Display(Block.STONE).named("cog").kill(ctx));
     dp.report();
-    expect(dp.files.get("f")).toBe("execute as @e[type=minecraft:block_display,tag=cog_0] run function test:zzz/f/exec_0");
+    expect(dp.files.get("f")).toBe("execute as @e[tag=cog_0,type=minecraft:block_display] run function test:zzz/f/exec_0");
     expect(dp.files.get("zzz/f/exec_0")).toBe("execute on passengers run kill @s\nkill @s");
   });
 });

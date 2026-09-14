@@ -44,7 +44,7 @@ export class DisplayValue extends DisplayBuilder implements CommandValue {
   /** A selector for the hitbox alone - what an attack-relay reads. */
   hitboxSelector(): Selector {
     if (!this.s.hitbox) throw new Error("Display has no hitbox - call .hitbox() first.");
-    return Selector.allEntities().type(EntityType.INTERACTION).tag(`${this.getName()}_hitbox`);
+    return this.nearPos(Selector.allEntities().type(EntityType.INTERACTION).tag(`${this.getName()}_hitbox`));
   }
   /** Condition: the group is currently spawned. */
   get exists(): EntityCondition {
@@ -82,7 +82,11 @@ export class DisplayValue extends DisplayBuilder implements CommandValue {
    */
   memberSelector(i: number): Selector {
     const kind = i === 0 ? this.content.kind : this.children[i - 1].content.kind;
-    const sel = Selector.allEntities().type(entityFor(kind)).tag(`${this.getName()}_${i}`);
+    return this.nearPos(Selector.allEntities().type(entityFor(kind)).tag(`${this.getName()}_${i}`));
+  }
+
+  /** Adds `x/y/z,distance=..1` to `sel` when the display has an absolute position. */
+  private nearPos(sel: Selector): Selector {
     const pos = this.getPos();
     // ..1 covers summon's +0.5 centring of whole x/z coordinates.
     if (pos instanceof PosValue && pos.isAbsolute()) sel.near(pos.coords(), Range.atMost(1));

@@ -1,4 +1,4 @@
-import { Pos, Range, Selector } from "helix";
+import { Pos, Range, Relation, Selector } from "helix";
 import type { FunctionContext, FunctionRef } from "helix";
 import type { ModuleScope } from "../../core/module.interface";
 import { DIFFICULTIES, DIFFICULTY, DIFFICULTY_IDS, type Difficulty } from "../../core/difficulty";
@@ -13,15 +13,22 @@ export function registerSummon<S extends string>(m: MobParts<S>, scope: ModuleSc
       // Summoned separately and mounted, so the same rig can ride any mob.
       ctx.summon(m.def.nbt.tagged(m.name, fresh), Pos.rel(0, 0, 0));
       ctx.summon(m.def.model.toNbt().tagged(fresh), Pos.rel(0, 0, 0));
+      // Both were just summoned here, so `..1` keeps the scans to nearby chunks.
+      const here = Range.atMost(1);
       ctx
         .execute()
-        .as(m.rigRoots.tag(fresh))
-        .run((b) => b.ride().mount(Selector.self(), m.mobs.tag(fresh).limit(1)));
+        .as(m.rigRoots.tag(fresh).distance(here))
+        .run((b) => b.ride().mount(Selector.self(), m.mobs.tag(fresh).distance(here).limit(1)));
       const scale = onDifficultyFn(m);
-      if (scale) ctx.execute().as(m.mobs.tag(fresh).limit(1)).run((b) => b.call(scale));
-      // Only the mob and the rig root carry `fresh`.
-      ctx.tag().remove(m.mobs.tag(fresh), fresh);
-      ctx.tag().remove(m.rigRoots.tag(fresh), fresh);
+      if (scale) ctx.execute().as(m.mobs.tag(fresh).distance(here).limit(1)).run((b) => b.call(scale));
+      // Only the mob and the rig root carry `fresh`. The rig is reached through the mob, since
+      // mounting may have moved it.
+      ctx
+        .execute()
+        .as(m.mobs.tag(fresh).distance(here).limit(1))
+        .on(Relation.PASSENGERS)
+        .run((b) => b.tag().remove(Selector.self(), fresh));
+      ctx.tag().remove(m.mobs.tag(fresh).distance(here), fresh);
     }),
   );
 }

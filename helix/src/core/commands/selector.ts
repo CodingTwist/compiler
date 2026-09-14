@@ -126,7 +126,6 @@ export function renderSelector(
   if (node.yRotation) args.push(`y_rotation=${node.yRotation}`);
   if (node.gamemode) args.push(`gamemode=${node.gamemode}`);
   for (const mode of node.notGamemodes) args.push(`gamemode=!${mode}`);
-  if (node.entityType) args.push(`type=${node.entityType}`);
   if (node.yBand) args.push(`y=${node.yBand.y}`, `dy=${node.yBand.dy}`);
 
   for (const tag of node.tags) args.push(`tag=${tag}`);
@@ -143,6 +142,8 @@ export function renderSelector(
     if (!version) throw new Error("Selector.nbt() requires a version to render; use it via a version-aware command (e.g. atEntity), not toString().");
     args.push(`nbt=${node.nbt.render(version)}`);
   }
+  // Last only to satisfy Spyglass's key-order lint; vanilla applies `type` before any other filter.
+  if (node.entityType) args.push(`type=${node.entityType}`);
 
   return args.length > 0 ? `${node.base}[${args.join(",")}]` : node.base;
 }

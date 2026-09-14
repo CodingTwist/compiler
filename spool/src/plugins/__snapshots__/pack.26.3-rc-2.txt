@@ -45,10 +45,10 @@ execute unless score #vx ballistics matches -100000..100000 run return 0
 execute unless score #vy ballistics matches -100000..100000 run return 0
 execute unless score #vz ballistics matches -100000..100000 run return 0
 execute at @s run summon minecraft:tnt ~ ~ ~ {Motion:[0.0d,0.0d,0.0d],fuse:40s,Tags:["test.shot"]}
-execute store result entity @e[type=minecraft:tnt,tag=test.shot,limit=1] Motion[0] double 0.0001 run scoreboard players get #vx ballistics
-execute store result entity @e[type=minecraft:tnt,tag=test.shot,limit=1] Motion[1] double 0.0001 run scoreboard players get #vy ballistics
-execute store result entity @e[type=minecraft:tnt,tag=test.shot,limit=1] Motion[2] double 0.0001 run scoreboard players get #vz ballistics
-tag @e[type=minecraft:tnt,tag=test.shot,limit=1] remove test.shot
+execute store result entity @e[tag=test.shot,limit=1,type=minecraft:tnt] Motion[0] double 0.0001 run scoreboard players get #vx ballistics
+execute store result entity @e[tag=test.shot,limit=1,type=minecraft:tnt] Motion[1] double 0.0001 run scoreboard players get #vy ballistics
+execute store result entity @e[tag=test.shot,limit=1,type=minecraft:tnt] Motion[2] double 0.0001 run scoreboard players get #vz ballistics
+tag @e[tag=test.shot,limit=1,type=minecraft:tnt] remove test.shot
 return 1
 === grapple/constrain
 execute store result score #coef grapple.work run compute default integer {"type":"add","inputs":[{"type":"negate","input":{"type":"score","target":{"type":"fixed","name":"#dot"},"score":"grapple.work"}},{"type":"min","inputs":[{"type":"floor_div","left":{"type":"sub","left":{"type":"score","target":{"type":"fixed","name":"#dist_sq"},"score":"grapple.work"},"right":{"type":"score","target":{"type":"fixed","name":"@s"},"score":"grapple.rope_len_sq"}},"right":{"type":"score","target":{"type":"fixed","name":"#baum_div"},"score":"grapple.const"}},{"type":"score","target":{"type":"fixed","name":"#baum_max"},"score":"grapple.const"}]}]}
@@ -97,10 +97,10 @@ execute store result score $z player_motion.api.launch run compute default integ
 scoreboard players set #sustain player_motion.internal.dummy 1
 function test:api/launch_global_xyz
 scoreboard players operation #rope_id grapple.work = @s grapple.id
-execute as @e[type=minecraft:marker,tag=grapple.anchor] if score @s grapple.id = #rope_id grapple.work run tag @s add grapple._aim
+execute as @e[tag=grapple.anchor,type=minecraft:marker] if score @s grapple.id = #rope_id grapple.work run tag @s add grapple._aim
 scoreboard players set #rope_step grapple.work 100
-execute anchored eyes positioned ^-0.4 ^-0.4 ^1 facing entity @e[type=minecraft:marker,tag=grapple._aim,limit=1] feet run function test:grapple/rope
-tag @e[type=minecraft:marker,tag=grapple._aim,limit=1] remove grapple._aim
+execute anchored eyes positioned ^-0.4 ^-0.4 ^1 facing entity @e[tag=grapple._aim,limit=1,type=minecraft:marker] feet run function test:grapple/rope
+tag @e[tag=grapple._aim,limit=1,type=minecraft:marker] remove grapple._aim
 === grapple/init
 scoreboard objectives add grapple.work dummy
 scoreboard objectives add grapple.const dummy
@@ -128,15 +128,15 @@ execute unless score #next_id grapple.const = #next_id grapple.const run scorebo
 === grapple/rope
 scoreboard players remove #rope_step grapple.work 1
 particle minecraft:electric_spark ~ ~ ~ 0 0 0 0 1
-execute if score #rope_step grapple.work matches 1.. unless entity @e[distance=..0.6,type=minecraft:marker,tag=grapple._aim,limit=1] positioned ^ ^ ^1 run return run function test:grapple/rope
+execute if score #rope_step grapple.work matches 1.. unless entity @e[distance=..0.6,tag=grapple._aim,limit=1,type=minecraft:marker] positioned ^ ^ ^1 run return run function test:grapple/rope
 === grapple/start
 execute at @s anchored eyes positioned ^ ^ ^ run function test:grapple/zzz/start/exec_0
-execute if entity @e[type=minecraft:marker,tag=grapple._new,limit=1] run function test:grapple/zzz/start/exec_1
+execute if entity @e[tag=grapple._new,limit=1,type=minecraft:marker] run function test:grapple/zzz/start/exec_1
 === grapple/stop
 execute at @s run function test:grapple/zzz/stop/exec_0
 tag @s remove grappling
 scoreboard players operation #stop_id grapple.work = @s grapple.id
-execute as @e[type=minecraft:marker,tag=grapple.anchor] if score @s grapple.id = #stop_id grapple.work run kill @s
+execute as @e[tag=grapple.anchor,type=minecraft:marker] if score @s grapple.id = #stop_id grapple.work run kill @s
 === grapple/tick
 execute as @a[tag=grappling] at @s run function test:grapple/drive
 === grapple/zzz/start/exec_0
@@ -158,9 +158,9 @@ execute store result score #to_anchor_z grapple.work run compute default integer
 execute store result score @s grapple.rope_len_sq run compute default integer {"type":"add","inputs":[{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#to_anchor_x"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_x"},"score":"grapple.work"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#to_anchor_y"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_y"},"score":"grapple.work"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#to_anchor_z"},"score":"grapple.work"},{"type":"score","target":{"type":"fixed","name":"#to_anchor_z"},"score":"grapple.work"}]}]}
 scoreboard players add #next_id grapple.const 1
 scoreboard players operation @s grapple.id = #next_id grapple.const
-execute as @e[type=minecraft:marker,tag=grapple._new] run scoreboard players operation @s grapple.id = #next_id grapple.const
+execute as @e[tag=grapple._new,type=minecraft:marker] run scoreboard players operation @s grapple.id = #next_id grapple.const
 tag @s add grappling
-tag @e[type=minecraft:marker,tag=grapple._new] remove grapple._new
+tag @e[tag=grapple._new,type=minecraft:marker] remove grapple._new
 === grapple/zzz/stop/exec_0
 execute store result score #frac grapple.work run compute default integer {"type":"add","inputs":[{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"@s"},"score":"grapple.vel_x"},{"type":"score","target":{"type":"fixed","name":"@s"},"score":"grapple.vel_x"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"@s"},"score":"grapple.vel_y"},{"type":"score","target":{"type":"fixed","name":"@s"},"score":"grapple.vel_y"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"@s"},"score":"grapple.vel_z"},{"type":"score","target":{"type":"fixed","name":"@s"},"score":"grapple.vel_z"}]}]}
 scoreboard players set $x player_motion.api.launch 0
@@ -365,9 +365,9 @@ execute if block ~ ~ ~ #minecraft:air if score #grapple_web_steps raycast.work m
 return run function test:raycast/zzz/grapple/web/return_0/while_0/else_0
 === raycast/zzz/grapple/web/return_0/while_0/else_0
 summon minecraft:marker ~ ~ ~ {Tags:["grapple.anchor","grapple._new"]}
-execute store result score @s grapple.anchor_x run data get entity @e[type=minecraft:marker,tag=grapple._new,limit=1] Pos[0] 10
-execute store result score @s grapple.anchor_y run data get entity @e[type=minecraft:marker,tag=grapple._new,limit=1] Pos[1] 10
-execute store result score @s grapple.anchor_z run data get entity @e[type=minecraft:marker,tag=grapple._new,limit=1] Pos[2] 10
+execute store result score @s grapple.anchor_x run data get entity @e[distance=..1,tag=grapple._new,limit=1,type=minecraft:marker] Pos[0] 10
+execute store result score @s grapple.anchor_y run data get entity @e[distance=..1,tag=grapple._new,limit=1,type=minecraft:marker] Pos[1] 10
+execute store result score @s grapple.anchor_z run data get entity @e[distance=..1,tag=grapple._new,limit=1,type=minecraft:marker] Pos[2] 10
 === raycast/zzz/grapple/web/return_0/while_0/pass_0
 scoreboard players remove #grapple_web_steps raycast.work 1
 execute positioned ^ ^ ^0.5 run return run function test:raycast/zzz/grapple/web/return_0/while_0

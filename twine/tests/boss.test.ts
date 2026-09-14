@@ -42,10 +42,10 @@ describe("defineBoss", () => {
     // Max is read once at spawn (full health, scale 1); each poll reads scale 100
     // and divides, so the score is a 0..100 percent of *this* mob's real max.
     expect(all).toContain(
-      "store result score #king.max king run data get entity @e[type=minecraft:wither,tag=king,limit=1] Health 1",
+      "store result score #king.max king run data get entity @e[tag=king,limit=1,type=minecraft:wither] Health 1",
     );
     expect(all).toContain(
-      "store result score #king.hp king run data get entity @e[type=minecraft:wither,tag=king,limit=1] Health 100",
+      "store result score #king.hp king run data get entity @e[tag=king,limit=1,type=minecraft:wither] Health 100",
     );
     expect(all).toContain("scoreboard players operation #king.hp king /= #king.max king");
     expect(all).toContain(
@@ -118,10 +118,10 @@ describe("defineBoss", () => {
 
   it("treats the entity being gone as death, and cleans up so the fight repeats", () => {
     const { all, file } = build();
-    expect(all).toContain("unless entity @e[type=minecraft:wither,tag=king,limit=1] run function test:king/victory");
+    expect(all).toContain("unless entity @e[tag=king,limit=1,type=minecraft:wither] run function test:king/victory");
 
     const cleanup = file("king/cleanup.mcfunction")!;
-    expect(cleanup).toContain("kill @e[type=minecraft:wither,tag=king]");
+    expect(cleanup).toContain("kill @e[tag=king,type=minecraft:wither]");
     expect(cleanup).toContain("bossbar remove test:king");
     expect(cleanup).toContain("scoreboard players set #king.live king 0");
     expect(cleanup).toContain("scoreboard players set #king.cd.two.beam king 0");
@@ -138,7 +138,7 @@ describe("defineBoss", () => {
     // separately re-scans every loaded entity ten times a poll, which is the exact
     // cost the area gating exists to avoid.
     const { all } = build();
-    expect(all.split("if entity @e[type=minecraft:wither,tag=king,limit=1]").length - 1).toBe(1);
+    expect(all.split("if entity @e[tag=king,limit=1,type=minecraft:wither]").length - 1).toBe(1);
   });
 
   it("recomputes arena membership each poll and binds the bar to it", () => {

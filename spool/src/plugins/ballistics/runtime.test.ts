@@ -63,7 +63,7 @@ describe("runtime ballistics", () => {
         `execute store result score ${p} ballistics run data get entity @e[tag=gun,limit=1] Pos[${axis}] 100`,
       );
       expect(lines).toContain(
-        `execute store result entity @e[type=minecraft:tnt,tag=art.shot,limit=1] Motion[${axis}] double 0.0001 ` +
+        `execute store result entity @e[tag=art.shot,limit=1,type=minecraft:tnt] Motion[${axis}] double 0.0001 ` +
           `run scoreboard players get ${v} ballistics`,
       );
     }
@@ -71,7 +71,7 @@ describe("runtime ballistics", () => {
     // to have its Motion written.
     expect(lines.some((l) => l.startsWith("execute at @e[tag=gun,limit=1] run summon minecraft:tnt ~ ~ ~ "))).toBe(true);
     expect(lines.some((l) => l.includes("fuse:40s"))).toBe(true);
-    expect(lines).toContain("tag @e[type=minecraft:tnt,tag=art.shot,limit=1] remove art.shot");
+    expect(lines).toContain("tag @e[tag=art.shot,limit=1,type=minecraft:tnt] remove art.shot");
     // Nothing fires unless every axis is within ±10; the return value says which happened.
     expect(lines).toContain(
       "execute unless score #vx ballistics matches -100000..100000 run return 0",
@@ -191,8 +191,8 @@ it("shellTypes types the shot selector for a callback shell", () => {
   const files = new Map(buildDatapack(dp));
   const fn = (name: string) => files.get(`data/art/function/${name}.mcfunction`)!;
   expect(fn("untyped")).toContain("tag @e[tag=art.shot,limit=1] remove art.shot");
-  expect(fn("one")).toContain("tag @e[type=minecraft:zombie,tag=art.shot,limit=1] remove art.shot");
-  expect(fn("mixed")).toContain("tag @e[type=#art:ballistics/shot,tag=art.shot,limit=1] remove art.shot");
+  expect(fn("one")).toContain("tag @e[tag=art.shot,limit=1,type=minecraft:zombie] remove art.shot");
+  expect(fn("mixed")).toContain("tag @e[tag=art.shot,limit=1,type=#art:ballistics/shot] remove art.shot");
   expect(JSON.parse(files.get("data/art/tags/entity_type/ballistics/shot.json")!).values).toEqual([
     "minecraft:tnt",
     "minecraft:zombie",

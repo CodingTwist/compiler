@@ -1,5 +1,5 @@
 // Places the anchor marker where the web hits.
-import { Pos } from "helix";
+import { Pos, Range } from "helix";
 import type { FunctionContext } from "helix";
 import type { GrappleConfig } from "./config";
 import type { GrappleSelectors } from "./selectors";
@@ -20,7 +20,8 @@ export function createAnchorService(d: AnchorDeps) {
     /** Places the anchor here and records it in this player's scores. */
     place(ctx: FunctionContext): void {
       ctx.summon(d.config.anchorType, Pos.here(), d.config.anchorNbt());
-      d.repo.readPos(ctx, d.selectors.freshAnchorOne(), d.repo.anchorVec());
+      // Just summoned here, so `..1` keeps the scan to nearby chunks.
+      d.repo.readPos(ctx, d.selectors.freshAnchorOne().distance(Range.atMost(1)), d.repo.anchorVec());
     },
   };
 }
