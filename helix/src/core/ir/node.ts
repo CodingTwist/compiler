@@ -19,6 +19,8 @@ export class FunctionNode extends ASTNode {
   root: FunctionNode = this;
   /** Locals allocated so far, counted on the root. */
   locals = 0;
+  /** Ref tags allocated so far, counted on the root. */
+  refs = 0;
   constructor(public name: string) {
     super();
   }

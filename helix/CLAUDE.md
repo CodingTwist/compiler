@@ -143,6 +143,10 @@ the `vscode/` extension), `profile [dump.json]`
   `helix.var`. Child bodies share their root's counter via `FunctionNode.root`, so any code that
   makes a scratch `FunctionNode` must set `root`. The objective is declared at load only if some
   function used a local. Not safe under recursion.
+- **Refs** (`commands/ref.ts`): `ctx.ref(target, (c, ref) => …)` tags `target` with
+  `helix.ref.<root fn>.<n>` around the body, and `ref()` finds it again under any `execute as`.
+  Inline, no child function: the tag comes off `@s` (or `@e[tag=…]` for other selectors) after the
+  body, so a bare `return` in the body leaves it on. `ref()` copies the target's `type=`.
 - **Loops** (`commands/loop.ts`): `ctx.while(cond, body, { advance }).else(exit)` and
   `ctx.repeat(n, body)`. The loop function is the if handler's branch lines (`branchLines`, with
   the else under `return run`): `if cond run return run function pass`, then the exit. `pass` is

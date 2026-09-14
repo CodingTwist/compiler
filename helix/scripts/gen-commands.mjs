@@ -133,12 +133,12 @@ const EXTRA_HANDLERS = [
 // Hand-written modules that install `ctx.<method>` augmentations but register no
 // handler of their own (their nodes are plain TreeCommandNodes). The barrel only
 // has to re-export them so the augmentation reaches consumers' .d.ts.
-const AUGMENT_ONLY = ["local"];
+const AUGMENT_ONLY = ["local", "ref"];
 
 // FunctionContext members a generated `ctx.<method>()` must never shadow.
 const RESERVED_ENTRY = new Set([
   "version", "emit", "call", "createChildFunction", "newChild",
-  "if", "say", "tellraw", "give", "playerGive", "player", "trigger", "random",
+  "if", "ref", "say", "tellraw", "give", "playerGive", "player", "trigger", "random",
   "objective", "scoreInit", "scoreSet", "scoreAdd", "scoreSetScore",
   "scoreEnable",
 ]);

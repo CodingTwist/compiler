@@ -99,6 +99,7 @@ export * from "./near_guard";
 export * from "./native";
 export * from "./loop";
 export * from "./local";
+export * from "./ref";
 
 /**
  * Handlers for nodes that need custom lowering. Generated commands all use

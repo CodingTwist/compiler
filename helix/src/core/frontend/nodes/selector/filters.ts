@@ -137,6 +137,12 @@ export class SelectorFilters {
     return this;
   }
 
+  /** Matches the same entity type as `other`, if it has one. */
+  typeOf(other: SelectorFilters): this {
+    this.entityTypeValue = other.entityTypeValue;
+    return this;
+  }
+
   /** Matches entities with `nbt`. Renders for the target version. */
   nbt(nbt: Nbt): this {
     this.nbtValue = nbt;
