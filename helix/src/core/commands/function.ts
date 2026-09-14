@@ -1,6 +1,7 @@
 import { ASTNode, FunctionNode } from "../ir/node";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { buildCommand, buildTokens, lit, arg } from "../ir/command-builder";
+import { callLine, UNKNOWN_LINE } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
 import { FunctionTagRef } from "../values/function-tag";
 import { NbtValue } from "../values/nbt";
@@ -14,6 +15,7 @@ export class FunctionCommand extends CommandHandler<FunctionNode> {
       buildCommand(ctx.version, ["function"], {
         name: `${ctx.datapack.name}:${node.name}`,
       }),
+      callLine(node.name),
     );
   }
   readonly type: FunctionNode["type"] = "function";
@@ -35,6 +37,8 @@ export class FunctionTagCallCommand extends CommandHandler<FunctionTagCallNode> 
       buildCommand(ctx.version, ["function"], {
         name: node.tag.render(ctx.version),
       }),
+      // Tag members aren't followed.
+      UNKNOWN_LINE,
     );
   }
 }
@@ -69,6 +73,7 @@ export class MacroCallCommand extends CommandHandler<MacroCallNode> {
             ]
           : [arg(src.render(v))]),
       ]),
+      callLine(node.name),
     );
   }
 }

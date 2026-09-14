@@ -1,5 +1,6 @@
 // HAND-WRITTEN PROTOTYPE of the grouped-builder + per-leaf-union shape.
 // Subset only; the generator will emit all ~100 modify leaves.
+import { commandLine, Effect, entityWriteEffect } from "../ir/line-info";
 import { CommandNodeBase } from "../ir/node";
 import { CommandHandler, CodegenContext } from "../ir/commandhandler";
 import { renderArg, buildTokens, lit, arg, Token } from "../ir/command-builder";
@@ -174,7 +175,32 @@ export class DataHandler extends CommandHandler<DataNode> {
         throw new Error(`Incomplete \`data\` command: ${JSON.stringify(_exhaustive)}`);
       }
     }
-    ctx.emit(buildTokens(v, tokens));
+    ctx.emit(buildTokens(v, tokens), commandLine(dataEffect(a)));
+  }
+}
+
+/** What a `data` command does to entities. */
+function dataEffect(a: DataArgs): Effect {
+  switch (a.sub) {
+    case "getBlock":
+    case "getEntity":
+    case "getStorage":
+    case "removeStorage":
+    case "mergeStorage":
+    case "modifyStorageMergeFromEntity":
+      return Effect.NONE;
+    case "removeBlock":
+    case "removeEntity":
+    case "mergeBlock":
+    case "modifyBlockSetFromEntity":
+    case "modifyBlockSetValue":
+      return Effect.EDITS;
+    case "modifyEntitySetFromEntity":
+    case "modifyEntitySetFromBlock":
+      return entityWriteEffect(a.targetPath);
+    default:
+      // A merged compound may hold `Pos` or `Rotation`.
+      return Effect.MOVES;
   }
 }
 

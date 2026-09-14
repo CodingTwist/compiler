@@ -1,0 +1,42 @@
+{
+  "name": "helix-report",
+  "displayName": "Helix Report",
+  "description": "Shows helix report lints on the TypeScript lines that emitted them.",
+  "version": "0.1.0",
+  "publisher": "sam-hardy",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "main": "dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/helix.config.ts"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "helix.report",
+        "title": "Helix: Run Report"
+      }
+    ],
+    "configuration": {
+      "title": "Helix Report",
+      "properties": {
+        "helix.reportOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run `helix report --json` when a TypeScript file in a helix pack is saved."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -7,6 +7,7 @@ import { Player } from "../frontend/nodes/player";
 import { FunctionContext } from "../frontend/context";
 import { Item, ItemValue } from "../values/item";
 import { Enchantment } from "../values/resource.generated";
+import { commandLine, Effect } from "../ir/line-info";
 
 /**
  * Legacy item description for `give`. Prefer the {@link Item} builder; this still works
@@ -64,7 +65,7 @@ export class PlayerGiveCommand extends CommandHandler<PlayerGiveNode> {
     );
     const target = resolveTarget(node, ctx);
     const data = item.renderData(ctx.version);
-    ctx.emit(`give ${target} ${id}${data} ${item.getCount() ?? 1}`);
+    ctx.emit(`give ${target} ${id}${data} ${item.getCount() ?? 1}`, commandLine(Effect.EDITS));
   }
 }
 

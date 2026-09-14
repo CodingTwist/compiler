@@ -3,6 +3,7 @@ import { Objective } from "../frontend/nodes/objective";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { arg, buildTokens, lit, Token } from "../ir/command-builder";
 import { FunctionContext } from "../frontend/context";
+import { commandLine, Effect } from "../ir/line-info";
 
 export class TriggerNode extends ASTNode {
   type = "trigger";
@@ -28,7 +29,7 @@ export class TriggerCommand extends CommandHandler<TriggerNode> {
     if (node.value !== undefined) {
       tokens.push(lit("set"), arg(node.value));
     }
-    ctx.emit(buildTokens(ctx.version, tokens));
+    ctx.emit(buildTokens(ctx.version, tokens), commandLine(Effect.NONE));
   }
   readonly type: TriggerNode["type"] = "trigger";
 }

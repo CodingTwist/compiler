@@ -14,6 +14,7 @@ import { Score } from "../frontend/nodes/score";
 import { Selector } from "../frontend/nodes/selector";
 import { FunctionContext } from "../frontend/context";
 import { ArgInput, toCommandValue } from "../values/value";
+import { commandLine, Effect } from "../ir/line-info";
 
 /** The `scoreboard players operation` operators. */
 export type ScoreOperator = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<" | ">" | "><";
@@ -38,7 +39,7 @@ export class ScoreboardCommand extends CommandHandler<ScoreboardNode> {
     for (const [name, value] of Object.entries(node.args)) {
       args[name] = toCommandValue(value).render(ctx.version);
     }
-    ctx.emit(buildCommand(ctx.version, ["scoreboard", ...node.spine], args));
+    ctx.emit(buildCommand(ctx.version, ["scoreboard", ...node.spine], args), commandLine(Effect.NONE));
   }
 }
 

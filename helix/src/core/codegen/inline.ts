@@ -2,15 +2,17 @@
 import type { Datapack } from "../ir/datapack";
 import { isPrivate } from "../private-fn";
 import { runClause } from "../ir/generate";
+import { spliceCall, UNKNOWN_LINE, type LineInfo } from "../ir/line-info";
 
-/** The lone command of `text`, or `undefined` if it has more, none, or can't be inlined. */
-function soleCommand(text: string): string | undefined {
-  const cmds = text.split("\n").filter((l) => l.trim() && !l.startsWith("#"));
-  if (cmds.length !== 1) return undefined;
-  const cmd = cmds[0];
+/** The lone command of `text` and its line index, or `undefined` if it has more, none, or can't be inlined. */
+function soleCommand(text: string): { cmd: string; index: number } | undefined {
+  const lines = text.split("\n");
+  const indices = lines.flatMap((l, i) => (l.trim() && !l.startsWith("#") ? [i] : []));
+  if (indices.length !== 1) return undefined;
+  const cmd = lines[indices[0]];
   // A macro line needs its own function, and `return` would exit the caller instead.
   if (cmd.startsWith("$") || /\breturn\b/.test(cmd)) return undefined;
-  return cmd;
+  return { cmd, index: indices[0] };
 }
 
 /**
@@ -31,7 +33,7 @@ export function inlineSingleCommandFunctions(dp: Datapack, otherFiles: Iterable<
   const callRe = /^(execute (?!.*\bstore\b).*? run )?(return run )?function (\S+)$/;
   // `return run` stops after the first branch of a fork, so those can't go under it.
   const forks = /\s(as|at|on|summon)\s|facing entity/;
-  const bodies = new Map<string, string>();
+  const bodies = new Map<string, { cmd: string; info: LineInfo }>();
   // Only functions that lost a call are dropped; an uncalled one may be run by hand.
   const replaced = new Set<string>();
 
@@ -40,22 +42,26 @@ export function inlineSingleCommandFunctions(dp: Datapack, otherFiles: Iterable<
     bodies.clear();
     for (const [name, text] of dp.files) {
       if (!isPrivate(name) || allowed.has(name)) continue;
-      const cmd = soleCommand(text);
-      if (cmd !== undefined && !cmd.split(" ").includes(`${prefix}${name}`)) bodies.set(name, cmd);
+      const sole = soleCommand(text);
+      if (sole === undefined || sole.cmd.split(" ").includes(`${prefix}${name}`)) continue;
+      bodies.set(name, { cmd: sole.cmd, info: dp.lineInfo.get(name)?.[sole.index] ?? UNKNOWN_LINE });
     }
     for (const [name, text] of dp.files) {
       const lines = text.split("\n");
+      const infos = dp.lineInfo.get(name);
       let edited = false;
       lines.forEach((line, i) => {
         const m = callRe.exec(line);
         if (!m || !m[3].startsWith(prefix)) return;
         const [, exec, ret, ref] = m;
         const callee = ref.slice(prefix.length);
-        const body = bodies.get(callee);
-        if (body === undefined || callee === name || (ret && forks.test(body))) return;
+        const found = bodies.get(callee);
+        if (found === undefined || callee === name || (ret && forks.test(found.cmd))) return;
+        const body = found.cmd;
         if (ret) lines[i] = `${exec ?? ""}return run ${body}`;
         else if (exec) lines[i] = `${exec.slice(0, -" run ".length)} ${runClause(body)}`;
         else lines[i] = body;
+        if (infos) infos[i] = spliceCall(infos[i], callee, found.info, !!ret);
         replaced.add(callee);
         edited = true;
       });
@@ -76,6 +82,7 @@ export function inlineSingleCommandFunctions(dp: Datapack, otherFiles: Iterable<
     if (referenced.has(name)) continue;
     dp.files.delete(name);
     dp.sourceMap.delete(name);
+    dp.lineInfo.delete(name);
     dp.inlined.add(name);
   }
 }

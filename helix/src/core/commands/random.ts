@@ -3,6 +3,7 @@ import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { buildCommand } from "../ir/command-builder";
 import { requireCommand } from "../../versions/capabilities";
 import { FunctionContext } from "../frontend/context";
+import { commandLine, Effect } from "../ir/line-info";
 
 export class RandomValueNode extends ASTNode {
   type = "random_value";
@@ -21,6 +22,7 @@ export class RandomCommand extends CommandHandler<RandomValueNode> {
   generate(node: RandomValueNode, ctx: CodegenContext): void {
     ctx.emit(
       buildCommand(ctx.version, ["random", "value"], { range: `${node.range}` }),
+      commandLine(Effect.NONE),
     );
   }
   readonly type: RandomValueNode["type"] = "random_value";

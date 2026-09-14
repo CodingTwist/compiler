@@ -2,6 +2,7 @@
 // src/core/commands/.
 import { CommandValue } from "../values/value";
 import { captureSource } from "../debug/sources";
+import type { Effect } from "./line-info";
 
 export abstract class ASTNode {
   abstract type: string;
@@ -107,7 +108,15 @@ export abstract class CommandNodeBase extends ASTNode {
  * `TreeCommandHandler`.
  */
 export class TreeCommandNode extends CommandNodeBase {
-  constructor(readonly type: string) {
+  /**
+   * @param effect What the command can do to entities, for output passes.
+   * @param exits Whether the command returns from its function.
+   */
+  constructor(
+    readonly type: string,
+    readonly effect: Effect,
+    readonly exits = false,
+  ) {
     super();
   }
 }

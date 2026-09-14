@@ -3,6 +3,7 @@
 import type { Datapack } from "../core/ir/datapack";
 import type { RuntimeTarget } from "../core/ir/target";
 import type { DebugOptions } from "../core/debug/sources";
+import type { OptimizeOptions } from "../core/ir/datapack-core";
 import type { VersionProfile } from "../versions/profile";
 
 export type BuildMode = "dev" | "prod";
@@ -24,6 +25,8 @@ export interface HelixConfig {
   world?: string;
   /** Debug source tracking, applied to dev builds only. */
   debug?: DebugOptions;
+  /** Output optimization passes, applied in every mode. Turn one off to debug its output. */
+  optimize?: OptimizeOptions;
 }
 
 export interface BuildInfo {

@@ -1,7 +1,8 @@
 import { ASTNode, ExpressionNode, FunctionNode, Range } from "../ir/node";
 import type { Objective } from "../frontend/nodes/objective";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
-import { generateRunTarget, generateSingleNode, runClause } from "../ir/generate";
+import { generateRunTargetLine, generateSingleNodeLine, runClause } from "../ir/generate";
+import { chainLine, type LineInfo } from "../ir/line-info";
 import { arg, buildTokens, lit, raw, Token } from "../ir/command-builder";
 import { VersionProfile } from "../../versions/profile";
 import { FunctionContext } from "../frontend/context";
@@ -92,38 +93,26 @@ export class IfHandler extends CommandHandler<IfElseNode> {
     );
 
     for (const elif of node.elifs) {
-      const elifCall = generateRunTarget(
+      const elifCall = generateRunTargetLine(
         elif.body,
         ctx.datapack,
         ctx.dispatcher,
       );
-      if (!elifCall) continue;
-      ctx.emit(
-        this.execChain(
-          ctx,
-          [{ kind: "score", mode: "if", cond: elif.condition }],
-          elifCall,
-        ),
-      );
+      if (!elifCall.cmd) continue;
+      this.emitChain(ctx, [{ kind: "score", mode: "if", cond: elif.condition }], elifCall);
     }
     if (node.elseBody) {
-      const elseCall = generateRunTarget(
+      const elseCall = generateRunTargetLine(
         node.elseBody,
         ctx.datapack,
         ctx.dispatcher,
       );
       if (
-        elseCall &&
+        elseCall.cmd &&
         (node.condition instanceof ScoreRangeNode ||
           node.condition instanceof PredicateCheckNode)
       ) {
-        ctx.emit(
-          this.execChain(
-            ctx,
-            [{ kind: "score", mode: "unless", cond: node.condition }],
-            elseCall,
-          ),
-        );
+        this.emitChain(ctx, [{ kind: "score", mode: "unless", cond: node.condition }], elseCall);
       }
     }
   }
@@ -149,8 +138,8 @@ export class IfHandler extends CommandHandler<IfElseNode> {
         return;
       }
     }
-    const call = generateRunTarget(body, ctx.datapack, ctx.dispatcher);
-    if (call) ctx.emit(this.execChain(ctx, chain, call));
+    const call = generateRunTargetLine(body, ctx.datapack, ctx.dispatcher);
+    if (call.cmd) this.emitChain(ctx, chain, call);
   }
 
   /**
@@ -172,8 +161,7 @@ export class IfHandler extends CommandHandler<IfElseNode> {
       }
       return;
     }
-    const call = generateSingleNode(node, ctx.datapack, ctx.dispatcher);
-    ctx.emit(this.execChain(ctx, chain, call));
+    this.emitChain(ctx, chain, generateSingleNodeLine(node, ctx.datapack, ctx.dispatcher));
   }
 
   /** Recognize one foldable guard layer and what's inside it, or nothing. */
@@ -212,21 +200,23 @@ export class IfHandler extends CommandHandler<IfElseNode> {
    * execute's
    * redirects. Values still render through their typed classes.
    */
-  private execChain(
+  private emitChain(
     ctx: CodegenContext,
     chain: ChainLink[],
-    call: string,
-  ): string {
+    call: { cmd: string; info: LineInfo },
+  ): void {
     const [first, ...rest] = chain;
     const tail = [
       ...rest.map((link) => this.linkText(link, ctx.version)),
-      runClause(call),
+      runClause(call.cmd),
     ].join(" ");
-    return buildTokens(ctx.version, [
+    const line = buildTokens(ctx.version, [
       lit("execute"),
       ...this.linkTokens(first, ctx.version),
       raw(tail),
     ]);
+    // Every chain starts with a condition, which can't be shared.
+    ctx.emit(line, chainLine([undefined], call.info));
   }
 
   /** Full rendered fragment for one chain link, including its own leading keyword(s). */

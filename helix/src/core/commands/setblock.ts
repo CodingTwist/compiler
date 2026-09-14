@@ -5,6 +5,7 @@ import { buildCommand, renderArg } from "../ir/command-builder";
 import { FunctionContext } from "../frontend/context";
 import { CommandBuilder } from "./base";
 import { Block, Pos } from "../values";
+import { commandLine, Effect } from "../ir/line-info";
 
 /** The how-to-place mode literal that trails `setblock <pos> <block>`. */
 export type SetblockMode = "destroy" | "keep" | "replace" | "strict";
@@ -60,6 +61,7 @@ export class SetblockHandler extends CommandHandler<SetblockNode> {
         { pos: renderArg(a.pos, v), block: renderArg(a.block, v) },
         a.mode ? [a.mode] : [],
       ),
+      commandLine(Effect.EDITS),
     );
   }
 }

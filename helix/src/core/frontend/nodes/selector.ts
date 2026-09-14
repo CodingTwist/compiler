@@ -1,7 +1,7 @@
 import { Objective } from "./objective";
 import { FunctionNode, Range } from "../../ir/node";
 import { ExecuteAsNode } from "../../commands/execute_as";
-import { SelectorNode, renderSelector } from "../../commands/selector";
+import { SelectorBase, SelectorNode, renderSelector } from "../../commands/selector";
 import { FunctionContext } from "../context";
 import { runInContext } from "../context/ambient";
 import { Nbt } from "../../values/nbt";
@@ -11,7 +11,7 @@ import { Gamemode, Sort } from "../../values/enums";
 import { VersionProfile } from "../../../versions/profile";
 import type { EntityType } from "../../values/resource.generated";
 
-export type SelectorBase = "@a" | "@e" | "@p" | "@r" | "@s" | string;
+export { SelectorBase };
 
 export class SelectorScore {
   constructor(
@@ -55,22 +55,22 @@ export class Selector {
   private entityTypeValue?: string;
   private yBandValue?: { y: number; dy: number };
 
-  constructor(private base: SelectorBase | string) {}
+  constructor(private base: SelectorBase) {}
 
   static allPlayers(): Selector {
-    return new Selector("@a");
+    return new Selector(SelectorBase.ALL_PLAYERS);
   }
   static allEntities(): Selector {
-    return new Selector("@e");
+    return new Selector(SelectorBase.ALL_ENTITIES);
   }
   static nearest(): Selector {
-    return new Selector("@p");
+    return new Selector(SelectorBase.NEAREST_PLAYER);
   }
   static random(): Selector {
-    return new Selector("@r");
+    return new Selector(SelectorBase.RANDOM_PLAYER);
   }
   static self(): Selector {
-    return new Selector("@s");
+    return new Selector(SelectorBase.SELF);
   }
   /** A selector that is a bare entity UUID or player name (its own base form). */
   static uuid(id: string): Selector {

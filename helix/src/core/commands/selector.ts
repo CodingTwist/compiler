@@ -1,9 +1,20 @@
 import { ASTNode, Range } from "../ir/node";
 import type { Objective } from "../frontend/nodes/objective";
-import type { SelectorBase, SelectorVolume } from "../frontend/nodes/selector";
+import type { SelectorVolume } from "../frontend/nodes/selector";
 import type { Nbt } from "../values/nbt";
 import type { VersionProfile } from "../../versions/profile";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
+import { Sort } from "../values/enums";
+
+/** Selector target variables. A base may also be a player name or UUID. */
+export const SelectorBase = {
+  ALL_PLAYERS: "@a",
+  ALL_ENTITIES: "@e",
+  NEAREST_PLAYER: "@p",
+  RANDOM_PLAYER: "@r",
+  SELF: "@s",
+} as const;
+export type SelectorBase = (typeof SelectorBase)[keyof typeof SelectorBase] | string;
 
 export class SelectorNode extends ASTNode {
   type = "selector" as const;
@@ -12,7 +23,7 @@ export class SelectorNode extends ASTNode {
     public readonly scores: Map<Objective, Range> = new Map(),
     public readonly tags: string[] = [],
     public readonly limit?: number,
-    public readonly sort?: "nearest" | "furthest" | "random" | "arbitrary",
+    public readonly sort?: Sort,
     public readonly team?: string,
     public readonly playerName?: string,
     public readonly volume?: SelectorVolume,
@@ -27,6 +38,50 @@ export class SelectorNode extends ASTNode {
     public readonly notGamemodes: string[] = [],
   ) {
     super();
+  }
+
+  /** Whether it picks at most one entity. */
+  picksOne(): boolean {
+    if (this.limit !== undefined) return this.limit === 1;
+    return this.base !== SelectorBase.ALL_PLAYERS && this.base !== SelectorBase.ALL_ENTITIES;
+  }
+
+  /** Whether it can pick a different entity each time it runs, all else equal. */
+  picksRandomly(): boolean {
+    return this.base === SelectorBase.RANDOM_PLAYER || this.sort === Sort.RANDOM;
+  }
+
+  /** Whether it tests scores, NBT or predicates. */
+  readsState(): boolean {
+    return this.scores.size > 0 || this.nbt !== undefined || this.predicates.length > 0;
+  }
+
+  /** Whether it is plain `@s` with no filters, so it always picks the executor. */
+  isBareSelf(): boolean {
+    return (
+      this.base === SelectorBase.SELF &&
+      this.scores.size === 0 &&
+      this.tags.length === 0 &&
+      this.limit === undefined &&
+      this.sort === undefined &&
+      this.team === undefined &&
+      this.playerName === undefined &&
+      this.volume === undefined &&
+      this.distance === undefined &&
+      this.nbt === undefined &&
+      this.predicates.length === 0 &&
+      this.xRotation === undefined &&
+      this.yRotation === undefined &&
+      this.gamemode === undefined &&
+      this.entityType === undefined &&
+      this.yBand === undefined &&
+      this.notGamemodes.length === 0
+    );
+  }
+
+  /** Whether resolving it searches entities, rather than naming the executor, a player or a UUID. */
+  scans(): boolean {
+    return Object.values(SelectorBase).some((b) => b === this.base) && this.base !== SelectorBase.SELF;
   }
 }
 
@@ -68,7 +123,7 @@ export function renderSelector(
   if (node.playerName) args.push(`name=${node.playerName}`);
   // An existence test only needs one match, so `limit=1` lets the engine stop early.
   const limit =
-    node.limit ?? (opts.existence && (node.base === "@e" || node.base === "@a") ? 1 : undefined);
+    node.limit ?? (opts.existence && !node.picksOne() ? 1 : undefined);
   if (limit !== undefined) args.push(`limit=${limit}`);
   if (node.sort !== undefined) args.push(`sort=${node.sort}`);
   if (node.nbt) {

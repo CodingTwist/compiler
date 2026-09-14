@@ -1,10 +1,12 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { describe, it, expect, afterAll, vi } from "vitest";
 import fs from "fs";
 import os from "os";
 import path from "path";
 import { loadPack, worldDir } from "./load";
 import { buildDatapack } from "../core/codegen/codegen";
 import { v1_21_4 } from "../versions/profiles";
+import { Selector } from "../core/frontend/nodes/selector";
+import { runCli } from "./run";
 
 // The fixture can't import helix source under vitest, so its version comes from a global.
 (globalThis as Record<string, unknown>).__fixtureVersion = v1_21_4;
@@ -55,5 +57,32 @@ describe("loadPack", () => {
     const { packs } = await loadPack({ root: fixture("entry"), mode: "prod" });
     expect(packs[0].dp.version).toBe(v1_21_4);
     await expect(loadPack({ root: fixture("both"), mode: "prod" })).rejects.toThrow(/both/);
+  });
+});
+
+describe("helix report --json", () => {
+  it("prints findings with the TS line that emitted them, even in prod", async () => {
+    const root = fixture();
+    (globalThis as Record<string, unknown>).__fixtureSelector = Selector;
+    fs.writeFileSync(
+      path.join(root, "src/pack.ts"),
+      `export default (dp: any) => dp.createFunction("scan").build((c: any) => {
+  console.log("pack noise");
+  c.kill((globalThis as any).__fixtureSelector.allEntities().tag("x"));
+});`,
+    );
+    vi.spyOn(process, "cwd").mockReturnValue(root);
+    const stdout: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((s: string) => void stdout.push(s));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(await runCli(["report", "--json", "--prod", "--strict", "--target", "vanilla"])).toBe(1);
+    } finally {
+      vi.restoreAllMocks();
+    }
+    expect(stdout).toHaveLength(1);
+    const { packs } = JSON.parse(stdout[0]);
+    expect(packs[0].lints[0]).toMatchObject({ rule: "missing-type", fn: "scan" });
+    expect(packs[0].lints[0].source).toMatch(/^src\/pack\.ts:3:\d+$/);
   });
 });

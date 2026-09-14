@@ -7,7 +7,16 @@
 // Registered via EXTRA_HANDLERS in scripts/gen-commands.mjs, never regenerated.
 import { ASTNode, FunctionNode, Range } from "../ir/node";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
-import { generateRunTarget, runClause } from "../ir/generate";
+import { generateRunTargetLine, runClause } from "../ir/generate";
+import {
+  chainLine,
+  entityWriteEffect,
+  pureClause,
+  selectorClause,
+  worst,
+  Effect,
+  type SharedClause,
+} from "../ir/line-info";
 import { buildTokens, lit, raw } from "../ir/command-builder";
 import { VersionProfile } from "../../versions/profile";
 import { FunctionContext } from "../frontend/context";
@@ -309,14 +318,60 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
     // tests to one.
     const existence = !!node.runBody;
     const parts = node.clauses.map((c) => this.clause(c, v, ctx.datapack.name, existence));
+    const shared = node.clauses.map((c, i) => this.shared(c, parts[i]));
+    const own = worst(...node.clauses.map((c) => this.effect(c)));
+    const calls = node.clauses.flatMap((c) => (c.k === "callFunction" ? [c.fn.getName()] : []));
+    let body;
     if (node.runBody) {
       // An empty body is a no-op unless a `store` clause reads its result.
       const keepEmpty = node.clauses.some((c) => c.k.startsWith("store"));
-      const cmd = generateRunTarget(node.runBody, ctx.datapack, ctx.dispatcher, { keepEmpty });
-      if (!cmd) return;
-      parts.push(runClause(cmd));
+      const target = generateRunTargetLine(node.runBody, ctx.datapack, ctx.dispatcher, { keepEmpty });
+      if (!target.cmd) return;
+      parts.push(runClause(target.cmd));
+      body = target.info;
     }
-    ctx.emit(buildTokens(v, [lit("execute"), raw(parts.join(" "))]));
+    ctx.emit(buildTokens(v, [lit("execute"), raw(parts.join(" "))]), chainLine(shared, body, own, calls));
+  }
+
+  /** `c` as a clause other lines may share, given its rendered `text`. */
+  private shared(c: Clause, text: string): SharedClause | undefined {
+    switch (c.k) {
+      case "as":
+      case "at":
+      case "positionedAs":
+      case "rotatedAs":
+      case "facingEntity":
+        return selectorClause(text, c.sel.build(), c.k === "as");
+      case "on":
+        // `on passengers` can pick several entities.
+        return c.relation === Relation.PASSENGERS ? undefined : { text, kind: "other", scans: false };
+      case "in":
+      case "positioned":
+      case "rotated":
+      case "facing":
+      case "anchored":
+      case "align":
+        return pureClause(text);
+      // Conditions and stores belong to their own line. No `default`, so a new clause kind
+      // must be decided here.
+      case "scoreMatches":
+      case "scoreCompare":
+      case "entity":
+      case "items":
+      case "block":
+      case "predicate":
+      case "callFunction":
+      case "storeScore":
+      case "storeEntity":
+      case "storeStorage":
+      case "storeBossbar":
+        return undefined;
+    }
+  }
+
+  /** What `c` itself writes. */
+  private effect(c: Clause): Effect {
+    return c.k === "storeEntity" ? entityWriteEffect(c.path) : Effect.NONE;
   }
 
   private score(s: Score, v: VersionProfile): string {
@@ -392,8 +447,13 @@ export class ReturnRunHandler extends CommandHandler<ReturnRunNode> {
 
   generate(node: ReturnRunNode, ctx: CodegenContext): void {
     if (!node.runBody) throw new Error("returnRun() body was never built");
-    const cmd = generateRunTarget(node.runBody, ctx.datapack, ctx.dispatcher, { keepEmpty: true });
-    ctx.emit(buildTokens(ctx.version, [lit("return"), raw(`run ${cmd}`)]));
+    const { cmd, info } = generateRunTargetLine(node.runBody, ctx.datapack, ctx.dispatcher, { keepEmpty: true });
+    ctx.emit(buildTokens(ctx.version, [lit("return"), raw(`run ${cmd}`)]), {
+      ...info,
+      clauses: [],
+      open: false,
+      exits: true,
+    });
   }
 }
 

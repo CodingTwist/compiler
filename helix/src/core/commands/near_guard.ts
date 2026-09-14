@@ -2,7 +2,8 @@
 // a guard entity is absent:
 //   execute positioned <pos> if entity @a[distance=..<radius>] [unless entity <guard>] run <command>
 // Registered via EXTRA_HANDLERS in scripts/gen-commands.mjs, never regenerated.
-import { generateSingleNode, runClause } from "../ir/generate";
+import { generateSingleNodeLine, runClause } from "../ir/generate";
+import { chainLine, pureClause } from "../ir/line-info";
 import { ASTNode, FunctionNode, Range } from "../ir/node";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { arg, buildTokens, lit, raw } from "../ir/command-builder";
@@ -38,7 +39,7 @@ export class NearGuardHandler extends CommandHandler<NearGuardNode> {
   readonly type: NearGuardNode["type"] = "near_guard";
 
   generate(node: NearGuardNode, ctx: CodegenContext): void {
-    const command = generateSingleNode(
+    const { cmd: command, info } = generateSingleNodeLine(
       node.command,
       ctx.datapack,
       ctx.dispatcher,
@@ -57,13 +58,16 @@ export class NearGuardHandler extends CommandHandler<NearGuardNode> {
       : `if entity ${nearStr}${guard}`;
     // `positioned <pos>` is validated; the rest is raw since the validator can't follow
     // execute's redirect.
+    const pos = toCommandValue(node.pos).render(ctx.version);
     ctx.emit(
       buildTokens(ctx.version, [
         lit("execute"),
         lit("positioned"),
-        arg(toCommandValue(node.pos).render(ctx.version)),
+        arg(pos),
         raw(`${match} ${runClause(command)}`),
       ]),
+      // The player test re-runs on every line, so only `positioned` can be shared.
+      chainLine([pureClause(`positioned ${pos}`), undefined], info),
     );
   }
 }

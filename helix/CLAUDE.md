@@ -59,7 +59,9 @@ Packs don't create or write a Datapack themselves. A pack has a `helix.config.ts
 and an entry whose default export is `definePack((dp, build) => …)`. `loadPack` (`cli/load.ts`) loads
 `.env` beside the config, imports both, and creates one `Datapack` per target (`-<target>` output
 suffix for non-vanilla; `debug` only in dev). Commands (`cli/run.ts`, flags via `util.parseArgs`):
-`build [--prod]`, `dev` (build under `tsx watch`), `report [--strict]`, `profile [dump.json]`
+`build [--prod]`, `dev` (build under `tsx watch`), `report [--strict] [--json]` (`--json` forces `debug.sources`, prints `{ root, packs: [{ target,
+lints, warnings, staleAllows }] }` as the only stdout line - pack `console.log`s go to stderr - for
+the `vscode/` extension), `profile [dump.json]`
 (newest `<world>/helix-profile/profile-*.json` via `latestProfile`; world defaults to two above
 `out.datapack`), `validate`. Builds print only the output path - reporting is opt-in.
 
@@ -138,14 +140,22 @@ suffix for non-vanilla; `debug` only in dev). Commands (`cli/run.ts`, flags via 
   with a `dp.allow`, and forking bodies (`as`/`at`/`on`/`summon`) under `return run`, which
   stops after the first branch. Public functions are never touched. Dropped names go in
   `dp.inlined` so a rebuild doesn't regenerate them.
+- **Line info** (`ir/line-info.ts`): every emitted line carries a `LineInfo` (its shareable
+  leading clauses, its `Effect` on entities, the functions it calls, whether it `return`s),
+  kept in `dp.lineInfo` beside `dp.files`. Handlers fill it from typed values
+  (`SelectorNode.picksOne()`/`picksRandomly()`/`isBareSelf()`, `NbtPath.within`, `Relation`),
+  never by reading text. `ctx.emit(line)` without info is unknown and blocks every pass;
+  inlining and grouping keep it up to date.
 - **Execute-prefix grouping** (`codegen/group.ts`, right after inlining): consecutive lines
   sharing leading context clauses (`at`/`as`/`positioned`/`rotated`/`facing`/`in`/`align`/
-  `anchored`/`on`) become `execute <prefix> run function <fn>/zzz/group_<n>`. Only when sound:
-  every prefix selector picks one entity (no reordering), no `return`/macro lines, and no line
-  before the last can change what the prefix resolves to - `at @s`-style clauses block on
-  anything that moves an entity (calls checked through their bodies), other selectors allow
-  only fake-player scoreboard / `data get` / storage lines. Needs ≥3 lines, or ≥2 when the
-  prefix scans. Declined runs still show up as the `group-execute` lint.
+  `anchored`/`on`) become `execute <prefix> run function <fn>/zzz/group_<n>`, read entirely from
+  `dp.lineInfo`. Only when sound: every prefix selector picks one entity, never randomly, and
+  tests no scores/NBT/predicates; no `return`/macro lines; and no line before the last can
+  change what the prefix resolves to - `at @s`-style clauses block on `Effect.MOVES`, other
+  selectors on anything but `Effect.NONE` (calls followed through their bodies). Needs ≥3 lines,
+  or ≥2 when the prefix scans. Declined runs still show up as the `group-execute` lint.
+- **Turning passes off**: `new Datapack(..., { optimize: { inline: false, group: false } })` or
+  `optimize` in `helix.config.ts` (every mode) skips that pass in `buildDatapack`.
 - **Entity-test limit** (`commands/selector.ts` `renderExistence`): every `if`/`unless entity`
   rendered by the execute chain, `if` links, and the entity/near guards gives an unbounded
   `@e`/`@a` `limit=1`, so the engine stops at the first match instead of scanning every entity.
@@ -313,8 +323,12 @@ rebuild the handler map per version.
 ## Generator landmines (`scripts/gen-commands.mjs`)
 
 - It **rewrites every `src/core/commands/*.ts` and `index.ts`** on each run.
-- **`HAND_REFINED`** (currently `{ "setblock", "data" }`) = hand-written command files it must keep,
+- **`HAND_REFINED`** (currently `setblock`, `data`, `stopsound`, `summon`) = hand-written command files it must keep,
   not overwrite. If you hand-write a command file, add it here or the next run destroys it.
+- **`EFFECTS`** = what each generated command can do to entities, written into its
+  `TreeCommandNode`. Generation throws for a command missing from it, so a new Minecraft command
+  must be classified; pick `MOVES` when unsure (it only costs grouping). Hand-refined and
+  hand-written handlers pass their own `LineInfo` to `ctx.emit`.
 - **`HAND_WRITTEN_ELSEWHERE`** = vanilla command names whose frontend is the sugar layer; not
   generated.
 - **`EXTRA_HANDLERS`** = the sugar handler modules the barrel imports + registers.

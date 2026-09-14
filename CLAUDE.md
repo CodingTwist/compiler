@@ -56,6 +56,20 @@ Each package's `CLAUDE.md` covers how to work inside it. helix's also holds the 
 compiler internals (the command-handler architecture, the import-cycle constraint, the
 generator landmines, the version-data pipeline).
 
+## VS Code extension (`vscode/`)
+
+Shows `dp.report()` findings as editor warnings on the TS line that emitted them. Separate
+sibling like `docs/`. On save of a `.ts` file (or "Helix: Run Report") it runs
+`helix report --json` in the nearest folder with a `helix.config.ts` and maps each finding's
+`source` to a diagnostic; findings with no source and stale allows go on the config's first
+line. A failed build logs to the "Helix" output channel and keeps the old diagnostics. New lints
+need no extension changes. Install:
+
+```sh
+cd vscode && npm install && npm run build
+ln -s "$PWD" ~/.vscode/extensions/helix-report   # then reload the window
+```
+
 ## Docs site
 
 `docs/` is a VitePress site (guide + curated examples + a TypeDoc-generated API

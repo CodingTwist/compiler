@@ -149,6 +149,12 @@ export class NbtPathValue implements CommandValue {
   child(key: string): NbtPathValue {
     return new NbtPathValue(`${this.path}.${key}`);
   }
+
+  /** Whether this path is `other` or inside it: `Pos[1]` is within `Pos`. */
+  within(other: NbtPathValue): boolean {
+    const rest = this.path.slice(other.path.length);
+    return this.path.startsWith(other.path) && (rest === "" || /^[.[{]/.test(rest));
+  }
 }
 
 export type NbtPath = NbtPathValue;

@@ -1,6 +1,7 @@
 // The public API safe in any runtime. `index.ts` and `browser.ts` both build on it so they
 // can't drift.
 export { Datapack } from "./core/ir/datapack";
+export type { OptimizeOptions } from "./core/ir/datapack-core";
 export { type RuntimeTarget } from "./core/ir/target";
 export * from "./core/ir/node";
 export * from "./core/frontend/";

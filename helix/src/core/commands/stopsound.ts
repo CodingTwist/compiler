@@ -1,5 +1,6 @@
 // Hand-refined (see HAND_REFINED in scripts/gen-commands.mjs) -- not regenerated.
 import { CommandPart, TreeCommandNode } from "../ir/node";
+import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
 import { CommandBuilder, litPart, argPart } from "./base";
 import { SoundEvent } from "../values";
@@ -92,7 +93,7 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.stopsound = function (this: FunctionContext, targets?: Selector) {
-  const node = new TreeCommandNode("stopsound");
+  const node = new TreeCommandNode("stopsound", Effect.NONE);
   this.emit(node);
   const parts: CommandPart[] = [litPart("stopsound")];
   if (targets !== undefined) parts.push(argPart(targets));

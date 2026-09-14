@@ -7,9 +7,18 @@ import { VersionProfile } from "../../versions/profile";
 import type { ClearFill } from "../codegen/structure";
 import { ScoreboardTiming } from "../timing/scoreboard-timing";
 import { DEFAULT_TARGET, RuntimeTarget } from "./target";
+import type { LineInfo } from "./line-info";
 import { enableSourceTracking, type DebugOptions, type SourceLoc } from "../debug/sources";
 
 export type FunctionTag = "load" | "tick";
+
+/** Output optimization passes. Each is on unless set to `false`. */
+export interface OptimizeOptions {
+  /** Fold one-command private functions into their callers. */
+  inline?: boolean;
+  /** Move runs of lines with the same `execute` prefix into one function call. */
+  group?: boolean;
+}
 
 export class DatapackCore {
   name: string;
@@ -27,11 +36,15 @@ export class DatapackCore {
   public tags = new Map<FunctionTag, Set<string>>();
   /** Debug-only build settings (source tracking); all off by default. */
   readonly debug: DebugOptions;
+  /** Which output optimization passes run; all on by default. */
+  readonly optimize: OptimizeOptions;
   /**
    * With `debug.sources`: the author line behind each rendered line (`undefined` for
    * comment lines).
    */
   readonly sourceMap = new Map<string, (SourceLoc | undefined)[]>();
+  /** What each line of each function file is, indexed like the file. For output passes. */
+  readonly lineInfo = new Map<string, LineInfo[]>();
 
   /** How run-for-a-duration / periodic timing compiles. */
   readonly timing = new ScoreboardTiming();
@@ -45,12 +58,13 @@ export class DatapackCore {
     name: string,
     version: VersionProfile,
     target: RuntimeTarget = DEFAULT_TARGET,
-    opts: { debug?: DebugOptions } = {},
+    opts: { debug?: DebugOptions; optimize?: OptimizeOptions } = {},
   ) {
     this.name = name.toLowerCase();
     this.version = version;
     this.target = target;
     this.debug = opts.debug ?? {};
+    this.optimize = opts.optimize ?? {};
     // Capture has to be on before authoring starts - nodes are attributed as they're pushed.
     if (this.debug.sources || this.debug.comments) enableSourceTracking();
   }

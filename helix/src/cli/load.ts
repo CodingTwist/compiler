@@ -6,6 +6,7 @@ import { pathToFileURL } from "url";
 import { Datapack } from "../core/ir/datapack";
 import type { RuntimeTarget } from "../core/ir/target";
 import type { BuildMode, HelixConfig, PackEntry } from "./config";
+import type { DebugOptions } from "../core/debug/sources";
 
 export const CONFIG_FILE = "helix.config.ts";
 
@@ -33,6 +34,8 @@ export async function loadPack(opts: {
   root?: string;
   mode: BuildMode;
   target?: RuntimeTarget;
+  /** Overrides `config.debug`, in any mode. */
+  debug?: DebugOptions;
 }): Promise<LoadResult> {
   const root = path.resolve(opts.root ?? process.cwd());
   const configFile = path.join(root, CONFIG_FILE);
@@ -57,7 +60,8 @@ export async function loadPack(opts: {
   for (const target of targets) {
     const suffix = target === "vanilla" ? "" : `-${target}`;
     const dp = new Datapack(config.name, version, target, {
-      debug: opts.mode === "dev" ? config.debug : undefined,
+      debug: opts.debug ?? (opts.mode === "dev" ? config.debug : undefined),
+      optimize: config.optimize,
     });
     await entry(dp, { mode: opts.mode, target });
     packs.push({

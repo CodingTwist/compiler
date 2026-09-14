@@ -1,7 +1,8 @@
 // HAND-WRITTEN. `execute (if|unless) entity <selector> run <command>`.
 // E.g. only summon when the entity isn't there, so /reload doesn't duplicate it.
 // Registered via EXTRA_HANDLERS in scripts/gen-commands.mjs, never regenerated.
-import { generateSingleNode, runClause } from "../ir/generate";
+import { generateSingleNodeLine, runClause } from "../ir/generate";
+import { chainLine, Effect } from "../ir/line-info";
 import { ASTNode, FunctionNode } from "../ir/node";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { arg, buildTokens, lit, raw } from "../ir/command-builder";
@@ -31,7 +32,7 @@ export class EntityGuardHandler extends CommandHandler<EntityGuardNode> {
   readonly type: EntityGuardNode["type"] = "entity_guard";
 
   generate(node: EntityGuardNode, ctx: CodegenContext): void {
-    const command = generateSingleNode(
+    const { cmd: command, info } = generateSingleNodeLine(
       node.command,
       ctx.datapack,
       ctx.dispatcher,
@@ -44,6 +45,7 @@ export class EntityGuardHandler extends CommandHandler<EntityGuardNode> {
         arg(renderExistence(node.selector, ctx.version)),
         raw(runClause(command)),
       ]),
+      chainLine([undefined], info),
     );
   }
 }
@@ -74,7 +76,7 @@ FunctionContext.prototype.summonIf = function (
   cond: EntityCondition,
   display: DisplayValue,
 ) {
-  const summon = new TreeCommandNode("summon");
+  const summon = new TreeCommandNode("summon", Effect.EDITS);
   const parts: CommandPart[] = [
     litPart("summon"),
     argPart(DisplayValue.id),

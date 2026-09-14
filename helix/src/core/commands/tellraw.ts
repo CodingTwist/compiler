@@ -17,6 +17,7 @@ import { generateSingleNode } from "../ir/generate";
 import { buildCommand } from "../ir/command-builder";
 import { FunctionContext } from "../frontend/context";
 import { textJson } from "../values/text-json";
+import { commandLine, Effect } from "../ir/line-info";
 
 export class TellrawNode extends ASTNode {
   type = "tellraw";
@@ -73,6 +74,7 @@ export class TellrawCommand extends CommandHandler<TellrawNode> {
         targets: target,
         message: JSON.stringify(payload),
       }),
+      commandLine(Effect.NONE),
     );
   }
 

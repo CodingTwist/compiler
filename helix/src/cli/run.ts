@@ -12,6 +12,7 @@ const USAGE = `usage: helix <command> [options]
   build [--prod]          write the datapack (and resource pack, if configured)
   dev                     build, then rebuild when files change
   report [--strict]       per-tick cost report; --strict exits 1 on warnings/lints
+                          --json prints findings with their TS source lines (for editors)
   profile [dump.json]     measured profile from the newest /helixprof dump (or the given one)
   validate                check emitted JSON against the vanilla schema
   data [--force]          download the Minecraft version data (not shipped; needs network)
@@ -27,6 +28,7 @@ export async function runCli(argv: string[]): Promise<number> {
     options: {
       prod: { type: "boolean" },
       strict: { type: "boolean" },
+      json: { type: "boolean" },
       target: { type: "string" },
       help: { type: "boolean", short: "h" },
     },
@@ -36,14 +38,39 @@ export async function runCli(argv: string[]): Promise<number> {
     console.log(USAGE);
     return command || values.help ? 0 : 1;
   }
-  const load = () =>
-    loadPack({ mode: values.prod ? "prod" : "dev", target: values.target as RuntimeTarget | undefined });
+  const mode = values.prod ? "prod" : "dev";
+  const target = values.target as RuntimeTarget | undefined;
+  const load = () => loadPack({ mode, target });
+  // Source tracking is forced on so every finding carries its TS line.
+  const reportJson = async (strict?: boolean) => {
+    // Pack code that logs must not corrupt the JSON on stdout.
+    const out = console.log;
+    console.log = console.error;
+    let warned = false;
+    let result;
+    try {
+      const { root, packs } = await loadPack({ mode, target, debug: { sources: true } });
+      result = {
+        root,
+        packs: packs.map(({ target, dp }) => {
+          const { lints, warnings, staleAllows } = dp.report();
+          warned = warnings.length + lints.length + staleAllows.length > 0 || warned;
+          return { target, lints, warnings, staleAllows };
+        }),
+      };
+    } finally {
+      console.log = out;
+    }
+    console.log(JSON.stringify(result));
+    return strict && warned ? 1 : 0;
+  };
 
   switch (command) {
     case "build":
     case "dev":
       return build(await load());
     case "report": {
+      if (values.json) return reportJson(values.strict);
       let warned = false;
       for (const { dp } of (await load()).packs) {
         const r = dp.printReport();

@@ -106,8 +106,8 @@ export function buildDatapack(dp: Datapack): Map<string, string> {
   }
 
   // JSON may name functions, so inline once it's all rendered. Function files go first.
-  inlineSingleCommandFunctions(dp, files.values());
-  groupExecutePrefixes(dp);
+  if (dp.optimize.inline !== false) inlineSingleCommandFunctions(dp, files.values());
+  if (dp.optimize.group !== false) groupExecutePrefixes(dp);
   const out = new Map<string, string>();
   for (const [name, content] of dp.files) {
     out.set(`data/${dp.name}/${dp.version.paths.function}/${name}.mcfunction`, content);
