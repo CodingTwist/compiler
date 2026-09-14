@@ -2,19 +2,19 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
-import { CommandBuilder, litPart, argPart } from "./base";
+import { CommandBuilder, litPart, argPart, single } from "./base";
 import { EntityAnchor, Pos } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
 /** `rotate` */
 export class RotateBuilder extends CommandBuilder<TreeCommandNode> {
   facing(target: Selector, facingLocation: Pos): this {
-    this.$set(litPart("rotate"), argPart(target), litPart("facing"), argPart(facingLocation));
+    this.$set(litPart("rotate"), argPart(single(target, "rotate")), litPart("facing"), argPart(facingLocation));
     return this;
   }
 
   facingEntity(target: Selector, facingEntity: Selector, facingAnchor?: EntityAnchor): this {
-    this.$set(litPart("rotate"), argPart(target), litPart("facing"), litPart("entity"), argPart(facingEntity));
+    this.$set(litPart("rotate"), argPart(single(target, "rotate")), litPart("facing"), litPart("entity"), argPart(single(facingEntity, "rotate")));
     if (facingAnchor !== undefined) this.$append(argPart(facingAnchor));
     return this;
   }
@@ -31,7 +31,7 @@ FunctionContext.prototype.rotate = function (this: FunctionContext, target?: Sel
   const node = new TreeCommandNode("rotate", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("rotate")];
-  if (target !== undefined) parts.push(argPart(target));
+  if (target !== undefined) parts.push(argPart(single(target, "rotate")));
   if (rotation !== undefined) parts.push(argPart(rotation));
   node.parts = parts;
   return new RotateBuilder(node);

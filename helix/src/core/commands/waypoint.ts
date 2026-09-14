@@ -2,7 +2,7 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
-import { CommandBuilder, litPart, argPart } from "./base";
+import { CommandBuilder, litPart, argPart, single } from "./base";
 import { HexColor, Id, TeamColor } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
@@ -14,27 +14,27 @@ export class WaypointBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   modifyColor(waypoint: Selector, color: TeamColor): this {
-    this.$set(litPart("waypoint"), litPart("modify"), argPart(waypoint), litPart("color"), argPart(color));
+    this.$set(litPart("waypoint"), litPart("modify"), argPart(single(waypoint, "waypoint")), litPart("color"), argPart(color));
     return this;
   }
 
   modifyColorHex(waypoint: Selector, color: HexColor): this {
-    this.$set(litPart("waypoint"), litPart("modify"), argPart(waypoint), litPart("color"), litPart("hex"), argPart(color));
+    this.$set(litPart("waypoint"), litPart("modify"), argPart(single(waypoint, "waypoint")), litPart("color"), litPart("hex"), argPart(color));
     return this;
   }
 
   modifyColorReset(waypoint: Selector): this {
-    this.$set(litPart("waypoint"), litPart("modify"), argPart(waypoint), litPart("color"), litPart("reset"));
+    this.$set(litPart("waypoint"), litPart("modify"), argPart(single(waypoint, "waypoint")), litPart("color"), litPart("reset"));
     return this;
   }
 
   modifyStyleReset(waypoint: Selector): this {
-    this.$set(litPart("waypoint"), litPart("modify"), argPart(waypoint), litPart("style"), litPart("reset"));
+    this.$set(litPart("waypoint"), litPart("modify"), argPart(single(waypoint, "waypoint")), litPart("style"), litPart("reset"));
     return this;
   }
 
   modifyStyleSet(waypoint: Selector, style: Id): this {
-    this.$set(litPart("waypoint"), litPart("modify"), argPart(waypoint), litPart("style"), litPart("set"), argPart(style));
+    this.$set(litPart("waypoint"), litPart("modify"), argPart(single(waypoint, "waypoint")), litPart("style"), litPart("set"), argPart(style));
     return this;
   }
 }

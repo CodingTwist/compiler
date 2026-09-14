@@ -2,14 +2,14 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
-import { CommandBuilder, litPart, argPart } from "./base";
+import { CommandBuilder, litPart, argPart, single } from "./base";
 import { Uuid } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
 /** `fetchprofile` */
 export class FetchprofileBuilder extends CommandBuilder<TreeCommandNode> {
   entity(entity: Selector): this {
-    this.$set(litPart("fetchprofile"), litPart("entity"), argPart(entity));
+    this.$set(litPart("fetchprofile"), litPart("entity"), argPart(single(entity, "fetchprofile")));
     return this;
   }
 

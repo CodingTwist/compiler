@@ -2,7 +2,7 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
-import { CommandBuilder, litPart, argPart } from "./base";
+import { CommandBuilder, litPart, argPart, single } from "./base";
 import { Item, ItemSlot, LootTable, Pos } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
@@ -25,7 +25,7 @@ export class LootBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   giveKill(players: Selector, target: Selector): this {
-    this.$set(litPart("loot"), litPart("give"), argPart(players), litPart("kill"), argPart(target));
+    this.$set(litPart("loot"), litPart("give"), argPart(players), litPart("kill"), argPart(single(target, "loot")));
     return this;
   }
 
@@ -67,7 +67,7 @@ export class LootBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   insertKill(targetPos: Pos, target: Selector): this {
-    this.$set(litPart("loot"), litPart("insert"), argPart(targetPos), litPart("kill"), argPart(target));
+    this.$set(litPart("loot"), litPart("insert"), argPart(targetPos), litPart("kill"), argPart(single(target, "loot")));
     return this;
   }
 
@@ -113,7 +113,7 @@ export class LootBuilder extends CommandBuilder<TreeCommandNode> {
 
   replaceBlockKill(targetPos: Pos, slot: ItemSlot, count: number, target?: Selector): this {
     this.$set(litPart("loot"), litPart("replace"), litPart("block"), argPart(targetPos), argPart(slot), argPart(count), litPart("kill"));
-    if (target !== undefined) this.$append(argPart(target));
+    if (target !== undefined) this.$append(argPart(single(target, "loot")));
     return this;
   }
 
@@ -163,7 +163,7 @@ export class LootBuilder extends CommandBuilder<TreeCommandNode> {
 
   replaceEntityKill(entities: Selector, slot: ItemSlot, count: number, target?: Selector): this {
     this.$set(litPart("loot"), litPart("replace"), litPart("entity"), argPart(entities), argPart(slot), argPart(count), litPart("kill"));
-    if (target !== undefined) this.$append(argPart(target));
+    if (target !== undefined) this.$append(argPart(single(target, "loot")));
     return this;
   }
 
@@ -209,7 +209,7 @@ export class LootBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   spawnKill(targetPos: Pos, target: Selector): this {
-    this.$set(litPart("loot"), litPart("spawn"), argPart(targetPos), litPart("kill"), argPart(target));
+    this.$set(litPart("loot"), litPart("spawn"), argPart(targetPos), litPart("kill"), argPart(single(target, "loot")));
     return this;
   }
 

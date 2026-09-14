@@ -2,7 +2,7 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
-import { CommandBuilder, litPart, argPart } from "./base";
+import { CommandBuilder, litPart, argPart, single } from "./base";
 import { Selector } from "../frontend/nodes/selector";
 
 /** `experience` */
@@ -23,12 +23,12 @@ export class ExperienceBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   queryLevels(target: Selector): this {
-    this.$set(litPart("experience"), litPart("query"), argPart(target), litPart("levels"));
+    this.$set(litPart("experience"), litPart("query"), argPart(single(target, "experience")), litPart("levels"));
     return this;
   }
 
   queryPoints(target: Selector): this {
-    this.$set(litPart("experience"), litPart("query"), argPart(target), litPart("points"));
+    this.$set(litPart("experience"), litPart("query"), argPart(single(target, "experience")), litPart("points"));
     return this;
   }
 

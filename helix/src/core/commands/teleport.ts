@@ -2,7 +2,7 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
-import { CommandBuilder, litPart, argPart } from "./base";
+import { CommandBuilder, litPart, argPart, single } from "./base";
 import { EntityAnchor, Pos } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
@@ -14,7 +14,7 @@ export class TeleportBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   facingEntity(targets: Selector, location: Pos, facingEntity: Selector, facingAnchor?: EntityAnchor): this {
-    this.$set(litPart("teleport"), argPart(targets), argPart(location), litPart("facing"), litPart("entity"), argPart(facingEntity));
+    this.$set(litPart("teleport"), argPart(targets), argPart(location), litPart("facing"), litPart("entity"), argPart(single(facingEntity, "teleport")));
     if (facingAnchor !== undefined) this.$append(argPart(facingAnchor));
     return this;
   }

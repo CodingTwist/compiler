@@ -2,24 +2,24 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
-import { CommandBuilder, litPart, argPart } from "./base";
+import { CommandBuilder, litPart, argPart, single } from "./base";
 import { DamageType, Pos } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
 /** `damage` */
 export class DamageBuilder extends CommandBuilder<TreeCommandNode> {
   at(target: Selector, amount: number, damageType: DamageType, location: Pos): this {
-    this.$set(litPart("damage"), argPart(target), argPart(amount), argPart(damageType), litPart("at"), argPart(location));
+    this.$set(litPart("damage"), argPart(single(target, "damage")), argPart(amount), argPart(damageType), litPart("at"), argPart(location));
     return this;
   }
 
   by(target: Selector, amount: number, damageType: DamageType, entity: Selector): this {
-    this.$set(litPart("damage"), argPart(target), argPart(amount), argPart(damageType), litPart("by"), argPart(entity));
+    this.$set(litPart("damage"), argPart(single(target, "damage")), argPart(amount), argPart(damageType), litPart("by"), argPart(single(entity, "damage")));
     return this;
   }
 
   byFrom(target: Selector, amount: number, damageType: DamageType, entity: Selector, cause: Selector): this {
-    this.$set(litPart("damage"), argPart(target), argPart(amount), argPart(damageType), litPart("by"), argPart(entity), litPart("from"), argPart(cause));
+    this.$set(litPart("damage"), argPart(single(target, "damage")), argPart(amount), argPart(damageType), litPart("by"), argPart(single(entity, "damage")), litPart("from"), argPart(single(cause, "damage")));
     return this;
   }
 }
@@ -35,7 +35,7 @@ FunctionContext.prototype.damage = function (this: FunctionContext, target?: Sel
   const node = new TreeCommandNode("damage", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("damage")];
-  if (target !== undefined) parts.push(argPart(target));
+  if (target !== undefined) parts.push(argPart(single(target, "damage")));
   if (amount !== undefined) parts.push(argPart(amount));
   if (damageType !== undefined) parts.push(argPart(damageType));
   node.parts = parts;

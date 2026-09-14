@@ -2,7 +2,7 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
-import { CommandBuilder, litPart, argPart } from "./base";
+import { CommandBuilder, litPart, argPart, single } from "./base";
 import { ContextFloatProvider, ContextIntProvider, Pos } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
@@ -31,13 +31,13 @@ export class ComputeBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   entityFloat(computeTarget: Selector, provider: ContextFloatProvider, scale?: number): this {
-    this.$set(litPart("compute"), litPart("entity"), argPart(computeTarget), litPart("float"), argPart(provider));
+    this.$set(litPart("compute"), litPart("entity"), argPart(single(computeTarget, "compute")), litPart("float"), argPart(provider));
     if (scale !== undefined) this.$append(argPart(scale));
     return this;
   }
 
   entityInteger(computeTarget: Selector, provider: ContextIntProvider): this {
-    this.$set(litPart("compute"), litPart("entity"), argPart(computeTarget), litPart("integer"), argPart(provider));
+    this.$set(litPart("compute"), litPart("entity"), argPart(single(computeTarget, "compute")), litPart("integer"), argPart(provider));
     return this;
   }
 }

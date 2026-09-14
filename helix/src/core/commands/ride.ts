@@ -2,18 +2,18 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
-import { CommandBuilder, litPart, argPart } from "./base";
+import { CommandBuilder, litPart, argPart, single } from "./base";
 import { Selector } from "../frontend/nodes/selector";
 
 /** `ride` */
 export class RideBuilder extends CommandBuilder<TreeCommandNode> {
   dismount(target: Selector): this {
-    this.$set(litPart("ride"), argPart(target), litPart("dismount"));
+    this.$set(litPart("ride"), argPart(single(target, "ride")), litPart("dismount"));
     return this;
   }
 
   mount(target: Selector, vehicle: Selector): this {
-    this.$set(litPart("ride"), argPart(target), litPart("mount"), argPart(vehicle));
+    this.$set(litPart("ride"), argPart(single(target, "ride")), litPart("mount"), argPart(single(vehicle, "ride")));
     return this;
   }
 }

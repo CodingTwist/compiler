@@ -100,6 +100,7 @@ export * from "./native";
 export * from "./loop";
 export * from "./local";
 export * from "./ref";
+export * from "./set_modifier";
 
 /**
  * Handlers for nodes that need custom lowering. Generated commands all use

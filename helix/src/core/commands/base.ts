@@ -7,6 +7,18 @@ export const litPart = (value: string): CommandPart => ({
 });
 
 /**
+ * Returns `target`, throwing if it can pick more than one entity.
+ *
+ * For arguments that take one entity: vanilla rejects the whole function over one bad line.
+ */
+export function single<T extends { build(): { picksOne(): boolean } }>(target: T, command: string): T {
+  if (!target.build().picksOne()) {
+    throw new Error(`\`${command}\` takes one entity, but got \`${target}\`. Loop with execute().as(...) and pass Selector.self(), or add .limit(1).`);
+  }
+  return target;
+}
+
+/**
  * Builds an argument part. The value is kept typed and rendered for the target version at
  * codegen.
  */

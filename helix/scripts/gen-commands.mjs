@@ -133,12 +133,12 @@ const EXTRA_HANDLERS = [
 // Hand-written modules that install `ctx.<method>` augmentations but register no
 // handler of their own (their nodes are plain TreeCommandNodes). The barrel only
 // has to re-export them so the augmentation reaches consumers' .d.ts.
-const AUGMENT_ONLY = ["local", "ref"];
+const AUGMENT_ONLY = ["local", "ref", "set_modifier"];
 
 // FunctionContext members a generated `ctx.<method>()` must never shadow.
 const RESERVED_ENTRY = new Set([
   "version", "emit", "call", "createChildFunction", "newChild",
-  "if", "ref", "say", "tellraw", "give", "playerGive", "player", "trigger", "random",
+  "if", "ref", "setModifier", "say", "tellraw", "give", "playerGive", "player", "trigger", "random",
   "objective", "scoreInit", "scoreSet", "scoreAdd", "scoreSetScore",
   "scoreEnable",
 ]);
@@ -418,7 +418,7 @@ function planSegments(cmd, segments, forceOptional, imports) {
   const used = new Set();
   const params = [];
   const requiredParts = []; // part expressions, in order
-  const optionalArgs = []; // param ids appended (guarded) after the required parts
+  const optionalArgs = []; // { id, part } appended (guarded) after the required parts
   for (const seg of segments) {
     if (seg.kind === "lit") {
       requiredParts.push(`litPart(${JSON.stringify(seg.value)})`);
@@ -430,8 +430,12 @@ function planSegments(cmd, segments, forceOptional, imports) {
     if (t.ident && t.source) imports[t.source].add(t.ident);
     if (t.registry) RESOURCE_TYPES.set(t.ident, t.registry);
     params.push(`${id}${optional ? "?" : ""}: ${t.type}`);
-    if (optional) optionalArgs.push(id);
-    else requiredParts.push(`argPart(${id})`);
+    // A multi-target selector here fails to parse and breaks the whole function.
+    const oneEntity = seg.parser === "minecraft:entity" && seg.properties?.amount === "single";
+    if (oneEntity) imports.frontend.add("single");
+    const part = oneEntity ? `argPart(single(${id}, ${JSON.stringify(cmd)}))` : `argPart(${id})`;
+    if (optional) optionalArgs.push({ id, part });
+    else requiredParts.push(part);
   }
   return { params: params.join(", "), requiredParts, optionalArgs };
 }
@@ -450,8 +454,8 @@ function renderMethod(cmd, group, forceOptional) {
   );
 
   const lines = [`  ${name}(${params}): this {`, `    this.$set(${requiredParts.join(", ")});`];
-  for (const id of optionalArgs) {
-    lines.push(`    if (${id} !== undefined) this.$append(argPart(${id}));`);
+  for (const { id, part } of optionalArgs) {
+    lines.push(`    if (${id} !== undefined) this.$append(${part});`);
   }
   lines.push(`    return this;`, `  }`);
   return { name, code: lines.join("\n"), imports };
@@ -475,8 +479,8 @@ function renderEntry(cmd, methodName, Cmd, emptyGroup, hasOtherGroups, imports) 
     `  this.emit(node);`,
     `  const parts: CommandPart[] = [${requiredParts.join(", ")}];`,
   ];
-  for (const id of optionalArgs) {
-    lines.push(`  if (${id} !== undefined) parts.push(argPart(${id}));`);
+  for (const { id, part } of optionalArgs) {
+    lines.push(`  if (${id} !== undefined) parts.push(${part});`);
   }
   lines.push(
     `  node.parts = parts;`,
@@ -517,7 +521,7 @@ function renderFile(cmd, groups) {
   const hasArg = (g) => g.segments.some((s) => s.kind === "arg");
   const anyArgs = (emptyGroup && hasArg(emptyGroup)) || otherGroups.some(hasArg);
   const baseImports = anyArgs
-    ? "CommandBuilder, litPart, argPart"
+    ? `CommandBuilder, litPart, argPart${imports.frontend.has("single") ? ", single" : ""}`
     : "CommandBuilder, litPart";
 
   const conceptLines = [];

@@ -2,7 +2,7 @@
 import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
-import { CommandBuilder, litPart, argPart } from "./base";
+import { CommandBuilder, litPart, argPart, single } from "./base";
 import { Id } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
@@ -19,7 +19,7 @@ export class PosteffectBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   list(target: Selector): this {
-    this.$set(litPart("posteffect"), litPart("list"), argPart(target));
+    this.$set(litPart("posteffect"), litPart("list"), argPart(single(target, "posteffect")));
     return this;
   }
 
