@@ -32,7 +32,7 @@ export function collideWorld(s: RigidState, ctx: FunctionContext): void {
       .execute()
       .at(s.probe())
       .unlessBlock(Pos.here(), Block.tag(`${s.dp.name}:${PASSTHROUGH}`))
-      .run((b) => b.call(s.fn.contacts[i].detect));
+      .run((b) => b.call(s.fn.detect[i]));
   }
 }
 
@@ -40,7 +40,7 @@ export function collideWorld(s: RigidState, ctx: FunctionContext): void {
  * The cube's three half-edge vectors in world space (mm): the rotation matrix's columns × half.
  * Products are scaled back on the float side, since `half × q²` overflows an int.
  */
-function halfExtents(s: RigidState, [h0, h1, h2]: ScoreVec3[]): void {
+export function halfExtents(s: RigidState, [h0, h1, h2]: ScoreVec3[]): void {
   const { half, qw: w } = s.body;
   const { x: i, y: j, z: k } = s.body.qv;
   const QQ = Q * Q;
@@ -81,7 +81,7 @@ const FACES = [
 export function defineDetect(s: RigidState, t: RigidTuning, i: number): void {
   const c = s.contact(i);
   const open = Block.tag(`${s.dp.name}:${PASSTHROUGH}`);
-  s.fn.contacts[i].detect.build((ctx) => {
+  s.fn.detect[i].build((ctx) => {
     const frac = s.vector("frac");
     const depth = s.scalar("face_d");
     const best = c.depth;

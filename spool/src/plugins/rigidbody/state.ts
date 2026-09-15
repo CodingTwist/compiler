@@ -15,6 +15,13 @@ export const W = 100000;
 export const SPIN_PER_TORQUE = W / 1e9;
 /** One fixed contact slot per cube vertex, so no contact list is kept. */
 export const VERTICES = 8;
+/**
+ * Contact slots: 0-7 world, 8-15 this body's vertices in another body, 16-23 the other body's
+ * vertices in this one.
+ */
+export const SLOTS = VERTICES * 3;
+/** Whether slot `i` is a contact with another body. */
+export const isPaired = (i: number) => i >= VERTICES;
 
 /** Everything the engine's builders share - whatever {@link createState} returns. */
 export type RigidState = ReturnType<typeof createState>;
@@ -47,6 +54,8 @@ export function createState(dp: Datapack) {
     sleeping: onSelf("sleep"),
     /** Decaying sum of recent |v|² + |ω|², for the sleep check. */
     motion: onSelf("motion"),
+    /** Upward-facing contacts last tick; a body resting on 3+ counts as ground for the one above. */
+    support: onSelf("support"),
   };
 
   const work = new Objective("rb.work");
@@ -68,14 +77,37 @@ export function createState(dp: Datapack) {
     target: scalar(`c${i}.target`),
     acc: scalar(`c${i}.acc`),
     friction: vector(`c${i}.f`),
+    /** Lever arm on the other body (mm). */
+    ro: vector(`c${i}.ro`),
+    /** The other body's inverse mass and inertia for this contact; 0 when it acts as ground. */
+    oim: scalar(`c${i}.oim`),
+    oii: scalar(`c${i}.oii`),
   });
+
+  /**
+   * The other body of the pair being checked, copied into scratch so the solver can run as
+   * this body. Written back when a contact moved it.
+   */
+  const other = {
+    pos: vector("o.p"),
+    vel: vector("o.v"),
+    spin: vector("o.w"),
+    half: scalar("o.half"),
+    invMass: scalar("o.im"),
+    invInertia: scalar("o.ii"),
+    sleeping: scalar("o.sleep"),
+    support: scalar("o.support"),
+    axes: [0, 1, 2].map((k) => vector(`o.h${k}`)),
+    /** Set when a hard hit should wake the other body. */
+    wake: scalar("o.wake"),
+  };
 
   const objectives = [
     work,
     ...[body.pos, body.vel, body.spin, body.qv].flatMap((v) =>
       v.components.map((s) => s.objective),
     ),
-    ...[body.qw, body.half, body.invMass, body.invInertia, body.sleeping, body.motion].map(
+    ...[body.qw, body.half, body.invMass, body.invInertia, body.sleeping, body.motion, body.support].map(
       (s) => s.objective,
     ),
   ];
@@ -86,10 +118,14 @@ export function createState(dp: Datapack) {
     step: dp.createFunction("rb/step"),
     impulse: dp.createFunction("rb/impulse"),
     solvePass: dp.createFunction("rb/solve/pass"),
-    contacts: Array.from({ length: VERTICES }, (_, i) => ({
-      detect: dp.createFunction(`rb/contact/detect_${i}`),
-      solve: dp.createFunction(`rb/contact/solve_${i}`),
-    })),
+    pair: dp.createFunction("rb/pair/check"),
+    pairSolve: dp.createFunction("rb/pair/solve"),
+    pairPass: dp.createFunction("rb/pair/pass"),
+    /** One per separating axis: the other body's 3 face axes, then this body's. */
+    pairAxes: Array.from({ length: 6 }, (_, m) => dp.createFunction(`rb/pair/axis_${m}`)),
+    /** Builds world contacts; only world slots use it. */
+    detect: Array.from({ length: VERTICES }, (_, i) => dp.createFunction(`rb/contact/detect_${i}`)),
+    solve: Array.from({ length: SLOTS }, (_, i) => dp.createFunction(`rb/contact/solve_${i}`)),
   };
 
   return {
@@ -102,6 +138,7 @@ export function createState(dp: Datapack) {
     scalar,
     vector,
     contact,
+    other,
     objectives,
     fn,
     /** Render buffer, so each body costs two entity writes instead of seven. */

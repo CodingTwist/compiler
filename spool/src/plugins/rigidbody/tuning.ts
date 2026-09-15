@@ -18,6 +18,8 @@ export interface RigidTuning {
   passes: number;
   /** Below this decaying motion sum the body sleeps. */
   sleepBelow: number;
+  /** Largest body edge length in blocks; bodies further apart than it allows aren't checked against each other. */
+  maxSize: number;
 }
 
 export const DEFAULT_TUNING: RigidTuning = {
@@ -27,6 +29,7 @@ export const DEFAULT_TUNING: RigidTuning = {
   bounceBelow: 100,
   friction: 800,
   slop: 20,
-  passes: 4,
+  passes: 10,
   sleepBelow: 2500,
+  maxSize: 1,
 };

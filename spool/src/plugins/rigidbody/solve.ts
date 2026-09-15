@@ -1,25 +1,69 @@
-// Contact response: accumulated velocity impulses with friction, then pushing out of blocks.
-import { math } from "helix";
-import type { FunctionContext } from "helix";
-import { SPIN_PER_TORQUE, VERTICES, W, type RigidState } from "./state";
+// Contact response: accumulated velocity impulses with friction, for world and body-body slots.
+import { and, math } from "helix";
+import type { FunctionContext, MathExpr, Score, ScoreVec3 } from "helix";
+import { SPIN_PER_TORQUE, W, isPaired, type RigidState } from "./state";
 import type { RigidTuning } from "./tuning";
 
+type Contact = ReturnType<RigidState["contact"]>;
+
+/** Velocity of the contact point on this body, relative to the other body's for a paired slot. */
+function relativeVelocity(s: RigidState, c: Contact, paired: boolean): MathExpr {
+  const own = math`${s.body.vel} + cross(${s.body.spin} * ${1 / W}, ${c.r})`;
+  if (!paired) return own;
+  const { vel, spin } = s.other;
+  return math`${own} - (${vel} + cross(${spin} * ${1 / W}, ${c.ro}))`;
+}
+
 /**
- * Readies a fresh contact for solving: lever arm, effective mass along the normal, bounce
- * target, and zeroed accumulated impulses. Run as the body, right after the contact is found.
+ * Inverse effective mass (×1000) of the contact along `dir`, where `dir / len` is a unit vector.
  *
- * A cube's inertia is the same about every axis, so the effective mass along a direction d is
- * `invMass + invInertia·|r×d|²` - no contact-frame matrices needed.
+ * A cube's inertia is the same about every axis, so this is `invMass + invInertia·|r×d|²` for
+ * each body - no contact-frame matrices needed.
+ */
+function inverseMass(s: RigidState, c: Contact, dir: ScoreVec3, len: Score | number, paired: boolean): MathExpr {
+  const arm = s.vector("arm");
+  const { invMass: im, invInertia: ii } = s.body;
+  math`cross(${c.r}, ${dir}) / ${len}`.into(arm);
+  const own = math`${im} + ${ii} * len2(${arm}) * 0.000001`;
+  if (!paired) return own;
+  const oarm = s.vector("oarm");
+  math`cross(${c.ro}, ${dir}) / ${len}`.into(oarm);
+  return math`${own} + ${c.oim} + ${c.oii} * len2(${oarm}) * 0.000001`;
+}
+
+/**
+ * Readies a fresh contact for solving: lever arms, effective mass along the normal, bounce
+ * target, and zeroed accumulated impulses. Run as the body, once the contact is found.
  */
 export function prepareContact(s: RigidState, t: RigidTuning, ctx: FunctionContext, i: number): void {
   const c = s.contact(i);
-  const { pos, vel, spin, invMass: im, invInertia: ii } = s.body;
+  const paired = isPaired(i);
+  const o = s.other;
   const vn = s.scalar("vn");
-  const rn = s.vector("rn");
-  math`${c.point} - ${pos}`.into(c.r);
-  math`(${vel} + cross(${spin} * ${1 / W}, ${c.r})) · ${c.normal} / 1000`.into(vn);
-  math`cross(${c.r}, ${c.normal}) / 1000`.into(rn);
-  math`${im} + ${ii} * len2(${rn}) * 0.000001`.into(c.kn);
+  math`${c.point} - ${s.body.pos}`.into(c.r);
+  if (paired) math`${c.point} - ${o.pos}`.into(c.ro);
+  math`${relativeVelocity(s, c, paired)} · ${c.normal} / 1000`.into(vn);
+
+  if (paired) {
+    const upward = c.normal.y.greaterThan(500);
+    c.oim.assign(o.invMass);
+    c.oii.assign(o.invInertia);
+    // Resting on a grounded or sleeping body treats it as ground, or stacks sink and jitter.
+    for (const ground of [o.sleeping.equal(1), and(o.support.atLeast(3), upward)]) {
+      ctx.if(ground, () => {
+        c.oim.set(0);
+        c.oii.set(0);
+      });
+    }
+    ctx.if(and(o.sleeping.equal(1), vn.lessThan(-t.bounceBelow)), () => {
+      c.oim.assign(o.invMass);
+      c.oii.assign(o.invInertia);
+      o.wake.set(1);
+    });
+    ctx.if(upward, () => s.scalar("hits").add(1));
+  }
+  inverseMass(s, c, c.normal, 1000, paired).into(c.kn);
+
   // Bounce only on real impacts, so resting contacts don't jitter.
   c.target.set(0);
   ctx.if(vn.lessThan(-t.bounceBelow), () => math`-${vn} * ${t.restitution} / 1000`.into(c.target));
@@ -36,13 +80,14 @@ export function prepareContact(s: RigidState, t: RigidTuning, ctx: FunctionConte
  */
 export function defineSolve(s: RigidState, t: RigidTuning, i: number): void {
   const c = s.contact(i);
+  const paired = isPaired(i);
   const { vel, spin, invMass: im, invInertia: ii } = s.body;
-  s.fn.contacts[i].solve.build((ctx) => {
+  s.fn.solve[i].build((ctx) => {
     const vp = s.vector("vp");
     const vn = s.scalar("vn");
     const old = s.scalar("acc_old");
     const J = s.vector("J");
-    math`${vel} + cross(${spin} * ${1 / W}, ${c.r})`.into(vp);
+    relativeVelocity(s, c, paired).into(vp);
     math`${vp} · ${c.normal} / 1000`.into(vn);
 
     // Normal: λ = max(λ + (target − vn)/K, 0), applying only the change.
@@ -57,9 +102,7 @@ export function defineSolve(s: RigidState, t: RigidTuning, i: number): void {
     math`${vp} - ${c.normal} * ${vn} / 1000`.into(vt);
     math`len(${vt})`.into(tl);
     ctx.if(tl.greaterThan(0), () => {
-      const rt = s.vector("rt");
-      math`cross(${c.r}, ${vt}) / ${tl}`.into(rt);
-      math`${c.friction} - ${vt} * 1000 / (${im} + ${ii} * len2(${rt}) * 0.000001)`.into(c.friction);
+      math`${c.friction} - ${vt} * 1000 / (${inverseMass(s, c, vt, tl, paired)})`.into(c.friction);
     });
     const cap = s.scalar("f_cap");
     const fl = s.scalar("f_len");
@@ -70,51 +113,12 @@ export function defineSolve(s: RigidState, t: RigidTuning, i: number): void {
     math`${c.normal} * (${c.acc} - ${old}) / 1000 + ${c.friction} - ${prev}`.into(J);
     math`${vel} + ${J} * ${im} / 1000`.into(vel);
     math`${spin} + cross(${c.r}, ${J}) * ${SPIN_PER_TORQUE} * ${ii}`.into(spin);
+    if (paired) {
+      const o = s.other;
+      math`${o.vel} - ${J} * ${c.oim} / 1000`.into(o.vel);
+      math`${o.spin} - cross(${c.ro}, ${J}) * ${SPIN_PER_TORQUE} * ${c.oii}`.into(o.spin);
+    }
     math`len2(${J})`.into(s.scalar("j_sq"));
     ctx.if(s.scalar("j_sq").greaterThan(4), () => s.scalar("applied").set(1));
   });
-}
-
-/**
- * Builds `rb/solve/pass`: one sweep over the hit contacts, repeated while impulses still change.
- * Run as the body with `#pass` counting down.
- */
-export function definePass(s: RigidState): void {
-  const applied = s.scalar("applied");
-  const pass = s.scalar("pass");
-  s.fn.solvePass.build((ctx) => {
-    applied.set(0);
-    for (let i = 0; i < VERTICES; i++) {
-      const c = s.contact(i);
-      ctx.if(c.hit.equal(1), (b) => b.call(s.fn.contacts[i].solve));
-    }
-    pass.remove(1);
-    ctx.if(applied.equal(1), (b) =>
-      b.if(pass.greaterThan(0), (d) => d.call(s.fn.solvePass)),
-    );
-  });
-}
-
-/**
- * Pushes the executing body out of the blocks it sank into.
- *
- * World normals are axis-aligned, so the push is the deepest contact per axis and sign;
- * pushing contact by contact would overshoot when four corners share a face.
- */
-export function resolvePenetration(s: RigidState, t: RigidTuning, ctx: FunctionContext): void {
-  const up = s.vector("push_pos");
-  const down = s.vector("push_neg");
-  up.components.forEach((sc) => sc.set(0));
-  down.components.forEach((sc) => sc.set(0));
-  for (let i = 0; i < VERTICES; i++) {
-    const c = s.contact(i);
-    ctx.if(c.hit.equal(1), (b) =>
-      c.normal.components.forEach((n, axis) => {
-        const [u, d] = [up.components[axis], down.components[axis]];
-        b.if(n.greaterThan(0), () => math`max(${u}, ${c.depth})`.into(u));
-        b.if(n.lessThan(0), () => math`max(${d}, ${c.depth})`.into(d));
-      }),
-    );
-  }
-  math`${s.body.pos} + max(${up} - ${t.slop}, 0) - max(${down} - ${t.slop}, 0)`.into(s.body.pos);
 }

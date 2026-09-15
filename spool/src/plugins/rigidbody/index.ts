@@ -5,16 +5,19 @@
  *   const rb = dp.rigidbody();
  *   dp.createFunction("drop").build((ctx) => rb.spawn(ctx, { item: Item.TARGET, rotation: quat("x", 30) }));
  *
- * Needs 26.3+ (`/compute`). Bodies collide with world blocks; body-vs-body comes later.
+ * Needs 26.3+ (`/compute`). Bodies collide with world blocks and each other; spawn
+ * bodies bigger than 1 block with `maxSize` set.
  */
 import { Datapack, Marker, Range, Selector } from "helix";
 import type { FunctionContext, ScoreVec3 } from "helix";
 import type { KitPlugin } from "../../plugin";
-import { createState, PROBE_UUID_INTS, VERTICES, type RigidState } from "./state";
+import { createState, PROBE_UUID_INTS, SLOTS, VERTICES, type RigidState } from "./state";
 import { DEFAULT_TUNING, type RigidTuning } from "./tuning";
 import { integrate } from "./integrate";
 import { collideWorld, defineDetect, PASSTHROUGH } from "./world";
-import { definePass, defineSolve, resolvePenetration } from "./solve";
+import { defineSolve } from "./solve";
+import { definePass, resolvePenetration } from "./passes";
+import { collidePairs, definePairs } from "./pairs";
 import { checkSleep, render, RENDER_INIT } from "./render";
 import { defineImpulse, spawnBody, type SpawnOptions } from "./body";
 
@@ -76,6 +79,7 @@ function defineRigidBodies(dp: Datapack, opts: RigidOptions): RigidBodies {
     collideWorld(s, ctx);
     s.scalar("pass").set(t.passes);
     ctx.call(s.fn.solvePass);
+    collidePairs(s, t, ctx);
     resolvePenetration(s, t, ctx);
     render(s, ctx);
     checkSleep(s, t.sleepBelow, ctx);
@@ -84,11 +88,11 @@ function defineRigidBodies(dp: Datapack, opts: RigidOptions): RigidBodies {
   // No command moves an entity to score coordinates or sets a display's rotation.
   dp.allow("nbt-write", s.fn.step, "probe move and render merge: one entity write each, no command form");
 
-  for (let i = 0; i < VERTICES; i++) {
-    defineDetect(s, t, i);
-    defineSolve(s, t, i);
-  }
-  definePass(s);
+  for (let i = 0; i < VERTICES; i++) defineDetect(s, t, i);
+  for (let i = 0; i < SLOTS; i++) defineSolve(s, t, i);
+  definePass(s, s.fn.solvePass, VERTICES);
+  definePass(s, s.fn.pairPass, SLOTS);
+  definePairs(s, t);
   defineImpulse(s, input);
 
   return {

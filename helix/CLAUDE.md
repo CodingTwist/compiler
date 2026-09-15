@@ -235,6 +235,15 @@ passengers`, multi-entity `as`) are shared only when every line is `local` (touc
   are the block-side file mechanism (blockstate files _override an existing block's_ appearance -
   there is no vanilla "new block", so the custom-block _technique_ is spool policy, not core).
 
+### Simulator (`src/core/sim/`)
+
+`new Sim(buildDatapack(dp), { block, blockTags })` runs a built pack's commands without the game,
+for tests: `load()`, `tick()`, `run(cmd)`, scores/storage/entities, `errors` for commands that
+would fail in game. It reads rendered files, like the report. It covers the commands helix packs
+emit and throws `unsupported` on anything else; extend it there, never in a consumer.
+`/compute` follows the 26.3 jar: floats are 32-bit, int overflow / division by zero / a missing
+score fails the command (stores 0) instead of wrapping. Scoreboard operations still wrap.
+
 ### Cost report NBT-read warnings (`src/core/report/cost/`)
 
 `index.ts` is the entry; `analyze.ts` builds the report, `format.ts` prints it, and the wiki

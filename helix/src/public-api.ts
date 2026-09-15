@@ -83,3 +83,5 @@ export type {
 } from "./versions/profile";
 export { normalizeId, validateRegistryId } from "./versions/registry";
 export { profileFromRaw, type RawProfile } from "./versions/raw-profile";
+// Runs a built pack's commands without the game, for tests.
+export { Sim, type SimOptions, type SimEntity, type SimSource } from "./core/sim";

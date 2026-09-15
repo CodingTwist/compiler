@@ -70,7 +70,7 @@ export function defineImpulse(s: RigidState, input: { point: ScoreVec3; impulse:
 }
 
 /** Clears the sleep flag and primes the motion sum so the body can't fall straight back asleep. */
-function wake(s: RigidState, ctx: FunctionContext): void {
+export function wake(s: RigidState, ctx: FunctionContext): void {
   s.body.sleeping.set(0, ctx);
   s.body.motion.set(10000, ctx);
 }

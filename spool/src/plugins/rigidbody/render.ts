@@ -41,10 +41,11 @@ export function render(s: RigidState, ctx: FunctionContext): void {
 
 /**
  * Decays the recent-motion sum and puts the body to sleep once it has settled.
- * Needs three touching corners too, or a cube balanced on an edge freezes mid-fall.
+ * Needs three upward contacts too, or a cube balanced on an edge freezes mid-fall.
  */
 export function checkSleep(s: RigidState, sleepBelow: number, ctx: FunctionContext): void {
-  const { motion, vel, spin, sleeping } = s.body;
+  const { motion, vel, spin, sleeping, support } = s.body;
+  support.assign(s.scalar("hits"));
   math`(${motion} * 9 + len2(${vel}) + len2(${spin} / 100)) / 10`.into(motion);
   ctx.if(and(motion.lessThan(sleepBelow), s.scalar("hits").atLeast(3)), () => {
     sleeping.set(1);
