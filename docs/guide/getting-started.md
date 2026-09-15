@@ -6,11 +6,11 @@ They are siblings under one workspace, forming a layered stack: each builds **on
 the public API of the one below**, and the split is deliberate - the core stays
 un-opinionated, the opinions live in the upper layers.
 
-| Package | Layer | One line |
-| --- | --- | --- |
-| `helix` | core compiler | AST → IR → `.mcfunction` + tag JSON, version-profile aware. **Mechanism, never policy.** |
-| `spool` | conveniences | Opt-in `KitPlugin`s composed from helix's public API. Nothing on by default. |
-| `twine` | framework | The opinionated layer: NestJS-style module / area / lifecycle composition of a whole pack. |
+| Package | Layer         | One line                                                                                   |
+| ------- | ------------- | ------------------------------------------------------------------------------------------ |
+| `helix` | core compiler | AST → IR → `.mcfunction` + tag JSON, version-profile aware. **Mechanism, never policy.**   |
+| `spool` | conveniences  | Opt-in `KitPlugin`s composed from helix's public API. Nothing on by default.               |
+| `twine` | framework     | The opinionated layer: NestJS-style module / area / lifecycle composition of a whole pack. |
 
 See [Architecture](/guide/architecture) for why the split exists.
 

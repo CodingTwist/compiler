@@ -8,7 +8,12 @@ describe("Firework", () => {
     const fw = Firework({
       flight: 1,
       explosions: [
-        { shape: FireworkShape.SMALL_BALL, colors: [0xff0000], fadeColors: [0x00ff00], trail: true },
+        {
+          shape: FireworkShape.SMALL_BALL,
+          colors: [0xff0000],
+          fadeColors: [0x00ff00],
+          trail: true,
+        },
       ],
     });
     expect(fw.render(v1_21_4)).toBe(
@@ -19,7 +24,9 @@ describe("Firework", () => {
   it("loads a crossbow with one, so it renders charged", () => {
     const bow = Item.CROSSBOW.chargedProjectiles(
       Item.FIREWORK_ROCKET.count(1).firework(
-        Firework({ explosions: [{ shape: FireworkShape.SMALL_BALL, colors: [0xff0000] }] }),
+        Firework({
+          explosions: [{ shape: FireworkShape.SMALL_BALL, colors: [0xff0000] }],
+        }),
       ),
     );
     expect(bow.render(v1_21_4)).toBe(
@@ -30,7 +37,9 @@ describe("Firework", () => {
 
   it("attaches to an item stack", () => {
     const stack = Item.FIREWORK_ROCKET.firework(
-      Firework({ explosions: [{ shape: FireworkShape.BURST, colors: [0xffffff] }] }),
+      Firework({
+        explosions: [{ shape: FireworkShape.BURST, colors: [0xffffff] }],
+      }),
     );
     expect(stack.render(v1_21_4)).toBe(
       'minecraft:firework_rocket[fireworks={explosions:[{shape:"burst",colors:[I;16777215]}]}]',

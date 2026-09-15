@@ -72,4 +72,6 @@ export function selectorsIn(line: string): Sel[] {
 
 export const hasArg = (s: Sel, key: string) => s.args.some(([k]) => k === key);
 export const renderSel = (kind: string, args: [string, string][]) =>
-  args.length ? `${kind}[${args.map(([k, v]) => `${k}=${v}`).join(",")}]` : kind;
+  args.length
+    ? `${kind}[${args.map(([k, v]) => `${k}=${v}`).join(",")}]`
+    : kind;

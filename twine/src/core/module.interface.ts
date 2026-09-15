@@ -54,7 +54,10 @@ export interface DatapackModule {
    * Creates the function for an `@On({ own: true })` body. Override to apply your pack's function
    * conventions. Defaults to `dp.createFunction`.
    */
-  defineFunction?(dp: Datapack, body: (ctx: FunctionContext) => void): FunctionRef;
+  defineFunction?(
+    dp: Datapack,
+    body: (ctx: FunctionContext) => void,
+  ): FunctionRef;
 
   /**
    * Runs once when this module's area becomes inactive, e.g. to clean up. Emitted into

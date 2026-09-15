@@ -99,7 +99,8 @@ function blockTag(id: string): BlockValue {
  */
 export const Block = Object.assign(
   withMembers(
-    (id: string, states?: BlockStates): BlockValue => new BlockValue(id, states),
+    (id: string, states?: BlockStates): BlockValue =>
+      new BlockValue(id, states),
     BLOCK_IDS,
     (id) => new BlockValue(id),
   ),

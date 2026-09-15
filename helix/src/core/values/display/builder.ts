@@ -4,12 +4,22 @@ import type { ItemValue } from "../item";
 import type { ItemDisplayFields } from "../entities.generated";
 import { Pos } from "../pos";
 import { add } from "../transform-math";
-import type { DisplayChild, DisplayContent, DisplayState, Transform, Vec3 } from "./types";
+import type {
+  DisplayChild,
+  DisplayContent,
+  DisplayState,
+  Transform,
+  Vec3,
+} from "./types";
 
 /** The setters and geometry of {@link DisplayValue}; each setter returns the group for chaining. */
 export class DisplayBuilder {
   readonly children: DisplayChild[] = [];
-  protected readonly s: DisplayState = { pivot: [0, 0, 0], offset: [0, 0, 0], pos: "~ ~ ~" };
+  protected readonly s: DisplayState = {
+    pivot: [0, 0, 0],
+    offset: [0, 0, 0],
+    pos: "~ ~ ~",
+  };
 
   constructor(
     protected content: DisplayContent,
@@ -126,11 +136,17 @@ export class DisplayBuilder {
 
   /** Members in order, root first. The hitbox isn't included, since it has no transform. */
   members(): DisplayChild[] {
-    const all = [{ content: this.content, transform: this.rootTransform }, ...this.children];
+    const all = [
+      { content: this.content, transform: this.rootTransform },
+      ...this.children,
+    ];
     if (this.s.offset.every((n) => n === 0)) return all;
     return all.map((m) => ({
       ...m,
-      transform: { ...m.transform, translation: add(m.transform.translation ?? [0, 0, 0], this.s.offset) },
+      transform: {
+        ...m.transform,
+        translation: add(m.transform.translation ?? [0, 0, 0], this.s.offset),
+      },
     }));
   }
 }

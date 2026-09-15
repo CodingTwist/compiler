@@ -25,7 +25,10 @@ describe("Effect", () => {
 
   it("nests a hidden effect", () => {
     expect(
-      Effect({ id: MobEffect.POISON, hiddenEffect: { id: MobEffect.POISON } }).render(v26_2),
+      Effect({
+        id: MobEffect.POISON,
+        hiddenEffect: { id: MobEffect.POISON },
+      }).render(v26_2),
     ).toBe('{id:"minecraft:poison",hidden_effect:{id:"minecraft:poison"}}');
   });
 });

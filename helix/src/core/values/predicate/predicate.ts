@@ -27,7 +27,9 @@ import {
  *   Selector.allPlayers().predicate(sleeping)   // @a[predicate=ns:sleeping]
  */
 export class Predicate {
-  private constructor(private readonly builder: (v: VersionProfile) => PredicateJson) {}
+  private constructor(
+    private readonly builder: (v: VersionProfile) => PredicateJson,
+  ) {}
 
   /** The condition JSON for this predicate, with embedded values rendered for `version`. */
   toJson(version: VersionProfile): PredicateJson {
@@ -37,7 +39,10 @@ export class Predicate {
   // ---- leaf conditions -----------------------------------------------------
 
   /** `entity_properties` - match `who` (default the looked-at entity) against typed properties. */
-  static entity(spec: EntityPredicateSpec, who: EntityTarget = "this"): Predicate {
+  static entity(
+    spec: EntityPredicateSpec,
+    who: EntityTarget = "this",
+  ): Predicate {
     return new Predicate((v) => ({
       condition: "minecraft:entity_properties",
       entity: who,
@@ -46,7 +51,10 @@ export class Predicate {
   }
 
   /** `entity_scores` - objective bounds on `who`'s scores. */
-  static scores(scores: Record<string, ScoreBound>, who: EntityTarget = "this"): Predicate {
+  static scores(
+    scores: Record<string, ScoreBound>,
+    who: EntityTarget = "this",
+  ): Predicate {
     return new Predicate(() => {
       const out: PredicateJson = {};
       for (const [obj, b] of Object.entries(scores)) {
@@ -57,13 +65,17 @@ export class Predicate {
   }
 
   /** `block_state_property` - the block being checked plus optional blockstate values. */
-  static blockState(block: string | BlockValue, properties?: Record<string, string>): Predicate {
+  static blockState(
+    block: string | BlockValue,
+    properties?: Record<string, string>,
+  ): Predicate {
     return new Predicate((_v) => {
       const out: PredicateJson = {
         condition: "minecraft:block_state_property",
         block: typeof block === "string" ? idStr(block) : block.render(),
       };
-      if (properties && Object.keys(properties).length) out.properties = properties;
+      if (properties && Object.keys(properties).length)
+        out.properties = properties;
       return out;
     });
   }
@@ -122,13 +134,20 @@ export class Predicate {
 
   /** `random_chance` - passes with probability `chance` (0..1). */
   static randomChance(chance: number): Predicate {
-    return new Predicate(() => ({ condition: "minecraft:random_chance", chance }));
+    return new Predicate(() => ({
+      condition: "minecraft:random_chance",
+      chance,
+    }));
   }
 
   /** `reference` - defer to another predicate by id. */
   static reference(ref: PredicateRef | Id | string): Predicate {
     const name =
-      ref instanceof PredicateRef ? ref.id : typeof ref === "string" ? Id(ref).render() : ref.render();
+      ref instanceof PredicateRef
+        ? ref.id
+        : typeof ref === "string"
+          ? Id(ref).render()
+          : ref.render();
     return new Predicate(() => ({ condition: "minecraft:reference", name }));
   }
 
@@ -152,7 +171,10 @@ export class Predicate {
 
   /** `inverted` - passes iff `term` fails (logical NOT). */
   static not(term: Predicate): Predicate {
-    return new Predicate((v) => ({ condition: "minecraft:inverted", term: term.toJson(v) }));
+    return new Predicate((v) => ({
+      condition: "minecraft:inverted",
+      term: term.toJson(v),
+    }));
   }
 
   /** This predicate inverted. */

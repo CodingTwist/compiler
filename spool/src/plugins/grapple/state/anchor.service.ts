@@ -21,7 +21,11 @@ export function createAnchorService(d: AnchorDeps) {
     place(ctx: FunctionContext): void {
       ctx.summon(d.config.anchorType, Pos.here(), d.config.anchorNbt());
       // Just summoned here, so `..1` keeps the scan to nearby chunks.
-      d.repo.readPos(ctx, d.selectors.freshAnchorOne().distance(Range.atMost(1)), d.repo.anchorVec());
+      d.repo.readPos(
+        ctx,
+        d.selectors.freshAnchorOne().distance(Range.atMost(1)),
+        d.repo.anchorVec(),
+      );
     },
   };
 }

@@ -34,7 +34,10 @@ export const grapple: KitPlugin = {
   name: "grapple",
   deps: ["player_motion", "raycast"],
   install() {
-    Datapack.prototype.grapple = function (this: Datapack, opts: GrappleOptions = {}): Grapple {
+    Datapack.prototype.grapple = function (
+      this: Datapack,
+      opts: GrappleOptions = {},
+    ): Grapple {
       const existing = installed.get(this);
       if (existing) return existing;
       const g = defineGrapple(this, opts);

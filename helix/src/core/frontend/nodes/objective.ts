@@ -55,7 +55,10 @@ export class Objective {
 
   /** A score holder on this objective: a `Selector` or a fake-player `ScoreTarget`. */
   score(target: ScoreTarget | Selector) {
-    return new Score(this, target instanceof Selector ? ScoreTarget(target) : target);
+    return new Score(
+      this,
+      target instanceof Selector ? ScoreTarget(target) : target,
+    );
   }
 
   /**
@@ -65,7 +68,10 @@ export class Objective {
    */
   init(ctx?: FunctionContext): this {
     const target = ctx ?? currentContext();
-    if (!target) throw new Error("Objective.init has no active context: call it inside a build() callback, or pass ctx.");
+    if (!target)
+      throw new Error(
+        "Objective.init has no active context: call it inside a build() callback, or pass ctx.",
+      );
     target.emit(scoreInitNode(this));
     return this;
   }

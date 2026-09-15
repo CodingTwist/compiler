@@ -104,12 +104,29 @@ export type SlotRange =
   | `villager.${number}`
   | `mob.inventory.${number}`
   | `player.crafting.${number}`
-  | "armor.head" | "armor.chest" | "armor.legs" | "armor.feet" | "armor.body"
-  | "horse.chest" | "horse.armor" | "horse.saddle" | "saddle"
-  | "weapon" | "weapon.mainhand" | "weapon.offhand"
-  | "contents" | "player.cursor"
-  | "armor.*" | "container.*" | "enderchest.*" | "horse.*" | "hotbar.*"
-  | "inventory.*" | "player.crafting.*" | "weapon.*" | "mob.inventory.*";
+  | "armor.head"
+  | "armor.chest"
+  | "armor.legs"
+  | "armor.feet"
+  | "armor.body"
+  | "horse.chest"
+  | "horse.armor"
+  | "horse.saddle"
+  | "saddle"
+  | "weapon"
+  | "weapon.mainhand"
+  | "weapon.offhand"
+  | "contents"
+  | "player.cursor"
+  | "armor.*"
+  | "container.*"
+  | "enderchest.*"
+  | "horse.*"
+  | "hotbar.*"
+  | "inventory.*"
+  | "player.crafting.*"
+  | "weapon.*"
+  | "mob.inventory.*";
 
 /** Common slot ranges by name. Any other {@link SlotRange} also works. */
 export const SLOTS = {

@@ -4,10 +4,12 @@ import type { NbtRead } from "./types";
 export const NBT_READ_MIN_PERIOD = 5;
 
 /** Entity/block NBT reads, which serialize the whole entity. Storage reads don't count. */
-export const NBT_READ = /nbt=|data get (entity|block)|(if|unless) data (entity|block)|from (entity|block)/;
+export const NBT_READ =
+  /nbt=|data get (entity|block)|(if|unless) data (entity|block)|from (entity|block)/;
 
 /** Item-holding NBT: `if items` reads the slot without serialising the entity. */
-export const ITEM_NBT = /\b(SelectedItem|Inventory|EnderItems|equipment|HandItems|ArmorItems|Items?)\b/;
+export const ITEM_NBT =
+  /\b(SelectedItem|Inventory|EnderItems|equipment|HandItems|ArmorItems|Items?)\b/;
 
 export function nbtReadHint(line: string): string | undefined {
   if (ITEM_NBT.test(line)) {

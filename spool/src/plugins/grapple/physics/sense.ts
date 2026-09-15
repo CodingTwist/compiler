@@ -7,7 +7,11 @@ import type { PhysicsDeps } from "./types";
  * Measures this tick's swing state (position, velocity, vector to anchor, dist², dot)
  * and stores what the next tick and release need.
  */
-export function senseSwingState(d: PhysicsDeps, scratch: SwingScratch, ctx: FunctionContext): void {
+export function senseSwingState(
+  d: PhysicsDeps,
+  scratch: SwingScratch,
+  ctx: FunctionContext,
+): void {
   d.repo.readPos(ctx, d.selectors.self(), scratch.pos);
   measureVelocity(d, scratch);
   d.repo.velVec().assign(scratch.velocity); // stash this tick's swing velocity for the release kick
@@ -25,7 +29,10 @@ function measureVelocity(d: PhysicsDeps, scratch: SwingScratch): void {
 }
 
 /** r = anchor − pos (the vector from the player to the anchor). */
-export function vectorToAnchor(d: Pick<PhysicsDeps, "repo">, scratch: SwingScratch): void {
+export function vectorToAnchor(
+  d: Pick<PhysicsDeps, "repo">,
+  scratch: SwingScratch,
+): void {
   scratch.toAnchor.assign(d.repo.anchorVec()).sub(scratch.pos);
 }
 
@@ -39,7 +46,10 @@ function measureRadial(scratch: SwingScratch): void {
  * Sets the rope length on attach, using the same maths as a drive tick so they measure
  * alike.
  */
-export function fixRopeLength(d: Pick<PhysicsDeps, "repo">, scratch: SwingScratch): void {
+export function fixRopeLength(
+  d: Pick<PhysicsDeps, "repo">,
+  scratch: SwingScratch,
+): void {
   d.repo.prevVec().assign(scratch.pos);
   vectorToAnchor(d, scratch);
   scratch.toAnchor.lengthSquared(d.repo.ropeLenSqOf());

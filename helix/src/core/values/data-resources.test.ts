@@ -21,7 +21,9 @@ describe("loot tables", () => {
     const dp = new Datapack("testpack", v1_21_4);
     const ref = dp.lootTable(
       "chests/reward",
-      new LootTableDef("chest").pool(new LootPool().rolls(1).item(Item.DIAMOND.count(3))),
+      new LootTableDef("chest").pool(
+        new LootPool().rolls(1).item(Item.DIAMOND.count(3)),
+      ),
     );
     expect(ref).toBeInstanceOf(LootTableRef);
     expect(ref.id).toBe("testpack:chests/reward");
@@ -29,7 +31,10 @@ describe("loot tables", () => {
     const json = emitted(dp, "data/testpack/loot_table/chests/reward.json");
     expect(json.type).toBe("minecraft:chest");
     const entry = json.pools[0].entries[0];
-    expect(entry).toMatchObject({ type: "minecraft:item", name: "minecraft:diamond" });
+    expect(entry).toMatchObject({
+      type: "minecraft:item",
+      name: "minecraft:diamond",
+    });
     expect(entry.functions[0]).toMatchObject({
       function: "minecraft:set_count",
       count: 3,
@@ -48,7 +53,9 @@ describe("loot tables", () => {
     const dp = new Datapack("testpack", v1_21_4);
     dp.lootTable(
       "named",
-      new LootTableDef().pool(new LootPool().item(Item.DIAMOND_SWORD.named("Excalibur"))),
+      new LootTableDef().pool(
+        new LootPool().item(Item.DIAMOND_SWORD.named("Excalibur")),
+      ),
     );
     const json = emitted(dp, "data/testpack/loot_table/named.json");
     const fn = json.pools[0].entries[0].functions.find(
@@ -60,14 +67,19 @@ describe("loot tables", () => {
   it("throws when a name is reused with a different definition", () => {
     const dp = new Datapack("testpack", v1_21_4);
     dp.lootTable("dup", new LootTableDef());
-    expect(() => dp.lootTable("dup", new LootTableDef())).toThrow(/already registered/);
+    expect(() => dp.lootTable("dup", new LootTableDef())).toThrow(
+      /already registered/,
+    );
   });
 });
 
 describe("item modifiers", () => {
   it("emits a single function bare, and reuses loot-function vocabulary", () => {
     const dp = new Datapack("testpack", v1_21_4);
-    const ref = dp.itemModifier("sharpen", new ItemModifier().apply(LootFunction.setCount(2)));
+    const ref = dp.itemModifier(
+      "sharpen",
+      new ItemModifier().apply(LootFunction.setCount(2)),
+    );
     expect(ref).toBeInstanceOf(ItemModifierRef);
     const json = emitted(dp, "data/testpack/item_modifier/sharpen.json");
     expect(json).toMatchObject({ function: "minecraft:set_count", count: 2 });
@@ -77,7 +89,9 @@ describe("item modifiers", () => {
     const dp = new Datapack("testpack", v1_21_4);
     dp.itemModifier(
       "chain",
-      new ItemModifier().apply(LootFunction.setCount(2)).apply(LootFunction.furnaceSmelt()),
+      new ItemModifier()
+        .apply(LootFunction.setCount(2))
+        .apply(LootFunction.furnaceSmelt()),
     );
     const json = emitted(dp, "data/testpack/item_modifier/chain.json");
     expect(Array.isArray(json)).toBe(true);
@@ -90,7 +104,11 @@ describe("recipes", () => {
     const dp = new Datapack("testpack", v1_21_4);
     const ref = dp.recipe(
       "ruby_block",
-      RecipeDef.shaped(["##", "##"], { "#": "mypack:ruby" }, "mypack:ruby_block"),
+      RecipeDef.shaped(
+        ["##", "##"],
+        { "#": "mypack:ruby" },
+        "mypack:ruby_block",
+      ),
     );
     expect(ref).toBeInstanceOf(RecipeRef);
     const json = emitted(dp, "data/testpack/recipe/ruby_block.json");
@@ -101,7 +119,10 @@ describe("recipes", () => {
 
   it("uses the legacy `{item}` ingredient/result shape + plural folder on pre-1.21", () => {
     const dp = new Datapack("testpack", v1_20_4);
-    dp.recipe("sticks", RecipeDef.shapeless(["minecraft:oak_planks"], "minecraft:stick", 4));
+    dp.recipe(
+      "sticks",
+      RecipeDef.shapeless(["minecraft:oak_planks"], "minecraft:stick", 4),
+    );
     const json = emitted(dp, "data/testpack/recipes/sticks.json");
     expect(json.ingredients[0]).toEqual({ item: "minecraft:oak_planks" });
     expect(json.result).toMatchObject({ item: "minecraft:stick", count: 4 });
@@ -112,7 +133,9 @@ describe("registry tags and raw registry files", () => {
   it("emits a registry tag, pluralizing the registry folder pre-1.21", () => {
     const modern = new Datapack("testpack", v1_21_4);
     modern.tag("block", "minable/pickaxe", { values: ["minecraft:stone"] });
-    expect(emitted(modern, "data/testpack/tags/block/minable/pickaxe.json")).toEqual({
+    expect(
+      emitted(modern, "data/testpack/tags/block/minable/pickaxe.json"),
+    ).toEqual({
       replace: false,
       values: ["minecraft:stone"],
     });
@@ -135,7 +158,10 @@ describe("registry tags and raw registry files", () => {
 
   it("writes a raw registry file verbatim at its folder", () => {
     const dp = new Datapack("testpack", v1_21_4);
-    dp.registryFile("damage_type", "spikes", { message_id: "spikes", exhaustion: 0.1 });
+    dp.registryFile("damage_type", "spikes", {
+      message_id: "spikes",
+      exhaustion: 0.1,
+    });
     expect(emitted(dp, "data/testpack/damage_type/spikes.json")).toEqual({
       message_id: "spikes",
       exhaustion: 0.1,

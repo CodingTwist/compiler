@@ -16,7 +16,9 @@ describe("Pos", () => {
   });
 
   it("keeps each axis' mode through offset/center", () => {
-    expect(Pos.rel(0, Pos.abs(64), 0).offset(1, 1, 1).render()).toBe("~1 65 ~1");
+    expect(Pos.rel(0, Pos.abs(64), 0).offset(1, 1, 1).render()).toBe(
+      "~1 65 ~1",
+    );
     expect(Pos.rel(0, Pos.abs(64), 0).center().render()).toBe("~0.5 64.5 ~0.5");
   });
 

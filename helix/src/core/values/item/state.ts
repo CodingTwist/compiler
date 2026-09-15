@@ -17,7 +17,11 @@ export interface ItemState {
   enchantments: [string | CommandValue, number][];
   lore: TextComponent[];
   canPlaceOn: string[];
-  writtenBook?: { title: string; author: string; pages: (TellrawPart | string | TellrawPart[])[] };
+  writtenBook?: {
+    title: string;
+    author: string;
+    pages: (TellrawPart | string | TellrawPart[])[];
+  };
   extraComponents: {
     stack: string | ((version: VersionProfile) => string);
     key?: string;
@@ -42,5 +46,7 @@ export function hasStructuredData(s: ItemState): boolean {
 
 /** The normalized item id with no data/components (`minecraft:diamond`, `#minecraft:planks`). */
 export function baseId(s: ItemState): string {
-  return s.id.startsWith("#") ? "#" + normalizeId(s.id.slice(1)) : normalizeId(s.id);
+  return s.id.startsWith("#")
+    ? "#" + normalizeId(s.id.slice(1))
+    : normalizeId(s.id);
 }

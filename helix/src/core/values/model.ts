@@ -15,12 +15,16 @@ export class Model {
 
   /** A flat sprite item model (`parent: item/generated`, `textures.layer0 = texture`). */
   static item(texture: string): Model {
-    return new Model().parent("minecraft:item/generated").texture("layer0", texture);
+    return new Model()
+      .parent("minecraft:item/generated")
+      .texture("layer0", texture);
   }
 
   /** A full-cube block model with one texture on every face (`block/cube_all`). */
   static cubeAll(texture: string): Model {
-    return new Model().parent("minecraft:block/cube_all").texture("all", texture);
+    return new Model()
+      .parent("minecraft:block/cube_all")
+      .texture("all", texture);
   }
 
   /** A column block model - `end` on top/bottom, `side` around (`block/cube_column`). */
@@ -53,8 +57,12 @@ export class Model {
   toJson(): Record<string, unknown> {
     if (this.rawJson) return this.rawJson;
     return {
-      ...(this.parentId !== undefined ? { parent: normalizeId(this.parentId) } : {}),
-      ...(Object.keys(this.textureMap).length ? { textures: this.textureMap } : {}),
+      ...(this.parentId !== undefined
+        ? { parent: normalizeId(this.parentId) }
+        : {}),
+      ...(Object.keys(this.textureMap).length
+        ? { textures: this.textureMap }
+        : {}),
     };
   }
 }

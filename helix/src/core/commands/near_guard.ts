@@ -45,7 +45,9 @@ export class NearGuardHandler extends CommandHandler<NearGuardNode> {
       ctx.dispatcher,
     );
     // A real `@a[distance=..radius]` selector, not a hand-built string.
-    const near = Selector.allPlayers().distance(new Range(undefined, node.radius));
+    const near = Selector.allPlayers().distance(
+      new Range(undefined, node.radius),
+    );
     const nearStr = node.perPlayer
       ? toCommandValue(near).render(ctx.version)
       : renderExistence(near, ctx.version);

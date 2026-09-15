@@ -25,7 +25,9 @@ describe("TintSource / SpecialModel", () => {
       texture: "ns:chest",
       openness: 0.5,
     });
-    expect(SpecialModel.conduit().toJson()).toEqual({ type: "minecraft:conduit" });
+    expect(SpecialModel.conduit().toJson()).toEqual({
+      type: "minecraft:conduit",
+    });
     expect(SpecialModel.standingSign("oak").toJson()).toEqual({
       type: "minecraft:standing_sign",
       wood_type: "oak",

@@ -2,8 +2,8 @@
 
 Two more [data resources](/guide/concepts/data-resources), both built from typed value trees
 and registered with the `dp.<kind>(name, def) → ref` pattern. They pair up naturally:
-advancements are the cheapest way to *detect* a player event, and loot tables are a clean way
-to *hand out* items - and both reuse the same [`Item`](/guide/concepts/items-and-nbt) you'd
+advancements are the cheapest way to _detect_ a player event, and loot tables are a clean way
+to _hand out_ items - and both reuse the same [`Item`](/guide/concepts/items-and-nbt) you'd
 `give`, so a dropped or granted item is defined exactly once.
 
 ## Loot tables
@@ -21,14 +21,13 @@ const dp = new Datapack("loot", v26_2);
 
 dp.lootTable(
   "chests/reward",
-  new LootTableDef("chest")
-    .pool(
-      new LootPool()
-        .rolls(1)
-        .item(Item.DIAMOND.count(3), { weight: 1 })
-        .item(Item.GOLDEN_APPLE.named("Prize"), { weight: 3 })
-        .empty(2), // a chance to roll nothing
-    ),
+  new LootTableDef("chest").pool(
+    new LootPool()
+      .rolls(1)
+      .item(Item.DIAMOND.count(3), { weight: 1 })
+      .item(Item.GOLDEN_APPLE.named("Prize"), { weight: 3 })
+      .empty(2), // a chance to roll nothing
+  ),
 );
 ```
 
@@ -49,7 +48,15 @@ item, hurting an entity, …).
 form, so "fired while holding this" matches the exact item you granted:
 
 ```ts compile
-import { Datapack, v26_2, Selector, Item, Enchantment, AdvancementDef, Trigger } from "helix";
+import {
+  Datapack,
+  v26_2,
+  Selector,
+  Item,
+  Enchantment,
+  AdvancementDef,
+  Trigger,
+} from "helix";
 
 const dp = new Datapack("wand", v26_2);
 

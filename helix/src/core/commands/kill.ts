@@ -6,9 +6,7 @@ import { CommandBuilder, litPart, argPart } from "./base";
 import { Selector } from "../frontend/nodes/selector";
 
 /** `kill` */
-export class KillBuilder extends CommandBuilder<TreeCommandNode> {
-
-}
+export class KillBuilder extends CommandBuilder<TreeCommandNode> {}
 
 declare module "../frontend/context" {
   interface FunctionContext {
@@ -17,7 +15,10 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.kill = function (this: FunctionContext, targets?: Selector) {
+FunctionContext.prototype.kill = function (
+  this: FunctionContext,
+  targets?: Selector,
+) {
   const node = new TreeCommandNode("kill", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("kill")];

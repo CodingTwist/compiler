@@ -1,7 +1,13 @@
 import type { VersionProfile } from "../../../versions/profile";
 import { DV } from "../entity-versions.generated";
 import { Id } from "../id";
-import type { Bound, EntityFlags, EntityPredicateSpec, LocationSpec, PredicateJson } from "./types";
+import type {
+  Bound,
+  EntityFlags,
+  EntityPredicateSpec,
+  LocationSpec,
+  PredicateJson,
+} from "./types";
 
 /** The first version each newer flag exists in (vanilla-mcdoc `EntityFlagsPredicate`). */
 const FLAG_SINCE: Partial<Record<keyof EntityFlags, keyof typeof DV>> = {
@@ -19,7 +25,10 @@ export function idStr(x: string | Id): string {
   return typeof x === "string" ? Id(x).render() : x.render();
 }
 
-export function renderLocation(spec: LocationSpec, _version: VersionProfile): PredicateJson {
+export function renderLocation(
+  spec: LocationSpec,
+  _version: VersionProfile,
+): PredicateJson {
   const out: PredicateJson = {};
   if (spec.biome !== undefined) out.biome = idStr(spec.biome);
   if (spec.dimension !== undefined) out.dimension = idStr(spec.dimension);
@@ -40,7 +49,10 @@ export function renderLocation(spec: LocationSpec, _version: VersionProfile): Pr
   return out;
 }
 
-export function renderEntitySpec(spec: EntityPredicateSpec, version: VersionProfile): PredicateJson {
+export function renderEntitySpec(
+  spec: EntityPredicateSpec,
+  version: VersionProfile,
+): PredicateJson {
   const out: PredicateJson = {};
   if (spec.type !== undefined) out.type = idStr(spec.type);
   if (spec.nbt !== undefined) out.nbt = spec.nbt.render(version);
@@ -51,7 +63,9 @@ export function renderEntitySpec(spec: EntityPredicateSpec, version: VersionProf
       if (val === undefined) continue;
       const since = FLAG_SINCE[k as keyof EntityFlags];
       if (since && version.dataVersion < DV[since]) {
-        throw new Error(`Predicate flag ${k} needs ${since}+, but the pack targets ${version.id}`);
+        throw new Error(
+          `Predicate flag ${k} needs ${since}+, but the pack targets ${version.id}`,
+        );
       }
       flags[k] = val;
     }

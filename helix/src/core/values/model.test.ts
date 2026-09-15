@@ -25,7 +25,12 @@ describe("Model builder", () => {
   });
 
   it("parent/texture normalize ids; bare texture gets minecraft:", () => {
-    expect(new Model().parent("block/cube_all").texture("all", "block/stone").toJson()).toEqual({
+    expect(
+      new Model()
+        .parent("block/cube_all")
+        .texture("all", "block/stone")
+        .toJson(),
+    ).toEqual({
       parent: "minecraft:block/cube_all",
       textures: { all: "minecraft:block/stone" },
     });
@@ -64,7 +69,9 @@ describe("dp.model registration + resource-pack codegen", () => {
   it("resourceFile writes verbatim under assets/", () => {
     const dp = new Datapack("testpack", v26_2);
     dp.resourceFile("blockstates", "foo", { variants: {} });
-    expect(emitted(dp, "assets/testpack/blockstates/foo.json")).toEqual({ variants: {} });
+    expect(emitted(dp, "assets/testpack/blockstates/foo.json")).toEqual({
+      variants: {},
+    });
   });
 
   it("the resource pack.mcmeta uses the RESOURCE format, not the data one", () => {
@@ -73,7 +80,10 @@ describe("dp.model registration + resource-pack codegen", () => {
     const dataMcmeta = buildPackMcmeta(dp).pack as any;
     // 26.2: data 107 / resource 88 - they must differ.
     expect(mcmeta.min_format).not.toEqual(dataMcmeta.min_format);
-    expect(mcmeta.min_format).toEqual([v26_2.resourcePack.kind === "range" ? v26_2.resourcePack.min[0] : 0, 0]);
+    expect(mcmeta.min_format).toEqual([
+      v26_2.resourcePack.kind === "range" ? v26_2.resourcePack.min[0] : 0,
+      0,
+    ]);
   });
 });
 
@@ -101,16 +111,21 @@ describe("block models + blockstates", () => {
     // Blockstate id defaults to the minecraft namespace (it overrides a real block).
     dp.blockState(
       "note_block",
-      BlockState.variants({ "note=0": { model: glow, y: 90 } }).variant("note=1", {
-        model: "testpack:block/glow",
-      }),
+      BlockState.variants({ "note=0": { model: glow, y: 90 } }).variant(
+        "note=1",
+        {
+          model: "testpack:block/glow",
+        },
+      ),
     );
-    expect(emitted(dp, "assets/minecraft/blockstates/note_block.json")).toEqual({
-      variants: {
-        "note=0": { model: "testpack:block/glow", y: 90 },
-        "note=1": { model: "testpack:block/glow" },
+    expect(emitted(dp, "assets/minecraft/blockstates/note_block.json")).toEqual(
+      {
+        variants: {
+          "note=0": { model: "testpack:block/glow", y: 90 },
+          "note=1": { model: "testpack:block/glow" },
+        },
       },
-    });
+    );
   });
 
   it("BlockState.part produces a multipart file", () => {
@@ -131,9 +146,9 @@ describe("Item.model version-aware lowering", () => {
     expect(Item.CARROT_ON_A_STICK.model(ref).render(v1_21_4)).toBe(
       'minecraft:carrot_on_a_stick[item_model="testpack:web"]',
     );
-    expect(Item.CARROT_ON_A_STICK.model("testpack:web").render(v26_2)).toContain(
-      'item_model="testpack:web"',
-    );
+    expect(
+      Item.CARROT_ON_A_STICK.model("testpack:web").render(v26_2),
+    ).toContain('item_model="testpack:web"');
   });
 
   it("falls back to custom_model_data NBT on pre-components versions when a legacy number is given", () => {

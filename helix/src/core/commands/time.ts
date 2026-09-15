@@ -13,7 +13,13 @@ export class TimeBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   ofAdd(clock: WorldClock, time: Time): this {
-    this.$set(litPart("time"), litPart("of"), argPart(clock), litPart("add"), argPart(time));
+    this.$set(
+      litPart("time"),
+      litPart("of"),
+      argPart(clock),
+      litPart("add"),
+      argPart(time),
+    );
     return this;
   }
 
@@ -23,32 +29,68 @@ export class TimeBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   ofQuery(clock: WorldClock, timeline: Timeline): this {
-    this.$set(litPart("time"), litPart("of"), argPart(clock), litPart("query"), argPart(timeline));
+    this.$set(
+      litPart("time"),
+      litPart("of"),
+      argPart(clock),
+      litPart("query"),
+      argPart(timeline),
+    );
     return this;
   }
 
   ofQueryRepetition(clock: WorldClock, timeline: Timeline): this {
-    this.$set(litPart("time"), litPart("of"), argPart(clock), litPart("query"), argPart(timeline), litPart("repetition"));
+    this.$set(
+      litPart("time"),
+      litPart("of"),
+      argPart(clock),
+      litPart("query"),
+      argPart(timeline),
+      litPart("repetition"),
+    );
     return this;
   }
 
   ofQueryTime(clock: WorldClock): this {
-    this.$set(litPart("time"), litPart("of"), argPart(clock), litPart("query"), litPart("time"));
+    this.$set(
+      litPart("time"),
+      litPart("of"),
+      argPart(clock),
+      litPart("query"),
+      litPart("time"),
+    );
     return this;
   }
 
   ofRate(clock: WorldClock, rate: number): this {
-    this.$set(litPart("time"), litPart("of"), argPart(clock), litPart("rate"), argPart(rate));
+    this.$set(
+      litPart("time"),
+      litPart("of"),
+      argPart(clock),
+      litPart("rate"),
+      argPart(rate),
+    );
     return this;
   }
 
   ofResume(clock: WorldClock): this {
-    this.$set(litPart("time"), litPart("of"), argPart(clock), litPart("resume"));
+    this.$set(
+      litPart("time"),
+      litPart("of"),
+      argPart(clock),
+      litPart("resume"),
+    );
     return this;
   }
 
   ofSet(clock: WorldClock, time: Time): this {
-    this.$set(litPart("time"), litPart("of"), argPart(clock), litPart("set"), argPart(time));
+    this.$set(
+      litPart("time"),
+      litPart("of"),
+      argPart(clock),
+      litPart("set"),
+      argPart(time),
+    );
     return this;
   }
 
@@ -68,7 +110,12 @@ export class TimeBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   queryRepetition(timeline: Timeline): this {
-    this.$set(litPart("time"), litPart("query"), argPart(timeline), litPart("repetition"));
+    this.$set(
+      litPart("time"),
+      litPart("query"),
+      argPart(timeline),
+      litPart("repetition"),
+    );
     return this;
   }
 

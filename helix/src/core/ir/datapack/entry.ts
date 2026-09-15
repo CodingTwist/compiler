@@ -79,7 +79,8 @@ export class DatapackEntry extends DatapackAssets {
       this.functions.set(initName, initFn);
     }
 
-    if ([...this.functions.values()].some((fn) => fn.locals > 0)) this.objective(LOCALS_OBJECTIVE);
+    if ([...this.functions.values()].some((fn) => fn.locals > 0))
+      this.objective(LOCALS_OBJECTIVE);
 
     // Rebuild from the current objectives each time, since more may be added between
     // codegen calls.

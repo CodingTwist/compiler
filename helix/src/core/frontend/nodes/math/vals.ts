@@ -2,7 +2,10 @@
 import { Score } from "../score";
 import { ScoreVec3 } from "../score_vec3";
 import { ExprNode, ExprOp, litE, opE, providerE, scoreE } from "../expr";
-import { ContextFloatProvider, ContextIntProvider } from "../../../values/context-provider";
+import {
+  ContextFloatProvider,
+  ContextIntProvider,
+} from "../../../values/context-provider";
 import { fail } from "./errors";
 import { MathExpr } from "./math";
 import type { Operand, Val } from "./types";
@@ -27,7 +30,13 @@ export function nary(op: ExprOp, args: Val[]): Val {
 }
 
 /** Per-axis when either side is a vector; vector-by-vector arithmetic is an error. */
-export function zip(op: ExprOp, l: Val, r: Val, src: string, text: string): Val {
+export function zip(
+  op: ExprOp,
+  l: Val,
+  r: Val,
+  src: string,
+  text: string,
+): Val {
   if (!l.vec && !r.vec) return scalar(opE(op, l.e, r.e));
   if (l.vec && r.vec && op !== "add" && op !== "sub")
     fail(
@@ -43,11 +52,9 @@ export function dot(l: Val, r: Val, src: string): Val {
   return scalar(opE("add", ...axes((i) => opE("mul", l.e[i], r.e[i]))));
 }
 
-export const axes = (f: (i: number) => ExprNode): [ExprNode, ExprNode, ExprNode] => [
-  f(0),
-  f(1),
-  f(2),
-];
+export const axes = (
+  f: (i: number) => ExprNode,
+): [ExprNode, ExprNode, ExprNode] => [f(0), f(1), f(2)];
 
 export function operand(o: Operand | undefined, src: string): Val {
   if (typeof o === "number") return scalar(litE(o));

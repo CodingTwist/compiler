@@ -3,7 +3,12 @@ import { CommandValue } from "../values/value";
 import { CodegenContext, CommandHandler } from "../ir/commandhandler";
 import { VersionProfile } from "../../versions/profile";
 import { Token, lit, arg, buildTokens } from "../ir/command-builder";
-import { commandLine, Effect, entityMergeEffect, entityWriteEffect } from "../ir/line-info";
+import {
+  commandLine,
+  Effect,
+  entityMergeEffect,
+  entityWriteEffect,
+} from "../ir/line-info";
 import { NbtValue } from "../values/nbt";
 
 /** What kind of thing holds the NBT a `data` command reads or writes. */
@@ -19,7 +24,13 @@ export interface NbtTargetSpec {
 export type DataSourceSpec =
   | { via: "value"; value: CommandValue }
   | { via: "from"; target: NbtTargetSpec; path?: CommandValue }
-  | { via: "string"; target: NbtTargetSpec; path?: CommandValue; start?: number; end?: number };
+  | {
+      via: "string";
+      target: NbtTargetSpec;
+      path?: CommandValue;
+      start?: number;
+      end?: number;
+    };
 
 /** The list-modifying actions of `data modify`. */
 export type ModifyAction = "set" | "merge" | "append" | "prepend" | "insert";
@@ -95,10 +106,20 @@ export class DataOpCommand extends CommandHandler<DataOpNode> {
         ];
         break;
       case "remove":
-        tokens = [lit("data"), lit("remove"), ...targetTokens(op.target, v), arg(op.path.render(v))];
+        tokens = [
+          lit("data"),
+          lit("remove"),
+          ...targetTokens(op.target, v),
+          arg(op.path.render(v)),
+        ];
         break;
       case "mergeAll":
-        tokens = [lit("data"), lit("merge"), ...targetTokens(op.target, v), arg(op.value.render(v))];
+        tokens = [
+          lit("data"),
+          lit("merge"),
+          ...targetTokens(op.target, v),
+          arg(op.value.render(v)),
+        ];
         break;
       case "modify":
         tokens = [
@@ -122,6 +143,9 @@ function dataOpEffect(op: DataOp, version: VersionProfile): Effect {
   if (op.op === "get" || op.target.kind === "storage") return Effect.NONE;
   if (op.target.kind === "block") return Effect.EDITS;
   // A merged compound may hold `Pos` or `Rotation`.
-  if (op.op === "mergeAll") return op.value instanceof NbtValue ? entityMergeEffect(op.value, version) : Effect.MOVES;
+  if (op.op === "mergeAll")
+    return op.value instanceof NbtValue
+      ? entityMergeEffect(op.value, version)
+      : Effect.MOVES;
   return entityWriteEffect(op.path);
 }

@@ -34,5 +34,4 @@ describe("SayCommand", () => {
     command.generate(new SayNode("hello"), ctx);
     expect(ctx.lines).toHaveLength(1);
   });
-
 });

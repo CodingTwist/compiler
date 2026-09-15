@@ -120,7 +120,11 @@ FunctionContext.prototype.callTag = function (
 declare module "../frontend/context" {
   interface FunctionContext {
     /** Calls a `dp.fn` function with `args` copied into its params, storing its result in `into`. */
-    invoke<P extends Score[]>(fn: CallableFn<P>, args: { [K in keyof P]: number | Score }, into?: Score): void;
+    invoke<P extends Score[]>(
+      fn: CallableFn<P>,
+      args: { [K in keyof P]: number | Score },
+      into?: Score,
+    ): void;
   }
 }
 
@@ -131,13 +135,19 @@ FunctionContext.prototype.invoke = function (
   into?: Score,
 ) {
   const name = fn.getName();
-  if (args.length !== fn.params.length) throw new Error(`${name} takes ${fn.params.length} args, got ${args.length}`);
+  if (args.length !== fn.params.length)
+    throw new Error(
+      `${name} takes ${fn.params.length} args, got ${args.length}`,
+    );
   if (into && !fn.returns) throw new Error(`${name} returns nothing to store`);
   fn.params.forEach((p, i) => {
     const arg = args[i];
     if (typeof arg === "number") p.set(arg, this);
     else p.assign(arg, this);
   });
-  if (into) this.execute().storeResultScore(into).run((c) => c.call(fn));
+  if (into)
+    this.execute()
+      .storeResultScore(into)
+      .run((c) => c.call(fn));
   else this.call(fn);
 };

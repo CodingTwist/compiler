@@ -24,7 +24,10 @@ export interface Graph {
 }
 
 /** Resolve a class or configured module to its metadata + a built instance. */
-function resolve(ref: ModuleRef): { instance: DatapackModule; meta: ModuleMetadata } {
+function resolve(ref: ModuleRef): {
+  instance: DatapackModule;
+  meta: ModuleMetadata;
+} {
   return isConfiguredModule(ref)
     ? { instance: ref.instance, meta: ref.metadata }
     : { instance: new ref(), meta: getModuleMetadata(ref) };
@@ -56,7 +59,9 @@ export function buildGraph(root: ModuleRef, env: BuildEnv): Graph {
 }
 
 /** Each module's dimension: its own, or the nearest ancestor's. `undefined` if none. */
-export function resolveDimensions(graph: Graph): Map<ModuleRef, Id | undefined> {
+export function resolveDimensions(
+  graph: Graph,
+): Map<ModuleRef, Id | undefined> {
   const dims = new Map<ModuleRef, Id | undefined>();
   const walk = (ref: ModuleRef, inherited: Id | undefined): void => {
     if (dims.has(ref)) return;

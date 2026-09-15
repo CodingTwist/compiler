@@ -10,14 +10,14 @@ They are siblings under `/home/sam/compiler`. They form a layered stack: each bu
 **only on the public API of the one below**, and the split is deliberate - the core stays
 un-opinionated, the opinions live in the upper layers.
 
-| Package | Layer | One line |
-| --- | --- | --- |
-| [`helix`](helix/CLAUDE.md) | core compiler | AST → IR → `.mcfunction` + tag JSON, version-profile aware. **Mechanism, never policy.** |
-| [`spool`](spool/CLAUDE.md) | conveniences | Opt-in `KitPlugin`s composed from helix's public API. Nothing on by default. |
-| [`twine`](twine/CLAUDE.md) | framework | The opinionated layer: NestJS-style module / area / lifecycle composition of a whole pack. |
+| Package                    | Layer         | One line                                                                                   |
+| -------------------------- | ------------- | ------------------------------------------------------------------------------------------ |
+| [`helix`](helix/CLAUDE.md) | core compiler | AST → IR → `.mcfunction` + tag JSON, version-profile aware. **Mechanism, never policy.**   |
+| [`spool`](spool/CLAUDE.md) | conveniences  | Opt-in `KitPlugin`s composed from helix's public API. Nothing on by default.               |
+| [`twine`](twine/CLAUDE.md) | framework     | The opinionated layer: NestJS-style module / area / lifecycle composition of a whole pack. |
 
 The governing stance: **helix is un-opinionated, twine is opinionated, spool is the opt-in
-middle.** If something feels like a *shortcut* or a *best practice* rather than a
+middle.** If something feels like a _shortcut_ or a _best practice_ rather than a
 primitive, it does not belong in helix - push it up to spool or twine. See
 [helix/PHILOSOPHY.md](helix/PHILOSOPHY.md) for the why.
 
@@ -37,7 +37,7 @@ the **built `dist/`**, symlinked into `node_modules`, not the source. So:
   version-aware - never string-interpolate command fragments. If the typed API can't yet
   express a concept, **add it to the API first**, then compose. The only sanctioned raw
   JSON is data resources via `dp.registryFile(...)`.
-- **Advancement triggers before tick polling.** For anything a *player* does (use/consume
+- **Advancement triggers before tick polling.** For anything a _player_ does (use/consume
   an item, hurt/kill an entity, place a block, enter an area, inventory change...), reach
   for an advancement trigger (helix `Trigger.*` + `dp.advancement`) before a tick/`@On`
   poll. Triggers are native event listeners: zero commands when nothing happens, vs. a

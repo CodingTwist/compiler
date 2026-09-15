@@ -8,229 +8,641 @@ import { Selector } from "../frontend/nodes/selector";
 
 /** `loot` */
 export class LootBuilder extends CommandBuilder<TreeCommandNode> {
-  giveFish(players: Selector, loot_table: LootTable, pos: Pos, tool?: Item): this {
-    this.$set(litPart("loot"), litPart("give"), argPart(players), litPart("fish"), argPart(loot_table), argPart(pos));
+  giveFish(
+    players: Selector,
+    loot_table: LootTable,
+    pos: Pos,
+    tool?: Item,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("give"),
+      argPart(players),
+      litPart("fish"),
+      argPart(loot_table),
+      argPart(pos),
+    );
     if (tool !== undefined) this.$append(argPart(tool));
     return this;
   }
 
   giveFishMainhand(players: Selector, loot_table: LootTable, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("give"), argPart(players), litPart("fish"), argPart(loot_table), argPart(pos), litPart("mainhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("give"),
+      argPart(players),
+      litPart("fish"),
+      argPart(loot_table),
+      argPart(pos),
+      litPart("mainhand"),
+    );
     return this;
   }
 
   giveFishOffhand(players: Selector, loot_table: LootTable, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("give"), argPart(players), litPart("fish"), argPart(loot_table), argPart(pos), litPart("offhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("give"),
+      argPart(players),
+      litPart("fish"),
+      argPart(loot_table),
+      argPart(pos),
+      litPart("offhand"),
+    );
     return this;
   }
 
   giveKill(players: Selector, target: Selector): this {
-    this.$set(litPart("loot"), litPart("give"), argPart(players), litPart("kill"), argPart(single(target, "loot")));
+    this.$set(
+      litPart("loot"),
+      litPart("give"),
+      argPart(players),
+      litPart("kill"),
+      argPart(single(target, "loot")),
+    );
     return this;
   }
 
   giveLoot(players: Selector, loot_table: LootTable): this {
-    this.$set(litPart("loot"), litPart("give"), argPart(players), litPart("loot"), argPart(loot_table));
+    this.$set(
+      litPart("loot"),
+      litPart("give"),
+      argPart(players),
+      litPart("loot"),
+      argPart(loot_table),
+    );
     return this;
   }
 
   giveMine(players: Selector, pos: Pos, tool?: Item): this {
-    this.$set(litPart("loot"), litPart("give"), argPart(players), litPart("mine"), argPart(pos));
+    this.$set(
+      litPart("loot"),
+      litPart("give"),
+      argPart(players),
+      litPart("mine"),
+      argPart(pos),
+    );
     if (tool !== undefined) this.$append(argPart(tool));
     return this;
   }
 
   giveMineMainhand(players: Selector, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("give"), argPart(players), litPart("mine"), argPart(pos), litPart("mainhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("give"),
+      argPart(players),
+      litPart("mine"),
+      argPart(pos),
+      litPart("mainhand"),
+    );
     return this;
   }
 
   giveMineOffhand(players: Selector, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("give"), argPart(players), litPart("mine"), argPart(pos), litPart("offhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("give"),
+      argPart(players),
+      litPart("mine"),
+      argPart(pos),
+      litPart("offhand"),
+    );
     return this;
   }
 
-  insertFish(targetPos: Pos, loot_table: LootTable, pos: Pos, tool?: Item): this {
-    this.$set(litPart("loot"), litPart("insert"), argPart(targetPos), litPart("fish"), argPart(loot_table), argPart(pos));
+  insertFish(
+    targetPos: Pos,
+    loot_table: LootTable,
+    pos: Pos,
+    tool?: Item,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("insert"),
+      argPart(targetPos),
+      litPart("fish"),
+      argPart(loot_table),
+      argPart(pos),
+    );
     if (tool !== undefined) this.$append(argPart(tool));
     return this;
   }
 
   insertFishMainhand(targetPos: Pos, loot_table: LootTable, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("insert"), argPart(targetPos), litPart("fish"), argPart(loot_table), argPart(pos), litPart("mainhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("insert"),
+      argPart(targetPos),
+      litPart("fish"),
+      argPart(loot_table),
+      argPart(pos),
+      litPart("mainhand"),
+    );
     return this;
   }
 
   insertFishOffhand(targetPos: Pos, loot_table: LootTable, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("insert"), argPart(targetPos), litPart("fish"), argPart(loot_table), argPart(pos), litPart("offhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("insert"),
+      argPart(targetPos),
+      litPart("fish"),
+      argPart(loot_table),
+      argPart(pos),
+      litPart("offhand"),
+    );
     return this;
   }
 
   insertKill(targetPos: Pos, target: Selector): this {
-    this.$set(litPart("loot"), litPart("insert"), argPart(targetPos), litPart("kill"), argPart(single(target, "loot")));
+    this.$set(
+      litPart("loot"),
+      litPart("insert"),
+      argPart(targetPos),
+      litPart("kill"),
+      argPart(single(target, "loot")),
+    );
     return this;
   }
 
   insertLoot(targetPos: Pos, loot_table: LootTable): this {
-    this.$set(litPart("loot"), litPart("insert"), argPart(targetPos), litPart("loot"), argPart(loot_table));
+    this.$set(
+      litPart("loot"),
+      litPart("insert"),
+      argPart(targetPos),
+      litPart("loot"),
+      argPart(loot_table),
+    );
     return this;
   }
 
   insertMine(targetPos: Pos, pos: Pos, tool?: Item): this {
-    this.$set(litPart("loot"), litPart("insert"), argPart(targetPos), litPart("mine"), argPart(pos));
+    this.$set(
+      litPart("loot"),
+      litPart("insert"),
+      argPart(targetPos),
+      litPart("mine"),
+      argPart(pos),
+    );
     if (tool !== undefined) this.$append(argPart(tool));
     return this;
   }
 
   insertMineMainhand(targetPos: Pos, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("insert"), argPart(targetPos), litPart("mine"), argPart(pos), litPart("mainhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("insert"),
+      argPart(targetPos),
+      litPart("mine"),
+      argPart(pos),
+      litPart("mainhand"),
+    );
     return this;
   }
 
   insertMineOffhand(targetPos: Pos, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("insert"), argPart(targetPos), litPart("mine"), argPart(pos), litPart("offhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("insert"),
+      argPart(targetPos),
+      litPart("mine"),
+      argPart(pos),
+      litPart("offhand"),
+    );
     return this;
   }
 
-  replaceBlockFish(targetPos: Pos, slot: ItemSlot, count: number, loot_table: LootTable, pos?: Pos, tool?: Item): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("block"), argPart(targetPos), argPart(slot), argPart(count), litPart("fish"), argPart(loot_table));
+  replaceBlockFish(
+    targetPos: Pos,
+    slot: ItemSlot,
+    count: number,
+    loot_table: LootTable,
+    pos?: Pos,
+    tool?: Item,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("block"),
+      argPart(targetPos),
+      argPart(slot),
+      argPart(count),
+      litPart("fish"),
+      argPart(loot_table),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     if (tool !== undefined) this.$append(argPart(tool));
     return this;
   }
 
-  replaceBlockFishMainhand(targetPos: Pos, slot: ItemSlot, count: number, loot_table: LootTable, pos?: Pos): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("block"), argPart(targetPos), argPart(slot), argPart(count), litPart("fish"), argPart(loot_table), litPart("mainhand"));
+  replaceBlockFishMainhand(
+    targetPos: Pos,
+    slot: ItemSlot,
+    count: number,
+    loot_table: LootTable,
+    pos?: Pos,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("block"),
+      argPart(targetPos),
+      argPart(slot),
+      argPart(count),
+      litPart("fish"),
+      argPart(loot_table),
+      litPart("mainhand"),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     return this;
   }
 
-  replaceBlockFishOffhand(targetPos: Pos, slot: ItemSlot, count: number, loot_table: LootTable, pos?: Pos): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("block"), argPart(targetPos), argPart(slot), argPart(count), litPart("fish"), argPart(loot_table), litPart("offhand"));
+  replaceBlockFishOffhand(
+    targetPos: Pos,
+    slot: ItemSlot,
+    count: number,
+    loot_table: LootTable,
+    pos?: Pos,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("block"),
+      argPart(targetPos),
+      argPart(slot),
+      argPart(count),
+      litPart("fish"),
+      argPart(loot_table),
+      litPart("offhand"),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     return this;
   }
 
-  replaceBlockKill(targetPos: Pos, slot: ItemSlot, count: number, target?: Selector): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("block"), argPart(targetPos), argPart(slot), argPart(count), litPart("kill"));
+  replaceBlockKill(
+    targetPos: Pos,
+    slot: ItemSlot,
+    count: number,
+    target?: Selector,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("block"),
+      argPart(targetPos),
+      argPart(slot),
+      argPart(count),
+      litPart("kill"),
+    );
     if (target !== undefined) this.$append(argPart(single(target, "loot")));
     return this;
   }
 
-  replaceBlockLoot(targetPos: Pos, slot: ItemSlot, count: number, loot_table?: LootTable): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("block"), argPart(targetPos), argPart(slot), argPart(count), litPart("loot"));
+  replaceBlockLoot(
+    targetPos: Pos,
+    slot: ItemSlot,
+    count: number,
+    loot_table?: LootTable,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("block"),
+      argPart(targetPos),
+      argPart(slot),
+      argPart(count),
+      litPart("loot"),
+    );
     if (loot_table !== undefined) this.$append(argPart(loot_table));
     return this;
   }
 
-  replaceBlockMine(targetPos: Pos, slot: ItemSlot, count: number, pos?: Pos, tool?: Item): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("block"), argPart(targetPos), argPart(slot), argPart(count), litPart("mine"));
+  replaceBlockMine(
+    targetPos: Pos,
+    slot: ItemSlot,
+    count: number,
+    pos?: Pos,
+    tool?: Item,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("block"),
+      argPart(targetPos),
+      argPart(slot),
+      argPart(count),
+      litPart("mine"),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     if (tool !== undefined) this.$append(argPart(tool));
     return this;
   }
 
-  replaceBlockMineMainhand(targetPos: Pos, slot: ItemSlot, count: number, pos?: Pos): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("block"), argPart(targetPos), argPart(slot), argPart(count), litPart("mine"), litPart("mainhand"));
+  replaceBlockMineMainhand(
+    targetPos: Pos,
+    slot: ItemSlot,
+    count: number,
+    pos?: Pos,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("block"),
+      argPart(targetPos),
+      argPart(slot),
+      argPart(count),
+      litPart("mine"),
+      litPart("mainhand"),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     return this;
   }
 
-  replaceBlockMineOffhand(targetPos: Pos, slot: ItemSlot, count: number, pos?: Pos): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("block"), argPart(targetPos), argPart(slot), argPart(count), litPart("mine"), litPart("offhand"));
+  replaceBlockMineOffhand(
+    targetPos: Pos,
+    slot: ItemSlot,
+    count: number,
+    pos?: Pos,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("block"),
+      argPart(targetPos),
+      argPart(slot),
+      argPart(count),
+      litPart("mine"),
+      litPart("offhand"),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     return this;
   }
 
-  replaceEntityFish(entities: Selector, slot: ItemSlot, count: number, loot_table: LootTable, pos?: Pos, tool?: Item): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("entity"), argPart(entities), argPart(slot), argPart(count), litPart("fish"), argPart(loot_table));
+  replaceEntityFish(
+    entities: Selector,
+    slot: ItemSlot,
+    count: number,
+    loot_table: LootTable,
+    pos?: Pos,
+    tool?: Item,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("entity"),
+      argPart(entities),
+      argPart(slot),
+      argPart(count),
+      litPart("fish"),
+      argPart(loot_table),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     if (tool !== undefined) this.$append(argPart(tool));
     return this;
   }
 
-  replaceEntityFishMainhand(entities: Selector, slot: ItemSlot, count: number, loot_table: LootTable, pos?: Pos): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("entity"), argPart(entities), argPart(slot), argPart(count), litPart("fish"), argPart(loot_table), litPart("mainhand"));
+  replaceEntityFishMainhand(
+    entities: Selector,
+    slot: ItemSlot,
+    count: number,
+    loot_table: LootTable,
+    pos?: Pos,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("entity"),
+      argPart(entities),
+      argPart(slot),
+      argPart(count),
+      litPart("fish"),
+      argPart(loot_table),
+      litPart("mainhand"),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     return this;
   }
 
-  replaceEntityFishOffhand(entities: Selector, slot: ItemSlot, count: number, loot_table: LootTable, pos?: Pos): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("entity"), argPart(entities), argPart(slot), argPart(count), litPart("fish"), argPart(loot_table), litPart("offhand"));
+  replaceEntityFishOffhand(
+    entities: Selector,
+    slot: ItemSlot,
+    count: number,
+    loot_table: LootTable,
+    pos?: Pos,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("entity"),
+      argPart(entities),
+      argPart(slot),
+      argPart(count),
+      litPart("fish"),
+      argPart(loot_table),
+      litPart("offhand"),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     return this;
   }
 
-  replaceEntityKill(entities: Selector, slot: ItemSlot, count: number, target?: Selector): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("entity"), argPart(entities), argPart(slot), argPart(count), litPart("kill"));
+  replaceEntityKill(
+    entities: Selector,
+    slot: ItemSlot,
+    count: number,
+    target?: Selector,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("entity"),
+      argPart(entities),
+      argPart(slot),
+      argPart(count),
+      litPart("kill"),
+    );
     if (target !== undefined) this.$append(argPart(single(target, "loot")));
     return this;
   }
 
-  replaceEntityLoot(entities: Selector, slot: ItemSlot, count: number, loot_table?: LootTable): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("entity"), argPart(entities), argPart(slot), argPart(count), litPart("loot"));
+  replaceEntityLoot(
+    entities: Selector,
+    slot: ItemSlot,
+    count: number,
+    loot_table?: LootTable,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("entity"),
+      argPart(entities),
+      argPart(slot),
+      argPart(count),
+      litPart("loot"),
+    );
     if (loot_table !== undefined) this.$append(argPart(loot_table));
     return this;
   }
 
-  replaceEntityMine(entities: Selector, slot: ItemSlot, count: number, pos?: Pos, tool?: Item): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("entity"), argPart(entities), argPart(slot), argPart(count), litPart("mine"));
+  replaceEntityMine(
+    entities: Selector,
+    slot: ItemSlot,
+    count: number,
+    pos?: Pos,
+    tool?: Item,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("entity"),
+      argPart(entities),
+      argPart(slot),
+      argPart(count),
+      litPart("mine"),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     if (tool !== undefined) this.$append(argPart(tool));
     return this;
   }
 
-  replaceEntityMineMainhand(entities: Selector, slot: ItemSlot, count: number, pos?: Pos): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("entity"), argPart(entities), argPart(slot), argPart(count), litPart("mine"), litPart("mainhand"));
+  replaceEntityMineMainhand(
+    entities: Selector,
+    slot: ItemSlot,
+    count: number,
+    pos?: Pos,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("entity"),
+      argPart(entities),
+      argPart(slot),
+      argPart(count),
+      litPart("mine"),
+      litPart("mainhand"),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     return this;
   }
 
-  replaceEntityMineOffhand(entities: Selector, slot: ItemSlot, count: number, pos?: Pos): this {
-    this.$set(litPart("loot"), litPart("replace"), litPart("entity"), argPart(entities), argPart(slot), argPart(count), litPart("mine"), litPart("offhand"));
+  replaceEntityMineOffhand(
+    entities: Selector,
+    slot: ItemSlot,
+    count: number,
+    pos?: Pos,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("replace"),
+      litPart("entity"),
+      argPart(entities),
+      argPart(slot),
+      argPart(count),
+      litPart("mine"),
+      litPart("offhand"),
+    );
     if (pos !== undefined) this.$append(argPart(pos));
     return this;
   }
 
-  spawnFish(targetPos: Pos, loot_table: LootTable, pos: Pos, tool?: Item): this {
-    this.$set(litPart("loot"), litPart("spawn"), argPart(targetPos), litPart("fish"), argPart(loot_table), argPart(pos));
+  spawnFish(
+    targetPos: Pos,
+    loot_table: LootTable,
+    pos: Pos,
+    tool?: Item,
+  ): this {
+    this.$set(
+      litPart("loot"),
+      litPart("spawn"),
+      argPart(targetPos),
+      litPart("fish"),
+      argPart(loot_table),
+      argPart(pos),
+    );
     if (tool !== undefined) this.$append(argPart(tool));
     return this;
   }
 
   spawnFishMainhand(targetPos: Pos, loot_table: LootTable, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("spawn"), argPart(targetPos), litPart("fish"), argPart(loot_table), argPart(pos), litPart("mainhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("spawn"),
+      argPart(targetPos),
+      litPart("fish"),
+      argPart(loot_table),
+      argPart(pos),
+      litPart("mainhand"),
+    );
     return this;
   }
 
   spawnFishOffhand(targetPos: Pos, loot_table: LootTable, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("spawn"), argPart(targetPos), litPart("fish"), argPart(loot_table), argPart(pos), litPart("offhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("spawn"),
+      argPart(targetPos),
+      litPart("fish"),
+      argPart(loot_table),
+      argPart(pos),
+      litPart("offhand"),
+    );
     return this;
   }
 
   spawnKill(targetPos: Pos, target: Selector): this {
-    this.$set(litPart("loot"), litPart("spawn"), argPart(targetPos), litPart("kill"), argPart(single(target, "loot")));
+    this.$set(
+      litPart("loot"),
+      litPart("spawn"),
+      argPart(targetPos),
+      litPart("kill"),
+      argPart(single(target, "loot")),
+    );
     return this;
   }
 
   spawnLoot(targetPos: Pos, loot_table: LootTable): this {
-    this.$set(litPart("loot"), litPart("spawn"), argPart(targetPos), litPart("loot"), argPart(loot_table));
+    this.$set(
+      litPart("loot"),
+      litPart("spawn"),
+      argPart(targetPos),
+      litPart("loot"),
+      argPart(loot_table),
+    );
     return this;
   }
 
   spawnMine(targetPos: Pos, pos: Pos, tool?: Item): this {
-    this.$set(litPart("loot"), litPart("spawn"), argPart(targetPos), litPart("mine"), argPart(pos));
+    this.$set(
+      litPart("loot"),
+      litPart("spawn"),
+      argPart(targetPos),
+      litPart("mine"),
+      argPart(pos),
+    );
     if (tool !== undefined) this.$append(argPart(tool));
     return this;
   }
 
   spawnMineMainhand(targetPos: Pos, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("spawn"), argPart(targetPos), litPart("mine"), argPart(pos), litPart("mainhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("spawn"),
+      argPart(targetPos),
+      litPart("mine"),
+      argPart(pos),
+      litPart("mainhand"),
+    );
     return this;
   }
 
   spawnMineOffhand(targetPos: Pos, pos: Pos): this {
-    this.$set(litPart("loot"), litPart("spawn"), argPart(targetPos), litPart("mine"), argPart(pos), litPart("offhand"));
+    this.$set(
+      litPart("loot"),
+      litPart("spawn"),
+      argPart(targetPos),
+      litPart("mine"),
+      argPart(pos),
+      litPart("offhand"),
+    );
     return this;
   }
 }

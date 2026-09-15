@@ -8,7 +8,10 @@ import { buildDatapack } from "../../codegen/codegen";
 describe("inventory slot matches", () => {
   it("Predicate.carrying matches an item anywhere in the inventory", () => {
     const dp = new Datapack("p", v26_1_2);
-    const ref = dp.predicate("has_disc", Predicate.carrying(Item.MUSIC_DISC_11));
+    const ref = dp.predicate(
+      "has_disc",
+      Predicate.carrying(Item.MUSIC_DISC_11),
+    );
     const json = JSON.parse(
       buildDatapack(dp).get("data/p/predicate/has_disc.json")!,
     );
@@ -44,7 +47,9 @@ describe("inventory slot matches", () => {
       "head",
       Predicate.entity({ slots: { [SLOTS.HEAD]: Item.PLAYER_HEAD } }),
     );
-    const json = JSON.parse(buildDatapack(dp).get("data/p/predicate/head.json")!);
+    const json = JSON.parse(
+      buildDatapack(dp).get("data/p/predicate/head.json")!,
+    );
     expect(Object.keys(json.predicate.slots)).toEqual(["armor.head"]);
   });
 });

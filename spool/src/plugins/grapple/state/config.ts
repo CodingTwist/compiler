@@ -21,7 +21,9 @@ export interface GrappleOptions {
 export function createConfig(opts: GrappleOptions = {}) {
   // maxReach is in blocks; the marcher steps 0.5 blocks, so 2 steps per block.
   const maxSteps =
-    opts.maxReach !== undefined ? Math.max(1, Math.round(opts.maxReach * 2)) : MAX_STEPS;
+    opts.maxReach !== undefined
+      ? Math.max(1, Math.round(opts.maxReach * 2))
+      : MAX_STEPS;
 
   return {
     /** The anchor block filter (or `undefined` = anchor on anything). */

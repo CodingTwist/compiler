@@ -37,14 +37,23 @@ export class DisplayValue extends DisplayBuilder implements CommandValue {
     const [bx, by, bz] = this.boundsSize();
     // ponytail: the box starts at the group origin, since passengers can't be offset.
     // Models not starting at the origin need explicit sizes.
-    this.s.hitbox = { width: width ?? Math.max(bx, bz), height: height ?? by, response };
+    this.s.hitbox = {
+      width: width ?? Math.max(bx, bz),
+      height: height ?? by,
+      response,
+    };
     return this;
   }
 
   /** A selector for the hitbox alone - what an attack-relay reads. */
   hitboxSelector(): Selector {
-    if (!this.s.hitbox) throw new Error("Display has no hitbox - call .hitbox() first.");
-    return this.nearPos(Selector.allEntities().type(EntityType.INTERACTION).tag(`${this.getName()}_hitbox`));
+    if (!this.s.hitbox)
+      throw new Error("Display has no hitbox - call .hitbox() first.");
+    return this.nearPos(
+      Selector.allEntities()
+        .type(EntityType.INTERACTION)
+        .tag(`${this.getName()}_hitbox`),
+    );
   }
   /** Condition: the group is currently spawned. */
   get exists(): EntityCondition {
@@ -81,24 +90,35 @@ export class DisplayValue extends DisplayBuilder implements CommandValue {
    * display summoned this way, or these selectors stop finding it.
    */
   memberSelector(i: number): Selector {
-    const kind = i === 0 ? this.content.kind : this.children[i - 1].content.kind;
-    return this.nearPos(Selector.allEntities().type(entityFor(kind)).tag(`${this.getName()}_${i}`));
+    const kind =
+      i === 0 ? this.content.kind : this.children[i - 1].content.kind;
+    return this.nearPos(
+      Selector.allEntities()
+        .type(entityFor(kind))
+        .tag(`${this.getName()}_${i}`),
+    );
   }
 
   /** Adds `x/y/z,distance=..1` to `sel` when the display has an absolute position. */
   private nearPos(sel: Selector): Selector {
     const pos = this.getPos();
     // ..1 covers summon's +0.5 centring of whole x/z coordinates.
-    if (pos instanceof PosValue && pos.isAbsolute()) sel.near(pos.coords(), Range.atMost(1));
+    if (pos instanceof PosValue && pos.isAbsolute())
+      sel.near(pos.coords(), Range.atMost(1));
     return sel;
   }
 
   /** Remove every member of the group: one typed scan for the root, the rest ride it. */
   kill(ctx: FunctionContext): void {
-    ctx.execute().as(this.rootSelector()).run((c) => {
-      c.execute().on(Relation.PASSENGERS).run((p) => p.kill(Selector.self()));
-      c.kill(Selector.self());
-    });
+    ctx
+      .execute()
+      .as(this.rootSelector())
+      .run((c) => {
+        c.execute()
+          .on(Relation.PASSENGERS)
+          .run((p) => p.kill(Selector.self()));
+        c.kill(Selector.self());
+      });
   }
 
   /**
@@ -106,9 +126,12 @@ export class DisplayValue extends DisplayBuilder implements CommandValue {
    * For cleanup after a crash or `/reload`, when members may have come off the root.
    */
   killAll(ctx: FunctionContext): void {
-    const types = [...new Set(this.members().map((m) => m.content.kind))].map(entityFor);
+    const types = [...new Set(this.members().map((m) => m.content.kind))].map(
+      entityFor,
+    );
     if (this.s.hitbox) types.push(EntityType.INTERACTION);
-    for (const type of types) ctx.kill(Selector.allEntities().type(type).tag(this.getName()));
+    for (const type of types)
+      ctx.kill(Selector.allEntities().type(type).tag(this.getName()));
   }
 
   /**
@@ -151,6 +174,7 @@ export const Display = Object.assign(
       item: ItemValue,
       rootTransform?: Transform,
       context?: ItemDisplayFields["itemDisplay"],
-    ): DisplayValue => new DisplayValue({ kind: "item", item, context }, rootTransform),
+    ): DisplayValue =>
+      new DisplayValue({ kind: "item", item, context }, rootTransform),
   },
 );

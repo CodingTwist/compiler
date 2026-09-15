@@ -7,9 +7,7 @@ import { Gamemode } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
 /** `gamemode` */
-export class GamemodeBuilder extends CommandBuilder<TreeCommandNode> {
-
-}
+export class GamemodeBuilder extends CommandBuilder<TreeCommandNode> {}
 
 declare module "../frontend/context" {
   interface FunctionContext {
@@ -18,7 +16,11 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.gamemode = function (this: FunctionContext, gamemode: Gamemode, target?: Selector) {
+FunctionContext.prototype.gamemode = function (
+  this: FunctionContext,
+  gamemode: Gamemode,
+  target?: Selector,
+) {
   const node = new TreeCommandNode("gamemode", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("gamemode"), argPart(gamemode)];

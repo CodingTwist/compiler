@@ -29,19 +29,25 @@ describe("entity NBT schemas", () => {
   });
 
   it("follows a field that changed type as well as name", () => {
-    expect(Tnt({ fallDistance: 3 }).render(v1_21_4)).toBe("{FallDistance:3.0f}");
+    expect(Tnt({ fallDistance: 3 }).render(v1_21_4)).toBe(
+      "{FallDistance:3.0f}",
+    );
     expect(Tnt({ fallDistance: 3 }).render(v26_2)).toBe("{fall_distance:3.0d}");
   });
 
   it("keeps a nested compound typed one level down", () => {
-    expect(Villager({ villagerData: { level: 2, profession: "farmer" } }).render(v1_21_4)).toBe(
-      `{VillagerData:{level:2,profession:"farmer"}}`,
-    );
+    expect(
+      Villager({ villagerData: { level: 2, profession: "farmer" } }).render(
+        v1_21_4,
+      ),
+    ).toBe(`{VillagerData:{level:2,profession:"farmer"}}`);
   });
 
   it("covers every entity, not just the interesting ones", () => {
     // A mob with no NBT of its own still gets a factory, carrying the mob base.
-    expect(Blaze({ persistenceRequired: true }).render(v1_21_4)).toBe("{PersistenceRequired:1b}");
+    expect(Blaze({ persistenceRequired: true }).render(v1_21_4)).toBe(
+      "{PersistenceRequired:1b}",
+    );
     // …and one with its own fields carries those too.
     expect(Zombie({ isBaby: true, canBreakDoors: true }).render(v1_21_4)).toBe(
       "{IsBaby:1b,CanBreakDoors:1b}",
@@ -49,22 +55,30 @@ describe("entity NBT schemas", () => {
   });
 
   it("takes an Item straight into an equipment slot", () => {
-    expect(Zombie({ equipment: { mainhand: Item.CROSSBOW } }).render(v26_2)).toBe(
-      `{equipment:{mainhand:{id:"minecraft:crossbow",count:1}}}`,
-    );
+    expect(
+      Zombie({ equipment: { mainhand: Item.CROSSBOW } }).render(v26_2),
+    ).toBe(`{equipment:{mainhand:{id:"minecraft:crossbow",count:1}}}`);
   });
 
   it("renders a Display through the block_display schema, children as passengers", () => {
-    const d = Display(Block.STONE).add(Block.OAK_PLANKS, { translation: [0, 1, 0] }).named("cog");
+    const d = Display(Block.STONE)
+      .add(Block.OAK_PLANKS, { translation: [0, 1, 0] })
+      .named("cog");
     expect(d.toNbt().entity).toBe("minecraft:block_display");
-    expect(d.render(v26_2)).toContain(`Tags:["cog","cog_0"],Passengers:[{block_state:`);
+    expect(d.render(v26_2)).toContain(
+      `Tags:["cog","cog_0"],Passengers:[{block_state:`,
+    );
   });
 
   it("renders an item member through the item_display schema", () => {
-    const rig = Display.item(Item.NETHERITE_SWORD, {}, "head").add(Block.STONE).named("boss");
+    const rig = Display.item(Item.NETHERITE_SWORD, {}, "head")
+      .add(Block.STONE)
+      .named("boss");
     expect(rig.toNbt().entity).toBe("minecraft:item_display");
     const out = rig.render(v26_2);
-    expect(out).toContain(`item:{id:"minecraft:netherite_sword",count:1},item_display:"head"`);
+    expect(out).toContain(
+      `item:{id:"minecraft:netherite_sword",count:1},item_display:"head"`,
+    );
     // The child keeps its own type - a group may mix block and item members.
     expect(out).toContain(`id:"minecraft:block_display"`);
   });
@@ -78,20 +92,29 @@ describe("entity NBT schemas", () => {
     expect(d.render(v26_2)).toContain(
       `{width:3.0f,height:4.0f,response:1b,Tags:["boss","boss_hitbox"],id:"minecraft:interaction"}`,
     );
-    expect(d.hitboxSelector().toString()).toBe("@e[tag=boss_hitbox,type=minecraft:interaction]");
+    expect(d.hitboxSelector().toString()).toBe(
+      "@e[tag=boss_hitbox,type=minecraft:interaction]",
+    );
     // The hitbox is not an animatable member - only the two displays are.
     expect(d.members()).toHaveLength(2);
   });
 
   it("limits the hitbox selector to an absolute summon position", () => {
-    const d = Display(Block.STONE).named("boss").hitbox(1, 1).at(Pos(10.5, 64, 40.5));
+    const d = Display(Block.STONE)
+      .named("boss")
+      .hitbox(1, 1)
+      .at(Pos(10.5, 64, 40.5));
     expect(d.hitboxSelector().toString()).toBe(
       "@e[x=10.5,y=64,z=40.5,distance=..1,tag=boss_hitbox,type=minecraft:interaction]",
     );
   });
 
   it("kills every member with one typed kill per entity type", () => {
-    const d = Display.item(Item.NETHERITE_SWORD).add(Block.STONE).add(Block.DIRT).named("rig").hitbox(1, 1);
+    const d = Display.item(Item.NETHERITE_SWORD)
+      .add(Block.STONE)
+      .add(Block.DIRT)
+      .named("rig")
+      .hitbox(1, 1);
     const dp = new Datapack("p", v26_2);
     dp.createFunction("clear").build((c) => d.killAll(c));
     expect(buildDatapack(dp).get("data/p/function/clear.mcfunction")).toBe(
@@ -101,7 +124,9 @@ describe("entity NBT schemas", () => {
         "kill @e[tag=rig,type=minecraft:interaction]",
       ].join("\n"),
     );
-    expect(d.notExist.selector.toString()).toBe("@e[tag=rig_0,type=minecraft:item_display]");
+    expect(d.notExist.selector.toString()).toBe(
+      "@e[tag=rig_0,type=minecraft:item_display]",
+    );
   });
 
   it("shifts every member by the group offset, leaving the hitbox anchored", () => {
@@ -118,14 +143,22 @@ describe("entity NBT schemas", () => {
 
   it("carries interpolation defaults onto every display member", () => {
     const d = Display(Block.STONE).interpolation(4).teleportDuration(6);
-    expect(d.render(v26_2)).toContain("interpolation_duration:4,teleport_duration:6");
+    expect(d.render(v26_2)).toContain(
+      "interpolation_duration:4,teleport_duration:6",
+    );
   });
 
   it("Display.kill: one typed scan for the root, members killed as its passengers", () => {
     const dp = new Datapack("test", v1_21_4);
-    dp.createFunction("f").build((ctx) => Display(Block.STONE).named("cog").kill(ctx));
+    dp.createFunction("f").build((ctx) =>
+      Display(Block.STONE).named("cog").kill(ctx),
+    );
     dp.report();
-    expect(dp.files.get("f")).toBe("execute as @e[tag=cog_0,type=minecraft:block_display] run function test:zzz/f/exec_0");
-    expect(dp.files.get("zzz/f/exec_0")).toBe("execute on passengers run kill @s\nkill @s");
+    expect(dp.files.get("f")).toBe(
+      "execute as @e[tag=cog_0,type=minecraft:block_display] run function test:zzz/f/exec_0",
+    );
+    expect(dp.files.get("zzz/f/exec_0")).toBe(
+      "execute on passengers run kill @s\nkill @s",
+    );
   });
 });

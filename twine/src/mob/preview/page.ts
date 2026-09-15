@@ -6,7 +6,11 @@ import { PLAYBACK } from "./playback";
 import { SCENE } from "./scene";
 
 /** The standalone rig viewer page for one mob, with its data and textures inlined. */
-export const page = (name: string, data: MobPreview, tex: Record<string, string>) => `<!doctype html>
+export const page = (
+  name: string,
+  data: MobPreview,
+  tex: Record<string, string>,
+) => `<!doctype html>
 <meta charset="utf-8">
 <title>${name} - rig preview</title>
 <style>

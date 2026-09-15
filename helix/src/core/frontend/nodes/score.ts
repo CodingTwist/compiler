@@ -2,7 +2,12 @@ import { TellrawPart } from "./tellraw_part";
 
 import { ExpressionNode, Range } from "../../ir/node";
 import { ScoreCompareNode, ScoreRangeNode } from "../../commands/if";
-import { scoreOpNode, scoreLitNode, playersNode, ScoreOperator } from "../../commands/scoreboard";
+import {
+  scoreOpNode,
+  scoreLitNode,
+  playersNode,
+  ScoreOperator,
+} from "../../commands/scoreboard";
 import { currentContext, type EmitContext } from "../context/ambient";
 import { Objective } from "./objective";
 import { FunctionContext } from "../context";
@@ -49,11 +54,23 @@ export class Score extends TellrawPart implements ExpressionNode {
   }
 
   /** A compare against another score, or `matches <range>` for a literal. */
-  private compare(op: ScoreCompareNode["operator"], input: number | Score): ExpressionNode {
-    if (input instanceof Score) return new ScoreCompareNode(this.target, this.objective, op, input.target, input.objective);
+  private compare(
+    op: ScoreCompareNode["operator"],
+    input: number | Score,
+  ): ExpressionNode {
+    if (input instanceof Score)
+      return new ScoreCompareNode(
+        this.target,
+        this.objective,
+        op,
+        input.target,
+        input.objective,
+      );
     // Scores are integers, so strict bounds are one step in.
-    const min = op === ">" ? input + 1 : op === "=" || op === ">=" ? input : undefined;
-    const max = op === "<" ? input - 1 : op === "=" || op === "<=" ? input : undefined;
+    const min =
+      op === ">" ? input + 1 : op === "=" || op === ">=" ? input : undefined;
+    const max =
+      op === "<" ? input - 1 : op === "=" || op === "<=" ? input : undefined;
     return new ScoreRangeNode(this.target, this.objective, new Range(min, max));
   }
 
@@ -99,7 +116,10 @@ export class Score extends TellrawPart implements ExpressionNode {
 
   /** `scoreboard players enable <this>`: lets the holder run `/trigger` on this trigger objective once. */
   enable(ctx?: FunctionContext): this {
-    if (this.objective.kind !== "trigger") throw new Error(`Objective "${this.objective.getName()}" must be trigger to enable`);
+    if (this.objective.kind !== "trigger")
+      throw new Error(
+        `Objective "${this.objective.getName()}" must be trigger to enable`,
+      );
     this.emitter(ctx).emit(playersNode("enable", this));
     return this;
   }
@@ -151,5 +171,4 @@ export class Score extends TellrawPart implements ExpressionNode {
   swap(other: Score, ctx?: FunctionContext): this {
     return this.operation("><", other, ctx);
   }
-
 }

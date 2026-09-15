@@ -1,5 +1,10 @@
 // 26.3+ lowering of a score expression to one `context_int_provider` (or float provider).
-import { ExprNode, ExprOp, FloatOp, isFloatOp } from "../../frontend/nodes/expr";
+import {
+  ExprNode,
+  ExprOp,
+  FloatOp,
+  isFloatOp,
+} from "../../frontend/nodes/expr";
 import {
   ContextFloat as f,
   ContextFloatProvider,

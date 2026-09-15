@@ -8,11 +8,23 @@ export * from "./core/frontend/";
 
 // Value classes and Selector, for building packs.
 export * from "./core/values";
-export { Selector, SelectorScore, type SelectorBase } from "./core/frontend/nodes/selector";
+export {
+  Selector,
+  SelectorScore,
+  type SelectorBase,
+} from "./core/frontend/nodes/selector";
 // The builder `Objective`, not the string alias in values/enums.
-export { Objective, usedStatCriteria, type ObjectiveKind } from "./core/frontend/nodes/objective";
+export {
+  Objective,
+  usedStatCriteria,
+  type ObjectiveKind,
+} from "./core/frontend/nodes/objective";
 // Animation lives in `spool`; the core only exposes the timing contract.
-export { FOREVER, TICKS_PER_SECOND, type Countdown } from "./core/timing/scoreboard-timing";
+export {
+  FOREVER,
+  TICKS_PER_SECOND,
+  type Countdown,
+} from "./core/timing/scoreboard-timing";
 export type { FunctionRef } from "./core/function_ref";
 // Builds a `Datapack` into a path → contents map, without writing to disk.
 export { buildDatapack } from "./core/codegen/codegen";
@@ -53,7 +65,13 @@ export {
 } from "./core/debug/sources";
 // Exported explicitly since command-file exports aren't at the package root.
 export { triggerCmd } from "./core/commands/trigger";
-export { and, not, or, predicateCheck, type Condition } from "./core/commands/if";
+export {
+  and,
+  not,
+  or,
+  predicateCheck,
+  type Condition,
+} from "./core/commands/if";
 
 // Profile types and `profileFromRaw` work anywhere; disk-loaded constants are in `index.ts`
 // only.

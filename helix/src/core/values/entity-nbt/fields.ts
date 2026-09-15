@@ -41,7 +41,9 @@ export function field<T>(spec: {
       spec.was !== undefined && !atLeast(version, spec.was.until)
         ? spec.was.key
         : spec.key;
-    return { [key]: spec.encode ? spec.encode(value, version) : (value as NbtInput) };
+    return {
+      [key]: spec.encode ? spec.encode(value, version) : (value as NbtInput),
+    };
   };
 }
 
@@ -53,7 +55,14 @@ export const asList = (v: readonly NbtInput[]): NbtInput => [...v];
 /** Slot -> item, for the 1.21.5+ `equipment` compound. An {@link Item} goes in whole. */
 export type EquipmentInput = Partial<
   Record<
-    "mainhand" | "offhand" | "head" | "chest" | "legs" | "feet" | "body" | "saddle",
+    | "mainhand"
+    | "offhand"
+    | "head"
+    | "chest"
+    | "legs"
+    | "feet"
+    | "body"
+    | "saddle",
     ItemValue | NbtInput
   >
 >;

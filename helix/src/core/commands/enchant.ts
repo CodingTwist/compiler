@@ -7,21 +7,35 @@ import { Enchantment } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
 /** `enchant` */
-export class EnchantBuilder extends CommandBuilder<TreeCommandNode> {
-
-}
+export class EnchantBuilder extends CommandBuilder<TreeCommandNode> {}
 
 declare module "../frontend/context" {
   interface FunctionContext {
     /** `enchant` - `ctx.enchant()...` */
-    enchant(targets: Selector, enchantment: Enchantment, level?: number): EnchantBuilder;
+    enchant(
+      targets: Selector,
+      enchantment: Enchantment,
+      level?: number,
+    ): EnchantBuilder;
   }
 }
 
-FunctionContext.prototype.enchant = function (this: FunctionContext, targets: Selector, enchantment: Enchantment, level?: number) {
-  const node = new TreeCommandNode("enchant", { effect: Effect.EDITS, local: true });
+FunctionContext.prototype.enchant = function (
+  this: FunctionContext,
+  targets: Selector,
+  enchantment: Enchantment,
+  level?: number,
+) {
+  const node = new TreeCommandNode("enchant", {
+    effect: Effect.EDITS,
+    local: true,
+  });
   this.emit(node);
-  const parts: CommandPart[] = [litPart("enchant"), argPart(targets), argPart(enchantment)];
+  const parts: CommandPart[] = [
+    litPart("enchant"),
+    argPart(targets),
+    argPart(enchantment),
+  ];
   if (level !== undefined) parts.push(argPart(level));
   node.parts = parts;
   return new EnchantBuilder(node);

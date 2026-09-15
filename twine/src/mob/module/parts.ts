@@ -1,5 +1,18 @@
-import { EntityType, Relation, Selector, displayPose, privateName } from "helix";
-import type { Datapack, FunctionContext, FunctionRef, Objective, Quat, Score } from "helix";
+import {
+  EntityType,
+  Relation,
+  Selector,
+  displayPose,
+  privateName,
+} from "helix";
+import type {
+  Datapack,
+  FunctionContext,
+  FunctionRef,
+  Objective,
+  Quat,
+  Score,
+} from "helix";
 import type { MobStates } from "../types";
 import { memberPose, type ResolvedGesture } from "../gesture";
 import type { MobDef } from "./types";
@@ -43,7 +56,9 @@ export class MobParts<S extends string> {
     return `${this.name}_rig`;
   }
   get mobs(): Selector {
-    return Selector.allEntities().type(EntityType(this.def.nbt.entity)).tag(this.name);
+    return Selector.allEntities()
+      .type(EntityType(this.def.nbt.entity))
+      .tag(this.name);
   }
   /** Member 0 is the group root: the entity that actually rides the mob. */
   get rigRoots(): Selector {
@@ -101,7 +116,10 @@ export class MobParts<S extends string> {
         b
           .data()
           .merge()
-          .entity(Selector.self().tag(`${this.rig}_${i}`), displayPose(memberPose(this.def.model, g, i, q), duration)),
+          .entity(
+            Selector.self().tag(`${this.rig}_${i}`),
+            displayPose(memberPose(this.def.model, g, i, q), duration),
+          ),
       );
     }
   }

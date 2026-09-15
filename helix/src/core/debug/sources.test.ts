@@ -11,15 +11,23 @@ import { v1_21_4 } from "../../versions/profiles";
 import type { DebugOptions } from "./sources";
 
 /** The line this is called from, in the same (source-mapped) numbering capture uses. */
-const here = () => Number(/:(\d+):\d+\)?$/.exec(new Error().stack!.split("\n")[2])![1]);
+const here = () =>
+  Number(/:(\d+):\d+\)?$/.exec(new Error().stack!.split("\n")[2])![1]);
 
 function pack(debug?: DebugOptions) {
   const dp = new Datapack("dbg", v1_21_4, undefined, { debug });
   const lines: Record<string, number> = {};
   dp.tick((ctx) => {
-    ctx.say("a"); lines.a = here();
-    ctx.say("b"); lines.b = here();
-    ctx.execute().as(Selector.allEntities().tag("x").nbt(Nbt({ OnGround: Byte(1) }))).run((c) => c.say("hit")); lines.read = here();
+    const sel = Selector.allEntities()
+      .tag("x")
+      .nbt(Nbt({ OnGround: Byte(1) }));
+    lines.a = here() + 1;
+    ctx.say("a");
+    lines.b = here() + 1;
+    ctx.say("b");
+    lines.read = here() + 1;
+    const asSel = ctx.execute().as(sel);
+    asSel.run((c) => c.say("hit"));
   });
   return { dp, lines };
 }
@@ -39,7 +47,9 @@ describe("debug source tracking", () => {
     const locs = dp.sourceMap.get("tick")!;
     expect(locs[0]).toMatch(new RegExp(`sources\\.test\\.ts:${lines.a}:\\d+$`));
     expect(locs[1]).toMatch(new RegExp(`sources\\.test\\.ts:${lines.b}:\\d+$`));
-    expect(locs[2]).toMatch(new RegExp(`sources\\.test\\.ts:${lines.read}:\\d+$`));
+    expect(locs[2]).toMatch(
+      new RegExp(`sources\\.test\\.ts:${lines.read}:\\d+$`),
+    );
     expect(dp.files.get("tick")).not.toContain("#");
   });
 
@@ -56,7 +66,9 @@ describe("debug source tracking", () => {
   it("puts the source under a report warning", () => {
     const { dp, lines } = pack({ sources: true });
     const report = dp.report();
-    expect(report.warnings[0].source).toMatch(new RegExp(`sources\\.test\\.ts:${lines.read}:`));
+    expect(report.warnings[0].source).toMatch(
+      new RegExp(`sources\\.test\\.ts:${lines.read}:`),
+    );
     expect(formatCostReport(report)).toContain(`↳ `);
   });
 
@@ -65,8 +77,12 @@ describe("debug source tracking", () => {
     try {
       const { dp, lines } = pack({ comments: true });
       await dp.writeDatapack(dir);
-      const map = JSON.parse(fs.readFileSync(path.join(dir, "helix-sources.json"), "utf-8"));
-      expect(map.tick["2"]).toMatch(new RegExp(`sources\\.test\\.ts:${lines.a}:`)); // line 1 is the comment
+      const map = JSON.parse(
+        fs.readFileSync(path.join(dir, "helix-sources.json"), "utf-8"),
+      );
+      expect(map.tick["2"]).toMatch(
+        new RegExp(`sources\\.test\\.ts:${lines.a}:`),
+      ); // line 1 is the comment
       await pack().dp.writeDatapack(dir);
       expect(fs.existsSync(path.join(dir, "helix-sources.json"))).toBe(false);
     } finally {

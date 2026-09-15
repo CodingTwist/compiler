@@ -18,15 +18,26 @@ export interface MobPreview {
     rise: number;
     linger: number;
     fall: number;
-    writes: { tick: number; duration: number; poses: Record<number, Transform> }[];
+    writes: {
+      tick: number;
+      duration: number;
+      poses: Record<number, Transform>;
+    }[];
   }[];
 }
 
 /** The model and every gesture's pose timeline, resolved to plain transforms. */
-export function mobPreview(model: DisplayValue, gestures: ResolvedGesture<string>[], tickEvery: number): MobPreview {
+export function mobPreview(
+  model: DisplayValue,
+  gestures: ResolvedGesture<string>[],
+  tickEvery: number,
+): MobPreview {
   const members = model.members().map(({ content, transform }) => ({
     kind: content.kind,
-    id: content.kind === "item" ? content.item.baseId() : content.block.toBlockState().Name,
+    id:
+      content.kind === "item"
+        ? content.item.baseId()
+        : content.block.toBlockState().Name,
     transform,
   }));
   return {
@@ -45,7 +56,9 @@ export function mobPreview(model: DisplayValue, gestures: ResolvedGesture<string
       writes: g.schedule.map((w) => ({
         tick: w.poll * tickEvery,
         duration: w.duration,
-        poses: Object.fromEntries(g.members.map((i) => [i, memberPose(model, g, i, w.q)])),
+        poses: Object.fromEntries(
+          g.members.map((i) => [i, memberPose(model, g, i, w.q)]),
+        ),
       })),
     })),
   };

@@ -30,7 +30,9 @@ describe("compute capability", () => {
 
 describe("context provider JSON", () => {
   it("renders a bare number operand as a constant, not a wrapper object", () => {
-    expect(f.mul(2, 3).render(v26_3_rc_2)).toBe('{"type":"mul","inputs":[2,3]}');
+    expect(f.mul(2, 3).render(v26_3_rc_2)).toBe(
+      '{"type":"mul","inputs":[2,3]}',
+    );
   });
 
   it("nests recursively - the whole formula is one value", () => {
@@ -48,7 +50,9 @@ describe("context provider JSON", () => {
   });
 
   it("renders a selector holder through the Selector concept, not a literal", () => {
-    expect(i.score(dummy.score(Selector.self())).render(v26_3_rc_2)).toContain('"name":"@s"');
+    expect(i.score(dummy.score(Selector.self())).render(v26_3_rc_2)).toContain(
+      '"name":"@s"',
+    );
   });
 
   it("carries a fallback only when one is given", () => {
@@ -56,8 +60,12 @@ describe("context provider JSON", () => {
   });
 
   it("keeps the int-only and float-only vocabularies apart", () => {
-    expect(i.floorMod(-5, 2).render(v26_3_rc_2)).toBe('{"type":"floor_mod","left":-5,"right":2}');
-    expect(f.length(1, 2, 3).render(v26_3_rc_2)).toBe('{"type":"length","inputs":[1,2,3]}');
+    expect(i.floorMod(-5, 2).render(v26_3_rc_2)).toBe(
+      '{"type":"floor_mod","left":-5,"right":2}',
+    );
+    expect(f.length(1, 2, 3).render(v26_3_rc_2)).toBe(
+      '{"type":"length","inputs":[1,2,3]}',
+    );
     // @ts-expect-error a float expression is not an int operand - from_int/from_float are the crossings
     i.add(f.sqrt(2));
     expect(i.fromFloat(f.sqrt(2)).render(v26_3_rc_2)).toBe(
@@ -86,6 +94,8 @@ describe("ctx.compute()", () => {
   });
 
   it("is rejected when the target version has no compute command", () => {
-    expect(() => render((ctx) => ctx.compute().defaultInteger(i.add(1, 2)), v26_2)).toThrow();
+    expect(() =>
+      render((ctx) => ctx.compute().defaultInteger(i.add(1, 2)), v26_2),
+    ).toThrow();
   });
 });

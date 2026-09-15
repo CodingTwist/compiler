@@ -1,6 +1,12 @@
 // Renders one `execute` clause, and says what it shares with and does to other lines.
 import { VersionProfile } from "../../../versions/profile";
-import { entityWriteEffect, pureClause, selectorClause, Effect, type SharedClause } from "../../ir/line-info";
+import {
+  entityWriteEffect,
+  pureClause,
+  selectorClause,
+  Effect,
+  type SharedClause,
+} from "../../ir/line-info";
 import { Score } from "../../frontend/nodes/score";
 import { Relation } from "../../values";
 import { toCommandValue } from "../../values/value";
@@ -55,7 +61,12 @@ function score(s: Score, v: VersionProfile): string {
 }
 
 /** The command text of `c`. `existence` lets entity tests stop at the first match. */
-export function clause(c: Clause, v: VersionProfile, ns: string, existence: boolean): string {
+export function clause(
+  c: Clause,
+  v: VersionProfile,
+  ns: string,
+  existence: boolean,
+): string {
   switch (c.k) {
     case "as":
       return `as ${toCommandValue(c.sel).render(v)}`;

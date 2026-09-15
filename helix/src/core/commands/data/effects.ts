@@ -1,5 +1,10 @@
 // What a `data` command reads and writes, for output passes such as execute grouping.
-import { Effect, entityMergeEffect, entityWriteEffect, onlySelf } from "../../ir/line-info";
+import {
+  Effect,
+  entityMergeEffect,
+  entityWriteEffect,
+  onlySelf,
+} from "../../ir/line-info";
 import type { VersionProfile } from "../../../versions/profile";
 import type { DataArgs } from "./args";
 

@@ -14,7 +14,11 @@ const BIN: Record<string, "add" | "sub" | "mul" | "div" | "mod"> = {
 };
 
 /** jsep's tree -> ours, resolving holes and the vector/scalar distinction. */
-export function convert(node: jsep.Expression, src: string, holes: Operand[]): Val {
+export function convert(
+  node: jsep.Expression,
+  src: string,
+  holes: Operand[],
+): Val {
   const go = (n: jsep.Expression): Val => {
     switch (n.type) {
       case "Literal": {

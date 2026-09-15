@@ -13,9 +13,9 @@ function render(build: (ctx: FunctionContext) => void): string {
 
 describe("setblock (concept arguments)", () => {
   it("renders Pos and Block concepts", () => {
-    expect(render((ctx) => ctx.setblock(Pos(10, 4, 5), Block("minecraft:stone")))).toBe(
-      "setblock 10 4 5 minecraft:stone",
-    );
+    expect(
+      render((ctx) => ctx.setblock(Pos(10, 4, 5), Block("minecraft:stone"))),
+    ).toBe("setblock 10 4 5 minecraft:stone");
   });
 
   it("renders relative/local positions and block state", () => {
@@ -43,7 +43,8 @@ describe("setblock (concept arguments)", () => {
     dp.createFunction("m").build((ctx) => {
       const b = ctx.setblock(Pos(1, 2, 3), Block("stone")).strict();
       // The node carries typed args, not a flat token list.
-      captured = (b as unknown as { node: { args: { mode?: string } } }).node.args;
+      captured = (b as unknown as { node: { args: { mode?: string } } }).node
+        .args;
     });
     expect(captured?.mode).toBe("strict");
   });

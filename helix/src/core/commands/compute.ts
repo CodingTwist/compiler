@@ -8,36 +8,78 @@ import { Selector } from "../frontend/nodes/selector";
 
 /** `compute` */
 export class ComputeBuilder extends CommandBuilder<TreeCommandNode> {
-  blockFloat(computePos: Pos, provider: ContextFloatProvider, scale?: number): this {
-    this.$set(litPart("compute"), litPart("block"), argPart(computePos), litPart("float"), argPart(provider));
+  blockFloat(
+    computePos: Pos,
+    provider: ContextFloatProvider,
+    scale?: number,
+  ): this {
+    this.$set(
+      litPart("compute"),
+      litPart("block"),
+      argPart(computePos),
+      litPart("float"),
+      argPart(provider),
+    );
     if (scale !== undefined) this.$append(argPart(scale));
     return this;
   }
 
   blockInteger(computePos: Pos, provider: ContextIntProvider): this {
-    this.$set(litPart("compute"), litPart("block"), argPart(computePos), litPart("integer"), argPart(provider));
+    this.$set(
+      litPart("compute"),
+      litPart("block"),
+      argPart(computePos),
+      litPart("integer"),
+      argPart(provider),
+    );
     return this;
   }
 
   defaultFloat(provider: ContextFloatProvider, scale?: number): this {
-    this.$set(litPart("compute"), litPart("default"), litPart("float"), argPart(provider));
+    this.$set(
+      litPart("compute"),
+      litPart("default"),
+      litPart("float"),
+      argPart(provider),
+    );
     if (scale !== undefined) this.$append(argPart(scale));
     return this;
   }
 
   defaultInteger(provider: ContextIntProvider): this {
-    this.$set(litPart("compute"), litPart("default"), litPart("integer"), argPart(provider));
+    this.$set(
+      litPart("compute"),
+      litPart("default"),
+      litPart("integer"),
+      argPart(provider),
+    );
     return this;
   }
 
-  entityFloat(computeTarget: Selector, provider: ContextFloatProvider, scale?: number): this {
-    this.$set(litPart("compute"), litPart("entity"), argPart(single(computeTarget, "compute")), litPart("float"), argPart(provider));
+  entityFloat(
+    computeTarget: Selector,
+    provider: ContextFloatProvider,
+    scale?: number,
+  ): this {
+    this.$set(
+      litPart("compute"),
+      litPart("entity"),
+      argPart(single(computeTarget, "compute")),
+      litPart("float"),
+      argPart(provider),
+    );
     if (scale !== undefined) this.$append(argPart(scale));
     return this;
   }
 
   entityInteger(computeTarget: Selector, provider: ContextIntProvider): this {
-    this.$set(litPart("compute"), litPart("entity"), argPart(single(computeTarget, "compute")), litPart("integer"), argPart(provider));
+    this.$set(
+      litPart("compute"),
+      litPart("entity"),
+      argPart(single(computeTarget, "compute")),
+      litPart("integer"),
+      argPart(provider),
+    );
     return this;
   }
 }

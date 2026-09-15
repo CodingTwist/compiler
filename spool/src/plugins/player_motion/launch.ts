@@ -7,17 +7,35 @@ import type { PlayerMotionInternals } from "./context";
  */
 export function defineLaunch(I: PlayerMotionInternals): void {
   const {
-    ns, self, fLaunchMain, fReset, fUsePrevious, fPolarGlobal, fStoreX, fStoreY, fStoreZ,
-    gamemodeScore, dummyScore, constant, workX, workY, workZ, sustain, prevX, prevY, prevZ,
+    ns,
+    self,
+    fLaunchMain,
+    fReset,
+    fUsePrevious,
+    fPolarGlobal,
+    fStoreX,
+    fStoreY,
+    fStoreZ,
+    gamemodeScore,
+    dummyScore,
+    constant,
+    workX,
+    workY,
+    workZ,
+    sustain,
+    prevX,
+    prevY,
+    prevZ,
     fallingCreative,
   } = I;
 
   // --- internal/launch/main -------------------------------------------------
   fLaunchMain.build((ctx) => {
     // Apply the dummy saddle carrying the apply_impulse enchantment.
-    const saddle = Item.SADDLE
-      .component("equippable", '{slot: "saddle", equip_sound: "intentionally_empty"}')
-      .enchant(Enchantment(`${ns}:internal/apply_impulse`), 1);
+    const saddle = Item.SADDLE.component(
+      "equippable",
+      '{slot: "saddle", equip_sound: "intentionally_empty"}',
+    ).enchant(Enchantment(`${ns}:internal/apply_impulse`), 1);
     ctx.item().replaceEntityWith(self(), "saddle", saddle);
 
     ctx.call(fStoreX);
@@ -32,9 +50,18 @@ export function defineLaunch(I: PlayerMotionInternals): void {
       .run((b) => b.returnRun((r) => sustain.set(0)));
 
     // Trigger location_changed by a gamemode swap, then restore the gamemode.
-    ctx.execute().ifEntity(self().gamemode("survival")).run((b) => gamemodeScore("#mode").set(2));
-    ctx.execute().ifEntity(self().gamemode("adventure")).run((b) => gamemodeScore("#mode").set(3));
-    ctx.execute().ifScoreMatches(gamemodeScore("#mode"), new Range(2, 3)).run((b) => b.gamemode("spectator"));
+    ctx
+      .execute()
+      .ifEntity(self().gamemode("survival"))
+      .run((b) => gamemodeScore("#mode").set(2));
+    ctx
+      .execute()
+      .ifEntity(self().gamemode("adventure"))
+      .run((b) => gamemodeScore("#mode").set(3));
+    ctx
+      .execute()
+      .ifScoreMatches(gamemodeScore("#mode"), new Range(2, 3))
+      .run((b) => b.gamemode("spectator"));
     ctx
       .execute()
       .ifScoreMatches(gamemodeScore("#mode"), new Range(2, 2))
@@ -53,7 +80,10 @@ export function defineLaunch(I: PlayerMotionInternals): void {
       .ifPredicate(fallingCreative)
       .storeSuccessScore(gamemodeScore("#falling"))
       .run((b) => b.gamemode("adventure"));
-    ctx.execute().ifScoreMatches(gamemodeScore("#falling"), new Range(0, 0)).run((b) => b.gamemode("spectator"));
+    ctx
+      .execute()
+      .ifScoreMatches(gamemodeScore("#falling"), new Range(0, 0))
+      .run((b) => b.gamemode("spectator"));
 
     ctx.returnRun((r) => r.gamemode("creative"));
   });

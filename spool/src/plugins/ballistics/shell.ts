@@ -68,6 +68,7 @@ export function shellFuse(
   profile: ProjectileProfile,
   ticks: number,
 ): number | undefined {
-  if (opts.fuse === false || profile.defaultFuse === undefined) return undefined;
+  if (opts.fuse === false || profile.defaultFuse === undefined)
+    return undefined;
   return Math.round(opts.fuse ?? ticks);
 }

@@ -46,7 +46,13 @@ describe("ctx.whenItems", () => {
   it("guards a single slot by item predicate", () => {
     const { lines } = render((ctx) =>
       ctx.whenItems(Selector.self(), Slot.hotbar(0), Item.LANTERN, (c: any) =>
-        c.item().replaceEntityWith(Selector.self(), Slot.hotbar(0), Item.SOUL_LANTERN),
+        c
+          .item()
+          .replaceEntityWith(
+            Selector.self(),
+            Slot.hotbar(0),
+            Item.SOUL_LANTERN,
+          ),
       ),
     );
     expect(lines).toEqual([
@@ -57,9 +63,13 @@ describe("ctx.whenItems", () => {
   it("matches the item's full components (name/model/lore), so a plain item won't trip it", () => {
     const tagged = Item.LANTERN.named("Time Lantern").modelData(7);
     const { lines } = render((ctx) =>
-      ctx.whenItems(Selector.self(), Slot.OFFHAND, tagged, (c: any) => c.say("hit")),
+      ctx.whenItems(Selector.self(), Slot.OFFHAND, tagged, (c: any) =>
+        c.say("hit"),
+      ),
     );
-    expect(lines[0]).toContain("if items entity @s weapon.offhand minecraft:lantern[");
+    expect(lines[0]).toContain(
+      "if items entity @s weapon.offhand minecraft:lantern[",
+    );
     expect(lines[0]).toContain("custom_model_data={floats:[7]}");
     expect(lines[0]).toContain('custom_name={"text":"Time Lantern"}');
   });
@@ -74,6 +84,8 @@ describe("ctx.whenItems", () => {
         "unless",
       ),
     );
-    expect(lines[0]).toContain("execute unless items entity @s weapon.mainhand");
+    expect(lines[0]).toContain(
+      "execute unless items entity @s weapon.mainhand",
+    );
   });
 });

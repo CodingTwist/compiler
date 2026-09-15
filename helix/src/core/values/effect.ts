@@ -40,13 +40,38 @@ export interface EffectFields {
  * ponytail: 1.19 and older need a byte; add the cast if helix supports them.
  */
 const LEGACY_IDS: Record<string, number> = {
-  speed: 1, slowness: 2, haste: 3, mining_fatigue: 4, strength: 5,
-  instant_health: 6, instant_damage: 7, jump_boost: 8, nausea: 9,
-  regeneration: 10, resistance: 11, fire_resistance: 12, water_breathing: 13,
-  invisibility: 14, blindness: 15, night_vision: 16, hunger: 17, weakness: 18,
-  poison: 19, wither: 20, health_boost: 21, absorption: 22, saturation: 23,
-  glowing: 24, levitation: 25, luck: 26, unluck: 27, slow_falling: 28,
-  conduit_power: 29, dolphins_grace: 30, bad_omen: 31, hero_of_the_village: 32,
+  speed: 1,
+  slowness: 2,
+  haste: 3,
+  mining_fatigue: 4,
+  strength: 5,
+  instant_health: 6,
+  instant_damage: 7,
+  jump_boost: 8,
+  nausea: 9,
+  regeneration: 10,
+  resistance: 11,
+  fire_resistance: 12,
+  water_breathing: 13,
+  invisibility: 14,
+  blindness: 15,
+  night_vision: 16,
+  hunger: 17,
+  weakness: 18,
+  poison: 19,
+  wither: 20,
+  health_boost: 21,
+  absorption: 22,
+  saturation: 23,
+  glowing: 24,
+  levitation: 25,
+  luck: 26,
+  unluck: 27,
+  slow_falling: 28,
+  conduit_power: 29,
+  dolphins_grace: 30,
+  bad_omen: 31,
+  hero_of_the_village: 32,
   darkness: 33,
 };
 
@@ -62,12 +87,35 @@ const encodeId = (v: MobEffect, version: VersionProfile): NbtInput => {
 };
 
 export const EFFECT: EntityNbtSchema<EffectFields> = {
-  id: field({ key: "id", was: { key: "Id", until: "1.20.2" }, encode: encodeId }),
-  amplifier: field({ key: "amplifier", was: { key: "Amplifier", until: "1.20.2" }, encode: Byte }),
-  duration: field({ key: "duration", was: { key: "Duration", until: "1.20.2" } }),
-  ambient: field({ key: "ambient", was: { key: "Ambient", until: "1.20.2" }, encode: asByte }),
-  showParticles: field({ key: "show_particles", was: { key: "ShowParticles", until: "1.20.2" }, encode: asByte }),
-  showIcon: field({ key: "show_icon", was: { key: "ShowIcon", until: "1.20.2" }, encode: asByte }),
+  id: field({
+    key: "id",
+    was: { key: "Id", until: "1.20.2" },
+    encode: encodeId,
+  }),
+  amplifier: field({
+    key: "amplifier",
+    was: { key: "Amplifier", until: "1.20.2" },
+    encode: Byte,
+  }),
+  duration: field({
+    key: "duration",
+    was: { key: "Duration", until: "1.20.2" },
+  }),
+  ambient: field({
+    key: "ambient",
+    was: { key: "Ambient", until: "1.20.2" },
+    encode: asByte,
+  }),
+  showParticles: field({
+    key: "show_particles",
+    was: { key: "ShowParticles", until: "1.20.2" },
+    encode: asByte,
+  }),
+  showIcon: field({
+    key: "show_icon",
+    was: { key: "ShowIcon", until: "1.20.2" },
+    encode: asByte,
+  }),
   // The schema refers to itself, so build this field's encoder at render time -
   // by then `EFFECT` is initialised.
   hiddenEffect: (v, version) =>

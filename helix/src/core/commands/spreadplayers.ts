@@ -8,8 +8,24 @@ import { Selector } from "../frontend/nodes/selector";
 
 /** `spreadplayers` */
 export class SpreadplayersBuilder extends CommandBuilder<TreeCommandNode> {
-  under(center: Pos, spreadDistance: number, maxRange: number, maxHeight: number, respectTeams: boolean, targets: Selector): this {
-    this.$set(litPart("spreadplayers"), argPart(center), argPart(spreadDistance), argPart(maxRange), litPart("under"), argPart(maxHeight), argPart(respectTeams), argPart(targets));
+  under(
+    center: Pos,
+    spreadDistance: number,
+    maxRange: number,
+    maxHeight: number,
+    respectTeams: boolean,
+    targets: Selector,
+  ): this {
+    this.$set(
+      litPart("spreadplayers"),
+      argPart(center),
+      argPart(spreadDistance),
+      argPart(maxRange),
+      litPart("under"),
+      argPart(maxHeight),
+      argPart(respectTeams),
+      argPart(targets),
+    );
     return this;
   }
 }
@@ -17,11 +33,24 @@ export class SpreadplayersBuilder extends CommandBuilder<TreeCommandNode> {
 declare module "../frontend/context" {
   interface FunctionContext {
     /** `spreadplayers` - `ctx.spreadplayers()...` */
-    spreadplayers(center?: Pos, spreadDistance?: number, maxRange?: number, respectTeams?: boolean, targets?: Selector): SpreadplayersBuilder;
+    spreadplayers(
+      center?: Pos,
+      spreadDistance?: number,
+      maxRange?: number,
+      respectTeams?: boolean,
+      targets?: Selector,
+    ): SpreadplayersBuilder;
   }
 }
 
-FunctionContext.prototype.spreadplayers = function (this: FunctionContext, center?: Pos, spreadDistance?: number, maxRange?: number, respectTeams?: boolean, targets?: Selector) {
+FunctionContext.prototype.spreadplayers = function (
+  this: FunctionContext,
+  center?: Pos,
+  spreadDistance?: number,
+  maxRange?: number,
+  respectTeams?: boolean,
+  targets?: Selector,
+) {
   const node = new TreeCommandNode("spreadplayers", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("spreadplayers")];

@@ -26,7 +26,9 @@ export function pickArgChild(
   );
   if (argChildren.length <= 1) return argChildren[0];
   const wants = (child: BrigadierNode) =>
-    moreFollow ? !!child.children && Object.keys(child.children).length > 0 : !!child.executable;
+    moreFollow
+      ? !!child.children && Object.keys(child.children).length > 0
+      : !!child.executable;
   return argChildren.find(([, child]) => wants(child)) ?? argChildren[0];
 }
 

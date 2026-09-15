@@ -23,7 +23,12 @@ import {
   type ProviderJson,
 } from "./types";
 
-export { ContextFloatProvider, ContextIntProvider, type FloatRef, type IntRef } from "./types";
+export {
+  ContextFloatProvider,
+  ContextIntProvider,
+  type FloatRef,
+  type IntRef,
+} from "./types";
 
 const int = (json: ProviderJson) => new ContextIntProvider(json);
 const float = (json: ProviderJson) => new ContextFloatProvider(json);

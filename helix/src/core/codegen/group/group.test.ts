@@ -1,11 +1,27 @@
 import { expect, test } from "vitest";
-import { Datapack, Id, Item, Slot, Objective, Path, Pos, Relation, ScoreTarget, Selector, Sort, Range } from "../../../index";
+import {
+  Datapack,
+  Id,
+  Item,
+  Slot,
+  Objective,
+  Path,
+  Pos,
+  Relation,
+  ScoreTarget,
+  Selector,
+  Sort,
+  Range,
+} from "../../../index";
 import type { FunctionContext } from "../../frontend/context";
 import { v1_21_4 } from "../../../versions/profiles";
 import { buildDatapack } from "../codegen";
 
 /** Builds pack `p` with one function `f` and returns every function file. */
-function build(body: (c: FunctionContext) => void, dp = new Datapack("p", v1_21_4)): Map<string, string> {
+function build(
+  body: (c: FunctionContext) => void,
+  dp = new Datapack("p", v1_21_4),
+): Map<string, string> {
   dp.createFunction("f").build(body);
   buildDatapack(dp);
   return dp.files;
@@ -17,19 +33,31 @@ const o = new Objective("o");
 const holder = o.score(ScoreTarget("#n"));
 
 /** Three `execute <clauses> run say …` lines. */
-const says = (start: (c: FunctionContext) => ReturnType<FunctionContext["execute"]>) => (c: FunctionContext) => {
-  for (const s of ["a", "b", "c"]) start(c).run((b) => b.say(s));
-};
+const says =
+  (start: (c: FunctionContext) => ReturnType<FunctionContext["execute"]>) =>
+  (c: FunctionContext) => {
+    for (const s of ["a", "b", "c"]) start(c).run((b) => b.say(s));
+  };
 
 test("repeated `at @s` lines become one call", () => {
-  const dp = new Datapack("p", v1_21_4, undefined, { debug: { sources: true } });
+  const dp = new Datapack("p", v1_21_4, undefined, {
+    debug: { sources: true },
+  });
   const files = build((c) => {
-    c.execute().at(self()).as(aim()).run((b) => {
-      b.tag().add(self(), "tracked");
-      b.say("enrolled");
-    });
-    c.execute().at(self()).storeResultScore(holder).run((b) => b.entity(aim()).get(Path.Entity.Pos.index(0), 100));
-    c.execute().at(self()).run((b) => b.say("c"));
+    c.execute()
+      .at(self())
+      .as(aim())
+      .run((b) => {
+        b.tag().add(self(), "tracked");
+        b.say("enrolled");
+      });
+    c.execute()
+      .at(self())
+      .storeResultScore(holder)
+      .run((b) => b.entity(aim()).get(Path.Entity.Pos.index(0), 100));
+    c.execute()
+      .at(self())
+      .run((b) => b.say("c"));
     c.say("done");
   }, dp);
 
@@ -53,8 +81,12 @@ test("repeated `at @s` lines become one call", () => {
 
 test("a single-entity scan groups at two lines when every line but the last changes nothing", () => {
   const files = build((c) => {
-    c.execute().as(aim()).run(() => holder.add(1));
-    c.execute().as(aim()).run((b) => b.tag().remove(self(), "aim"));
+    c.execute()
+      .as(aim())
+      .run(() => holder.add(1));
+    c.execute()
+      .as(aim())
+      .run((b) => b.tag().remove(self(), "aim"));
   });
   expect(Object.fromEntries(files)).toMatchInlineSnapshot(`
     {
@@ -67,11 +99,21 @@ test("a single-entity scan groups at two lines when every line but the last chan
 
 test("a fork groups when every line only touches `@s`", () => {
   const files = build((c) => {
-    c.execute().on(Relation.PASSENGERS).run((b) => b.tag().add(self().tag("rig"), "posed"));
-    c.execute().on(Relation.PASSENGERS).run((b) => b.item().replaceEntityWith(self(), Slot.CONTENTS, Item.CROSSBOW));
+    c.execute()
+      .on(Relation.PASSENGERS)
+      .run((b) => b.tag().add(self().tag("rig"), "posed"));
+    c.execute()
+      .on(Relation.PASSENGERS)
+      .run((b) =>
+        b.item().replaceEntityWith(self(), Slot.CONTENTS, Item.CROSSBOW),
+      );
     // `tag @e` reaches past `@s`, so it can't join.
-    c.execute().on(Relation.PASSENGERS).run((b) => b.tag().add(Selector.allEntities(), "x"));
-    c.execute().on(Relation.PASSENGERS).run((b) => b.tag().add(self(), "y"));
+    c.execute()
+      .on(Relation.PASSENGERS)
+      .run((b) => b.tag().add(Selector.allEntities(), "x"));
+    c.execute()
+      .on(Relation.PASSENGERS)
+      .run((b) => b.tag().add(self(), "y"));
   });
   expect(Object.fromEntries(files)).toMatchInlineSnapshot(`
     {
@@ -91,35 +133,67 @@ test("lines that could change what the prefix picks are left apart", () => {
     // Forks: grouping would reorder per-entity work.
     fork: says((c) => c.execute().as(Selector.allEntities().tag("x"))),
     random: says((c) => c.execute().as(Selector.random())),
-    sortRandom: says((c) => c.execute().at(Selector.allEntities().limit(1).sort(Sort.RANDOM))),
+    sortRandom: says((c) =>
+      c.execute().at(Selector.allEntities().limit(1).sort(Sort.RANDOM)),
+    ),
     passengers: says((c) => c.execute().on(Relation.PASSENGERS)),
-    scores: says((c) => c.execute().as(Selector.allEntities().score(o, Range.exactly(1)).limit(1))),
+    scores: says((c) =>
+      c
+        .execute()
+        .as(Selector.allEntities().score(o, Range.exactly(1)).limit(1)),
+    ),
     // A condition belongs to its line, so it can't be shared.
     cond: says((c) => c.execute().ifScoreMatches(holder, Range.exactly(1))),
     returns: (c) => {
-      c.execute().at(self()).run((b) => b.say("a"));
-      c.execute().at(self()).run((b) => b.say("b"));
-      c.execute().at(self()).run((b) => b.return_(1));
+      c.execute()
+        .at(self())
+        .run((b) => b.say("a"));
+      c.execute()
+        .at(self())
+        .run((b) => b.say("b"));
+      c.execute()
+        .at(self())
+        .run((b) => b.return_(1));
     },
     two: (c) => {
-      c.execute().at(self()).run((b) => b.say("a"));
-      c.execute().at(self()).run((b) => b.say("b"));
+      c.execute()
+        .at(self())
+        .run((b) => b.say("a"));
+      c.execute()
+        .at(self())
+        .run((b) => b.say("b"));
     },
     tp: (c) => {
-      c.execute().at(self()).run((b) => b.say("a"));
-      c.execute().at(self()).run((b) => b.teleport(self(), Pos.rel(0, 1, 0)));
-      c.execute().at(self()).run((b) => b.say("c"));
+      c.execute()
+        .at(self())
+        .run((b) => b.say("a"));
+      c.execute()
+        .at(self())
+        .run((b) => b.teleport(self(), Pos.rel(0, 1, 0)));
+      c.execute()
+        .at(self())
+        .run((b) => b.say("c"));
     },
     // `tag` changes what `@e[tag=aim]` matches for the next line.
     tag: (c) => {
-      c.execute().as(aim()).run((b) => b.tag().remove(Selector.allEntities(), "aim"));
-      c.execute().as(aim()).run((b) => b.say("b"));
+      c.execute()
+        .as(aim())
+        .run((b) => b.tag().remove(Selector.allEntities(), "aim"));
+      c.execute()
+        .as(aim())
+        .run((b) => b.say("b"));
     },
     // A plugin command might do anything.
     native: (c) => {
-      c.execute().at(self()).run((b) => b.say("a"));
-      c.execute().at(self()).run((b) => b.native(Id("paper:hop"), self()));
-      c.execute().at(self()).run((b) => b.say("c"));
+      c.execute()
+        .at(self())
+        .run((b) => b.say("a"));
+      c.execute()
+        .at(self())
+        .run((b) => b.native(Id("paper:hop"), self()));
+      c.execute()
+        .at(self())
+        .run((b) => b.say("c"));
     },
   };
   // Calls are followed: `mover` teleports through `deep`.
@@ -128,20 +202,32 @@ test("lines that could change what the prefix picks are left apart", () => {
   const callsMover = mover.createFunction("zzz/mover");
   callsMover.build((c) => {
     c.say("hi");
-    c.execute().as(Selector.allPlayers()).run((b) => b.call(deep));
+    c.execute()
+      .as(Selector.allPlayers())
+      .run((b) => b.call(deep));
   });
   mover.createFunction("call").build((c) => {
-    c.execute().at(self()).run((b) => b.say("a"));
-    c.execute().at(self()).run((b) => b.call(callsMover));
-    c.execute().at(self()).run((b) => b.say("c"));
+    c.execute()
+      .at(self())
+      .run((b) => b.say("a"));
+    c.execute()
+      .at(self())
+      .run((b) => b.call(callsMover));
+    c.execute()
+      .at(self())
+      .run((b) => b.say("c"));
   });
   const withNative = new Datapack("p", v1_21_4, "paper");
-  for (const [name, body] of Object.entries(cases)) (name === "native" ? withNative : mover).createFunction(name).build(body);
+  for (const [name, body] of Object.entries(cases))
+    (name === "native" ? withNative : mover).createFunction(name).build(body);
   buildDatapack(mover);
   buildDatapack(withNative);
 
   const out = Object.fromEntries(
-    [...Object.keys(cases), "call"].map((n) => [n, (n === "native" ? withNative : mover).files.get(n)]),
+    [...Object.keys(cases), "call"].map((n) => [
+      n,
+      (n === "native" ? withNative : mover).files.get(n),
+    ]),
   );
   expect(out).toMatchInlineSnapshot(`
     {
@@ -185,9 +271,16 @@ test("lines that could change what the prefix picks are left apart", () => {
 
 test("a blocking line ends one group and the rest still groups", () => {
   const files = build((c) => {
-    c.execute().at(self()).run((b) => b.say("a"));
-    c.execute().at(self()).run((b) => b.teleport(self(), Pos.rel(0, 1, 0)));
-    for (const s of ["b", "c", "d"]) c.execute().at(self()).run((b) => b.say(s));
+    c.execute()
+      .at(self())
+      .run((b) => b.say("a"));
+    c.execute()
+      .at(self())
+      .run((b) => b.teleport(self(), Pos.rel(0, 1, 0)));
+    for (const s of ["b", "c", "d"])
+      c.execute()
+        .at(self())
+        .run((b) => b.say(s));
   });
   expect(files.get("f")).toMatchInlineSnapshot(`
     "execute at @s run say a
@@ -198,7 +291,12 @@ test("a blocking line ends one group and the rest still groups", () => {
 
 test("`optimize.group: false` leaves repeated prefixes alone", () => {
   const lines = (group?: boolean) =>
-    build(says((c) => c.execute().at(self())), new Datapack("p", v1_21_4, undefined, { optimize: { group } })).get("f");
+    build(
+      says((c) => c.execute().at(self())),
+      new Datapack("p", v1_21_4, undefined, { optimize: { group } }),
+    ).get("f");
   expect(lines()).toBe("execute at @s run function p:zzz/f/group_0");
-  expect(lines(false)).toBe(["a", "b", "c"].map((s) => `execute at @s run say ${s}`).join("\n"));
+  expect(lines(false)).toBe(
+    ["a", "b", "c"].map((s) => `execute at @s run say ${s}`).join("\n"),
+  );
 });

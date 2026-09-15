@@ -9,7 +9,11 @@ import type { Relay } from "./types";
 const YAW = NbtPath("Rotation[0]");
 
 /** `<mob>/tick_one`: everything one awake mob does per poll, as it, at it. */
-export function tickOneBody<S extends string>(m: MobParts<S>, ctx: FunctionContext, scope: ModuleScope): void {
+export function tickOneBody<S extends string>(
+  m: MobParts<S>,
+  ctx: FunctionContext,
+  scope: ModuleScope,
+): void {
   // Yours first: it decides what the gestures' triggers and the yaw copy then see.
   if (m.def.tick) ctx.call(m.fnRef("on_tick"));
   // Then the state, if any: one check for a mob in none.
@@ -22,7 +26,13 @@ export function tickOneBody<S extends string>(m: MobParts<S>, ctx: FunctionConte
   for (const g of m.def.gestures) {
     // The fall is emitted before the trigger, or a gesture started this tick would end immediately.
     if (!g.sequenced) {
-      m.poseMembers(ctx, Selector.self().tag(m.gestureTag(g)), g, undefined, g.fall);
+      m.poseMembers(
+        ctx,
+        Selector.self().tag(m.gestureTag(g)),
+        g,
+        undefined,
+        g.fall,
+      );
       ctx.tag().remove(Selector.self().tag(m.gestureTag(g)), m.gestureTag(g));
     }
     if (g.cooldown !== 0) {
@@ -38,12 +48,17 @@ export function tickOneBody<S extends string>(m: MobParts<S>, ctx: FunctionConte
 }
 
 /** Points the rig the way this mob is facing. Yaw only: copying pitch would tilt the whole model. */
-function face<S extends string>(m: MobParts<S>, ctx: FunctionContext, scope: ModuleScope): void {
+function face<S extends string>(
+  m: MobParts<S>,
+  ctx: FunctionContext,
+  scope: ModuleScope,
+): void {
   const faceOne = scope.fn(privateName(`${m.name}/face_one`), (c) => {
     // Passengers keep their own rotation, so every member must be turned, not just the root.
     if (m.faceByRotate) {
       // Facing a point straight ahead copies the yaw without reading NBT.
-      const turn = (b: FunctionContext) => b.rotate().facing(Selector.self(), Pos.local(0, 0, 1));
+      const turn = (b: FunctionContext) =>
+        b.rotate().facing(Selector.self(), Pos.local(0, 0, 1));
       turn(c);
       c.execute().on(Relation.PASSENGERS).run(turn);
       return;
@@ -61,7 +76,8 @@ function face<S extends string>(m: MobParts<S>, ctx: FunctionContext, scope: Mod
       .run((b) => b.entity(Selector.self()).set(YAW, b.entity(me).at(YAW)));
     c.tag().remove(Selector.self(), cur);
   });
-  if (!m.faceByRotate) m.dp.allowNbtRead(faceOne, "rig yaw copy, awake mobs only");
+  if (!m.faceByRotate)
+    m.dp.allowNbtRead(faceOne, "rig yaw copy, awake mobs only");
 
   const chain = ctx.execute();
   if (m.faceByRotate) chain.rotated(Pos.rel(0, Pos.abs(0)));
@@ -71,8 +87,17 @@ function face<S extends string>(m: MobParts<S>, ctx: FunctionContext, scope: Mod
 }
 
 /** Turns a hit on the interaction hitbox into damage on this mob. `on attacker` finds the hitter without reading NBT. */
-function relayHits<S extends string>(m: MobParts<S>, ctx: FunctionContext, relay: Relay): void {
-  const attacked = m.internal("attacked", (c) => c.execute().on(Relation.ATTACKER).run((b) => b.return_(1)));
+function relayHits<S extends string>(
+  m: MobParts<S>,
+  ctx: FunctionContext,
+  relay: Relay,
+): void {
+  const attacked = m.internal("attacked", (c) =>
+    c
+      .execute()
+      .on(Relation.ATTACKER)
+      .run((b) => b.return_(1)),
+  );
   const hit = m.internal("relay_hit", (c) => {
     c.execute()
       .on(Relation.VEHICLE)

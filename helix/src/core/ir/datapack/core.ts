@@ -7,7 +7,11 @@ import type { ClearFill } from "../../codegen/structure";
 import { ScoreboardTiming } from "../../timing/scoreboard-timing";
 import { DEFAULT_TARGET, RuntimeTarget } from "../target";
 import type { LineInfo } from "../line-info";
-import { enableSourceTracking, type DebugOptions, type SourceLoc } from "../../debug/sources";
+import {
+  enableSourceTracking,
+  type DebugOptions,
+  type SourceLoc,
+} from "../../debug/sources";
 
 export type FunctionTag = "load" | "tick";
 
@@ -129,10 +133,17 @@ export class DatapackCore {
   }
 
   /** Registers `def` under `name`. The same object twice is fine; a different one throws. */
-  protected registerDef<T>(map: Map<string, T>, kind: string, name: string, def: T): void {
+  protected registerDef<T>(
+    map: Map<string, T>,
+    kind: string,
+    name: string,
+    def: T,
+  ): void {
     const existing = map.get(name);
     if (existing && existing !== def) {
-      throw new Error(`${kind} "${name}" already registered with a different definition`);
+      throw new Error(
+        `${kind} "${name}" already registered with a different definition`,
+      );
     }
     map.set(name, def);
   }

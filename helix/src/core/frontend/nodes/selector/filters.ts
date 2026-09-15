@@ -60,7 +60,10 @@ export class SelectorFilters {
   }
 
   /** Matches entities whose hitbox overlaps the box between two corners, in any order. */
-  volume(from: readonly [number, number, number], to: readonly [number, number, number]): this {
+  volume(
+    from: readonly [number, number, number],
+    to: readonly [number, number, number],
+  ): this {
     this.volumeBox = {
       x: Math.min(from[0], to[0]),
       y: Math.min(from[1], to[1]),
@@ -155,7 +158,11 @@ export class SelectorFilters {
    */
   predicate(ref: PredicateRef | Id | string): this {
     const id =
-      ref instanceof PredicateRef ? ref.id : typeof ref === "string" ? Id(ref).render() : ref.render();
+      ref instanceof PredicateRef
+        ? ref.id
+        : typeof ref === "string"
+          ? Id(ref).render()
+          : ref.render();
     this.predicateIds.push(id);
     return this;
   }

@@ -14,7 +14,6 @@ import { hover } from "../frontend/nodes/hover";
 import { Selector } from "../frontend/nodes/selector";
 import { v1_21_4 } from "../../versions/profiles";
 
-
 function createCommandTestEnv() {
   const dp = new Datapack("testpack", v1_21_4);
 
@@ -32,8 +31,16 @@ function buildTellraw(target: SelectorNode, value: string) {
 
 describe("TellrawCommand", () => {
   const cases = [
-    { target: new Selector("@a").build(), text: "hello", expected: 'tellraw @a {"text":"hello"}' },
-    { target: new Selector("@p").build(), text: "hi", expected: 'tellraw @p {"text":"hi"}' },
+    {
+      target: new Selector("@a").build(),
+      text: "hello",
+      expected: 'tellraw @a {"text":"hello"}',
+    },
+    {
+      target: new Selector("@p").build(),
+      text: "hi",
+      expected: 'tellraw @p {"text":"hi"}',
+    },
   ];
 
   it.each(cases)("generates tellraw %#", ({ target, text, expected }) => {
@@ -49,34 +56,37 @@ describe("TellrawCommand", () => {
 });
 
 it("builds multi-part tellraw", () => {
-      const { ctx } = createCommandTestEnv();
+  const { ctx } = createCommandTestEnv();
 
-  const node = new TellrawNode(new Selector("@a").build(), new TellrawText([
-    text("hello"),
-    text(" world").bold(),
-  ]));
+  const node = new TellrawNode(
+    new Selector("@a").build(),
+    new TellrawText([text("hello"), text(" world").bold()]),
+  );
 
-    const command = new TellrawCommand();
+  const command = new TellrawCommand();
 
-    command.generate(node, ctx);
+  command.generate(node, ctx);
   expect(ctx.lines[0]).toEqual(
-    `tellraw @a [{"text":"hello"},{"text":" world","bold":true}]`
+    `tellraw @a [{"text":"hello"},{"text":" world","bold":true}]`,
   );
 });
 
 it("builds scoreboard tellraw node", () => {
-        const { ctx } = createCommandTestEnv();
+  const { ctx } = createCommandTestEnv();
 
   const ob = new Objective("test");
   const score = new Score(ob, "test");
-  const node = new TellrawNode(new Selector("@a").build(), new TellrawText([score]));
+  const node = new TellrawNode(
+    new Selector("@a").build(),
+    new TellrawText([score]),
+  );
 
-    const command = new TellrawCommand();
+  const command = new TellrawCommand();
 
-    command.generate(node, ctx);
+  command.generate(node, ctx);
 
   expect(ctx.lines[0]).toEqual(
-    `tellraw @a {"score":{"name":"test","objective":"test"}}`
+    `tellraw @a {"score":{"name":"test","objective":"test"}}`,
   );
 });
 it("emits multi-part tellraw", () => {
@@ -134,13 +144,12 @@ it("emits mixed tellraw", () => {
 });
 
 it("tellraw click event", () => {
-
   const temp1: SayNode = new SayNode("hi");
-  
-  const message = new TellrawText([
-    text("Test").onClick(click.command(temp1))
-    .onHover(hover.text(text("hello"))),
 
+  const message = new TellrawText([
+    text("Test")
+      .onClick(click.command(temp1))
+      .onHover(hover.text(text("hello"))),
   ]);
 
   const { ctx } = createCommandTestEnv();
@@ -154,4 +163,3 @@ it("tellraw click event", () => {
     'tellraw @a {"text":"Test","click_event":{"action":"run_command","command":"say hi"},"hover_event":{"action":"show_text","value":[{"text":"hello"}]}}',
   );
 });
-

@@ -48,11 +48,23 @@ const fullBiome = () =>
           offset: 2,
         })
         .additionsSound(SoundEvent.AMBIENT_BASALT_DELTAS_ADDITIONS, 0.0111)
-        .music(SoundEvent.MUSIC_OVERWORLD_JUNGLE, { minDelay: 12000, maxDelay: 24000, weight: 3 })
+        .music(SoundEvent.MUSIC_OVERWORLD_JUNGLE, {
+          minDelay: 12000,
+          maxDelay: 24000,
+          weight: 3,
+        })
         .musicVolume(0.8),
     )
-    .spawn(SpawnCategory.CREATURE, EntityType.SHEEP, { weight: 12, min: 4, max: 4 })
-    .spawn(SpawnCategory.MONSTER, EntityType.ZOMBIE, { weight: 95, min: 1, max: 4 })
+    .spawn(SpawnCategory.CREATURE, EntityType.SHEEP, {
+      weight: 12,
+      min: 4,
+      max: 4,
+    })
+    .spawn(SpawnCategory.MONSTER, EntityType.ZOMBIE, {
+      weight: 95,
+      min: 1,
+      max: 4,
+    })
     .spawnCost(EntityType.ZOMBIE, { energyBudget: 0.12, charge: 1 })
     .carver(CarveStep.AIR, "minecraft:cave", "minecraft:canyon")
     .carver(CarveStep.LIQUID, "minecraft:underwater_cave")
@@ -100,7 +112,9 @@ describe("biome definitions", () => {
 
     // Features are 11 positional steps, filled at the named indices only.
     expect(json.features).toHaveLength(11);
-    expect(json.features[DecorationStep.LAKES]).toEqual(["minecraft:lake_lava_underground"]);
+    expect(json.features[DecorationStep.LAKES]).toEqual([
+      "minecraft:lake_lava_underground",
+    ]);
     expect(json.features[DecorationStep.VEGETAL_DECORATION]).toEqual([
       "minecraft:patch_grass_plain",
     ]);
@@ -114,7 +128,9 @@ describe("biome definitions", () => {
 
     const files = buildDatapack(dp);
     expect(files.has("data/minecraft/worldgen/biome/plains.json")).toBe(true);
-    expect(files.has("data/testpack/worldgen/biome/minecraft:plains.json")).toBe(false);
+    expect(
+      files.has("data/testpack/worldgen/biome/minecraft:plains.json"),
+    ).toBe(false);
   });
 
   it("uses the 1.21.4 weighted music list, flat carvers and no dry foliage", () => {
@@ -197,14 +213,17 @@ describe("biome definitions", () => {
         tick_chance: 0.0111,
       },
     });
-    expect(json.attributes["minecraft:audio/background_music"].default).toMatchObject({
+    expect(
+      json.attributes["minecraft:audio/background_music"].default,
+    ).toMatchObject({
       sound: "minecraft:music.overworld.jungle",
     });
     expect(json.attributes["minecraft:audio/music_volume"]).toBe(0.8);
   });
 
   it("takes attribute overrides on 1.21.11+ and drops them on older versions", () => {
-    const def = () => new BiomeDef().attribute("minecraft:visual/cloud_height", 192);
+    const def = () =>
+      new BiomeDef().attribute("minecraft:visual/cloud_height", 192);
 
     const modern = new Datapack("testpack", v26_2);
     modern.biome("x", def());
@@ -216,12 +235,17 @@ describe("biome definitions", () => {
 
     const legacy = new Datapack("testpack", v1_21_4);
     legacy.biome("x", def());
-    expect(emitted(legacy, "data/testpack/worldgen/biome/x.json").attributes).toBeUndefined();
+    expect(
+      emitted(legacy, "data/testpack/worldgen/biome/x.json").attributes,
+    ).toBeUndefined();
   });
 
   it("merges raw() over the built object", () => {
     const dp = new Datapack("testpack", v1_21_4);
-    dp.biome("x", new BiomeDef().temperature(0.5).raw({ temperature: 2, custom: true }));
+    dp.biome(
+      "x",
+      new BiomeDef().temperature(0.5).raw({ temperature: 2, custom: true }),
+    );
     const json = emitted(dp, "data/testpack/worldgen/biome/x.json");
     expect(json.temperature).toBe(2);
     expect(json.custom).toBe(true);

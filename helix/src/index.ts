@@ -3,7 +3,14 @@
 export * from "./public-api";
 
 // Version profiles loaded from disk at import. Node-only.
-export { v1_20_1, v1_20_4, v1_21_4, v26_1_2, v26_2, v26_3_rc_2 } from "./versions/profiles";
+export {
+  v1_20_1,
+  v1_20_4,
+  v1_21_4,
+  v26_1_2,
+  v26_2,
+  v26_3_rc_2,
+} from "./versions/profiles";
 
 // Template names a build will ship, for validating references. Node-only.
 export { shippedStructureNames } from "./core/codegen/write";

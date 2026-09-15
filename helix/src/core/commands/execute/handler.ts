@@ -15,20 +15,32 @@ export class ExecuteHandler extends CommandHandler<ExecuteNode> {
     // A bare chain's result can be a count, so only chains that `run` may limit entity
     // tests to one.
     const existence = !!node.runBody;
-    const parts = node.clauses.map((c) => clause(c, v, ctx.datapack.name, existence));
+    const parts = node.clauses.map((c) =>
+      clause(c, v, ctx.datapack.name, existence),
+    );
     const shared = node.clauses.map((c, i) => sharedClause(c, parts[i]));
     const own = worst(...node.clauses.map((c) => effect(c)));
-    const calls = node.clauses.flatMap((c) => (c.k === "callFunction" ? [c.fn.getName()] : []));
+    const calls = node.clauses.flatMap((c) =>
+      c.k === "callFunction" ? [c.fn.getName()] : [],
+    );
     let body;
     if (node.runBody) {
       // An empty body is a no-op unless a `store` clause reads its result.
       const keepEmpty = node.clauses.some((c) => c.k.startsWith("store"));
-      const target = generateRunTargetLine(node.runBody, ctx.datapack, ctx.dispatcher, { keepEmpty });
+      const target = generateRunTargetLine(
+        node.runBody,
+        ctx.datapack,
+        ctx.dispatcher,
+        { keepEmpty },
+      );
       if (!target.cmd) return;
       parts.push(runClause(target.cmd));
       body = target.info;
     }
-    ctx.emit(buildTokens(v, [lit("execute"), raw(parts.join(" "))]), chainLine(shared, body, own, calls));
+    ctx.emit(
+      buildTokens(v, [lit("execute"), raw(parts.join(" "))]),
+      chainLine(shared, body, own, calls),
+    );
   }
 }
 
@@ -43,7 +55,12 @@ export class ReturnRunHandler extends CommandHandler<ReturnRunNode> {
 
   generate(node: ReturnRunNode, ctx: CodegenContext): void {
     if (!node.runBody) throw new Error("returnRun() body was never built");
-    const { cmd, info } = generateRunTargetLine(node.runBody, ctx.datapack, ctx.dispatcher, { keepEmpty: true });
+    const { cmd, info } = generateRunTargetLine(
+      node.runBody,
+      ctx.datapack,
+      ctx.dispatcher,
+      { keepEmpty: true },
+    );
     ctx.emit(buildTokens(ctx.version, [lit("return"), raw(`run ${cmd}`)]), {
       ...info,
       clauses: [],

@@ -46,42 +46,113 @@ const HAND_WRITTEN_ELSEWHERE = new Set([
 // usefully do with them (moderation, save/publish control, profiling, chat).
 // Generating them cost ~1100 lines of surface nobody calls, so they're skipped.
 const CONSOLE_ONLY = new Set([
-  "ban", "ban-ip", "banlist", "pardon", "pardon-ip", "op", "deop", "kick",
-  "whitelist", "publish", "unpublish", "save-all", "save-off", "save-on",
-  "stop", "seed", "list", "help", "jfr", "perf", "debug", "transfer",
-  "setidletimeout", "spectate", "me", "msg", "teammsg",
+  "ban",
+  "ban-ip",
+  "banlist",
+  "pardon",
+  "pardon-ip",
+  "op",
+  "deop",
+  "kick",
+  "whitelist",
+  "publish",
+  "unpublish",
+  "save-all",
+  "save-off",
+  "save-on",
+  "stop",
+  "seed",
+  "list",
+  "help",
+  "jfr",
+  "perf",
+  "debug",
+  "transfer",
+  "setidletimeout",
+  "spectate",
+  "me",
+  "msg",
+  "teammsg",
 ]);
 
 // Commands whose src/core/commands/<c>.ts (or <c>/ folder) is hand-refined: keep it as-is
 // (don't overwrite) but still import/register it in the barrel.
-const HAND_REFINED = new Set(["setblock", "data", "stopsound", "summon", "particle", "playsound"]);
+const HAND_REFINED = new Set([
+  "setblock",
+  "data",
+  "stopsound",
+  "summon",
+  "particle",
+  "playsound",
+]);
 
 // What each generated command can do to entities (an \`Effect\` member), which output
 // passes such as execute grouping rely on. Generation fails for a command missing here, so
 // a new one gets classified. When unsure, pick MOVES: it only costs an optimisation.
 const EFFECTS = {
   NONE: [
-    "bossbar", "compute", "dialog", "fetchprofile", "locate", "particle", "playsound",
-    "posteffect", "return", "schedule", "stopwatch", "time", "title", "weather",
+    "bossbar",
+    "compute",
+    "dialog",
+    "fetchprofile",
+    "locate",
+    "particle",
+    "playsound",
+    "posteffect",
+    "return",
+    "schedule",
+    "stopwatch",
+    "time",
+    "title",
+    "weather",
   ],
   EDITS: [
-    "attribute", "clear", "clone", "defaultgamemode", "enchant", "experience", "fill",
-    "fillbiome", "forceload", "gamemode", "gamerule", "item", "loot", "place", "recipe",
-    "setworldspawn", "spawnpoint", "swing", "tag", "team", "tick",
-    "waypoint", "worldborder",
+    "attribute",
+    "clear",
+    "clone",
+    "defaultgamemode",
+    "enchant",
+    "experience",
+    "fill",
+    "fillbiome",
+    "forceload",
+    "gamemode",
+    "gamerule",
+    "item",
+    "loot",
+    "place",
+    "recipe",
+    "setworldspawn",
+    "spawnpoint",
+    "swing",
+    "tag",
+    "team",
+    "tick",
+    "waypoint",
+    "worldborder",
   ],
   MOVES: [
     // Runs reward functions straight away.
     "advancement",
     // Can kill: instant damage, damage, or peaceful removing hostile mobs.
-    "effect", "damage", "difficulty",
+    "effect",
+    "damage",
+    "difficulty",
     // Reload or run arbitrary functions and tests.
-    "datapack", "reload", "test",
-    "kill", "ride", "rotate", "spreadplayers", "teleport",
+    "datapack",
+    "reload",
+    "test",
+    "kill",
+    "ride",
+    "rotate",
+    "spreadplayers",
+    "teleport",
   ],
 };
 const EFFECT_OF = new Map(
-  Object.entries(EFFECTS).flatMap(([effect, cmds]) => cmds.map((c) => [c, effect])),
+  Object.entries(EFFECTS).flatMap(([effect, cmds]) =>
+    cmds.map((c) => [c, effect]),
+  ),
 );
 
 // Commands that return from their function.
@@ -89,7 +160,14 @@ const EXITS = new Set(["return"]);
 
 // Commands that act only on the entities and blocks their arguments name, so they're local
 // when every argument is `@s`. Leave out anything with output or shared state.
-const LOCAL = new Set(["attribute", "clear", "enchant", "experience", "item", "tag"]);
+const LOCAL = new Set([
+  "attribute",
+  "clear",
+  "enchant",
+  "experience",
+  "item",
+  "tag",
+]);
 
 /** The \`new TreeCommandNode(...)\` arguments for \`cmd\`. */
 function nodeArgs(cmd) {
@@ -137,9 +215,26 @@ const AUGMENT_ONLY = ["local", "ref", "set_modifier"];
 
 // FunctionContext members a generated `ctx.<method>()` must never shadow.
 const RESERVED_ENTRY = new Set([
-  "version", "emit", "call", "createChildFunction", "newChild",
-  "if", "ref", "setModifier", "say", "tellraw", "give", "playerGive", "player", "trigger", "random",
-  "objective", "scoreInit", "scoreSet", "scoreAdd", "scoreSetScore",
+  "version",
+  "emit",
+  "call",
+  "createChildFunction",
+  "newChild",
+  "if",
+  "ref",
+  "setModifier",
+  "say",
+  "tellraw",
+  "give",
+  "playerGive",
+  "player",
+  "trigger",
+  "random",
+  "objective",
+  "scoreInit",
+  "scoreSet",
+  "scoreAdd",
+  "scoreSetScore",
   "scoreEnable",
 ]);
 
@@ -156,7 +251,12 @@ const P = (type) => ({ ident: null, source: null, type });
 // A registry-backed resource concept: a named, branded `ResourceId<registry>`
 // (e.g. `Biome`, `Enchantment`). `registry` is recorded so the named type +
 // factory get generated into values/resource.generated.ts.
-const R = (ident, registry) => ({ ident, source: "values", type: ident, registry });
+const R = (ident, registry) => ({
+  ident,
+  source: "values",
+  type: ident,
+  registry,
+});
 
 // PascalCase the leaf of a registry id: "minecraft:worldgen/biome" -> "Biome",
 // "minecraft:mob_effect" -> "MobEffect".
@@ -199,7 +299,12 @@ const EXTRA_RESOURCE_TYPES = {
 const argType = (parser, properties) => {
   if (RESOURCE_PARSERS.has(parser) && properties?.registry) {
     const ident = deriveResourceType(properties.registry);
-    return { ident, source: "values", type: ident, registry: properties.registry };
+    return {
+      ident,
+      source: "values",
+      type: ident,
+      registry: properties.registry,
+    };
   }
   const t = PARSERS[parser] ?? P("string");
   return t;
@@ -277,7 +382,10 @@ const PARSERS = {
   // 26.3 renamed/split several parsers. Without these they fall back to `string`
   // and a typed slot silently becomes a stringly one (and `ConfiguredFeature`
   // vanishes from resource.generated.ts, since nothing else names that registry).
-  "minecraft:feature": R("ConfiguredFeature", "minecraft:worldgen/configured_feature"),
+  "minecraft:feature": R(
+    "ConfiguredFeature",
+    "minecraft:worldgen/configured_feature",
+  ),
   "minecraft:slot_source": V("ItemSlot"), // successor to `item_slot`/`item_slots`
   "minecraft:swing_animation": V("SwingAnimation"),
 
@@ -298,11 +406,45 @@ const ARG_OVERRIDES = {
 };
 
 const RESERVED = new Set([
-  "break", "case", "catch", "class", "const", "continue", "debugger",
-  "default", "delete", "do", "else", "enum", "export", "extends", "false",
-  "finally", "for", "function", "if", "import", "in", "instanceof", "new",
-  "null", "return", "super", "switch", "this", "throw", "true", "try",
-  "typeof", "var", "void", "while", "with", "yield", "let", "static",
+  "break",
+  "case",
+  "catch",
+  "class",
+  "const",
+  "continue",
+  "debugger",
+  "default",
+  "delete",
+  "do",
+  "else",
+  "enum",
+  "export",
+  "extends",
+  "false",
+  "finally",
+  "for",
+  "function",
+  "if",
+  "import",
+  "in",
+  "instanceof",
+  "new",
+  "null",
+  "return",
+  "super",
+  "switch",
+  "this",
+  "throw",
+  "true",
+  "try",
+  "typeof",
+  "var",
+  "void",
+  "while",
+  "with",
+  "yield",
+  "let",
+  "static",
 ]);
 
 function pickDataFile(arg) {
@@ -316,7 +458,9 @@ function pickDataFile(arg) {
     })
     .sort((a, b) => b.dataVersion - a.dataVersion);
   if (files.length === 0) {
-    throw new Error(`No data in ${DATA_DIR}; run "node scripts/versions.mjs sync" first.`);
+    throw new Error(
+      `No data in ${DATA_DIR}; run "node scripts/versions.mjs sync" first.`,
+    );
   }
   return path.join(DATA_DIR, files[0].f);
 }
@@ -365,7 +509,12 @@ function collectEndpoints(node, initial) {
       const seg =
         child.type === "literal"
           ? { kind: "lit", value: key }
-          : { kind: "arg", name: key, parser: child.parser, properties: child.properties };
+          : {
+              kind: "arg",
+              name: key,
+              parser: child.parser,
+              properties: child.properties,
+            };
       walk(child, segs.concat(seg));
     }
   };
@@ -400,7 +549,13 @@ function groupMethods(endpoints, cmd) {
     const segments = canonical.map((s) =>
       s.kind === "lit"
         ? { kind: "lit", value: s.value }
-        : { kind: "arg", name: s.name, parser: s.parser, properties: s.properties, optional: i++ >= requiredArgs },
+        : {
+            kind: "arg",
+            name: s.name,
+            parser: s.parser,
+            properties: s.properties,
+            optional: i++ >= requiredArgs,
+          },
     );
     const litSuffix = segments
       .filter((s) => s.kind === "lit")
@@ -428,14 +583,19 @@ function planSegments(cmd, segments, forceOptional, imports) {
     }
     const id = paramIdent(seg.name, used);
     const optional = forceOptional || seg.optional;
-    const t = ARG_OVERRIDES[`${cmd}.${seg.name}`] ?? argType(seg.parser, seg.properties);
+    const t =
+      ARG_OVERRIDES[`${cmd}.${seg.name}`] ??
+      argType(seg.parser, seg.properties);
     if (t.ident && t.source) imports[t.source].add(t.ident);
     if (t.registry) RESOURCE_TYPES.set(t.ident, t.registry);
     params.push(`${id}${optional ? "?" : ""}: ${t.type}`);
     // A multi-target selector here fails to parse and breaks the whole function.
-    const oneEntity = seg.parser === "minecraft:entity" && seg.properties?.amount === "single";
+    const oneEntity =
+      seg.parser === "minecraft:entity" && seg.properties?.amount === "single";
     if (oneEntity) imports.frontend.add("single");
-    const part = oneEntity ? `argPart(single(${id}, ${JSON.stringify(cmd)}))` : `argPart(${id})`;
+    const part = oneEntity
+      ? `argPart(single(${id}, ${JSON.stringify(cmd)}))`
+      : `argPart(${id})`;
     if (optional) optionalArgs.push({ id, part });
     else requiredParts.push(part);
   }
@@ -455,7 +615,10 @@ function renderMethod(cmd, group, forceOptional) {
     imports,
   );
 
-  const lines = [`  ${name}(${params}): this {`, `    this.$set(${requiredParts.join(", ")});`];
+  const lines = [
+    `  ${name}(${params}): this {`,
+    `    this.$set(${requiredParts.join(", ")});`,
+  ];
   for (const { id, part } of optionalArgs) {
     lines.push(`    if (${id} !== undefined) this.$append(${part});`);
   }
@@ -463,11 +626,20 @@ function renderMethod(cmd, group, forceOptional) {
   return { name, code: lines.join("\n"), imports };
 }
 
-function renderEntry(cmd, methodName, Cmd, emptyGroup, hasOtherGroups, imports) {
+function renderEntry(
+  cmd,
+  methodName,
+  Cmd,
+  emptyGroup,
+  hasOtherGroups,
+  imports,
+) {
   // If the command is also continued via a builder method, don't force the
   // bare args to be supplied at the entry call. The empty group has no interior
   // literals, so all its args are trailing and safe to make optional.
-  const segments = emptyGroup ? emptyGroup.segments : [{ kind: "lit", value: cmd }];
+  const segments = emptyGroup
+    ? emptyGroup.segments
+    : [{ kind: "lit", value: cmd }];
   const { params, requiredParts, optionalArgs } = planSegments(
     cmd,
     segments,
@@ -516,12 +688,20 @@ function renderFile(cmd, groups) {
   }
   const methods = methodResults.map((m) => m.code);
 
-  const entry = renderEntry(cmd, methodName, Cmd, emptyGroup, otherGroups.length > 0, imports);
+  const entry = renderEntry(
+    cmd,
+    methodName,
+    Cmd,
+    emptyGroup,
+    otherGroups.length > 0,
+    imports,
+  );
 
   // Only import what the generated body actually uses (the project errors on
   // unused imports). `argPart` is only needed when some call takes args.
   const hasArg = (g) => g.segments.some((s) => s.kind === "arg");
-  const anyArgs = (emptyGroup && hasArg(emptyGroup)) || otherGroups.some(hasArg);
+  const anyArgs =
+    (emptyGroup && hasArg(emptyGroup)) || otherGroups.some(hasArg);
   const baseImports = anyArgs
     ? `CommandBuilder, litPart, argPart${imports.frontend.has("single") ? ", single" : ""}`
     : "CommandBuilder, litPart";
@@ -535,7 +715,9 @@ function renderFile(cmd, groups) {
   if (imports.frontend.has("Selector")) {
     conceptLines.push(`import { Selector } from "../frontend/nodes/selector";`);
   }
-  const conceptImports = conceptLines.length ? "\n" + conceptLines.join("\n") : "";
+  const conceptImports = conceptLines.length
+    ? "\n" + conceptLines.join("\n")
+    : "";
 
   return `// GENERATED by scripts/gen-commands.mjs -- do not edit by hand.
 import { CommandPart, TreeCommandNode } from "../ir/node";
@@ -580,7 +762,10 @@ function main() {
       { kind: "lit", value: cmd },
     ]);
     if (endpoints.length === 0) continue; // pure redirect/alias, nothing to call
-    fs.writeFileSync(path.join(OUT_DIR, `${cmd}.ts`), renderFile(cmd, groupMethods(endpoints, cmd)));
+    fs.writeFileSync(
+      path.join(OUT_DIR, `${cmd}.ts`),
+      renderFile(cmd, groupMethods(endpoints, cmd)),
+    );
     generated.push(cmd);
   }
 
@@ -648,7 +833,10 @@ ${resourceNames
   })
   .join("\n\n")}
 `;
-  fs.writeFileSync(path.join(VALUES_DIR, "resource.generated.ts"), resourceFile);
+  fs.writeFileSync(
+    path.join(VALUES_DIR, "resource.generated.ts"),
+    resourceFile,
+  );
 
   console.error(
     `wrote ${generated.length} command files to ${OUT_DIR} + ${resourceNames.length} resource types (from ${path.basename(file)})`,

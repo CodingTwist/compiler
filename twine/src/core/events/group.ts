@@ -2,7 +2,12 @@
 import { Detect } from "helix";
 import type { Datapack, Detector, FunctionContext } from "helix";
 import { EventLatches } from "./latches";
-import { handlerOf, type EventHandler, type HandlerArgs, type OnOptions } from "./types";
+import {
+  handlerOf,
+  type EventHandler,
+  type HandlerArgs,
+  type OnOptions,
+} from "./types";
 
 /**
  * A set of event handlers on a helper object the module holds as a field.
@@ -40,11 +45,20 @@ export abstract class HandlerGroup {
     fn: (c: FunctionContext) => void,
     opts?: OnOptions,
   ): void;
-  protected on(detector: Detector, fn: (c: FunctionContext) => void, opts: OnOptions & { once: false }): void;
+  protected on(
+    detector: Detector,
+    fn: (c: FunctionContext) => void,
+    opts: OnOptions & { once: false },
+  ): void;
   protected on(...args: HandlerArgs): void {
     const handler = handlerOf(args);
-    if (handler.method !== undefined && this.handlers.some((h) => h.method === handler.method)) {
-      throw new Error(`duplicate handler key "${handler.method}" in group "${this.ns}"`);
+    if (
+      handler.method !== undefined &&
+      this.handlers.some((h) => h.method === handler.method)
+    ) {
+      throw new Error(
+        `duplicate handler key "${handler.method}" in group "${this.ns}"`,
+      );
     }
     this.handlers.push(handler);
   }

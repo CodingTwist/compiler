@@ -5,7 +5,16 @@ import { createHandlerMap } from "../codegen/codegen";
 import { generateFunction } from "../ir/generate";
 import { FunctionNode } from "../ir/node";
 import { FunctionContext } from "../frontend/context";
-import { defineEntityNbt, EntityType, MOB, type MobFields, Nbt, Pos, Tnt, Villager } from "../values";
+import {
+  defineEntityNbt,
+  EntityType,
+  MOB,
+  type MobFields,
+  Nbt,
+  Pos,
+  Tnt,
+  Villager,
+} from "../values";
 import { Selector } from "../frontend/nodes/selector";
 import { v1_21_4 } from "../../versions/profiles";
 
@@ -29,7 +38,10 @@ describe("raw entity NBT warning", () => {
         ctx.summon(EntityType.TNT, Pos.here(), Nbt({ Fuse: 40 }));
       expect(warn).toHaveBeenCalledTimes(2);
       // `data merge entity` is the other sink; no entity id, so no factory named.
-      ctx.data().merge().entity(Selector.self().build(), Nbt({ Fuse: 40 }));
+      ctx
+        .data()
+        .merge()
+        .entity(Selector.self().build(), Nbt({ Fuse: 40 }));
       expect(warn).toHaveBeenCalledTimes(3);
       expect(warn.mock.calls[2]?.[0]).toContain("defineEntityNbt()");
     });
@@ -47,9 +59,11 @@ describe("summoning a curated entity concept", () => {
   };
 
   it("takes the entity from the schema, so the type is stated once", () => {
-    expect(emit((ctx) => ctx.summon(Villager({ persistenceRequired: true }), Pos.here()))).toEqual(
-      "summon minecraft:villager ~ ~ ~ {PersistenceRequired:1b}",
-    );
+    expect(
+      emit((ctx) =>
+        ctx.summon(Villager({ persistenceRequired: true }), Pos.here()),
+      ),
+    ).toEqual("summon minecraft:villager ~ ~ ~ {PersistenceRequired:1b}");
   });
 
   // NBT without a position doesn't parse and breaks the function at load, so `~ ~ ~` is

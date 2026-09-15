@@ -58,9 +58,15 @@ export class PredicateCheckNode extends ExpressionNode {
  * A condition that passes when a {@link Predicate} passes, for `ctx.if(...)`.
  * Compiles to `execute if predicate <id>`.
  */
-export function predicateCheck(ref: PredicateRef | Id | string): PredicateCheckNode {
+export function predicateCheck(
+  ref: PredicateRef | Id | string,
+): PredicateCheckNode {
   const id =
-    ref instanceof PredicateRef ? ref.id : typeof ref === "string" ? Id(ref).render() : ref.render();
+    ref instanceof PredicateRef
+      ? ref.id
+      : typeof ref === "string"
+        ? Id(ref).render()
+        : ref.render();
   return new PredicateCheckNode(id);
 }
 

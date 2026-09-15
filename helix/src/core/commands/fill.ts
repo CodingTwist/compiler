@@ -8,53 +8,121 @@ import { Block, Pos } from "../values";
 /** `fill` */
 export class FillBuilder extends CommandBuilder<TreeCommandNode> {
   destroy(from: Pos, to: Pos, block: Block): this {
-    this.$set(litPart("fill"), argPart(from), argPart(to), argPart(block), litPart("destroy"));
+    this.$set(
+      litPart("fill"),
+      argPart(from),
+      argPart(to),
+      argPart(block),
+      litPart("destroy"),
+    );
     return this;
   }
 
   hollow(from: Pos, to: Pos, block: Block): this {
-    this.$set(litPart("fill"), argPart(from), argPart(to), argPart(block), litPart("hollow"));
+    this.$set(
+      litPart("fill"),
+      argPart(from),
+      argPart(to),
+      argPart(block),
+      litPart("hollow"),
+    );
     return this;
   }
 
   keep(from: Pos, to: Pos, block: Block): this {
-    this.$set(litPart("fill"), argPart(from), argPart(to), argPart(block), litPart("keep"));
+    this.$set(
+      litPart("fill"),
+      argPart(from),
+      argPart(to),
+      argPart(block),
+      litPart("keep"),
+    );
     return this;
   }
 
   outline(from: Pos, to: Pos, block: Block): this {
-    this.$set(litPart("fill"), argPart(from), argPart(to), argPart(block), litPart("outline"));
+    this.$set(
+      litPart("fill"),
+      argPart(from),
+      argPart(to),
+      argPart(block),
+      litPart("outline"),
+    );
     return this;
   }
 
   replace(from: Pos, to: Pos, block: Block, filter?: Block): this {
-    this.$set(litPart("fill"), argPart(from), argPart(to), argPart(block), litPart("replace"));
+    this.$set(
+      litPart("fill"),
+      argPart(from),
+      argPart(to),
+      argPart(block),
+      litPart("replace"),
+    );
     if (filter !== undefined) this.$append(argPart(filter));
     return this;
   }
 
   replaceDestroy(from: Pos, to: Pos, block: Block, filter: Block): this {
-    this.$set(litPart("fill"), argPart(from), argPart(to), argPart(block), litPart("replace"), argPart(filter), litPart("destroy"));
+    this.$set(
+      litPart("fill"),
+      argPart(from),
+      argPart(to),
+      argPart(block),
+      litPart("replace"),
+      argPart(filter),
+      litPart("destroy"),
+    );
     return this;
   }
 
   replaceHollow(from: Pos, to: Pos, block: Block, filter: Block): this {
-    this.$set(litPart("fill"), argPart(from), argPart(to), argPart(block), litPart("replace"), argPart(filter), litPart("hollow"));
+    this.$set(
+      litPart("fill"),
+      argPart(from),
+      argPart(to),
+      argPart(block),
+      litPart("replace"),
+      argPart(filter),
+      litPart("hollow"),
+    );
     return this;
   }
 
   replaceOutline(from: Pos, to: Pos, block: Block, filter: Block): this {
-    this.$set(litPart("fill"), argPart(from), argPart(to), argPart(block), litPart("replace"), argPart(filter), litPart("outline"));
+    this.$set(
+      litPart("fill"),
+      argPart(from),
+      argPart(to),
+      argPart(block),
+      litPart("replace"),
+      argPart(filter),
+      litPart("outline"),
+    );
     return this;
   }
 
   replaceStrict(from: Pos, to: Pos, block: Block, filter: Block): this {
-    this.$set(litPart("fill"), argPart(from), argPart(to), argPart(block), litPart("replace"), argPart(filter), litPart("strict"));
+    this.$set(
+      litPart("fill"),
+      argPart(from),
+      argPart(to),
+      argPart(block),
+      litPart("replace"),
+      argPart(filter),
+      litPart("strict"),
+    );
     return this;
   }
 
   strict(from: Pos, to: Pos, block: Block): this {
-    this.$set(litPart("fill"), argPart(from), argPart(to), argPart(block), litPart("strict"));
+    this.$set(
+      litPart("fill"),
+      argPart(from),
+      argPart(to),
+      argPart(block),
+      litPart("strict"),
+    );
     return this;
   }
 }
@@ -66,7 +134,12 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.fill = function (this: FunctionContext, from?: Pos, to?: Pos, block?: Block) {
+FunctionContext.prototype.fill = function (
+  this: FunctionContext,
+  from?: Pos,
+  to?: Pos,
+  block?: Block,
+) {
   const node = new TreeCommandNode("fill", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("fill")];

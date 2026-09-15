@@ -33,11 +33,7 @@ export class ScoreVec3Ops {
     ctx?: FunctionContext,
   ): this {
     this.components.forEach((c, axis) =>
-      emitScoreExpr(
-        c,
-        opE(op, scoreE(c), scoreE(rhs(axis as 0 | 1 | 2))),
-        ctx,
-      ),
+      emitScoreExpr(c, opE(op, scoreE(c), scoreE(rhs(axis as 0 | 1 | 2))), ctx),
     );
     return this;
   }

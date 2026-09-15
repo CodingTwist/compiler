@@ -8,7 +8,14 @@ import { Biome, Pos } from "../values";
 /** `fillbiome` */
 export class FillbiomeBuilder extends CommandBuilder<TreeCommandNode> {
   replace(from: Pos, to: Pos, biome: Biome, filter: Biome): this {
-    this.$set(litPart("fillbiome"), argPart(from), argPart(to), argPart(biome), litPart("replace"), argPart(filter));
+    this.$set(
+      litPart("fillbiome"),
+      argPart(from),
+      argPart(to),
+      argPart(biome),
+      litPart("replace"),
+      argPart(filter),
+    );
     return this;
   }
 }
@@ -20,7 +27,12 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.fillbiome = function (this: FunctionContext, from?: Pos, to?: Pos, biome?: Biome) {
+FunctionContext.prototype.fillbiome = function (
+  this: FunctionContext,
+  from?: Pos,
+  to?: Pos,
+  biome?: Biome,
+) {
   const node = new TreeCommandNode("fillbiome", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("fillbiome")];

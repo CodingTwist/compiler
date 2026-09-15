@@ -14,7 +14,12 @@ export type { BallisticOptions } from "./static";
 export { DEFAULT_SHELL } from "./shell";
 export type { ShellOptions, ShellSpec, ShellFactory } from "./shell";
 
-export { simulate, stepOnce, trajectoryBasis, closestApproach } from "./physics";
+export {
+  simulate,
+  stepOnce,
+  trajectoryBasis,
+  closestApproach,
+} from "./physics";
 export { PROJECTILES, MOTION_AXIS_LIMIT } from "./projectiles";
 export type { TrajectoryBasis, Approach, Motion } from "./physics";
 export type { ProjectileProfile } from "./projectiles";

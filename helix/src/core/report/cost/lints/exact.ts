@@ -4,9 +4,13 @@ import { MULTI_TARGET, inRange } from "./hints";
 import type { AddLint, FnState, LineCheck } from "./types";
 
 /** `constant-condition`: a `matches` check on a fake player set earlier in the function. */
-export function constantCondition({ line, i, add }: LineCheck, state: FnState): void {
+export function constantCondition(
+  { line, i, add }: LineCheck,
+  state: FnState,
+): void {
   const { known } = state;
-  const checks = /\b(if|unless) score ([^@\s$]\S*) (\S+) matches ([-\d.]+)(?=\s|$)/g;
+  const checks =
+    /\b(if|unless) score ([^@\s$]\S*) (\S+) matches ([-\d.]+)(?=\s|$)/g;
   for (const m of line.matchAll(checks)) {
     const value = known.get(`${m[2]} ${m[3]}`);
     if (value === undefined) continue;
@@ -23,15 +27,23 @@ export function constantCondition({ line, i, add }: LineCheck, state: FnState): 
   // Any call may change a score; any mention besides a `matches` check may write it.
   if (/\bfunction /.test(line)) known.clear();
   const writes = line.replace(checks, "");
-  for (const key of known.keys()) if (writes.includes(` ${key}`)) known.delete(key);
+  for (const key of known.keys())
+    if (writes.includes(` ${key}`)) known.delete(key);
   const set = /^scoreboard players set ([^@\s$]\S*) (\S+) (-?\d+)$/.exec(line);
   if (set) known.set(`${set[1]} ${set[2]}`, Number(set[3]));
 }
 
 /** `group-execute`: tracks runs of lines sharing an execute prefix, reporting each when it ends. */
-export function groupExecute({ line, i, add }: LineCheck, state: FnState): void {
+export function groupExecute(
+  { line, i, add }: LineCheck,
+  state: FnState,
+): void {
   const prefix = /^execute (.+?) (?:run|store) /.exec(line)?.[1];
-  const groupable = prefix && !/\b(if|unless)\b/.test(prefix) && !/ run return\b/.test(line) && prefix;
+  const groupable =
+    prefix &&
+    !/\b(if|unless)\b/.test(prefix) &&
+    !/ run return\b/.test(line) &&
+    prefix;
   if (!groupable || groupable !== state.group?.prefix) flushGroup(state, add);
   if (groupable) state.group ??= { prefix: groupable, line, i, count: 0 };
   if (state.group) state.group.count++;
@@ -55,7 +67,12 @@ export function flushGroup(state: FnState, add: AddLint): void {
 /** `vacuous-execute`: `execute run` with no subcommands. */
 export function vacuousExecute({ line, i, add }: LineCheck): void {
   if (/^\$?execute run /.test(line)) {
-    add("vacuous-execute", line, i, "`execute run <cmd>` with no subcommands is just `<cmd>`");
+    add(
+      "vacuous-execute",
+      line,
+      i,
+      "`execute run <cmd>` with no subcommands is just `<cmd>`",
+    );
   }
 }
 
@@ -64,20 +81,36 @@ export function foldIntoSelector({ line, i, sels, add }: LineCheck): void {
   for (const s of sels) {
     if (!/(^|\s)as $/.test(line.slice(0, s.start))) continue;
     // `limit`/`sort` pick before the check, so folding would change who matches.
-    if (hasArg(s, "limit") || hasArg(s, "sort") || /@[prn]/.test(s.kind)) continue;
+    if (hasArg(s, "limit") || hasArg(s, "sort") || /@[prn]/.test(s.kind))
+      continue;
     const rest = line.slice(s.end);
     const score = /^ if score @s (\S+) matches (\S+)/.exec(rest);
     if (score) {
       if (hasArg(s, "scores")) continue; // merging into an existing scores={} is left to the author
-      add("fold-into-selector", line, i, `\`${renderSel(s.kind, [...s.args, ["scores", `{${score[1]}=${score[2]}}`]])}\` instead of \`as ${s.text}${score[0]}\``);
+      add(
+        "fold-into-selector",
+        line,
+        i,
+        `\`${renderSel(s.kind, [...s.args, ["scores", `{${score[1]}=${score[2]}}`]])}\` instead of \`as ${s.text}${score[0]}\``,
+      );
       continue;
     }
     const ent = /^ if entity (@s\[)/.exec(rest);
     if (ent) {
       const self = selectorsIn(rest.slice(" if entity ".length))[0];
       const repeatable = new Set(["tag", "nbt", "predicate"]);
-      if (self.args.some(([k, v]) => !repeatable.has(k) && !v.startsWith("!") && hasArg(s, k))) continue;
-      add("fold-into-selector", line, i, `\`as ${renderSel(s.kind, [...s.args, ...self.args])}\` instead of \`as ${s.text} if entity ${self.text}\``);
+      if (
+        self.args.some(
+          ([k, v]) => !repeatable.has(k) && !v.startsWith("!") && hasArg(s, k),
+        )
+      )
+        continue;
+      add(
+        "fold-into-selector",
+        line,
+        i,
+        `\`as ${renderSel(s.kind, [...s.args, ...self.args])}\` instead of \`as ${s.text} if entity ${self.text}\``,
+      );
     }
   }
 }
@@ -86,9 +119,21 @@ export function foldIntoSelector({ line, i, sels, add }: LineCheck): void {
 export function redundantAs({ line, i, sels, add }: LineCheck): void {
   if (!line.startsWith("execute as ")) return;
   const s = sels[0];
-  const run = s && s.start === "execute as ".length ? /^ run (.+)$/.exec(line.slice(s.end)) : null;
-  if (run && (run[1].match(/@s\b/g) ?? []).length === 1 && MULTI_TARGET.some((r) => r.test(run[1]))) {
-    add("redundant-as", line, i, `\`${run[1].replace(/@s\b/, s.text)}\` - the command takes the selector directly`);
+  const run =
+    s && s.start === "execute as ".length
+      ? /^ run (.+)$/.exec(line.slice(s.end))
+      : null;
+  if (
+    run &&
+    (run[1].match(/@s\b/g) ?? []).length === 1 &&
+    MULTI_TARGET.some((r) => r.test(run[1]))
+  ) {
+    add(
+      "redundant-as",
+      line,
+      i,
+      `\`${run[1].replace(/@s\b/, s.text)}\` - the command takes the selector directly`,
+    );
   }
 }
 
@@ -106,10 +151,22 @@ export function macroScoreSet({ line, i, add }: LineCheck): void {
 }
 
 /** `missing-type`: `@e`/`@n` without `type=`. Tick code's bare `@e` is an unbounded scan instead. */
-export function missingType({ line, i, sels, period, add }: LineCheck, state: FnState): void {
+export function missingType(
+  { line, i, sels, period, add }: LineCheck,
+  state: FnState,
+): void {
   for (const s of sels) {
-    if (/@[en]/.test(s.kind) && !hasArg(s, "type") && !(period !== undefined && state.unbounded.has(s.text))) {
-      add("missing-type", line, i, "add `type=` to `@e`/`@n` selectors - the type filter skips every other entity cheaply");
+    if (
+      /@[en]/.test(s.kind) &&
+      !hasArg(s, "type") &&
+      !(period !== undefined && state.unbounded.has(s.text))
+    ) {
+      add(
+        "missing-type",
+        line,
+        i,
+        "add `type=` to `@e`/`@n` selectors - the type filter skips every other entity cheaply",
+      );
     }
   }
 }

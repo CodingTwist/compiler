@@ -1,6 +1,11 @@
 // Top of `Datapack`: writing the packs, reports and periodic hooks.
 import { buildDatapack } from "../../codegen/codegen";
-import { analyzeCost, CostReport, formatCostReport, type LintRule } from "../../report/cost";
+import {
+  analyzeCost,
+  CostReport,
+  formatCostReport,
+  type LintRule,
+} from "../../report/cost";
 import {
   analyzeProfile,
   formatProfileReport,
@@ -64,7 +69,9 @@ export class Datapack extends DatapackEntry {
 
   /** Per lint rule, the functions whose hits are intentional, with why - from {@link allow} and `ctx.allow`. */
   get allowed(): Map<LintRule, Map<string, string>> {
-    const all = new Map([...this.explicitAllows].map(([rule, fns]) => [rule, new Map(fns)]));
+    const all = new Map(
+      [...this.explicitAllows].map(([rule, fns]) => [rule, new Map(fns)]),
+    );
     for (const fn of this.functions.values()) {
       for (const [rule, reason] of fn.allows) {
         all.set(rule, (all.get(rule) ?? new Map()).set(fn.name, reason));

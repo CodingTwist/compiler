@@ -7,7 +7,12 @@ import { Datapack } from "../core/ir/datapack";
 import { buildDatapack } from "../core/codegen/codegen";
 import { buildPackMcmeta } from "../core/codegen/mcmeta";
 import { loadSpyglass, SEVERITY } from "./spyglass";
-import { declaredSymbols, isDeclaredByPack, isRegistryFile, offsetToLineCol } from "./symbols";
+import {
+  declaredSymbols,
+  isDeclaredByPack,
+  isRegistryFile,
+  offsetToLineCol,
+} from "./symbols";
 import type { McdocDiagnostic, ValidateOptions } from "./types";
 
 /**

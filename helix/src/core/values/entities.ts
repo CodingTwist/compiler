@@ -30,7 +30,8 @@ export function warnRawEntityNbt(nbt: NbtValue, entity?: string): void {
   const site = callSite();
   if (warnedSites.has(site)) return;
   warnedSites.add(site);
-  const factory = entity !== undefined ? ENTITY_FACTORY_NAMES[entity] : undefined;
+  const factory =
+    entity !== undefined ? ENTITY_FACTORY_NAMES[entity] : undefined;
   console.warn(
     `helix: raw Nbt${entity !== undefined ? ` for ${entity}` : ""} at ${site} - its keys ` +
       `are frozen to one version. ` +

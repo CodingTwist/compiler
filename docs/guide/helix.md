@@ -113,7 +113,7 @@ reward.build((ctx) => {
 Notice the emitted `reward.mcfunction` calls into a generated child function - the `if`
 body - instead of inlining. That's the AST → IR lowering doing its job.
 
-Stepping a counter is what `Score`'s methods are for; a *formula* goes in
+Stepping a counter is what `Score`'s methods are for; a _formula_ goes in
 `` math`…` ``, which takes the algebra as infix text and lowers it to one `/compute`
 command on 26.3+ or the equivalent `scoreboard players operation` chain below - see
 [Math and `/compute`](/guide/concepts/math-and-compute).
@@ -130,14 +130,20 @@ never re-encoded as a string.
 Biomes are the clearest case for building the JSON rather than hand-writing it, because
 the format has moved three times across the versions helix supports: `carvers` became a
 flat list in 1.21.2, `music` became a weighted list in 1.21.4, and in 1.21.11 nearly all
-of a biome's *ambience* left `effects` for the environment-attribute map. You write the
+of a biome's _ambience_ left `effects` for the environment-attribute map. You write the
 same source either way and
 [`BiomeDef`](/api/helix/classes/BiomeDef) places it in the shape the target version
 wants.
 
 ```ts compile
 import {
-  Datapack, v26_2, BiomeDef, DecorationStep, SoundEvent, SpawnCategory, EntityType,
+  Datapack,
+  v26_2,
+  BiomeDef,
+  DecorationStep,
+  SoundEvent,
+  SpawnCategory,
+  EntityType,
 } from "helix";
 
 const dp = new Datapack("mypack", v26_2);
@@ -157,7 +163,11 @@ dp.biome(
         .waterColor("#3f76e4")
         .ambientSound(SoundEvent.AMBIENT_CAVE),
     )
-    .spawn(SpawnCategory.CREATURE, EntityType.SHEEP, { weight: 12, min: 4, max: 4 })
+    .spawn(SpawnCategory.CREATURE, EntityType.SHEEP, {
+      weight: 12,
+      min: 4,
+      max: 4,
+    })
     .feature(DecorationStep.VEGETAL_DECORATION, "minecraft:patch_grass_plain"),
 );
 ```
@@ -178,14 +188,14 @@ A version profile carries everything version-specific: pack format, folder conve
 the command grammar, and registry membership. It reaches command handlers only through
 `ctx.datapack.version` at call time - handlers are stateless singletons that never bake
 in a version. Swap `v26_2` for [`v1_20_4`](/api/helix/variables/v1_20_4) or
-[`v1_20_1`](/api/helix/variables/v1_20_1) and the *same* source emits different folder
+[`v1_20_1`](/api/helix/variables/v1_20_1) and the _same_ source emits different folder
 names (`function/` vs `functions/`) and pack format.
 
 ## In-memory codegen, cost & validation
 
 [`buildDatapack(dp)`](/api/helix/functions/buildDatapack) runs the same codegen as
 `dp.writeDatapack(path)` but returns a `Map<path, contents>` instead of writing to disk.
-Two features build on it - both read the *rendered* output, not the AST:
+Two features build on it - both read the _rendered_ output, not the AST:
 
 - **Cost reports** - `dp.report()` / `dp.printReport()` walk the call graph rooted at the
   `tick` tag for worst-case commands/tick and unbounded `@e` scans.

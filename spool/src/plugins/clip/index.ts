@@ -57,10 +57,16 @@ declare module "helix" {
 export const clip: KitPlugin = {
   name: "clip",
   install() {
-    Datapack.prototype.clip = function (this: Datapack, model: DisplayValue): Clip {
+    Datapack.prototype.clip = function (
+      this: Datapack,
+      model: DisplayValue,
+    ): Clip {
       return new Clip(this, model.getName(), model);
     };
-    Datapack.prototype.cutscene = function (this: Datapack, name: string): Cutscene {
+    Datapack.prototype.cutscene = function (
+      this: Datapack,
+      name: string,
+    ): Cutscene {
       return new Cutscene(this, name);
     };
   },

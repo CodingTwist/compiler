@@ -16,7 +16,8 @@ export class NbtTrack implements Track {
     private readonly path: string,
     private readonly keys: readonly Keyframe<NbtValue>[],
   ) {
-    if (keys.length === 0) throw new Error("nbt track needs at least one keyframe.");
+    if (keys.length === 0)
+      throw new Error("nbt track needs at least one keyframe.");
   }
 
   empty(): boolean {
@@ -34,8 +35,14 @@ export class NbtTrack implements Track {
 
   emitFrame(ctx: FunctionContext, f: number): void {
     const v = sample(this.keys, f, mixNbt);
-    const leaf = typeof v === "number" ? Float(round6(v)) : (v as Vec3).map((n) => Float(round6(n)));
-    ctx.data().merge().entity(this.selector, Nbt(nest(this.path, leaf)));
+    const leaf =
+      typeof v === "number"
+        ? Float(round6(v))
+        : (v as Vec3).map((n) => Float(round6(n)));
+    ctx
+      .data()
+      .merge()
+      .entity(this.selector, Nbt(nest(this.path, leaf)));
   }
 
   emitSmooth(): void {

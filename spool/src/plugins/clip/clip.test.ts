@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { Datapack, buildDatapack, Display, Block, Selector, v1_21_4 } from "helix";
+import {
+  Datapack,
+  buildDatapack,
+  Display,
+  Block,
+  Selector,
+  v1_21_4,
+} from "helix";
 import { installKit } from "../../kit";
 import { clip } from ".";
 
@@ -31,9 +38,13 @@ describe("Clip: baked spin", () => {
 
   it("emits N = 4 frame functions (one revolution), no more", () => {
     [0, 1, 2, 3].forEach((k) =>
-      expect(files.has(`data/anim/function/zzz/cog/frame_${k}.mcfunction`)).toBe(true),
+      expect(
+        files.has(`data/anim/function/zzz/cog/frame_${k}.mcfunction`),
+      ).toBe(true),
     );
-    expect(files.has("data/anim/function/zzz/cog/frame_4.mcfunction")).toBe(false);
+    expect(files.has("data/anim/function/zzz/cog/frame_4.mcfunction")).toBe(
+      false,
+    );
   });
 
   it("frame_1 rotates +90° about Z: member offset [1,0,0] -> [0,1,0]", () => {
@@ -86,7 +97,9 @@ describe("Clip: smooth move (native tween)", () => {
       "data merge entity @e[tag=door_0,limit=1,type=minecraft:block_display] {transformation:{left_rotation:[0.0f,0.0f,0.0f,1.0f],right_rotation:[0.0f,0.0f,0.0f,1.0f],scale:[1.0f,1.0f,1.0f],translation:[0.0f,-16.0f,0.0f]},start_interpolation:0,interpolation_duration:100}",
     );
     expect(play).toContain("translation:[0.0f,-15.0f,0.0f]");
-    expect(files.has("data/anim/function/zzz/door/frame_0.mcfunction")).toBe(false);
+    expect(files.has("data/anim/function/zzz/door/frame_0.mcfunction")).toBe(
+      false,
+    );
   });
 
   it("rejects mixing a tween with a spin in one clip", () => {
@@ -119,9 +132,13 @@ describe("Clip: continuous loop driver", () => {
 
   it("step cycles frames, advances + wraps the counter, ticks the countdown", () => {
     const step = fn(files, "zzz/cog/step");
-    expect(step).toContain("execute if score cog anim matches 1 run function anim:zzz/cog/frame_1");
+    expect(step).toContain(
+      "execute if score cog anim matches 1 run function anim:zzz/cog/frame_1",
+    );
     expect(step).toContain("scoreboard players add cog anim 1");
-    expect(step).toContain("execute if score cog anim matches 4 run scoreboard players set cog anim 0");
+    expect(step).toContain(
+      "execute if score cog anim matches 4 run scoreboard players set cog anim 0",
+    );
     expect(step).toContain("scoreboard players remove cog anim_life 1");
   });
 
@@ -137,10 +154,14 @@ describe("Clip: continuous loop driver", () => {
 describe("Clip: generic NBT track + timeline events", () => {
   const dp = new Datapack("anim", v1_21_4);
   dp.clip(door())
-    .nbt(Selector.allEntities().tag("door_0").limit(1), "transformation.scale", [
-      { tick: 0, value: [1, 1, 1] },
-      { tick: 10, value: [2, 2, 2] },
-    ])
+    .nbt(
+      Selector.allEntities().tag("door_0").limit(1),
+      "transformation.scale",
+      [
+        { tick: 0, value: [1, 1, 1] },
+        { tick: 10, value: [2, 2, 2] },
+      ],
+    )
     .at(5, (ctx) => ctx.say("halfway"));
   const files = buildDatapack(dp);
 
@@ -159,7 +180,9 @@ describe("Clip: generic NBT track + timeline events", () => {
 describe("Clip: gliding tp track", () => {
   const dp = new Datapack("anim", v1_21_4);
   const rig = Selector.allEntities().tag("rig").limit(1);
-  const rig_model = Display(Block("minecraft:stone")).named("swoop").at("~ ~ ~");
+  const rig_model = Display(Block("minecraft:stone"))
+    .named("swoop")
+    .at("~ ~ ~");
   dp.clip(rig_model).tp(
     rig,
     [
@@ -175,7 +198,9 @@ describe("Clip: gliding tp track", () => {
     expect(fn(files, "zzz/swoop/frame_0")).toContain(
       "data merge entity @e[tag=rig,limit=1] {teleport_duration:6}",
     );
-    expect(fn(files, "zzz/swoop/frame_0")).toContain("execute as @e[tag=rig,limit=1] run teleport 0 64 0");
+    expect(fn(files, "zzz/swoop/frame_0")).toContain(
+      "execute as @e[tag=rig,limit=1] run teleport 0 64 0",
+    );
     expect(fn(files, "zzz/swoop/frame_6")).toContain("{teleport_duration:4}");
     // The last keyframe has nothing ahead of it, so it lands immediately.
     expect(fn(files, "zzz/swoop/frame_10")).toContain("{teleport_duration:0}");

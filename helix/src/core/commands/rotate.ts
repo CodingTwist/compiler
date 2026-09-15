@@ -9,12 +9,27 @@ import { Selector } from "../frontend/nodes/selector";
 /** `rotate` */
 export class RotateBuilder extends CommandBuilder<TreeCommandNode> {
   facing(target: Selector, facingLocation: Pos): this {
-    this.$set(litPart("rotate"), argPart(single(target, "rotate")), litPart("facing"), argPart(facingLocation));
+    this.$set(
+      litPart("rotate"),
+      argPart(single(target, "rotate")),
+      litPart("facing"),
+      argPart(facingLocation),
+    );
     return this;
   }
 
-  facingEntity(target: Selector, facingEntity: Selector, facingAnchor?: EntityAnchor): this {
-    this.$set(litPart("rotate"), argPart(single(target, "rotate")), litPart("facing"), litPart("entity"), argPart(single(facingEntity, "rotate")));
+  facingEntity(
+    target: Selector,
+    facingEntity: Selector,
+    facingAnchor?: EntityAnchor,
+  ): this {
+    this.$set(
+      litPart("rotate"),
+      argPart(single(target, "rotate")),
+      litPart("facing"),
+      litPart("entity"),
+      argPart(single(facingEntity, "rotate")),
+    );
     if (facingAnchor !== undefined) this.$append(argPart(facingAnchor));
     return this;
   }
@@ -27,7 +42,11 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.rotate = function (this: FunctionContext, target?: Selector, rotation?: Pos) {
+FunctionContext.prototype.rotate = function (
+  this: FunctionContext,
+  target?: Selector,
+  rotation?: Pos,
+) {
   const node = new TreeCommandNode("rotate", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("rotate")];

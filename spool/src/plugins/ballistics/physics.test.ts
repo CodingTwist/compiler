@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { installKit } from "../../kit";
 import { ballistics } from "./index";
-import { closestApproach, sampleAt, simulate, trajectoryBasis } from "./physics";
+import {
+  closestApproach,
+  sampleAt,
+  simulate,
+  trajectoryBasis,
+} from "./physics";
 import { PROJECTILES } from "./projectiles";
 
 installKit([ballistics]);
@@ -21,7 +26,9 @@ describe("physics", () => {
 
   it("puts gravity after the move for arrows", () => {
     // Same launch, arrow rules: the first tick moves before gravity is applied at all.
-    expect(simulate([0, 0, 0], [1, 0, 0], PROJECTILES.arrow, 1)[1]).toEqual([1, 0, 0]);
+    expect(simulate([0, 0, 0], [1, 0, 0], PROJECTILES.arrow, 1)[1]).toEqual([
+      1, 0, 0,
+    ]);
   });
 
   it("reaches TNT's terminal fall rate: -1.96 stored, -2.0 blocks/tick observed", () => {
@@ -77,7 +84,11 @@ describe("physics", () => {
     // Passes the target between two tick samples; segment distance must still count it as a
     // hit.
     const path = simulate([0, 0, 0], [4, 0, 0], TNT, 3);
-    const mid = path[1].map((c, i) => (c + path[2][i]) / 2) as [number, number, number];
+    const mid = path[1].map((c, i) => (c + path[2][i]) / 2) as [
+      number,
+      number,
+      number,
+    ];
     expect(mid[0]).toBeGreaterThan(path[1][0] + 1); // genuinely far from either tick sample
     const hit = closestApproach(path, mid);
     expect(hit.tick).toBeCloseTo(1.5, 6);

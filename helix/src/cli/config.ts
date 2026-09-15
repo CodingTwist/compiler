@@ -38,7 +38,11 @@ export interface BuildInfo {
 }
 
 /** A pack's authoring body: fill `dp`, which helix created from the config. */
-export type PackEntry = ((dp: Datapack, build: BuildInfo) => void | Promise<void>) & PackOptions;
+export type PackEntry = ((
+  dp: Datapack,
+  build: BuildInfo,
+) => void | Promise<void>) &
+  PackOptions;
 
 /** Build settings a pack entry may declare itself instead of in `helix.config.ts`. */
 export interface PackOptions {
@@ -51,6 +55,9 @@ export const defineConfig = (config: HelixConfig): HelixConfig => config;
 /** Types a pack entry; `definePack({ version }, entry)` also sets its version. */
 export function definePack(entry: PackEntry): PackEntry;
 export function definePack(options: PackOptions, entry: PackEntry): PackEntry;
-export function definePack(a: PackOptions | PackEntry, b?: PackEntry): PackEntry {
+export function definePack(
+  a: PackOptions | PackEntry,
+  b?: PackEntry,
+): PackEntry {
   return typeof a === "function" ? a : Object.assign(b!, a);
 }

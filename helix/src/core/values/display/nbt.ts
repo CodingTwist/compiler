@@ -1,10 +1,20 @@
 // Display NBT: one member's transform, a pose update, and the whole group to summon.
-import { BlockDisplay, DisplayBase, Interaction, ItemDisplay } from "../entities.generated";
+import {
+  BlockDisplay,
+  DisplayBase,
+  Interaction,
+  ItemDisplay,
+} from "../entities.generated";
 import type { IdentifiedEntityNbt } from "../entity-nbt";
 import { Float, NbtInput } from "../nbt";
 import { EntityType } from "../resource.generated";
 import type { Quat, Vec3 } from "../transform-math";
-import type { DisplayChild, DisplayContent, DisplayState, Transform } from "./types";
+import type {
+  DisplayChild,
+  DisplayContent,
+  DisplayState,
+  Transform,
+} from "./types";
 
 /** The display entity type for a member's content. */
 export const entityFor = (kind: DisplayContent["kind"]): EntityType =>
@@ -40,7 +50,10 @@ export function displayPose(t: Transform, interpolationDuration = 0) {
  * The `block_display` NBT to summon, built through the entity schema.
  * `all` must come from `members()`, so a group `offset` reaches the emitted NBT.
  */
-export function groupNbt(all: DisplayChild[], s: DisplayState): IdentifiedEntityNbt {
+export function groupNbt(
+  all: DisplayChild[],
+  s: DisplayState,
+): IdentifiedEntityNbt {
   const tags = (suffix: string) =>
     s.name ? [s.name, `${s.name}_${suffix}`] : undefined;
 
@@ -59,7 +72,9 @@ export function groupNbt(all: DisplayChild[], s: DisplayState): IdentifiedEntity
   const member = (c: DisplayChild, idx: number): IdentifiedEntityNbt => {
     // A passenger names its own entity type; the root's comes from the summon.
     const riders =
-      idx === 0 ? [...all.slice(1).map((c, i) => member(c, i + 1)), ...hitboxNbt()] : [];
+      idx === 0
+        ? [...all.slice(1).map((c, i) => member(c, i + 1)), ...hitboxNbt()]
+        : [];
     const common = {
       transformation: transformNbt(c.transform),
       brightness: s.brightness,

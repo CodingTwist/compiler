@@ -8,42 +8,86 @@ import { Selector } from "../frontend/nodes/selector";
 /** `experience` */
 export class ExperienceBuilder extends CommandBuilder<TreeCommandNode> {
   add(target: Selector, amount: number): this {
-    this.$set(litPart("experience"), litPart("add"), argPart(target), argPart(amount));
+    this.$set(
+      litPart("experience"),
+      litPart("add"),
+      argPart(target),
+      argPart(amount),
+    );
     return this;
   }
 
   addLevels(target: Selector, amount: number): this {
-    this.$set(litPart("experience"), litPart("add"), argPart(target), argPart(amount), litPart("levels"));
+    this.$set(
+      litPart("experience"),
+      litPart("add"),
+      argPart(target),
+      argPart(amount),
+      litPart("levels"),
+    );
     return this;
   }
 
   addPoints(target: Selector, amount: number): this {
-    this.$set(litPart("experience"), litPart("add"), argPart(target), argPart(amount), litPart("points"));
+    this.$set(
+      litPart("experience"),
+      litPart("add"),
+      argPart(target),
+      argPart(amount),
+      litPart("points"),
+    );
     return this;
   }
 
   queryLevels(target: Selector): this {
-    this.$set(litPart("experience"), litPart("query"), argPart(single(target, "experience")), litPart("levels"));
+    this.$set(
+      litPart("experience"),
+      litPart("query"),
+      argPart(single(target, "experience")),
+      litPart("levels"),
+    );
     return this;
   }
 
   queryPoints(target: Selector): this {
-    this.$set(litPart("experience"), litPart("query"), argPart(single(target, "experience")), litPart("points"));
+    this.$set(
+      litPart("experience"),
+      litPart("query"),
+      argPart(single(target, "experience")),
+      litPart("points"),
+    );
     return this;
   }
 
   set(target: Selector, amount: number): this {
-    this.$set(litPart("experience"), litPart("set"), argPart(target), argPart(amount));
+    this.$set(
+      litPart("experience"),
+      litPart("set"),
+      argPart(target),
+      argPart(amount),
+    );
     return this;
   }
 
   setLevels(target: Selector, amount: number): this {
-    this.$set(litPart("experience"), litPart("set"), argPart(target), argPart(amount), litPart("levels"));
+    this.$set(
+      litPart("experience"),
+      litPart("set"),
+      argPart(target),
+      argPart(amount),
+      litPart("levels"),
+    );
     return this;
   }
 
   setPoints(target: Selector, amount: number): this {
-    this.$set(litPart("experience"), litPart("set"), argPart(target), argPart(amount), litPart("points"));
+    this.$set(
+      litPart("experience"),
+      litPart("set"),
+      argPart(target),
+      argPart(amount),
+      litPart("points"),
+    );
     return this;
   }
 }
@@ -56,7 +100,10 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.experience = function (this: FunctionContext) {
-  const node = new TreeCommandNode("experience", { effect: Effect.EDITS, local: true });
+  const node = new TreeCommandNode("experience", {
+    effect: Effect.EDITS,
+    local: true,
+  });
   this.emit(node);
   const parts: CommandPart[] = [litPart("experience")];
   node.parts = parts;

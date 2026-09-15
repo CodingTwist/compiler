@@ -28,9 +28,10 @@ describe("math`` as a scoreboard chain", () => {
       sc("coef"),
     );
 
-
   it("drops + 0 and * 1", () => {
-    expect(emit(() => math`${sc("a")} * ${1} - ${sc("b")} - ${0}`.into(sc("a")))).toEqual([op("a", "-=", "b")]);
+    expect(
+      emit(() => math`${sc("a")} * ${1} - ${sc("b")} - ${0}`.into(sc("a"))),
+    ).toEqual([op("a", "-=", "b")]);
   });
 
   it("is a scoreboard chain on 1.21.4", () => {
@@ -44,7 +45,6 @@ describe("math`` as a scoreboard chain", () => {
       op("coef", "+=", "_t0"),
     ]);
   });
-
 
   it("throws below 26.3, naming the op and the target version", () => {
     const msg = (f: () => void) => {

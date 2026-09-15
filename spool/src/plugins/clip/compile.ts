@@ -50,8 +50,8 @@ function compileFrames(s: ClipState): void {
   }
   if (s.usedReverse) {
     // Wind back: start on the rest frame and step backwards, landing on frame_0.
-    const rest = ((duration - 1) % P + P) % P;
-    const rev = (t: number) => ((rest - t) % P + P) % P;
+    const rest = (((duration - 1) % P) + P) % P;
+    const rev = (t: number) => (((rest - t) % P) + P) % P;
     s.dp.createFunction(`${s.name}/reverse`).build((ctx) => {
       ctx.emit(new FunctionNode(`${s.name}/frame_${rest}`));
       for (let t = 1; t < duration; t++) {
@@ -82,14 +82,18 @@ function emitTickDriver(s: ClipState, P: number, runTicks: number): void {
   });
   s.dp.createFunction(`${name}/step`).build((ctx) => {
     for (let k = 0; k < P; k++) {
-      ctx.if(frame.equal(k), (c) => c.emit(new FunctionNode(`${name}/frame_${k}`)));
+      ctx.if(frame.equal(k), (c) =>
+        c.emit(new FunctionNode(`${name}/frame_${k}`)),
+      );
     }
     frame.add(1);
     ctx.if(frame.equal(P), (c) => frame.set(0));
     timing.advance(ctx, life);
   });
   s.dp.createFunction(`${name}/tick`, "tick").build((ctx) => {
-    ctx.if(timing.active(life), (c) => c.emit(new FunctionNode(`${name}/step`)));
+    ctx.if(timing.active(life), (c) =>
+      c.emit(new FunctionNode(`${name}/step`)),
+    );
   });
 }
 

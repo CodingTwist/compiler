@@ -24,7 +24,10 @@ FunctionContext.prototype.say = function (this: FunctionContext, text: string) {
 
 export class SayCommand extends CommandHandler<SayNode> {
   generate(node: SayNode, ctx: CodegenContext): void {
-    ctx.emit(buildCommand(ctx.version, ["say"], { message: node.value }), commandLine(Effect.NONE));
+    ctx.emit(
+      buildCommand(ctx.version, ["say"], { message: node.value }),
+      commandLine(Effect.NONE),
+    );
   }
   readonly type: SayNode["type"] = "say";
 }

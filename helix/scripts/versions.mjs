@@ -117,10 +117,14 @@ function writeIds() {
   const present = readManifest()
     .map(sanitize)
     .filter((base) => fs.existsSync(path.join(DATA_DIR, `${base}.json`)))
-    .map((base) => JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${base}.json`), "utf-8")));
+    .map((base) =>
+      JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${base}.json`), "utf-8")),
+    );
   if (present.length === 0) return;
 
-  const newest = present.reduce((a, b) => (b.dataVersion > a.dataVersion ? b : a));
+  const newest = present.reduce((a, b) =>
+    b.dataVersion > a.dataVersion ? b : a,
+  );
 
   // A `{ MEMBER_KEY: "minecraft:id" }` const body from a list of bare ids.
   // Dedupe member keys (distinct ids can't collide, but guard anyway).
@@ -149,7 +153,9 @@ function writeIds() {
   // value layer's `Block.tag(...)` adds it.
   for (const registry of CONCEPT_TAG_REGISTRIES) {
     const body = constBody(newest.registries[registry] ?? []);
-    blocks.push(`export const ${tagsConstName(registry)} = {${body}} as const;`);
+    blocks.push(
+      `export const ${tagsConstName(registry)} = {${body}} as const;`,
+    );
   }
 
   const out = path.join(DATA_DIR, "ids.ts");

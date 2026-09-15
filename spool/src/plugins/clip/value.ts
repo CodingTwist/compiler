@@ -47,15 +47,22 @@ export function sample<T>(
 }
 
 /** Sample a scalar keyframe track. */
-export const sampleScalar = (keys: readonly Keyframe<number>[], tick: number): number =>
-  sample(keys, tick, lerp);
+export const sampleScalar = (
+  keys: readonly Keyframe<number>[],
+  tick: number,
+): number => sample(keys, tick, lerp);
 
 /** Sample a 3-vector keyframe track. */
-export const sampleVec3 = (keys: readonly Keyframe<Vec3>[], tick: number): Vec3 =>
-  sample(keys, tick, lerpVec3);
+export const sampleVec3 = (
+  keys: readonly Keyframe<Vec3>[],
+  tick: number,
+): Vec3 => sample(keys, tick, lerpVec3);
 
 /** Builds a nested object from a dotted path, e.g. `nest("a.b", v)` -> `{a:{b:v}}`. */
-export function nest(path: string, value: NbtInput): { [key: string]: NbtInput } {
+export function nest(
+  path: string,
+  value: NbtInput,
+): { [key: string]: NbtInput } {
   const parts = path.split(".");
   const root: { [key: string]: NbtInput } = {};
   let cur = root;

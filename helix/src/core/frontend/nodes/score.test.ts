@@ -25,6 +25,8 @@ describe("Score verbs", () => {
   it("refuses to enable a non-trigger objective", () => {
     const dp = new Datapack("p", v26_2);
     const s = new Objective("s").score(ScoreTarget("#x"));
-    expect(() => dp.createFunction("f").build(() => void s.enable())).toThrow(/trigger/);
+    expect(() => dp.createFunction("f").build(() => void s.enable())).toThrow(
+      /trigger/,
+    );
   });
 });

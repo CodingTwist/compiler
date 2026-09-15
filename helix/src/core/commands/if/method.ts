@@ -8,7 +8,15 @@ import { ExecuteNode } from "../execute/types";
 import { supportsCommand } from "../../../versions/capabilities";
 import { allocLocal } from "../local";
 import { toChains } from "./normalize";
-import { AndNode, ClausesNode, IfElseNode, NotNode, OrNode, type Condition, type IfBuilder } from "./nodes";
+import {
+  AndNode,
+  ClausesNode,
+  IfElseNode,
+  NotNode,
+  OrNode,
+  type Condition,
+  type IfBuilder,
+} from "./nodes";
 
 declare module "../../frontend/context" {
   interface FunctionContext {
@@ -17,22 +25,24 @@ declare module "../../frontend/context" {
      *
      * Takes a condition node, a {@link Detector}, or `and`/`or`/`not` of them.
      */
-    if(
-      condition: Condition,
-      thenFn: (ctx: FunctionContext) => void,
-    ): IfBuilder;
+    if(condition: Condition, thenFn: (ctx: FunctionContext) => void): IfBuilder;
   }
 }
 
 /** `c` with its detectors run into clause nodes; they run on a chain that is never emitted. */
-export function resolveCondition(ctx: FunctionContext, c: Condition): ExpressionNode {
+export function resolveCondition(
+  ctx: FunctionContext,
+  c: Condition,
+): ExpressionNode {
   if (typeof c === "function") {
     const chain = new ExecuteNode();
     c(new ExecuteBuilder(ctx, chain));
     return new ClausesNode(chain.clauses);
   }
-  if (c instanceof AndNode) return new AndNode(c.conds.map((x) => resolveCondition(ctx, x)));
-  if (c instanceof OrNode) return new OrNode(c.conds.map((x) => resolveCondition(ctx, x)));
+  if (c instanceof AndNode)
+    return new AndNode(c.conds.map((x) => resolveCondition(ctx, x)));
+  if (c instanceof OrNode)
+    return new OrNode(c.conds.map((x) => resolveCondition(ctx, x)));
   if (c instanceof NotNode) return new NotNode(resolveCondition(ctx, c.cond));
   return c;
 }

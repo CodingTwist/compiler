@@ -23,11 +23,20 @@ export type ChainLink =
     };
 
 /** Recognize one foldable guard layer and what's inside it, or nothing. */
-export function foldLink(
-  node: ASTNode,
-): { link: ChainLink; next: { kind: "body"; body: FunctionNode } | { kind: "node"; node: ASTNode } } | undefined {
+export function foldLink(node: ASTNode):
+  | {
+      link: ChainLink;
+      next:
+        | { kind: "body"; body: FunctionNode }
+        | { kind: "node"; node: ASTNode };
+    }
+  | undefined {
   // An `or` needs its own `return run` lines, so only a single chain folds.
-  const chains = node instanceof IfElseNode && !node.elifs.length && !node.elseBody && toChains(node.condition);
+  const chains =
+    node instanceof IfElseNode &&
+    !node.elifs.length &&
+    !node.elseBody &&
+    toChains(node.condition);
   if (node instanceof IfElseNode && chains && chains.length === 1) {
     return {
       link: { kind: "clauses", clauses: chains[0] },

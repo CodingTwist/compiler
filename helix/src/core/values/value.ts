@@ -15,7 +15,9 @@ export type ArgInput = CommandValue | string | number | boolean;
 
 function isCommandValue(x: ArgInput): x is CommandValue {
   return (
-    typeof x === "object" && x !== null && typeof (x as CommandValue).render === "function"
+    typeof x === "object" &&
+    x !== null &&
+    typeof (x as CommandValue).render === "function"
   );
 }
 

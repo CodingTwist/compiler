@@ -17,12 +17,12 @@ export abstract class ProviderBase implements CommandValue {
 /** An integer-valued `/compute` expression (`minecraft:context_int_provider`). */
 export class ContextIntProvider extends ProviderBase {
   // Brand so int and float providers can't be swapped by accident.
-  private declare readonly __int: void;
+  declare private readonly __int: void;
 }
 
 /** A float-valued `/compute` expression (`minecraft:context_float_provider`). */
 export class ContextFloatProvider extends ProviderBase {
-  private declare readonly __float: void;
+  declare private readonly __float: void;
 }
 
 /** Anywhere an int operand is accepted: a bare number is a constant. */

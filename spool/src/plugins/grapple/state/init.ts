@@ -14,7 +14,11 @@ interface InitDeps {
 /** `grapple/init` (load): creates objectives and seeds constants from `tuning.ts`. */
 export function defineInit(d: InitDeps): void {
   d.fn.init.build((ctx) => {
-    const objectives = [d.scratch.work, d.consts.objective, ...d.repo.objectives];
+    const objectives = [
+      d.scratch.work,
+      d.consts.objective,
+      ...d.repo.objectives,
+    ];
     for (const o of objectives) o.init();
 
     for (const [score, value] of d.consts.seeds) score.set(value);

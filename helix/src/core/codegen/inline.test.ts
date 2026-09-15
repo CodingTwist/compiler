@@ -13,7 +13,12 @@ test("single-command private functions are inlined and dropped", () => {
     c.say("b");
   });
   const fork = dp.createFunction("m/zzz/fork");
-  fork.build((c: any) => c.execute().as(Selector.allPlayers()).run((b: any) => b.say("hi")));
+  fork.build((c: any) =>
+    c
+      .execute()
+      .as(Selector.allPlayers())
+      .run((b: any) => b.say("hi")),
+  );
   const kept = dp.createFunction("m/zzz/kept");
   kept.build((c: any) => c.say("kept"));
   const uncalled = dp.createFunction("m/zzz/uncalled");
@@ -30,10 +35,12 @@ test("single-command private functions are inlined and dropped", () => {
       { range: Range.exactly(4), fn: fork },
     ]);
     c.call(fork);
-    c.execute().ifScoreMatches(score, Range.exactly(3)).run((b: any) => {
-      b.call(one);
-      b.call(kept);
-    });
+    c.execute()
+      .ifScoreMatches(score, Range.exactly(3))
+      .run((b: any) => {
+        b.call(one);
+        b.call(kept);
+      });
   });
   dp.tags.set("tick" as any, new Set(["m/zzz/kept"]));
 
@@ -51,7 +58,9 @@ test("single-command private functions are inlined and dropped", () => {
   expect(dp.files.get("m/zzz/kept")).toBe("say kept");
   expect(dp.files.has("m/zzz/uncalled")).toBe(true);
   expect(dp.files.has("m/pub")).toBe(true);
-  expect([...files.keys()].some((k) => k.endsWith("zzz/one.mcfunction"))).toBe(false);
+  expect([...files.keys()].some((k) => k.endsWith("zzz/one.mcfunction"))).toBe(
+    false,
+  );
   // Rebuilding must not bring the dropped file back.
   buildDatapack(dp);
   expect(dp.files.has("m/zzz/one")).toBe(false);

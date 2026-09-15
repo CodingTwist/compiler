@@ -13,7 +13,9 @@
   border: 1px solid var(--vp-c-divider);
   background: var(--vp-c-bg-soft);
   text-decoration: none;
-  transition: border-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
 }
 .try-it:hover {
   border-color: var(--vp-c-brand-1);

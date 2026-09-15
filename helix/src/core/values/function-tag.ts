@@ -23,5 +23,7 @@ export class FunctionTagRefValue implements CommandValue {
 
 export type FunctionTagRef = FunctionTagRefValue;
 
-export const FunctionTagRef = (namespace: string, name: string): FunctionTagRefValue =>
-  new FunctionTagRefValue(namespace, name);
+export const FunctionTagRef = (
+  namespace: string,
+  name: string,
+): FunctionTagRefValue => new FunctionTagRefValue(namespace, name);

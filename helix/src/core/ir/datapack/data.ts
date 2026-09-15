@@ -75,17 +75,29 @@ export class DatapackData extends DatapackTags {
    * Only pass a name if something grants or revokes the advancement by id.
    * For conditions you could test on a tick, use a {@link Predicate} instead.
    */
-  event(trigger: Trigger, body: (ctx: FunctionContext) => void): { advancement: Advancement; fn: FunctionRef };
-  event(name: string, trigger: Trigger, body: (ctx: FunctionContext) => void): { advancement: Advancement; fn: FunctionRef };
   event(
-    ...args: [Trigger, (ctx: FunctionContext) => void] | [string, Trigger, (ctx: FunctionContext) => void]
+    trigger: Trigger,
+    body: (ctx: FunctionContext) => void,
+  ): { advancement: Advancement; fn: FunctionRef };
+  event(
+    name: string,
+    trigger: Trigger,
+    body: (ctx: FunctionContext) => void,
+  ): { advancement: Advancement; fn: FunctionRef };
+  event(
+    ...args:
+      | [Trigger, (ctx: FunctionContext) => void]
+      | [string, Trigger, (ctx: FunctionContext) => void]
   ): { advancement: Advancement; fn: FunctionRef } {
-    const [name, trigger, body] = args.length === 3 ? args : [undefined, ...args];
+    const [name, trigger, body] =
+      args.length === 3 ? args : [undefined, ...args];
     const fn = this.createFunction(name);
     const path = fn.getName();
     const advancement = this.advancement(
       path,
-      new AdvancementDef().criterion("trigger", trigger).reward(`${this.name}:${path}`),
+      new AdvancementDef()
+        .criterion("trigger", trigger)
+        .reward(`${this.name}:${path}`),
     );
     fn.build((ctx) => {
       body(ctx);

@@ -14,7 +14,12 @@ export class DialogBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   show(targets: Selector, dialog: Dialog): this {
-    this.$set(litPart("dialog"), litPart("show"), argPart(targets), argPart(dialog));
+    this.$set(
+      litPart("dialog"),
+      litPart("show"),
+      argPart(targets),
+      argPart(dialog),
+    );
     return this;
   }
 }

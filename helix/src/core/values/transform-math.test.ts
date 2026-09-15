@@ -67,7 +67,12 @@ describe("transform-math", () => {
   it("quatFromTo still turns an antiparallel pair around", () => {
     // There's no single shortest rotation here, but the result must still be a unit
     // quaternion mapping `from` to `to`.
-    for (const v of [[0, 1, 0], [1, 0, 0], [0, 0, 1], [1, 1, 1]] as Vec3[]) {
+    for (const v of [
+      [0, 1, 0],
+      [1, 0, 0],
+      [0, 0, 1],
+      [1, 1, 1],
+    ] as Vec3[]) {
       const flipped = v.map((n) => -n) as Vec3;
       const q = quatFromTo(v, flipped);
       expect(Math.hypot(...q)).toBeCloseTo(1, 6);
@@ -77,8 +82,14 @@ describe("transform-math", () => {
 
   it("mulQuat applies its right operand first", () => {
     // x180 flips [0,1,0] to [0,-1,0], then z90 sends that to [1,0,0].
-    close(rotateVec([0, 1, 0], mulQuat(quat("z", 90), quat("x", 180))), [1, 0, 0]);
+    close(
+      rotateVec([0, 1, 0], mulQuat(quat("z", 90), quat("x", 180))),
+      [1, 0, 0],
+    );
     // The other order is a different rotation: z90 first gives [-1,0,0], x180 keeps it.
-    close(rotateVec([0, 1, 0], mulQuat(quat("x", 180), quat("z", 90))), [-1, 0, 0]);
+    close(
+      rotateVec([0, 1, 0], mulQuat(quat("x", 180), quat("z", 90))),
+      [-1, 0, 0],
+    );
   });
 });

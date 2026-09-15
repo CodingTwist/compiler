@@ -8,517 +8,1942 @@ import { Block, Dimension, Pos } from "../values";
 /** `clone` */
 export class CloneBuilder extends CommandBuilder<TreeCommandNode> {
   filtered(begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("filtered"), argPart(filter));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+    );
     return this;
   }
 
   filteredForce(begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("filtered"), argPart(filter), litPart("force"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("force"),
+    );
     return this;
   }
 
   filteredMove(begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("filtered"), argPart(filter), litPart("move"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("move"),
+    );
     return this;
   }
 
   filteredNormal(begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("filtered"), argPart(filter), litPart("normal"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("normal"),
+    );
     return this;
   }
 
-  from(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination));
+  from(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+    );
     return this;
   }
 
-  fromFiltered(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("filtered"), argPart(filter));
+  fromFiltered(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+    );
     return this;
   }
 
-  fromFilteredForce(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("filtered"), argPart(filter), litPart("force"));
+  fromFilteredForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromFilteredMove(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("filtered"), argPart(filter), litPart("move"));
+  fromFilteredMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromFilteredNormal(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("filtered"), argPart(filter), litPart("normal"));
+  fromFilteredNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("normal"),
+    );
     return this;
   }
 
-  fromMasked(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("masked"));
+  fromMasked(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("masked"),
+    );
     return this;
   }
 
-  fromMaskedForce(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("masked"), litPart("force"));
+  fromMaskedForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("masked"),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromMaskedMove(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("masked"), litPart("move"));
+  fromMaskedMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("masked"),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromMaskedNormal(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("masked"), litPart("normal"));
+  fromMaskedNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("masked"),
+      litPart("normal"),
+    );
     return this;
   }
 
-  fromReplace(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("replace"));
+  fromReplace(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("replace"),
+    );
     return this;
   }
 
-  fromReplaceForce(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("replace"), litPart("force"));
+  fromReplaceForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("replace"),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromReplaceMove(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("replace"), litPart("move"));
+  fromReplaceMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("replace"),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromReplaceNormal(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("replace"), litPart("normal"));
+  fromReplaceNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("replace"),
+      litPart("normal"),
+    );
     return this;
   }
 
-  fromStrict(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"));
+  fromStrict(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+    );
     return this;
   }
 
-  fromStrictFiltered(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter));
+  fromStrictFiltered(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+    );
     return this;
   }
 
-  fromStrictFilteredForce(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("force"));
+  fromStrictFilteredForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromStrictFilteredMove(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("move"));
+  fromStrictFilteredMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromStrictFilteredNormal(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("normal"));
+  fromStrictFilteredNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("normal"),
+    );
     return this;
   }
 
-  fromStrictMasked(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("masked"));
+  fromStrictMasked(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+    );
     return this;
   }
 
-  fromStrictMaskedForce(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("masked"), litPart("force"));
+  fromStrictMaskedForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromStrictMaskedMove(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("masked"), litPart("move"));
+  fromStrictMaskedMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromStrictMaskedNormal(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("masked"), litPart("normal"));
+  fromStrictMaskedNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("normal"),
+    );
     return this;
   }
 
-  fromStrictReplace(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("replace"));
+  fromStrictReplace(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+    );
     return this;
   }
 
-  fromStrictReplaceForce(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("replace"), litPart("force"));
+  fromStrictReplaceForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromStrictReplaceMove(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("replace"), litPart("move"));
+  fromStrictReplaceMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromStrictReplaceNormal(sourceDimension: Dimension, begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("replace"), litPart("normal"));
+  fromStrictReplaceNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("normal"),
+    );
     return this;
   }
 
-  fromTo(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination));
+  fromTo(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+    );
     return this;
   }
 
-  fromToFiltered(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("filtered"), argPart(filter));
+  fromToFiltered(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+    );
     return this;
   }
 
-  fromToFilteredForce(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("filtered"), argPart(filter), litPart("force"));
+  fromToFilteredForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromToFilteredMove(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("filtered"), argPart(filter), litPart("move"));
+  fromToFilteredMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromToFilteredNormal(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("filtered"), argPart(filter), litPart("normal"));
+  fromToFilteredNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("normal"),
+    );
     return this;
   }
 
-  fromToMasked(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("masked"));
+  fromToMasked(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("masked"),
+    );
     return this;
   }
 
-  fromToMaskedForce(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("masked"), litPart("force"));
+  fromToMaskedForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("masked"),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromToMaskedMove(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("masked"), litPart("move"));
+  fromToMaskedMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("masked"),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromToMaskedNormal(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("masked"), litPart("normal"));
+  fromToMaskedNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("masked"),
+      litPart("normal"),
+    );
     return this;
   }
 
-  fromToReplace(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("replace"));
+  fromToReplace(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("replace"),
+    );
     return this;
   }
 
-  fromToReplaceForce(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("replace"), litPart("force"));
+  fromToReplaceForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("replace"),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromToReplaceMove(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("replace"), litPart("move"));
+  fromToReplaceMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("replace"),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromToReplaceNormal(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("replace"), litPart("normal"));
+  fromToReplaceNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("replace"),
+      litPart("normal"),
+    );
     return this;
   }
 
-  fromToStrict(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"));
+  fromToStrict(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+    );
     return this;
   }
 
-  fromToStrictFiltered(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter));
+  fromToStrictFiltered(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+    );
     return this;
   }
 
-  fromToStrictFilteredForce(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("force"));
+  fromToStrictFilteredForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromToStrictFilteredMove(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("move"));
+  fromToStrictFilteredMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromToStrictFilteredNormal(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("normal"));
+  fromToStrictFilteredNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("normal"),
+    );
     return this;
   }
 
-  fromToStrictMasked(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("masked"));
+  fromToStrictMasked(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+    );
     return this;
   }
 
-  fromToStrictMaskedForce(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("masked"), litPart("force"));
+  fromToStrictMaskedForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromToStrictMaskedMove(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("masked"), litPart("move"));
+  fromToStrictMaskedMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromToStrictMaskedNormal(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("masked"), litPart("normal"));
+  fromToStrictMaskedNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("normal"),
+    );
     return this;
   }
 
-  fromToStrictReplace(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("replace"));
+  fromToStrictReplace(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+    );
     return this;
   }
 
-  fromToStrictReplaceForce(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("replace"), litPart("force"));
+  fromToStrictReplaceForce(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("force"),
+    );
     return this;
   }
 
-  fromToStrictReplaceMove(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("replace"), litPart("move"));
+  fromToStrictReplaceMove(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("move"),
+    );
     return this;
   }
 
-  fromToStrictReplaceNormal(sourceDimension: Dimension, begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), litPart("from"), argPart(sourceDimension), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("replace"), litPart("normal"));
+  fromToStrictReplaceNormal(
+    sourceDimension: Dimension,
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      litPart("from"),
+      argPart(sourceDimension),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("normal"),
+    );
     return this;
   }
 
   masked(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("masked"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("masked"),
+    );
     return this;
   }
 
   maskedForce(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("masked"), litPart("force"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("masked"),
+      litPart("force"),
+    );
     return this;
   }
 
   maskedMove(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("masked"), litPart("move"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("masked"),
+      litPart("move"),
+    );
     return this;
   }
 
   maskedNormal(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("masked"), litPart("normal"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("masked"),
+      litPart("normal"),
+    );
     return this;
   }
 
   replace(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("replace"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("replace"),
+    );
     return this;
   }
 
   replaceForce(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("replace"), litPart("force"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("replace"),
+      litPart("force"),
+    );
     return this;
   }
 
   replaceMove(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("replace"), litPart("move"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("replace"),
+      litPart("move"),
+    );
     return this;
   }
 
   replaceNormal(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("replace"), litPart("normal"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("replace"),
+      litPart("normal"),
+    );
     return this;
   }
 
   strict(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+    );
     return this;
   }
 
   strictFiltered(begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+    );
     return this;
   }
 
-  strictFilteredForce(begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("force"));
+  strictFilteredForce(
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("force"),
+    );
     return this;
   }
 
-  strictFilteredMove(begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("move"));
+  strictFilteredMove(
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("move"),
+    );
     return this;
   }
 
-  strictFilteredNormal(begin: Pos, end: Pos, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("normal"));
+  strictFilteredNormal(
+    begin: Pos,
+    end: Pos,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("normal"),
+    );
     return this;
   }
 
   strictMasked(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("masked"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+    );
     return this;
   }
 
   strictMaskedForce(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("masked"), litPart("force"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("force"),
+    );
     return this;
   }
 
   strictMaskedMove(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("masked"), litPart("move"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("move"),
+    );
     return this;
   }
 
   strictMaskedNormal(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("masked"), litPart("normal"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("normal"),
+    );
     return this;
   }
 
   strictReplace(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("replace"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+    );
     return this;
   }
 
   strictReplaceForce(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("replace"), litPart("force"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("force"),
+    );
     return this;
   }
 
   strictReplaceMove(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("replace"), litPart("move"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("move"),
+    );
     return this;
   }
 
   strictReplaceNormal(begin: Pos, end: Pos, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), argPart(destination), litPart("strict"), litPart("replace"), litPart("normal"));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("normal"),
+    );
     return this;
   }
 
   to(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination));
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+    );
     return this;
   }
 
-  toFiltered(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("filtered"), argPart(filter));
+  toFiltered(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+    );
     return this;
   }
 
-  toFilteredForce(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("filtered"), argPart(filter), litPart("force"));
+  toFilteredForce(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("force"),
+    );
     return this;
   }
 
-  toFilteredMove(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("filtered"), argPart(filter), litPart("move"));
+  toFilteredMove(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("move"),
+    );
     return this;
   }
 
-  toFilteredNormal(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("filtered"), argPart(filter), litPart("normal"));
+  toFilteredNormal(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("normal"),
+    );
     return this;
   }
 
-  toMasked(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("masked"));
+  toMasked(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("masked"),
+    );
     return this;
   }
 
-  toMaskedForce(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("masked"), litPart("force"));
+  toMaskedForce(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("masked"),
+      litPart("force"),
+    );
     return this;
   }
 
-  toMaskedMove(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("masked"), litPart("move"));
+  toMaskedMove(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("masked"),
+      litPart("move"),
+    );
     return this;
   }
 
-  toMaskedNormal(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("masked"), litPart("normal"));
+  toMaskedNormal(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("masked"),
+      litPart("normal"),
+    );
     return this;
   }
 
-  toReplace(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("replace"));
+  toReplace(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("replace"),
+    );
     return this;
   }
 
-  toReplaceForce(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("replace"), litPart("force"));
+  toReplaceForce(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("replace"),
+      litPart("force"),
+    );
     return this;
   }
 
-  toReplaceMove(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("replace"), litPart("move"));
+  toReplaceMove(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("replace"),
+      litPart("move"),
+    );
     return this;
   }
 
-  toReplaceNormal(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("replace"), litPart("normal"));
+  toReplaceNormal(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("replace"),
+      litPart("normal"),
+    );
     return this;
   }
 
-  toStrict(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"));
+  toStrict(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+    );
     return this;
   }
 
-  toStrictFiltered(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter));
+  toStrictFiltered(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+    );
     return this;
   }
 
-  toStrictFilteredForce(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("force"));
+  toStrictFilteredForce(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("force"),
+    );
     return this;
   }
 
-  toStrictFilteredMove(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("move"));
+  toStrictFilteredMove(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("move"),
+    );
     return this;
   }
 
-  toStrictFilteredNormal(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos, filter: Block): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("filtered"), argPart(filter), litPart("normal"));
+  toStrictFilteredNormal(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+    filter: Block,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("filtered"),
+      argPart(filter),
+      litPart("normal"),
+    );
     return this;
   }
 
-  toStrictMasked(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("masked"));
+  toStrictMasked(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+    );
     return this;
   }
 
-  toStrictMaskedForce(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("masked"), litPart("force"));
+  toStrictMaskedForce(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("force"),
+    );
     return this;
   }
 
-  toStrictMaskedMove(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("masked"), litPart("move"));
+  toStrictMaskedMove(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("move"),
+    );
     return this;
   }
 
-  toStrictMaskedNormal(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("masked"), litPart("normal"));
+  toStrictMaskedNormal(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("masked"),
+      litPart("normal"),
+    );
     return this;
   }
 
-  toStrictReplace(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("replace"));
+  toStrictReplace(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+    );
     return this;
   }
 
-  toStrictReplaceForce(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("replace"), litPart("force"));
+  toStrictReplaceForce(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("force"),
+    );
     return this;
   }
 
-  toStrictReplaceMove(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("replace"), litPart("move"));
+  toStrictReplaceMove(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("move"),
+    );
     return this;
   }
 
-  toStrictReplaceNormal(begin: Pos, end: Pos, targetDimension: Dimension, destination: Pos): this {
-    this.$set(litPart("clone"), argPart(begin), argPart(end), litPart("to"), argPart(targetDimension), argPart(destination), litPart("strict"), litPart("replace"), litPart("normal"));
+  toStrictReplaceNormal(
+    begin: Pos,
+    end: Pos,
+    targetDimension: Dimension,
+    destination: Pos,
+  ): this {
+    this.$set(
+      litPart("clone"),
+      argPart(begin),
+      argPart(end),
+      litPart("to"),
+      argPart(targetDimension),
+      argPart(destination),
+      litPart("strict"),
+      litPart("replace"),
+      litPart("normal"),
+    );
     return this;
   }
 }
@@ -530,7 +1955,12 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.clone = function (this: FunctionContext, begin?: Pos, end?: Pos, destination?: Pos) {
+FunctionContext.prototype.clone = function (
+  this: FunctionContext,
+  begin?: Pos,
+  end?: Pos,
+  destination?: Pos,
+) {
   const node = new TreeCommandNode("clone", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("clone")];

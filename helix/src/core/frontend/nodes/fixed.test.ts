@@ -21,10 +21,19 @@ describe("Fixed", () => {
   it("reads and stores entity NBT at its own scale", () => {
     const out = emit((sc) => {
       const y = new Fixed(sc("y"), 1000);
-      y.read(Selector.self(), NbtPath("Pos[1]")).store(Selector.self(), NbtPath("Motion[1]"), "double", 2);
+      y.read(Selector.self(), NbtPath("Pos[1]")).store(
+        Selector.self(),
+        NbtPath("Motion[1]"),
+        "double",
+        2,
+      );
     });
-    expect(out).toContain("execute store result score #y work run data get entity @s Pos[1] 1000");
-    expect(out).toContain("execute store result entity @s Motion[1] double 0.002 run scoreboard players get #y work");
+    expect(out).toContain(
+      "execute store result score #y work run data get entity @s Pos[1] 1000",
+    );
+    expect(out).toContain(
+      "execute store result entity @s Motion[1] double 0.002 run scoreboard players get #y work",
+    );
   });
 
   it("negate multiplies by the -1 slot; add/sub are plain integer ops", () => {
@@ -35,7 +44,9 @@ describe("Fixed", () => {
     expect(out).toContain("scoreboard players operation #v work = #a work");
     expect(out).toContain("scoreboard players operation #v work += #b work");
     expect(out).toContain("scoreboard players operation #v work -= #c work");
-    expect(out).toContain("scoreboard players operation #v work *= #neg_one work");
+    expect(out).toContain(
+      "scoreboard players operation #v work *= #neg_one work",
+    );
   });
 
   it("divide is precision-preserving: multiply by the scale slot, THEN divide", () => {
@@ -46,7 +57,9 @@ describe("Fixed", () => {
     // the *= scale must come before the /= divisor (this is the anti-truncation order)
     const lines = out.split("\n");
     const mul = lines.findIndex((l) => l.includes("#frac work *= #scale work"));
-    const div = lines.findIndex((l) => l.includes("#frac work /= #dist_sq work"));
+    const div = lines.findIndex((l) =>
+      l.includes("#frac work /= #dist_sq work"),
+    );
     expect(mul).toBeGreaterThanOrEqual(0);
     expect(div).toBeGreaterThan(mul);
   });
@@ -57,7 +70,9 @@ describe("Fixed", () => {
       a.mul(new Fixed(sc("b"), 1000, sc("scale")));
     });
     expect(out).toContain("scoreboard players operation #a work *= #b work");
-    expect(out).toContain("scoreboard players operation #a work /= #scale work");
+    expect(out).toContain(
+      "scoreboard players operation #a work /= #scale work",
+    );
   });
 
   it("gain/reduce are unitless and leave the scale untouched; clamp is < hi then > lo", () => {

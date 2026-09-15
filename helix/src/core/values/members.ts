@@ -8,7 +8,11 @@ export function withMembers<
   F extends object,
   M extends Readonly<Record<string, string>>,
   V,
->(factory: F, ids: M, make: (id: string) => V): F & { readonly [K in keyof M]: V } {
+>(
+  factory: F,
+  ids: M,
+  make: (id: string) => V,
+): F & { readonly [K in keyof M]: V } {
   const out = factory as F & { [K in keyof M]: V };
   for (const key of Object.keys(ids)) {
     Object.defineProperty(out, key, {

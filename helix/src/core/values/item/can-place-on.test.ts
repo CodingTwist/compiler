@@ -12,9 +12,12 @@ describe("ItemValue.canPlaceOn", () => {
   });
 
   it("lists several blocks under a single predicate", () => {
-    const button = Item.STONE_BUTTON.canPlaceOn("minecraft:stone", "#minecraft:planks");
+    const button = Item.STONE_BUTTON.canPlaceOn(
+      "minecraft:stone",
+      "#minecraft:planks",
+    );
     expect(button.render(v26_1_2)).toBe(
-      'minecraft:stone_button[can_place_on=' +
+      "minecraft:stone_button[can_place_on=" +
         '{blocks:["minecraft:stone","#minecraft:planks"]}]',
     );
   });

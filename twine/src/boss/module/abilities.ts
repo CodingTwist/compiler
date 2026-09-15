@@ -10,7 +10,11 @@ const MAX_INT = 2147483647;
 /** Ability rolls for {@link BossModule}. */
 export class BossAbilities extends BossFight {
   /** Sums the weights of ready abilities and calls the picker if any are ready. */
-  protected rollAbility(ctx: FunctionContext, phase: Phase, pick: FunctionRef): void {
+  protected rollAbility(
+    ctx: FunctionContext,
+    phase: Phase,
+    pick: FunctionRef,
+  ): void {
     const total = this.score("total");
     total.set(0);
     for (const a of phase.abilities) {

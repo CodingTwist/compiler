@@ -53,7 +53,9 @@ export class ItemModel {
 
   /** Render every sub-model on top of one another. */
   static composite(models: ItemModel[]): ItemModel {
-    return ItemModel.of("minecraft:composite", { models: models.map((m) => m.toJson()) });
+    return ItemModel.of("minecraft:composite", {
+      models: models.map((m) => m.toJson()),
+    });
   }
 
   /**
@@ -102,7 +104,10 @@ export class ItemModel {
       property: normalizeId(property),
       ...(scale !== undefined ? { scale } : {}),
       ...rest,
-      entries: entries.map((e) => ({ threshold: e.threshold, model: e.model.toJson() })),
+      entries: entries.map((e) => ({
+        threshold: e.threshold,
+        model: e.model.toJson(),
+      })),
       ...(fallback ? { fallback: fallback.toJson() } : {}),
     });
   }
@@ -119,7 +124,10 @@ export class ItemModel {
 
   /** A hardcoded block-entity model (`base` is the model providing the transforms). */
   static special(base: ModelResource, model: SpecialModel): ItemModel {
-    return ItemModel.of("minecraft:special", { base: refId(base), model: model.toJson() });
+    return ItemModel.of("minecraft:special", {
+      base: refId(base),
+      model: model.toJson(),
+    });
   }
 
   /** Verbatim item-model JSON escape hatch (wins over the typed arms). */

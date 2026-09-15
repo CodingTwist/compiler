@@ -3,23 +3,23 @@
 Not everything a pack needs is a command. Predicates, loot tables, advancements, recipes,
 and item modifiers are **JSON files** the game reads. Helix builds them from typed value
 trees and registers them on the [`Datapack`](/api/helix/classes/Datapack), handing back a
-*reference* you pass around - you never write the file path or the id string twice.
+_reference_ you pass around - you never write the file path or the id string twice.
 
 Every registrar follows the same shape: `dp.<kind>(name, def)` writes the file and returns
 a typed handle.
 
-| Registrar | Builds | Returns |
-| --- | --- | --- |
-| `dp.predicate(name, def)` | a [`Predicate`](/api/helix/classes/Predicate) tree | `PredicateRef` |
-| `dp.lootTable(name, def)` | a loot table | `LootTableRef` |
-| `dp.advancement(name, def)` | an advancement | `Advancement` |
-| `dp.recipe(name, def)` | a recipe | `RecipeRef` |
-| `dp.itemModifier(name, def)` | an item modifier | `ItemModifierRef` |
+| Registrar                    | Builds                                             | Returns           |
+| ---------------------------- | -------------------------------------------------- | ----------------- |
+| `dp.predicate(name, def)`    | a [`Predicate`](/api/helix/classes/Predicate) tree | `PredicateRef`    |
+| `dp.lootTable(name, def)`    | a loot table                                       | `LootTableRef`    |
+| `dp.advancement(name, def)`  | an advancement                                     | `Advancement`     |
+| `dp.recipe(name, def)`       | a recipe                                           | `RecipeRef`       |
+| `dp.itemModifier(name, def)` | an item modifier                                   | `ItemModifierRef` |
 
 ## Predicates: the "over NBT" workhorse
 
 A [`Predicate`](/api/helix/classes/Predicate) is a composable condition tree. Its reason to
-exist: express an entity-state check - *including NBT* - **once**, as a typed,
+exist: express an entity-state check - _including NBT_ - **once**, as a typed,
 engine-evaluated, referenceable file, instead of inlining `nbt={…}` into every selector.
 
 Leaf conditions are static factories (`Predicate.entity`, `.scores`, `.blockState`,
@@ -34,8 +34,10 @@ const dp = new Datapack("checks", v26_2);
 // Register once…
 const focused = dp.predicate(
   "focused",
-  Predicate.entity({ flags: { is_sneaking: true }, nbt: Nbt({ SleepTimer: Short(0) }) })
-    .and(Predicate.scores({ combo: { min: 3 } })),
+  Predicate.entity({
+    flags: { is_sneaking: true },
+    nbt: Nbt({ SleepTimer: Short(0) }),
+  }).and(Predicate.scores({ combo: { min: 3 } })),
 );
 
 const fn = dp.createFunction("reward");

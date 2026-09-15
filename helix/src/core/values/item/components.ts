@@ -6,7 +6,10 @@ import { toSnbt, NbtInput } from "../nbt";
 import { CommandValue } from "../value";
 import type { ItemState } from "./state";
 import { pageJson, textCompound, textJson } from "./text";
-import { CUSTOM_MODEL_DATA_STRUCT_DATA_VERSION, ITEM_MODEL_DATA_VERSION } from "./versions";
+import {
+  CUSTOM_MODEL_DATA_STRUCT_DATA_VERSION,
+  ITEM_MODEL_DATA_VERSION,
+} from "./versions";
 
 /**
  * One item component in both forms: `stack` for give strings and `key`/`json` for item
@@ -22,7 +25,10 @@ export interface ComponentLowering {
   json?: unknown;
 }
 
-export function renderEnchId(ench: string | CommandValue, version: VersionProfile): string {
+export function renderEnchId(
+  ench: string | CommandValue,
+  version: VersionProfile,
+): string {
   return typeof ench === "string" ? normalizeId(ench) : ench.render(version);
 }
 
@@ -32,7 +38,10 @@ function resolveModelId(handle: ModelRef | string): string {
 }
 
 /** The legacy `custom_model_data` number for a model handle. Throws if it has none. */
-export function legacyModelData(handle: ModelRef | string, version: VersionProfile): number {
+export function legacyModelData(
+  handle: ModelRef | string,
+  version: VersionProfile,
+): number {
   const n = handle instanceof ModelRef ? handle.legacyModelData : undefined;
   if (n === undefined) {
     throw new Error(
@@ -45,19 +54,27 @@ export function legacyModelData(handle: ModelRef | string, version: VersionProfi
 }
 
 /** Lower a `custom_model_data` integer to its version-aware component form. */
-function customModelDataLowering(n: number, version: VersionProfile): ComponentLowering {
+function customModelDataLowering(
+  n: number,
+  version: VersionProfile,
+): ComponentLowering {
   const struct = version.dataVersion >= CUSTOM_MODEL_DATA_STRUCT_DATA_VERSION;
   return {
     // 1.21.4+ wraps the value in `{floats:[n]}`; older component versions keep
     // the bare integer.
-    stack: struct ? `custom_model_data={floats:[${n}]}` : `custom_model_data=${n}`,
+    stack: struct
+      ? `custom_model_data={floats:[${n}]}`
+      : `custom_model_data=${n}`,
     key: "minecraft:custom_model_data",
     json: struct ? { floats: [n] } : n,
   };
 }
 
 /** Every component the item sets, in a fixed order so stack and predicate forms line up. */
-export function modernComponents(s: ItemState, version: VersionProfile): ComponentLowering[] {
+export function modernComponents(
+  s: ItemState,
+  version: VersionProfile,
+): ComponentLowering[] {
   const out: ComponentLowering[] = [];
   if (s.customName !== undefined) {
     out.push({
@@ -79,7 +96,9 @@ export function modernComponents(s: ItemState, version: VersionProfile): Compone
       });
     } else {
       // 1.20.5..1.21.3 has components but no `item_model`, so use the legacy number.
-      out.push(customModelDataLowering(legacyModelData(s.itemModel, version), version));
+      out.push(
+        customModelDataLowering(legacyModelData(s.itemModel, version), version),
+      );
     }
   }
   if (s.enchantments.length > 0) {
@@ -103,7 +122,10 @@ export function modernComponents(s: ItemState, version: VersionProfile): Compone
     // `can_place_on` is a block predicate or a list of them, with no `predicates:`
     // wrapper.
     const blocks = s.canPlaceOn;
-    const snbt = blocks.length === 1 ? `"${blocks[0]}"` : `[${blocks.map((b) => `"${b}"`).join(",")}]`;
+    const snbt =
+      blocks.length === 1
+        ? `"${blocks[0]}"`
+        : `[${blocks.map((b) => `"${b}"`).join(",")}]`;
     out.push({
       stack: `can_place_on={blocks:${snbt}}`,
       key: "minecraft:can_place_on",
@@ -112,7 +134,9 @@ export function modernComponents(s: ItemState, version: VersionProfile): Compone
   }
   if (s.writtenBook !== undefined) {
     const { title, author, pages } = s.writtenBook;
-    const pagesNbt: Record<string, NbtInput>[] = pages.map((page) => pageJson(page));
+    const pagesNbt: Record<string, NbtInput>[] = pages.map((page) =>
+      pageJson(page),
+    );
     const value: NbtInput = { title, author, resolved: true, pages: pagesNbt };
     out.push({ stack: `written_book_content=${toSnbt(value, version)}` });
   }

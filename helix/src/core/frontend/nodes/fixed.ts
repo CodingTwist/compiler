@@ -10,7 +10,10 @@ import { math } from "./math";
 /** The explicit `ctx` if given, else the ambient one; NBT reads need `execute`. */
 function emitInto(ctx?: FunctionContext): FunctionContext {
   const target = ctx ?? (currentContext() as FunctionContext | undefined);
-  if (!target) throw new Error("Fixed: no active function context - pass `ctx` outside a builder callback.");
+  if (!target)
+    throw new Error(
+      "Fixed: no active function context - pass `ctx` outside a builder callback.",
+    );
   return target;
 }
 
@@ -47,7 +50,13 @@ export class Fixed {
   }
 
   /** Writes this to `path` on `who` as a real number, times a unitless `factor`. */
-  store(who: Selector, path: NbtPath, type: StoreNumType = "double", factor = 1, ctx?: FunctionContext): this {
+  store(
+    who: Selector,
+    path: NbtPath,
+    type: StoreNumType = "double",
+    factor = 1,
+    ctx?: FunctionContext,
+  ): this {
     emitInto(ctx)
       .execute()
       .storeResultEntity(who, path, type, factor / this.scale)

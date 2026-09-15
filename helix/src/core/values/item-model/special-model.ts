@@ -8,12 +8,17 @@ import { SPECIAL_MODEL_TYPES } from "./properties";
 export class SpecialModel {
   private constructor(private readonly data: Record<string, unknown>) {}
 
-  private static of(type: string, rest: Record<string, unknown> = {}): SpecialModel {
+  private static of(
+    type: string,
+    rest: Record<string, unknown> = {},
+  ): SpecialModel {
     return new SpecialModel({ type: normalizeId(type), ...rest });
   }
 
   static bed(texture: string): SpecialModel {
-    return SpecialModel.of(SPECIAL_MODEL_TYPES.BED, { texture: normalizeId(texture) });
+    return SpecialModel.of(SPECIAL_MODEL_TYPES.BED, {
+      texture: normalizeId(texture),
+    });
   }
   static banner(color: string): SpecialModel {
     return SpecialModel.of(SPECIAL_MODEL_TYPES.BANNER, { color });
@@ -27,10 +32,15 @@ export class SpecialModel {
       ...(openness !== undefined ? { openness } : {}),
     });
   }
-  static head(kind: string, opts: { texture?: string; animation?: number } = {}): SpecialModel {
+  static head(
+    kind: string,
+    opts: { texture?: string; animation?: number } = {},
+  ): SpecialModel {
     return SpecialModel.of(SPECIAL_MODEL_TYPES.HEAD, {
       kind,
-      ...(opts.texture !== undefined ? { texture: normalizeId(opts.texture) } : {}),
+      ...(opts.texture !== undefined
+        ? { texture: normalizeId(opts.texture) }
+        : {}),
       ...(opts.animation !== undefined ? { animation: opts.animation } : {}),
     });
   }
@@ -41,7 +51,9 @@ export class SpecialModel {
     return SpecialModel.of(SPECIAL_MODEL_TYPES.SHULKER_BOX, {
       texture: normalizeId(texture),
       ...(opts.openness !== undefined ? { openness: opts.openness } : {}),
-      ...(opts.orientation !== undefined ? { orientation: opts.orientation } : {}),
+      ...(opts.orientation !== undefined
+        ? { orientation: opts.orientation }
+        : {}),
     });
   }
   static shield(): SpecialModel {

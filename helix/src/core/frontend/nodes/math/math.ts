@@ -3,8 +3,15 @@ import jsep from "jsep";
 import { Score } from "../score";
 import { ScoreVec3 } from "../score_vec3";
 import { ExprNode } from "../expr";
-import { ContextFloatProvider, ContextIntProvider } from "../../../values/context-provider";
-import { emitScoreExpr, toFloatProvider, toProvider } from "../../../commands/score-expr";
+import {
+  ContextFloatProvider,
+  ContextIntProvider,
+} from "../../../values/context-provider";
+import {
+  emitScoreExpr,
+  toFloatProvider,
+  toProvider,
+} from "../../../commands/score-expr";
 import type { FunctionContext } from "../../context";
 import { convert } from "./convert";
 import { fail } from "./errors";

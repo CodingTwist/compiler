@@ -2,7 +2,10 @@
 import { Datapack } from "../core/ir/datapack";
 
 /** Map a 0-based character offset in `text` to a 1-based line/column. */
-export function offsetToLineCol(text: string, offset: number): { line: number; column: number } {
+export function offsetToLineCol(
+  text: string,
+  offset: number,
+): { line: number; column: number } {
   let line = 1;
   let last = 0;
   for (let i = 0; i < offset && i < text.length; i++) {
@@ -30,7 +33,10 @@ export function declaredSymbols(files: Map<string, string>): Set<string> {
 }
 
 /** Is this an undeclared-symbol diagnostic for something the pack defines? */
-export function isDeclaredByPack(message: string, declared: Set<string>): boolean {
+export function isDeclaredByPack(
+  message: string,
+  declared: Set<string>,
+): boolean {
   const m = /Cannot find (function|objective) “(.+?)”/.exec(message);
   return !!m && declared.has(`${m[1]} ${m[2]}`);
 }

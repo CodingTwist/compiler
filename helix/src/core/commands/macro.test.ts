@@ -35,7 +35,10 @@ describe("function macros", () => {
     const ctx = new CodegenContext(dp, new Dispatcher(createHandlerMap()));
     const body = new FunctionNode("then");
     body.push(
-      new SetblockNode({ pos: Macro<Pos>("pos"), block: Block("minecraft:stone") }),
+      new SetblockNode({
+        pos: Macro<Pos>("pos"),
+        block: Block("minecraft:stone"),
+      }),
     );
     const cond = new ScoreRangeNode("@s", new Objective("hp"), new Range(1, 1));
     new IfHandler().generate(new IfElseNode(cond, body), ctx);
@@ -48,7 +51,9 @@ describe("function macros", () => {
     expect(
       lines((ctx, dp) => {
         const place = dp.createFunction("place");
-        place.build((c) => c.setblock(Macro<Pos>("pos"), Block("minecraft:stone")));
+        place.build((c) =>
+          c.setblock(Macro<Pos>("pos"), Block("minecraft:stone")),
+        );
         ctx.callWith(place, Nbt({ pos: "1 2 3" }));
         ctx.callWith(place, ctx.storage("p:args").at("payload"));
         ctx.call(place);

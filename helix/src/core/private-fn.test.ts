@@ -13,5 +13,7 @@ test("privateChild", () => {
   expect(privateChild("tick", "if_0")).toBe("zzz/tick/if_0");
   expect(privateChild("zzz/tick/if_0", "at_0")).toBe("zzz/tick/if_0/at_0");
   expect(privateChild("mace/tick", "if_0")).toBe("mace/zzz/tick/if_0");
-  expect(privateChild("mace/zzz/tick/if_0", "at_0")).toBe("mace/zzz/tick/if_0/at_0");
+  expect(privateChild("mace/zzz/tick/if_0", "at_0")).toBe(
+    "mace/zzz/tick/if_0/at_0",
+  );
 });

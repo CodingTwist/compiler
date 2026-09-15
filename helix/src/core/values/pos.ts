@@ -27,7 +27,9 @@ export class PosValue implements CommandValue {
   private readonly parts: Coord[];
 
   constructor(coords: CoordArg[], mode: Mode = "absolute") {
-    this.parts = coords.map((c) => (typeof c === "number" ? { n: c, mode } : c));
+    this.parts = coords.map((c) =>
+      typeof c === "number" ? { n: c, mode } : c,
+    );
   }
 
   render(): string {
@@ -41,7 +43,10 @@ export class PosValue implements CommandValue {
 
   /** Whether every axis is absolute, so {@link coords} won't throw. */
   isAbsolute(): boolean {
-    return this.parts.length === 3 && this.parts.every((c) => c.mode === "absolute" || c.mode === "exact");
+    return (
+      this.parts.length === 3 &&
+      this.parts.every((c) => c.mode === "absolute" || c.mode === "exact")
+    );
   }
 
   /** The numeric coordinates. Throws unless every axis is absolute. */

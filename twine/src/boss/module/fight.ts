@@ -40,10 +40,20 @@ export class BossFight extends BossParts {
             .execute()
             .positioned(Pos(...zone.center))
             .run((at) =>
-              at.tag().add(Selector.allPlayers().distance(Range.atMost(zone.radius)), tag),
+              at
+                .tag()
+                .add(
+                  Selector.allPlayers().distance(Range.atMost(zone.radius)),
+                  tag,
+                ),
             );
         } else {
-          ctx.tag().add(Selector.allPlayers().volume(zone.from as Vec3, zone.to as Vec3), tag);
+          ctx
+            .tag()
+            .add(
+              Selector.allPlayers().volume(zone.from as Vec3, zone.to as Vec3),
+              tag,
+            );
         }
       }
     }

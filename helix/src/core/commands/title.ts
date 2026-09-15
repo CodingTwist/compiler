@@ -9,7 +9,12 @@ import { Selector } from "../frontend/nodes/selector";
 /** `title` */
 export class TitleBuilder extends CommandBuilder<TreeCommandNode> {
   actionbar(targets: Selector, title: Component): this {
-    this.$set(litPart("title"), argPart(targets), litPart("actionbar"), argPart(title));
+    this.$set(
+      litPart("title"),
+      argPart(targets),
+      litPart("actionbar"),
+      argPart(title),
+    );
     return this;
   }
 
@@ -24,17 +29,34 @@ export class TitleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   subtitle(targets: Selector, title: Component): this {
-    this.$set(litPart("title"), argPart(targets), litPart("subtitle"), argPart(title));
+    this.$set(
+      litPart("title"),
+      argPart(targets),
+      litPart("subtitle"),
+      argPart(title),
+    );
     return this;
   }
 
   times(targets: Selector, fadeIn: Time, stay: Time, fadeOut: Time): this {
-    this.$set(litPart("title"), argPart(targets), litPart("times"), argPart(fadeIn), argPart(stay), argPart(fadeOut));
+    this.$set(
+      litPart("title"),
+      argPart(targets),
+      litPart("times"),
+      argPart(fadeIn),
+      argPart(stay),
+      argPart(fadeOut),
+    );
     return this;
   }
 
   title(targets: Selector, title: Component): this {
-    this.$set(litPart("title"), argPart(targets), litPart("title"), argPart(title));
+    this.$set(
+      litPart("title"),
+      argPart(targets),
+      litPart("title"),
+      argPart(title),
+    );
     return this;
   }
 }

@@ -2,12 +2,18 @@
 import { ref, shallowRef, onMounted, onBeforeUnmount, computed } from "vue";
 import type { compile as CompileFn } from "../playground/run";
 
-const props = withDefaults(
-  defineProps<{ code?: string; height?: string }>(),
-  { code: "", height: "520px" },
-);
+const props = withDefaults(defineProps<{ code?: string; height?: string }>(), {
+  code: "",
+  height: "520px",
+});
 
-const KNOWN_VERSIONS = ["v1_20_1", "v1_20_4", "v1_21_4", "v26_2", "v26_3_rc_2"] as const;
+const KNOWN_VERSIONS = [
+  "v1_20_1",
+  "v1_20_4",
+  "v1_21_4",
+  "v26_2",
+  "v26_3_rc_2",
+] as const;
 const VERSION_LABELS: Record<string, string> = {
   v1_20_1: "1.20.1",
   v1_20_4: "1.20.4",
@@ -59,7 +65,9 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 
 const activeContent = computed(() => files.value[activeFile.value]?.[1] ?? "");
 const activeLang = computed(() =>
-  (files.value[activeFile.value]?.[0] ?? "").endsWith(".json") ? "json" : "mcfunction",
+  (files.value[activeFile.value]?.[0] ?? "").endsWith(".json")
+    ? "json"
+    : "mcfunction",
 );
 
 function scheduleCompile() {
@@ -107,7 +115,9 @@ onMounted(async () => {
   const initial = shared ?? props.code;
 
   // Detect the version the starter code uses so the dropdown matches.
-  const found = KNOWN_VERSIONS.find((v) => new RegExp(`\\b${v}\\b`).test(initial));
+  const found = KNOWN_VERSIONS.find((v) =>
+    new RegExp(`\\b${v}\\b`).test(initial),
+  );
   if (found) version.value = found;
 
   editor = monacoNs.editor.create(editorEl.value, {
@@ -137,8 +147,13 @@ onBeforeUnmount(() => {
       <span class="pg-title">helix playground</span>
       <label class="pg-version">
         target
-        <select :value="version" @change="changeVersion(($event.target as HTMLSelectElement).value)">
-          <option v-for="v in KNOWN_VERSIONS" :key="v" :value="v">{{ VERSION_LABELS[v] }}</option>
+        <select
+          :value="version"
+          @change="changeVersion(($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="v in KNOWN_VERSIONS" :key="v" :value="v">
+            {{ VERSION_LABELS[v] }}
+          </option>
         </select>
       </label>
     </div>
@@ -146,9 +161,13 @@ onBeforeUnmount(() => {
       <div class="pg-editor" ref="editorEl">
         <div v-if="!ready" class="pg-loading">loading editor…</div>
       </div>
-      <div class="pg-gutter" @pointerdown="startDrag" title="Drag to resize"><span></span></div>
+      <div class="pg-gutter" @pointerdown="startDrag" title="Drag to resize">
+        <span></span>
+      </div>
       <div class="pg-output">
-        <div v-if="error" class="pg-error"><pre>{{ error }}</pre></div>
+        <div v-if="error" class="pg-error">
+          <pre>{{ error }}</pre>
+        </div>
         <template v-else>
           <div class="pg-tabs">
             <button
@@ -158,12 +177,16 @@ onBeforeUnmount(() => {
               :class="{ active: i === activeFile }"
               @click="activeFile = i"
               :title="f[0]"
-            >{{ f[0].split("/").pop() }}</button>
+            >
+              {{ f[0].split("/").pop() }}
+            </button>
             <span v-if="!files.length" class="pg-empty">no output yet</span>
           </div>
           <div class="pg-file">
             <div class="pg-path">{{ files[activeFile]?.[0] }}</div>
-            <pre :class="`language-${activeLang}`"><code>{{ activeContent }}</code></pre>
+            <pre
+              :class="`language-${activeLang}`"
+            ><code>{{ activeContent }}</code></pre>
           </div>
         </template>
       </div>
@@ -194,8 +217,16 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid var(--vp-c-divider);
   font-size: 13px;
 }
-.pg-title { font-weight: 600; color: var(--vp-c-text-2); }
-.pg-version { color: var(--vp-c-text-2); display: flex; align-items: center; gap: 6px; }
+.pg-title {
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+}
+.pg-version {
+  color: var(--vp-c-text-2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .pg-version select {
   background: var(--vp-c-bg);
   color: var(--vp-c-text-1);
@@ -209,7 +240,10 @@ onBeforeUnmount(() => {
   flex: 1;
   min-height: 0;
 }
-.pg-editor { position: relative; min-width: 0; }
+.pg-editor {
+  position: relative;
+  min-width: 0;
+}
 /* Draggable divider between editor and output. */
 .pg-gutter {
   cursor: col-resize;
@@ -219,7 +253,9 @@ onBeforeUnmount(() => {
   justify-content: center;
   transition: background 0.15s;
 }
-.pg-gutter:hover { background: var(--vp-c-brand-1); }
+.pg-gutter:hover {
+  background: var(--vp-c-brand-1);
+}
 .pg-gutter span {
   width: 2px;
   height: 28px;
@@ -227,7 +263,10 @@ onBeforeUnmount(() => {
   background: var(--vp-c-text-3);
   opacity: 0.5;
 }
-.pg-gutter:hover span { background: #fff; opacity: 0.9; }
+.pg-gutter:hover span {
+  background: #fff;
+  opacity: 0.9;
+}
 .pg-loading {
   position: absolute;
   inset: 0;
@@ -236,7 +275,12 @@ onBeforeUnmount(() => {
   color: var(--vp-c-text-3);
   font-size: 13px;
 }
-.pg-output { display: flex; flex-direction: column; min-width: 0; background: var(--vp-c-bg); }
+.pg-output {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--vp-c-bg);
+}
 .pg-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -257,9 +301,19 @@ onBeforeUnmount(() => {
   cursor: pointer;
   white-space: nowrap;
 }
-.pg-tab.active { color: var(--vp-c-text-1); border-color: var(--vp-c-brand-1); }
-.pg-empty { font-size: 12px; color: var(--vp-c-text-3); padding: 2px 6px; }
-.pg-file { flex: 1; overflow: auto; }
+.pg-tab.active {
+  color: var(--vp-c-text-1);
+  border-color: var(--vp-c-brand-1);
+}
+.pg-empty {
+  font-size: 12px;
+  color: var(--vp-c-text-3);
+  padding: 2px 6px;
+}
+.pg-file {
+  flex: 1;
+  overflow: auto;
+}
 .pg-path {
   font-family: var(--vp-font-family-mono);
   font-size: 11px;
@@ -274,7 +328,10 @@ onBeforeUnmount(() => {
   line-height: 1.5;
   white-space: pre;
 }
-.pg-error { padding: 12px; overflow: auto; }
+.pg-error {
+  padding: 12px;
+  overflow: auto;
+}
 .pg-error pre {
   margin: 0;
   color: var(--vp-c-danger-1);
@@ -283,12 +340,24 @@ onBeforeUnmount(() => {
   white-space: pre-wrap;
 }
 @media (max-width: 720px) {
-  .pg { height: auto; resize: none; }
+  .pg {
+    height: auto;
+    resize: none;
+  }
   /* Stack editor over output and drop the drag divider - override the inline
      grid-template-columns the split ratio sets on wider screens. */
-  .pg-body { grid-template-columns: 1fr !important; }
-  .pg-editor { height: 300px; border-bottom: 1px solid var(--vp-c-divider); }
-  .pg-gutter { display: none; }
-  .pg-output { height: 300px; }
+  .pg-body {
+    grid-template-columns: 1fr !important;
+  }
+  .pg-editor {
+    height: 300px;
+    border-bottom: 1px solid var(--vp-c-divider);
+  }
+  .pg-gutter {
+    display: none;
+  }
+  .pg-output {
+    height: 300px;
+  }
 }
 </style>

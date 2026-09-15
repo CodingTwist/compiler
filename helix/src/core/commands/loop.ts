@@ -47,7 +47,12 @@ export class LoopHandler extends CommandHandler<LoopNode> {
   generate(node: LoopNode, ctx: CodegenContext): void {
     const { name } = node.loop;
     // A body can be rendered more than once (folding tries it), but the function is written once.
-    if (!ctx.datapack.files.has(name)) commitLines(name, ctx.datapack, new IfHandler().branchLines(node.step, ctx, true));
+    if (!ctx.datapack.files.has(name))
+      commitLines(
+        name,
+        ctx.datapack,
+        new IfHandler().branchLines(node.step, ctx, true),
+      );
     ctx.emit(functionCall(ctx.datapack, name), callLine(name));
   }
 }
@@ -60,9 +65,16 @@ declare module "../frontend/context" {
      * Compiles to a recursive function, so the command chain limit caps passes per tick. A
      * `return` at the top of the body ends the loop and returns its value. Needs `return run`.
      */
-    while(cond: Condition, body: (ctx: FunctionContext) => void, opts?: LoopOptions): LoopBuilder;
+    while(
+      cond: Condition,
+      body: (ctx: FunctionContext) => void,
+      opts?: LoopOptions,
+    ): LoopBuilder;
     /** Runs `body` `n` times, with `i` counting up from 0 in a local. */
-    repeat(n: number | Score, body: (ctx: FunctionContext, i: Score) => void): void;
+    repeat(
+      n: number | Score,
+      body: (ctx: FunctionContext, i: Score) => void,
+    ): void;
   }
 }
 
@@ -74,10 +86,15 @@ FunctionContext.prototype.while = function (
 ): LoopBuilder {
   // Without `return run` the exit branch can't be skipped once a deeper pass has run.
   if (!supportsCommand(this.version, ["return", "run"])) {
-    throw new Error(`ctx.while needs \`return run\`, which ${this.version.id} lacks`);
+    throw new Error(
+      `ctx.while needs \`return run\`, which ${this.version.id} lacks`,
+    );
   }
   const child = (fn: FunctionNode): FunctionContext =>
-    new (this.constructor as new (fn: FunctionNode, v: VersionProfile) => FunctionContext)(fn, this.version);
+    new (this.constructor as new (
+      fn: FunctionNode,
+      v: VersionProfile,
+    ) => FunctionContext)(fn, this.version);
   const loop = this.createChildFunction("while");
   const loopCtx = child(loop);
 

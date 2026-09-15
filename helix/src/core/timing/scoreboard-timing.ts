@@ -62,7 +62,8 @@ export class ScoreboardTiming {
     phase = 0,
   ): FunctionRef {
     const ph = this.ensureCounter(dp, periodTicks, phase);
-    const hook = ph === 0 ? `${CLOCK}/every_${label}` : `${CLOCK}/every_${label}_p${ph}`;
+    const hook =
+      ph === 0 ? `${CLOCK}/every_${label}` : `${CLOCK}/every_${label}_p${ph}`;
     const holder = `t${periodTicks}`;
     const clock = dp.objective("clock");
 
@@ -71,7 +72,11 @@ export class ScoreboardTiming {
     if (!this.firesInstalled.has(key)) {
       this.firesInstalled.add(key);
       dp.getOrCreateFunction(CLOCK, "tick").build((ctx) => {
-        const at = new ScoreRangeNode(ScoreTarget(holder), clock, new Range(ph, ph));
+        const at = new ScoreRangeNode(
+          ScoreTarget(holder),
+          clock,
+          new Range(ph, ph),
+        );
         ctx.if(at, (c) => c.emit(new FunctionNode(hook)));
       });
     }
@@ -90,7 +95,11 @@ export class ScoreboardTiming {
   }
 
   /** Installs the per-period counter (idempotent) and returns the normalised phase. */
-  private ensureCounter(dp: Datapack, periodTicks: number, phase: number): number {
+  private ensureCounter(
+    dp: Datapack,
+    periodTicks: number,
+    phase: number,
+  ): number {
     const clock = dp.objective("clock");
     const holder = `t${periodTicks}`;
     if (!this.installed.has(periodTicks)) {

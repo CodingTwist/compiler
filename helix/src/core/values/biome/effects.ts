@@ -4,13 +4,19 @@ import { Particle } from "../resource.generated";
 import { SoundEvent } from "../sound";
 import type { GrassColorModifier } from "./enums";
 import { attributesJson, effectsJson } from "./effects-json";
-import type { BiomeColor, EffectsState, MoodSoundOpts, MusicOpts } from "./types";
+import type {
+  BiomeColor,
+  EffectsState,
+  MoodSoundOpts,
+  MusicOpts,
+} from "./types";
 
 /** `"#7fa1ff"` | `0x7fa1ff` -> `8364543`. */
 function packColor(color: BiomeColor): number {
   if (typeof color === "number") return color;
   const n = Number.parseInt(color.slice(1), 16);
-  if (Number.isNaN(n)) throw new Error(`Invalid biome colour "${color}" (expected #RRGGBB)`);
+  if (Number.isNaN(n))
+    throw new Error(`Invalid biome colour "${color}" (expected #RRGGBB)`);
   return n;
 }
 

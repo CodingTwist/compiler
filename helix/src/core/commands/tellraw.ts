@@ -64,7 +64,7 @@ export class TellrawCommand extends CommandHandler<TellrawNode> {
 
   generate(node: TellrawNode, ctx: CodegenContext): void {
     let target = generateSingleNode(node.target, ctx.datapack, ctx.dispatcher);
-  
+
     const parts = node.message.parts.map((part) =>
       this.generatePart(part, ctx),
     );

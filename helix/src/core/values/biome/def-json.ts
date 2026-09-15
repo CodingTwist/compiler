@@ -5,7 +5,10 @@ import type { DefState } from "./types";
 import { ATTRIBUTES_DATA_VERSION, CARVER_LIST_DATA_VERSION } from "./versions";
 
 /** The biome JSON, in the shape `version` expects. */
-export function biomeJson(s: DefState, version: VersionProfile): Record<string, unknown> {
+export function biomeJson(
+  s: DefState,
+  version: VersionProfile,
+): Record<string, unknown> {
   const out: Record<string, unknown> = {
     has_precipitation: s.precipitation,
     temperature: s.temperature,
@@ -21,7 +24,9 @@ export function biomeJson(s: DefState, version: VersionProfile): Record<string, 
 
   const attributes = {
     ...s.effects.attributesJson(version),
-    ...(version.dataVersion >= ATTRIBUTES_DATA_VERSION ? s.attributeOverrides : {}),
+    ...(version.dataVersion >= ATTRIBUTES_DATA_VERSION
+      ? s.attributeOverrides
+      : {}),
   };
   if (Object.keys(attributes).length) out.attributes = attributes;
 

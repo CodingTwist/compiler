@@ -10,7 +10,10 @@ import { TINT_SOURCES } from "./properties";
 export class TintSource {
   private constructor(private readonly data: Record<string, unknown>) {}
 
-  private static of(type: string, rest: Record<string, unknown> = {}): TintSource {
+  private static of(
+    type: string,
+    rest: Record<string, unknown> = {},
+  ): TintSource {
     return new TintSource({ type: normalizeId(type), ...rest });
   }
 
@@ -39,8 +42,14 @@ export class TintSource {
     return TintSource.of(TINT_SOURCES.TEAM, { default: fallback });
   }
   /** `custom_model_data` float at `index`, `default` when absent. */
-  static customModelData(index: number, fallback: number | [number, number, number]): TintSource {
-    return TintSource.of(TINT_SOURCES.CUSTOM_MODEL_DATA, { index, default: fallback });
+  static customModelData(
+    index: number,
+    fallback: number | [number, number, number],
+  ): TintSource {
+    return TintSource.of(TINT_SOURCES.CUSTOM_MODEL_DATA, {
+      index,
+      default: fallback,
+    });
   }
   /** Verbatim tint-source JSON escape hatch. */
   static raw(json: Record<string, unknown>): TintSource {

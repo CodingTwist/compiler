@@ -23,7 +23,8 @@ export function makePhaseAllocator(): PhaseOf {
     const cached = assigned.get(key);
     if (cached !== undefined) return cached;
 
-    let phase = explicit === undefined ? 0 : ((explicit % period) + period) % period;
+    let phase =
+      explicit === undefined ? 0 : ((explicit % period) + period) % period;
     if (explicit === undefined) {
       let best = Infinity;
       for (let a = 0; a < period; a++) {

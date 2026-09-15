@@ -6,7 +6,9 @@ import type { AreaTrigger, Zone } from "./area";
 export function triggerZones(trigger: AreaTrigger): Zone[] {
   switch (trigger.kind) {
     case "region":
-      return [{ shape: "sphere", center: trigger.center, radius: trigger.radius }];
+      return [
+        { shape: "sphere", center: trigger.center, radius: trigger.radius },
+      ];
     case "cuboid":
       return [{ shape: "cuboid", from: trigger.from, to: trigger.to }];
     case "zones":

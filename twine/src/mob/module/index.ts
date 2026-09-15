@@ -1,5 +1,12 @@
 // The DatapackModule a mob compiles to. Wiring only: each job lives in its own file.
-import { Range, ScoreTarget, Selector, TICKS_PER_SECOND, atLeast, privateName } from "helix";
+import {
+  Range,
+  ScoreTarget,
+  Selector,
+  TICKS_PER_SECOND,
+  atLeast,
+  privateName,
+} from "helix";
 import type { Datapack, FunctionContext, FunctionRef } from "helix";
 import { every } from "../../core/events";
 import type { DatapackModule, ModuleScope } from "../../core/module.interface";
@@ -37,7 +44,8 @@ export class MobModule<S extends string> implements DatapackModule {
     if (states.size) {
       m.stateObj = dp.objective(`${m.name}.state`);
       m.stateClockObj = dp.objective(`${m.name}.state_t`);
-      for (const s of states.keys()) m.add(`enter/${s}`, dp.createFunction(`${m.name}/enter/${s}`));
+      for (const s of states.keys())
+        m.add(`enter/${s}`, dp.createFunction(`${m.name}/enter/${s}`));
     }
     m.handle = stateHandle(m);
 
@@ -47,12 +55,23 @@ export class MobModule<S extends string> implements DatapackModule {
     for (const g of gestures) registerGesture(m, dp, scope, g);
     if (m.def.tick) {
       const body = m.def.tick;
-      m.add("on_tick", scope.fn(privateName(`${m.name}/on_tick`), (ctx) => body(ctx, dp, m.handle)));
+      m.add(
+        "on_tick",
+        scope.fn(privateName(`${m.name}/on_tick`), (ctx) =>
+          body(ctx, dp, m.handle),
+        ),
+      );
     }
     registerStates(m, dp);
 
-    m.add("wake", scope.fn(privateName(`${m.name}/wake`), (ctx) => wakeBody(m, ctx, scope)));
-    m.add("tick_one", m.internal("tick_one", (ctx) => tickOneBody(m, ctx, scope)));
+    m.add(
+      "wake",
+      scope.fn(privateName(`${m.name}/wake`), (ctx) => wakeBody(m, ctx, scope)),
+    );
+    m.add(
+      "tick_one",
+      m.internal("tick_one", (ctx) => tickOneBody(m, ctx, scope)),
+    );
   }
 
   /** While no mob is near a player this costs a score check; scans run in `wake`, once a second. */

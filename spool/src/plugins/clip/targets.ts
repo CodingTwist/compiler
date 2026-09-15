@@ -30,14 +30,16 @@ export interface ModelTarget {
 /** Resolves a {@link DisplayValue} to its members, each with its base transform. */
 export function modelTarget(model: DisplayValue): ModelTarget {
   const name = model.getName(); // throws if unnamed - required for tag addressing
-  const members = model.members().map((m, i): TransformMember => ({
-    // A getter, so an `.at()` set after the clip is made still narrows the selector.
-    get selector() {
-      return model.memberSelector(i).limit(1);
-    },
-    translation: m.transform.translation ?? [0, 0, 0],
-    scale: m.transform.scale ?? UNIT_SCALE,
-    leftRotation: m.transform.leftRotation ?? IDENTITY_QUAT,
-  }));
+  const members = model.members().map(
+    (m, i): TransformMember => ({
+      // A getter, so an `.at()` set after the clip is made still narrows the selector.
+      get selector() {
+        return model.memberSelector(i).limit(1);
+      },
+      translation: m.transform.translation ?? [0, 0, 0],
+      scale: m.transform.scale ?? UNIT_SCALE,
+      leftRotation: m.transform.leftRotation ?? IDENTITY_QUAT,
+    }),
+  );
   return { name, members, pivot: model.getPivot() };
 }

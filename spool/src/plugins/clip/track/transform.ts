@@ -15,7 +15,12 @@ import type { Track, TrackMode } from "./types";
 const IDENTITY_QUAT: Quat = [0, 0, 0, 1];
 
 /** Build the per-member transform NBT for one baked frame. */
-function transformNbt(translation: Vec3, scale: Vec3, left: Quat, interpDuration: number) {
+function transformNbt(
+  translation: Vec3,
+  scale: Vec3,
+  left: Quat,
+  interpDuration: number,
+) {
   const f = (v: number) => Float(round6(v));
   return DisplayBase({
     // Rotations are plain lists in the schema, so they need their own `f` suffix.
@@ -58,7 +63,9 @@ export class TransformTrack implements Track {
   }
   spin(axis: Axis, degPerTick: number): this {
     if (!Number.isFinite(degPerTick) || degPerTick === 0) {
-      throw new Error(`spin speed must be a nonzero number (got ${degPerTick}).`);
+      throw new Error(
+        `spin speed must be a nonzero number (got ${degPerTick}).`,
+      );
     }
     this.spinAxis = axis;
     this.spinDegPerTick = degPerTick;
@@ -71,17 +78,30 @@ export class TransformTrack implements Track {
   }
   /** Force the native-interpolation path (rejected if the track spins). */
   smooth(): this {
-    if (this.spinAxis) throw new Error("a spinning track cannot be .smooth() - spins must bake.");
+    if (this.spinAxis)
+      throw new Error(
+        "a spinning track cannot be .smooth() - spins must bake.",
+      );
     this.forced = "smooth";
     return this;
   }
 
   empty(): boolean {
-    return !this.moveDelta && !this.scaleTo && !this.rotateToQ && this.spinAxis === undefined;
+    return (
+      !this.moveDelta &&
+      !this.scaleTo &&
+      !this.rotateToQ &&
+      this.spinAxis === undefined
+    );
   }
 
   private get isPureSpin(): boolean {
-    return this.spinAxis !== undefined && !this.moveDelta && !this.scaleTo && !this.rotateToQ;
+    return (
+      this.spinAxis !== undefined &&
+      !this.moveDelta &&
+      !this.scaleTo &&
+      !this.rotateToQ
+    );
   }
 
   get mode(): TrackMode {
@@ -94,7 +114,9 @@ export class TransformTrack implements Track {
   }
 
   revolution(): number | undefined {
-    return this.isPureSpin ? Math.max(1, Math.round(360 / Math.abs(this.spinDegPerTick))) : undefined;
+    return this.isPureSpin
+      ? Math.max(1, Math.round(360 / Math.abs(this.spinDegPerTick)))
+      : undefined;
   }
 
   period(duration: number): number {
@@ -102,7 +124,12 @@ export class TransformTrack implements Track {
     return rev ?? Math.max(1, duration);
   }
 
-  emitFrame(ctx: FunctionContext, f: number, period: number, duration: number): void {
+  emitFrame(
+    ctx: FunctionContext,
+    f: number,
+    period: number,
+    duration: number,
+  ): void {
     // A pure spin steps by an exact fraction of a revolution so it loops seamlessly.
     const rev = this.revolution();
     const angle =
@@ -123,10 +150,15 @@ export class TransformTrack implements Track {
             m.translation[2] + this.moveDelta[2] * u,
           ]
         : m.translation;
-      const translation = this.spinAxis ? rotateAboutPivot(moved, this.target.pivot, q) : moved;
+      const translation = this.spinAxis
+        ? rotateAboutPivot(moved, this.target.pivot, q)
+        : moved;
       const scale = this.scaleTo ? lerpVec3(m.scale, this.scaleTo, u) : m.scale;
       const left = this.spinAxis ? q : m.leftRotation;
-      ctx.data().merge().entity(m.selector, transformNbt(translation, scale, left, 1));
+      ctx
+        .data()
+        .merge()
+        .entity(m.selector, transformNbt(translation, scale, left, 1));
     }
   }
 
@@ -140,9 +172,14 @@ export class TransformTrack implements Track {
               m.translation[1] + this.moveDelta[1],
               m.translation[2] + this.moveDelta[2],
             ];
-      const scale = reverse ? m.scale : this.scaleTo ?? m.scale;
-      const left = reverse ? m.leftRotation : this.rotateToQ ?? m.leftRotation;
-      ctx.data().merge().entity(m.selector, transformNbt(translation, scale, left, duration));
+      const scale = reverse ? m.scale : (this.scaleTo ?? m.scale);
+      const left = reverse
+        ? m.leftRotation
+        : (this.rotateToQ ?? m.leftRotation);
+      ctx
+        .data()
+        .merge()
+        .entity(m.selector, transformNbt(translation, scale, left, duration));
     }
   }
 }

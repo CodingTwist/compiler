@@ -29,8 +29,7 @@ export const fakeFutureReorderedScoreboard: VersionProfile = deriveVersion(
   v1_21_4,
   "99.0-future",
   (tree) => {
-    const set =
-      tree.children!.scoreboard.children!.players.children!.set;
+    const set = tree.children!.scoreboard.children!.players.children!.set;
     set.children = {
       score: {
         type: "argument",

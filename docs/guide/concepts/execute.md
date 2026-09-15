@@ -13,33 +13,33 @@ reach for `ctx.execute()` directly when you need several clauses.
 
 Context shifts move the execution position/rotation/dimension/executor:
 
-| Method | Clause |
-| --- | --- |
-| `.as(sel)` / `.at(sel)` | `as` / `at` |
-| `.positioned(pos)` / `.positionedAs(sel)` | `positioned` / `positioned as` |
-| `.rotatedAs(sel)` | `rotated as` |
-| `.facing(pos)` / `.facingEntity(sel, anchor)` | `facing` / `facing entity` |
-| `.anchored(EntityAnchor.EYES \| .FEET)` | `anchored` |
-| `.in(dim)` | `in <dimension>` |
-| `.align(axes)` | `align <axes>` (snap to the block grid) |
+| Method                                        | Clause                                  |
+| --------------------------------------------- | --------------------------------------- |
+| `.as(sel)` / `.at(sel)`                       | `as` / `at`                             |
+| `.positioned(pos)` / `.positionedAs(sel)`     | `positioned` / `positioned as`          |
+| `.rotatedAs(sel)`                             | `rotated as`                            |
+| `.facing(pos)` / `.facingEntity(sel, anchor)` | `facing` / `facing entity`              |
+| `.anchored(EntityAnchor.EYES \| .FEET)`       | `anchored`                              |
+| `.in(dim)`                                    | `in <dimension>`                        |
+| `.align(axes)`                                | `align <axes>` (snap to the block grid) |
 
 Guards keep or drop the chain (each has an `unless…` twin):
 
-| Method | Clause |
-| --- | --- |
-| `.ifEntity(sel)` | `if entity <sel>` |
-| `.ifBlock(pos, block)` | `if block <pos> <block>` |
-| `.ifScoreMatches(score, range)` | `if score … matches <range>` |
-| `.ifScore(a, op, b)` | `if score … <op> …` (`<`, `<=`, `=`, `>=`, `>`) |
-| `.ifPredicate(ref)` | `if predicate <id>` |
-| `.ifItems(sel, slot, item)` | `if items entity <sel> <slot> <item>` |
+| Method                          | Clause                                          |
+| ------------------------------- | ----------------------------------------------- |
+| `.ifEntity(sel)`                | `if entity <sel>`                               |
+| `.ifBlock(pos, block)`          | `if block <pos> <block>`                        |
+| `.ifScoreMatches(score, range)` | `if score … matches <range>`                    |
+| `.ifScore(a, op, b)`            | `if score … <op> …` (`<`, `<=`, `=`, `>=`, `>`) |
+| `.ifPredicate(ref)`             | `if predicate <id>`                             |
+| `.ifItems(sel, slot, item)`     | `if items entity <sel> <slot> <item>`           |
 
 Stores write the run target's result/success into a score or storage:
 
-| Method | Clause |
-| --- | --- |
+| Method                                                   | Clause                        |
+| -------------------------------------------------------- | ----------------------------- |
 | `.storeResultScore(score)` / `.storeSuccessScore(score)` | `store result\|success score` |
-| `.storeResultStorage(id, path, type, scale)` | `store result storage …` |
+| `.storeResultStorage(id, path, type, scale)`             | `store result storage …`      |
 
 ```ts compile
 import { Datapack, v26_2, Selector, Pos, Block, Range } from "helix";
@@ -49,7 +49,8 @@ const game = dp.objective("game");
 
 const fn = dp.createFunction("standing_on_gold");
 fn.build((ctx) => {
-  ctx.execute()
+  ctx
+    .execute()
     .as(Selector.allPlayers())
     .at(Selector.self())
     .ifBlock(Pos.rel(0, -1, 0), Block.GOLD_BLOCK)
@@ -76,7 +77,8 @@ const game = dp.objective("game");
 const fn = dp.createFunction("count_players");
 fn.build((ctx) => {
   // store result score: land the count of matching players in a cell.
-  ctx.execute()
+  ctx
+    .execute()
     .storeResultScore(game.score(Selector.self()))
     .run((ctx) => {
       ctx.say("counting");

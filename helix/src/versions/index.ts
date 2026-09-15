@@ -7,4 +7,11 @@ export type {
 export { normalizeId, validateRegistryId } from "./registry";
 export { profileFromRaw, type RawProfile } from "./raw-profile";
 
-export { v1_20_1, v1_20_4, v1_21_4, v26_1_2, v26_2, v26_3_rc_2 } from "./profiles";
+export {
+  v1_20_1,
+  v1_20_4,
+  v1_21_4,
+  v26_1_2,
+  v26_2,
+  v26_3_rc_2,
+} from "./profiles";

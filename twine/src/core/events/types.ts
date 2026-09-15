@@ -49,9 +49,18 @@ export type HandlerArgs =
 /** Builds a handler from {@link HandlerArgs}. */
 export function handlerOf(args: HandlerArgs): EventHandler {
   if (typeof args[0] === "string") {
-    const [method, detector, fn, opts = {}] = args as [string, Detector, (c: FunctionContext) => void, OnOptions?];
+    const [method, detector, fn, opts = {}] = args as [
+      string,
+      Detector,
+      (c: FunctionContext) => void,
+      OnOptions?,
+    ];
     return { method, detector, opts, fn };
   }
-  const [detector, fn, opts] = args as [Detector, (c: FunctionContext) => void, OnOptions];
+  const [detector, fn, opts] = args as [
+    Detector,
+    (c: FunctionContext) => void,
+    OnOptions,
+  ];
   return { detector, opts, fn };
 }

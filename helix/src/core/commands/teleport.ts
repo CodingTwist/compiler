@@ -9,12 +9,30 @@ import { Selector } from "../frontend/nodes/selector";
 /** `teleport` */
 export class TeleportBuilder extends CommandBuilder<TreeCommandNode> {
   facing(targets: Selector, location: Pos, facingLocation: Pos): this {
-    this.$set(litPart("teleport"), argPart(targets), argPart(location), litPart("facing"), argPart(facingLocation));
+    this.$set(
+      litPart("teleport"),
+      argPart(targets),
+      argPart(location),
+      litPart("facing"),
+      argPart(facingLocation),
+    );
     return this;
   }
 
-  facingEntity(targets: Selector, location: Pos, facingEntity: Selector, facingAnchor?: EntityAnchor): this {
-    this.$set(litPart("teleport"), argPart(targets), argPart(location), litPart("facing"), litPart("entity"), argPart(single(facingEntity, "teleport")));
+  facingEntity(
+    targets: Selector,
+    location: Pos,
+    facingEntity: Selector,
+    facingAnchor?: EntityAnchor,
+  ): this {
+    this.$set(
+      litPart("teleport"),
+      argPart(targets),
+      argPart(location),
+      litPart("facing"),
+      litPart("entity"),
+      argPart(single(facingEntity, "teleport")),
+    );
     if (facingAnchor !== undefined) this.$append(argPart(facingAnchor));
     return this;
   }
@@ -23,11 +41,20 @@ export class TeleportBuilder extends CommandBuilder<TreeCommandNode> {
 declare module "../frontend/context" {
   interface FunctionContext {
     /** `teleport` - `ctx.teleport()...` */
-    teleport(targets?: Selector, location?: Pos, rotation?: Pos): TeleportBuilder;
+    teleport(
+      targets?: Selector,
+      location?: Pos,
+      rotation?: Pos,
+    ): TeleportBuilder;
   }
 }
 
-FunctionContext.prototype.teleport = function (this: FunctionContext, targets?: Selector, location?: Pos, rotation?: Pos) {
+FunctionContext.prototype.teleport = function (
+  this: FunctionContext,
+  targets?: Selector,
+  location?: Pos,
+  rotation?: Pos,
+) {
   const node = new TreeCommandNode("teleport", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("teleport")];

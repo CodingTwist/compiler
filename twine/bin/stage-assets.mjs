@@ -22,8 +22,16 @@ const DIST = path.resolve(distArg);
 // A denylist, not an allowlist: an asset is anything that isn't source or docs,
 // so a consumer never has to maintain a per-project extension list.
 const SKIP = new Set([
-  ".ts", ".tsx", ".mts", ".cts", ".d.ts",
-  ".js", ".jsx", ".mjs", ".cjs", ".map",
+  ".ts",
+  ".tsx",
+  ".mts",
+  ".cts",
+  ".d.ts",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".map",
   ".md",
 ]);
 
@@ -43,4 +51,6 @@ async function walk(dir) {
 }
 
 await walk(SRC);
-console.log(`twine-stage-assets: ${count} asset(s) → ${path.relative(process.cwd(), DIST)}`);
+console.log(
+  `twine-stage-assets: ${count} asset(s) → ${path.relative(process.cwd(), DIST)}`,
+);

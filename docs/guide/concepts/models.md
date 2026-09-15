@@ -21,12 +21,16 @@ const dp = new Datapack("gear", v26_2);
 
 // Register a model → get a handle. (The model JSON lands in the resource pack,
 // written separately by dp.writeResourcePack - see below.)
-const shooterModel = dp.model("web_shooter", Model.item("gear:item/web_shooter"));
+const shooterModel = dp.model(
+  "web_shooter",
+  Model.item("gear:item/web_shooter"),
+);
 
 const give = dp.createFunction("give_shooter");
 give.build((ctx) => {
   // Attach the handle - it lowers to the item_model component, no magic number.
-  const shooter = Item.CARROT_ON_A_STICK.named("Web Shooter").model(shooterModel);
+  const shooter =
+    Item.CARROT_ON_A_STICK.named("Web Shooter").model(shooterModel);
   ctx.playerGive(Selector.nearest(), shooter);
 });
 ```
@@ -34,19 +38,19 @@ give.build((ctx) => {
 ## Two output packs, two writers
 
 `buildDatapack` / `dp.writeDatapack(path)` emit the **datapack** (functions, tags, and the
-JSON data resources). The resource pack is a *separate* tree with its own `pack.mcmeta`
+JSON data resources). The resource pack is a _separate_ tree with its own `pack.mcmeta`
 format, written by **`dp.writeResourcePack(path)`** - so the `assets/` files (the model JSON,
 the `items/` item definitions) don't appear in a datapack build. The compiled panels on this
 page are datapack output; the model wiring you can see there is the `item_model` component on
 the give command.
 
-| Registrar | Emits (in the resource pack) | Handle |
-| --- | --- | --- |
-| `dp.model(name, def)` | `models/item/<name>` + `items/<name>` definition | `ModelRef` |
-| `dp.blockModel(name, def)` | `models/block/<name>` | `ModelRef` |
-| `dp.blockState(block, def)` | `blockstates/<block>` (overrides a vanilla block's look) | - |
+| Registrar                        | Emits (in the resource pack)                               | Handle     |
+| -------------------------------- | ---------------------------------------------------------- | ---------- |
+| `dp.model(name, def)`            | `models/item/<name>` + `items/<name>` definition           | `ModelRef` |
+| `dp.blockModel(name, def)`       | `models/block/<name>`                                      | `ModelRef` |
+| `dp.blockState(block, def)`      | `blockstates/<block>` (overrides a vanilla block's look)   | -          |
 | `dp.itemDefinition(name, model)` | the full typed `items/<name>` union (conditions, selects…) | `ModelRef` |
-| `dp.addAssets(dir)` | copies a directory of textures/sounds verbatim | - |
+| `dp.addAssets(dir)`              | copies a directory of textures/sounds verbatim             | -          |
 
 ## Version-aware, like everything else
 
@@ -58,8 +62,8 @@ describe the model once, and helix picks the right lowering for `dp.version`.
 
 ## Blocks
 
-There is no vanilla "new block", so `dp.blockState` *overrides an existing block's* appearance
-(the custom-block *technique* is [spool](/guide/spool) policy, not core). `dp.blockModel`
+There is no vanilla "new block", so `dp.blockState` _overrides an existing block's_ appearance
+(the custom-block _technique_ is [spool](/guide/spool) policy, not core). `dp.blockModel`
 registers the model a blockstate variant points at. A [`Block`](/guide/concepts/positions-and-blocks)
 also exposes `.toBlockState()` for the `{Name, Properties}` compound that `block_display` and
 `block_state` fields want.

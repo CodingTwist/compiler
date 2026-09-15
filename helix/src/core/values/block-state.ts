@@ -13,7 +13,8 @@ export interface BlockStateVariant {
 
 function variantJson(v: BlockStateVariant): Record<string, unknown> {
   return {
-    model: v.model instanceof ModelRef ? v.model.render() : normalizeId(v.model),
+    model:
+      v.model instanceof ModelRef ? v.model.render() : normalizeId(v.model),
     ...(v.x !== undefined ? { x: v.x } : {}),
     ...(v.y !== undefined ? { y: v.y } : {}),
     ...(v.uvlock ? { uvlock: true } : {}),

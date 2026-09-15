@@ -13,7 +13,8 @@ import type { PhysicsDeps } from "./types";
  */
 export function solveConstraint(d: PhysicsDeps, scratch: SwingScratch): void {
   pullOntoRope(d, scratch);
-  if (SUSTAIN_DIV > 0 || RADIAL_DAMP_DIV > 0) sustainTangentialMomentum(d, scratch);
+  if (SUSTAIN_DIV > 0 || RADIAL_DAMP_DIV > 0)
+    sustainTangentialMomentum(d, scratch);
 }
 
 /**
@@ -66,7 +67,10 @@ function pullOntoRope(d: PhysicsDeps, scratch: SwingScratch): void {
  * Tangential only, so it can't feed the bounce. SUSTAIN_DIV has a hard floor; see
  * `tuning.ts`.
  */
-function sustainTangentialMomentum(d: PhysicsDeps, scratch: SwingScratch): void {
+function sustainTangentialMomentum(
+  d: PhysicsDeps,
+  scratch: SwingScratch,
+): void {
   const consts = d.consts;
   const impulse = d.repo.launchVec();
 
@@ -81,6 +85,8 @@ function sustainTangentialMomentum(d: PhysicsDeps, scratch: SwingScratch): void 
   }
   if (RADIAL_DAMP_DIV > 0) {
     // Extra radial damping. Off by default: it adds bounce instead of removing it.
-    math`${impulse} - ${scratch.radVec} / ${consts.radialDampDiv}`.into(impulse);
+    math`${impulse} - ${scratch.radVec} / ${consts.radialDampDiv}`.into(
+      impulse,
+    );
   }
 }

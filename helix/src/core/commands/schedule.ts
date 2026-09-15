@@ -13,17 +13,34 @@ export class ScheduleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   function_(function_: FunctionId, time: Time): this {
-    this.$set(litPart("schedule"), litPart("function"), argPart(function_), argPart(time));
+    this.$set(
+      litPart("schedule"),
+      litPart("function"),
+      argPart(function_),
+      argPart(time),
+    );
     return this;
   }
 
   functionAppend(function_: FunctionId, time: Time): this {
-    this.$set(litPart("schedule"), litPart("function"), argPart(function_), argPart(time), litPart("append"));
+    this.$set(
+      litPart("schedule"),
+      litPart("function"),
+      argPart(function_),
+      argPart(time),
+      litPart("append"),
+    );
     return this;
   }
 
   functionReplace(function_: FunctionId, time: Time): this {
-    this.$set(litPart("schedule"), litPart("function"), argPart(function_), argPart(time), litPart("replace"));
+    this.$set(
+      litPart("schedule"),
+      litPart("function"),
+      argPart(function_),
+      argPart(time),
+      litPart("replace"),
+    );
     return this;
   }
 }

@@ -31,7 +31,9 @@ describe("PlayerGiveCommand - registry validation", () => {
   });
 
   it("normalizes a bare item id and defaults count to 1", () => {
-    expect(give(v1_21_4, { id: "diamond" })).toBe("give @a minecraft:diamond 1");
+    expect(give(v1_21_4, { id: "diamond" })).toBe(
+      "give @a minecraft:diamond 1",
+    );
   });
 
   it("throws naming the version for an unknown item id", () => {

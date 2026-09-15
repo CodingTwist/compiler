@@ -13,7 +13,11 @@ export interface Motion {
  *
  * Airborne only: no ground bounce or block collision.
  */
-export function stepOnce(m: Motion, profile: ProjectileProfile, gravity = profile.gravity): void {
+export function stepOnce(
+  m: Motion,
+  profile: ProjectileProfile,
+  gravity = profile.gravity,
+): void {
   if (profile.order === "gravity-move-drag") m.v[1] -= gravity;
   m.p[0] += m.v[0];
   m.p[1] += m.v[1];
@@ -26,7 +30,12 @@ export function stepOnce(m: Motion, profile: ProjectileProfile, gravity = profil
 }
 
 /** Integrate `ticks` ticks from a launch, returning position at tick `0…ticks` inclusive. */
-export function simulate(from: Vec3, velocity: Vec3, profile: ProjectileProfile, ticks: number): Vec3[] {
+export function simulate(
+  from: Vec3,
+  velocity: Vec3,
+  profile: ProjectileProfile,
+  ticks: number,
+): Vec3[] {
   const m: Motion = { p: [...from], v: [...velocity] };
   const path: Vec3[] = [[...m.p]];
   for (let n = 0; n < ticks; n++) {
@@ -56,7 +65,10 @@ export interface TrajectoryBasis {
   readonly G: readonly number[];
 }
 
-export function trajectoryBasis(profile: ProjectileProfile, ticks: number): TrajectoryBasis {
+export function trajectoryBasis(
+  profile: ProjectileProfile,
+  ticks: number,
+): TrajectoryBasis {
   const unit: Motion = { p: [0, 0, 0], v: [1, 0, 0] };
   const unitY: Motion = { p: [0, 0, 0], v: [0, 1, 0] };
   const dropped: Motion = { p: [0, 0, 0], v: [0, 0, 0] };
@@ -100,7 +112,11 @@ export interface Approach {
 }
 
 export function closestApproach(path: readonly Vec3[], target: Vec3): Approach {
-  let best: Approach = { tick: 0, point: path[0], distance: dist(path[0], target) };
+  let best: Approach = {
+    tick: 0,
+    point: path[0],
+    distance: dist(path[0], target),
+  };
   for (let n = 0; n + 1 < path.length; n++) {
     const a = path[n];
     const b = path[n + 1];
@@ -111,7 +127,10 @@ export function closestApproach(path: readonly Vec3[], target: Vec3): Approach {
       lenSq === 0
         ? 0
         : clamp01(
-            ((target[0] - a[0]) * d[0] + (target[1] - a[1]) * d[1] + (target[2] - a[2]) * d[2]) / lenSq,
+            ((target[0] - a[0]) * d[0] +
+              (target[1] - a[1]) * d[1] +
+              (target[2] - a[2]) * d[2]) /
+              lenSq,
           );
     const point: Vec3 = [a[0] + f * d[0], a[1] + f * d[1], a[2] + f * d[2]];
     const distance = dist(point, target);

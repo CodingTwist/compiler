@@ -15,7 +15,9 @@ describe("ctx.ref", () => {
     const dp = new Datapack("p", v1_21_4);
     dp.createFunction("mob/hit").build((ctx) =>
       ctx.ref(Selector.self(), (c, mob) => {
-        c.execute().as(Selector.allPlayers()).run((b) => b.say(`${mob().render(v1_21_4)}`));
+        c.execute()
+          .as(Selector.allPlayers())
+          .run((b) => b.say(`${mob().render(v1_21_4)}`));
       }),
     );
     output(dp);
@@ -41,8 +43,13 @@ describe("ctx.ref", () => {
   it("keeps the target's type on lookups", () => {
     const dp = new Datapack("p", v1_21_4);
     dp.createFunction("f").build((ctx) =>
-      ctx.ref(Selector.self().type(EntityType.HUSK), (c, mob) => void c.kill(mob())),
+      ctx.ref(
+        Selector.self().type(EntityType.HUSK),
+        (c, mob) => void c.kill(mob()),
+      ),
     );
-    expect(output(dp)).toContain("kill @e[tag=helix.ref.f.0,limit=1,type=minecraft:husk]");
+    expect(output(dp)).toContain(
+      "kill @e[tag=helix.ref.f.0,limit=1,type=minecraft:husk]",
+    );
   });
 });

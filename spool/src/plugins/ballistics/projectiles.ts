@@ -59,20 +59,76 @@ export interface ProjectileProfile {
  */
 export const PROJECTILES = {
   /** `PrimedTnt`, the default. Gravity before the move, 2% drag. */
-  tnt: { id: "minecraft:tnt", gravity: 0.04, drag: 0.98, order: "gravity-move-drag", defaultFuse: 80 },
+  tnt: {
+    id: "minecraft:tnt",
+    gravity: 0.04,
+    drag: 0.98,
+    order: "gravity-move-drag",
+    defaultFuse: 80,
+  },
   /** `FallingBlockEntity` - identical integrator to TNT, no fuse. */
-  falling_block: { id: "minecraft:falling_block", gravity: 0.04, drag: 0.98, order: "gravity-move-drag" },
+  falling_block: {
+    id: "minecraft:falling_block",
+    gravity: 0.04,
+    drag: 0.98,
+    order: "gravity-move-drag",
+  },
   /** `Arrow`: 1% drag, gravity after the move. */
-  arrow: { id: "minecraft:arrow", gravity: 0.05, drag: 0.99, order: "move-drag-gravity" },
-  spectral_arrow: { id: "minecraft:spectral_arrow", gravity: 0.05, drag: 0.99, order: "move-drag-gravity" },
-  trident: { id: "minecraft:trident", gravity: 0.05, drag: 0.99, order: "move-drag-gravity" },
+  arrow: {
+    id: "minecraft:arrow",
+    gravity: 0.05,
+    drag: 0.99,
+    order: "move-drag-gravity",
+  },
+  spectral_arrow: {
+    id: "minecraft:spectral_arrow",
+    gravity: 0.05,
+    drag: 0.99,
+    order: "move-drag-gravity",
+  },
+  trident: {
+    id: "minecraft:trident",
+    gravity: 0.05,
+    drag: 0.99,
+    order: "move-drag-gravity",
+  },
   /** `ThrowableItemProjectile` family - lighter gravity than an arrow. */
-  snowball: { id: "minecraft:snowball", gravity: 0.03, drag: 0.99, order: "move-drag-gravity" },
-  egg: { id: "minecraft:egg", gravity: 0.03, drag: 0.99, order: "move-drag-gravity" },
-  ender_pearl: { id: "minecraft:ender_pearl", gravity: 0.03, drag: 0.99, order: "move-drag-gravity" },
-  splash_potion: { id: "minecraft:splash_potion", gravity: 0.05, drag: 0.99, order: "move-drag-gravity" },
-  experience_bottle: { id: "minecraft:experience_bottle", gravity: 0.07, drag: 0.99, order: "move-drag-gravity" },
-  llama_spit: { id: "minecraft:llama_spit", gravity: 0.06, drag: 0.99, order: "move-drag-gravity" },
+  snowball: {
+    id: "minecraft:snowball",
+    gravity: 0.03,
+    drag: 0.99,
+    order: "move-drag-gravity",
+  },
+  egg: {
+    id: "minecraft:egg",
+    gravity: 0.03,
+    drag: 0.99,
+    order: "move-drag-gravity",
+  },
+  ender_pearl: {
+    id: "minecraft:ender_pearl",
+    gravity: 0.03,
+    drag: 0.99,
+    order: "move-drag-gravity",
+  },
+  splash_potion: {
+    id: "minecraft:splash_potion",
+    gravity: 0.05,
+    drag: 0.99,
+    order: "move-drag-gravity",
+  },
+  experience_bottle: {
+    id: "minecraft:experience_bottle",
+    gravity: 0.07,
+    drag: 0.99,
+    order: "move-drag-gravity",
+  },
+  llama_spit: {
+    id: "minecraft:llama_spit",
+    gravity: 0.06,
+    drag: 0.99,
+    order: "move-drag-gravity",
+  },
   /**
    * `LivingEntity`: every mob and the armor stand. The summoned entity comes from the
    * shell.
@@ -80,7 +136,13 @@ export const PROJECTILES = {
    * Mobs with AI steer a little mid-air and land slightly off; `no_ai` mobs and armor
    * stands are exact.
    */
-  living: { id: "minecraft:armor_stand", gravity: 0.08, drag: 0.91, dragY: 0.98, order: "move-gravity-drag" },
+  living: {
+    id: "minecraft:armor_stand",
+    gravity: 0.08,
+    drag: 0.91,
+    dragY: 0.98,
+    order: "move-gravity-drag",
+  },
 } as const satisfies Record<string, ProjectileProfile>;
 
 /**

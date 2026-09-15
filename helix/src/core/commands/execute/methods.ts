@@ -53,7 +53,9 @@ declare module "../../frontend/context" {
   }
 }
 
-FunctionContext.prototype.execute = function (this: FunctionContext): ExecuteBuilder {
+FunctionContext.prototype.execute = function (
+  this: FunctionContext,
+): ExecuteBuilder {
   const node = new ExecuteNode();
   this.emit(node);
   return new ExecuteBuilder(this, node);
@@ -90,7 +92,12 @@ FunctionContext.prototype.whenItems = function (
   mode: Cond = "if",
 ): void {
   const chain = this.execute();
-  (mode === "if" ? chain.ifItems : chain.unlessItems).call(chain, target, slot, item);
+  (mode === "if" ? chain.ifItems : chain.unlessItems).call(
+    chain,
+    target,
+    slot,
+    item,
+  );
   chain.run(build);
 };
 

@@ -59,7 +59,7 @@ is the helix prototype, and each plugin only ever writes its own slot on it.
 import { installKit } from "spool";
 import { holding } from "spool/plugins/holding";
 
-installKit([holding]);          // now dp/Selector have the holding helpers
+installKit([holding]); // now dp/Selector have the holding helpers
 ```
 
 Consumers import from a plugin's **subpath** - `spool/plugins/<name>` resolves to

@@ -1,0 +1,5 @@
+**/package-lock.json
+**/*.generated.ts
+docs/api/
+helix/src/versions/data/
+docs/.vitepress/cache/

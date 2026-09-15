@@ -1,4 +1,13 @@
-import { Color, Datapack, FunctionContext, Objective, Range, ScoreTarget, Selector, text } from "helix";
+import {
+  Color,
+  Datapack,
+  FunctionContext,
+  Objective,
+  Range,
+  ScoreTarget,
+  Selector,
+  text,
+} from "helix";
 
 export type LogLevel = "debug" | "info" | "warn";
 
@@ -58,8 +67,12 @@ export class Logger {
   }
 
   /** A {@link NamespaceLogger} that emits through whichever logger `get` returns when called. */
-  private static handle(namespace: string, get: () => Logger | undefined): NamespaceLogger {
-    const at = (level: LogLevel) => (ctx: FunctionContext, message: string) => get()?.emit(ctx, level, namespace, message);
+  private static handle(
+    namespace: string,
+    get: () => Logger | undefined,
+  ): NamespaceLogger {
+    const at = (level: LogLevel) => (ctx: FunctionContext, message: string) =>
+      get()?.emit(ctx, level, namespace, message);
     return { debug: at("debug"), info: at("info"), warn: at("warn") };
   }
 
@@ -67,7 +80,9 @@ export class Logger {
   registerCommands(dp: Datapack, path = "debug/log") {
     if (!this.objective) return;
     const set = (level: LogLevel) =>
-      dp.createFunction(`${path}/${level}`).build((ctx) => this.setLevel(ctx, level));
+      dp
+        .createFunction(`${path}/${level}`)
+        .build((ctx) => this.setLevel(ctx, level));
     set("debug");
     set("info");
     set("warn");
@@ -79,17 +94,32 @@ export class Logger {
     this.objective!.score(ScoreTarget(Selector.self())).set(rank);
     ctx.tellraw(
       Selector.self(),
-      text(level === "off" ? "Logging disabled" : `Log level set to ${level.toUpperCase()}`).color(Color.GRAY),
+      text(
+        level === "off"
+          ? "Logging disabled"
+          : `Log level set to ${level.toUpperCase()}`,
+      ).color(Color.GRAY),
     );
   }
 
-  private emit(ctx: FunctionContext, level: LogLevel, namespace: string, message: string) {
+  private emit(
+    ctx: FunctionContext,
+    level: LogLevel,
+    namespace: string,
+    message: string,
+  ) {
     if (!this.objective) return;
     const { label, color } = LEVEL_STYLE[level];
-    ctx.tellraw(Selector.allPlayers().score(this.objective, new Range(0, SEVERITY[level])), [
-      text(`[${label}] `).color(color),
-      text(`[${namespace}] `).color(Color.GRAY),
-      text(message),
-    ]);
+    ctx.tellraw(
+      Selector.allPlayers().score(
+        this.objective,
+        new Range(0, SEVERITY[level]),
+      ),
+      [
+        text(`[${label}] `).color(color),
+        text(`[${namespace}] `).color(Color.GRAY),
+        text(message),
+      ],
+    );
   }
 }

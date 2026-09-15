@@ -2,7 +2,12 @@ import type { LintRule } from "../types";
 import type { Sel } from "../selectors";
 
 /** Records one finding on the function being linted. */
-export type AddLint = (rule: LintRule, line: string, i: number, hint: string) => void;
+export type AddLint = (
+  rule: LintRule,
+  line: string,
+  i: number,
+  hint: string,
+) => void;
 
 /** One rendered command line, as every rule sees it. */
 export interface LineCheck {

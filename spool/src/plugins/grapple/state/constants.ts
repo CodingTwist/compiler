@@ -20,7 +20,8 @@ type Score = ReturnType<Objective["score"]>;
  */
 export function createConstants() {
   const objective = new Objective("grapple.const");
-  const score = (name: string): Score => objective.score(ScoreTarget(`#${name}`));
+  const score = (name: string): Score =>
+    objective.score(ScoreTarget(`#${name}`));
 
   const fracScale = score("frac_scale");
   const nextId = score("next_id");
@@ -49,8 +50,16 @@ export function createConstants() {
   return {
     objective,
     seeds,
-    fracScale, nextId, baumDiv, baumMax, sustainDiv,
-    radialDampDiv, releaseKick, releaseKickMax, impulseMax, impulseMin,
+    fracScale,
+    nextId,
+    baumDiv,
+    baumMax,
+    sustainDiv,
+    radialDampDiv,
+    releaseKick,
+    releaseKickMax,
+    impulseMax,
+    impulseMin,
   };
 }
 

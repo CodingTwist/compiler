@@ -48,8 +48,15 @@ export class Cutscene {
    * Moves `viewer` along a path from tick `at`, as a `tp` clip. Assumes a spectator-style
    * camera.
    */
-  camera(viewer: Selector, keys: readonly Keyframe<Vec3>[], opts: { at?: number } = {}): this {
-    const cam = new Clip(this.dp, `${this.name}/cam_${this.camSeq++}`).tp(viewer, keys);
+  camera(
+    viewer: Selector,
+    keys: readonly Keyframe<Vec3>[],
+    opts: { at?: number } = {},
+  ): this {
+    const cam = new Clip(this.dp, `${this.name}/cam_${this.camSeq++}`).tp(
+      viewer,
+      keys,
+    );
     return this.add(cam, opts);
   }
 
@@ -63,7 +70,10 @@ export class Cutscene {
         } else {
           const id = `${this.name}/event_${tick}`;
           this.dp.createFunction(id).build((ec) => cbs.forEach((cb) => cb(ec)));
-          c.schedule().function_(FunctionId(`${this.dp.name}:${id}`), Time(tick));
+          c.schedule().function_(
+            FunctionId(`${this.dp.name}:${id}`),
+            Time(tick),
+          );
         }
       }
     });

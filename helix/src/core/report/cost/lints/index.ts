@@ -32,7 +32,9 @@ export function lint(
 
   const lints: Lint[] = [];
   const allowedLints: Lint[] = [];
-  for (const [fn, text] of [...dp.files].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [fn, text] of [...dp.files].sort(([a], [b]) =>
+    a.localeCompare(b),
+  )) {
     const p = period.get(fn);
     const add: AddLint = (rule, line, i, hint) => {
       const source = dp.sourceMap.get(fn)?.[i];
@@ -49,11 +51,22 @@ export function lint(
       };
       (allowed ? allowedLints : lints).push(l);
     };
-    const state: FnState = { known: new Map(), scans: new Map(), unbounded: new Set(costs.get(fn)?.unboundedScans ?? []) };
+    const state: FnState = {
+      known: new Map(),
+      scans: new Map(),
+      unbounded: new Set(costs.get(fn)?.unboundedScans ?? []),
+    };
 
     // Rule order is the order findings are listed in.
     for (const [line, i] of indexedCommandLines(text)) {
-      const c: LineCheck = { fn, line, i, sels: selectorsIn(line), period: p, add };
+      const c: LineCheck = {
+        fn,
+        line,
+        i,
+        sels: selectorsIn(line),
+        period: p,
+        add,
+      };
       constantCondition(c, state);
       groupExecute(c, state);
       vacuousExecute(c);

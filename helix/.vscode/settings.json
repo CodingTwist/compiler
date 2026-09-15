@@ -1,7 +1,5 @@
 {
-    "cSpell.words": [
-        "Codegen",
-        "Datapack",
-        "Tellraw"
-    ]
+  "cSpell.words": ["Codegen", "Datapack", "Tellraw"],
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true
 }

@@ -61,4 +61,3 @@ describe("math`` rejections", () => {
     expect(bad(() => math`x + 1`)).toContain("${} holes");
   });
 });
-

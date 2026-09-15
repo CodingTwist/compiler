@@ -17,6 +17,10 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.allow = function (this: FunctionContext, rule: LintRule, reason: string): void {
+FunctionContext.prototype.allow = function (
+  this: FunctionContext,
+  rule: LintRule,
+  reason: string,
+): void {
   this.fn.root.allows.set(rule, reason);
 };

@@ -11,13 +11,18 @@ import { scoreOf, scoreRange } from "./score";
  *
  * `score` triggers only get one with `latch: false`; `players` triggers get one by default.
  */
-export function emitPresence(w: Wiring, ref: ModuleRef, ctx: FunctionContext): void {
+export function emitPresence(
+  w: Wiring,
+  ref: ModuleRef,
+  ctx: FunctionContext,
+): void {
   const { meta } = w.graph.nodes.get(ref)!;
   const trigger = meta.trigger!;
   const deactivate = w.deactivateOf.get(ref)!;
   if (trigger.kind === "score") {
     if (trigger.latch !== false) return;
-    ctx.execute()
+    ctx
+      .execute()
       .unlessScoreMatches(scoreOf(w, trigger), scoreRange(trigger))
       .run((gone) => gone.call(deactivate));
     return;
@@ -30,6 +35,8 @@ export function emitPresence(w: Wiring, ref: ModuleRef, ctx: FunctionContext): v
   }
   const present = w.flags.score(`${meta.name}.in`); // recomputed each tick while active
   present.set(0);
-  whenPlayerInZones(ctx, triggerZones(trigger), (inside) => present.set(1, inside));
+  whenPlayerInZones(ctx, triggerZones(trigger), (inside) =>
+    present.set(1, inside),
+  );
   ctx.if(present.equal(0), (gone) => gone.call(deactivate));
 }

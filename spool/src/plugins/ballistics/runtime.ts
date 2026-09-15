@@ -32,10 +32,11 @@ export function defineRuntimeShot(
   const { from, to, profile, ticks } = resolveShotOptions(opts);
 
   // The same basis the compile-time solver inverts - sampled at the one chosen tick.
-  const { A: dragBasis, Ay: dragBasisY, G: gravityBasis } = trajectoryBasis(
-    profile,
-    ticks,
-  );
+  const {
+    A: dragBasis,
+    Ay: dragBasisY,
+    G: gravityBasis,
+  } = trajectoryBasis(profile, ticks);
   const dragFixed = Math.round(dragBasis[ticks] * POS_SCALE);
   const dragFixedY = Math.round(dragBasisY[ticks] * POS_SCALE);
   const gravityFixed = Math.round(gravityBasis[ticks] * POS_SCALE);
@@ -45,7 +46,8 @@ export function defineRuntimeShot(
     );
 
   const objective = dp.objective(OBJECTIVE);
-  const scoreFor = (holder: string): Score => objective.score(ScoreTarget(holder));
+  const scoreFor = (holder: string): Score =>
+    objective.score(ScoreTarget(holder));
   /** The launch velocity being solved for, the launcher's position, the target's velocity. */
   const velocity = ScoreVec3.from((a) => scoreFor(`#v${a}`));
   const launcherPos = ScoreVec3.from((a) => scoreFor(`#p${a}`));
@@ -140,9 +142,15 @@ export function defineRuntimeShot(
     }
 
     ctx.execute().at(from).run(spawnShell);
-    velocity.storeEntity(shotSelector(), Path.Entity.Motion, "double", 1 / V_SCALE, {
-      ctx,
-    });
+    velocity.storeEntity(
+      shotSelector(),
+      Path.Entity.Motion,
+      "double",
+      1 / V_SCALE,
+      {
+        ctx,
+      },
+    );
     ctx.tag().remove(shotSelector(), shotTag);
     ctx.return_(1);
   });
@@ -155,7 +163,8 @@ function shellType(
   opts: RuntimeShotOptions,
   spec: ShellSpec,
 ): EntityType | undefined {
-  if (typeof opts.shellFunction !== "function") return EntityType((opts.shell ?? DEFAULT_SHELL)(spec).entity);
+  if (typeof opts.shellFunction !== "function")
+    return EntityType((opts.shell ?? DEFAULT_SHELL)(spec).entity);
   const types = opts.shellTypes ?? [];
   if (types.length <= 1) return types[0];
   // Shared by every runtime shot in the pack, so it holds all their types.

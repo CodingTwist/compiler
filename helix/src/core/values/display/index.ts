@@ -4,4 +4,11 @@
 export { Display, DisplayValue } from "./value";
 export { DisplayBuilder } from "./builder";
 export { displayPose } from "./nbt";
-export type { DisplayChild, DisplayContent, EntityCondition, Quat, Transform, Vec3 } from "./types";
+export type {
+  DisplayChild,
+  DisplayContent,
+  EntityCondition,
+  Quat,
+  Transform,
+  Vec3,
+} from "./types";

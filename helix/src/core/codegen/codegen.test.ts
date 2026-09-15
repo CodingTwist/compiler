@@ -4,7 +4,11 @@ import { FunctionNode } from "../ir/node";
 import { SayNode } from "../commands/saycommand";
 import { generateFunction, buildDatapack } from "./codegen";
 import { writeDatapack } from "./write";
-import { Dispatcher, CodegenContext, CommandHandler } from "../ir/commandhandler";
+import {
+  Dispatcher,
+  CodegenContext,
+  CommandHandler,
+} from "../ir/commandhandler";
 import { v1_21_4 } from "../../versions/profiles";
 import fs from "fs";
 
@@ -22,66 +26,68 @@ vi.mock("fs", async (importActual) => {
 });
 
 class MockSayHandler extends CommandHandler<SayNode> {
-    type: SayNode["type"] = "say";
-    generate(node: SayNode, ctx: CodegenContext) {
-        ctx.emit(`say ${node.value}`);
-    }
+  type: SayNode["type"] = "say";
+  generate(node: SayNode, ctx: CodegenContext) {
+    ctx.emit(`say ${node.value}`);
+  }
 }
 
 describe("codegen", () => {
-    let dp: Datapack;
-    let dispatcher: Dispatcher;
+  let dp: Datapack;
+  let dispatcher: Dispatcher;
 
-    beforeEach(() => {
-        dp = new Datapack("testpack", v1_21_4);
-        dispatcher = new Dispatcher(new Map([["say", new MockSayHandler()]]));
-    });
+  beforeEach(() => {
+    dp = new Datapack("testpack", v1_21_4);
+    dispatcher = new Dispatcher(new Map([["say", new MockSayHandler()]]));
+  });
 
-    it("generateFunction creates file and registers function", () => {
-        const fn = new FunctionNode("main");
-        fn.push(new SayNode("hello"));
+  it("generateFunction creates file and registers function", () => {
+    const fn = new FunctionNode("main");
+    fn.push(new SayNode("hello"));
 
-        const ref = generateFunction(fn, dp, dispatcher);
+    const ref = generateFunction(fn, dp, dispatcher);
 
-        expect(dp.files.has("main")).toBe(true);
-        expect(dp.functions.has("main")).toBe(true);
-        expect(ref).toBe("function testpack:main");
-        expect(dp.files.get("main")).toContain("say hello");
-    });
+    expect(dp.files.has("main")).toBe(true);
+    expect(dp.functions.has("main")).toBe(true);
+    expect(ref).toBe("function testpack:main");
+    expect(dp.files.get("main")).toContain("say hello");
+  });
 
-    it("generateFunction does not overwrite existing file", () => {
-        const fn = new FunctionNode("main");
-        dp.files.set("main", "existing");
+  it("generateFunction does not overwrite existing file", () => {
+    const fn = new FunctionNode("main");
+    dp.files.set("main", "existing");
 
-        const ref = generateFunction(fn, dp, dispatcher);
+    const ref = generateFunction(fn, dp, dispatcher);
 
-        expect(ref).toBe("");
-        expect(dp.files.get("main")).toBe("existing");
-    });
+    expect(ref).toBe("");
+    expect(dp.files.get("main")).toBe("existing");
+  });
 
-    it("buildDatapack produces mcfunction path and content", () => {
-        const fn = new FunctionNode("main");
-        fn.push(new SayNode("hello"));
-        dp.functions.set("main", fn);
+  it("buildDatapack produces mcfunction path and content", () => {
+    const fn = new FunctionNode("main");
+    fn.push(new SayNode("hello"));
+    dp.functions.set("main", fn);
 
-        const files = buildDatapack(dp);
+    const files = buildDatapack(dp);
 
-        expect(files.has("data/testpack/function/main.mcfunction")).toBe(true);
-        expect(files.get("data/testpack/function/main.mcfunction")).toContain("say hello");
-    });
+    expect(files.has("data/testpack/function/main.mcfunction")).toBe(true);
+    expect(files.get("data/testpack/function/main.mcfunction")).toContain(
+      "say hello",
+    );
+  });
 
-    it("writeDatapack writes files and pack.mcmeta", () => {
-        const fn = new FunctionNode("main");
-        fn.push(new SayNode("hello"));
-        dp.functions.set("main", fn);
+  it("writeDatapack writes files and pack.mcmeta", () => {
+    const fn = new FunctionNode("main");
+    fn.push(new SayNode("hello"));
+    dp.functions.set("main", fn);
 
-        writeDatapack(dp, "/tmp/out");
+    writeDatapack(dp, "/tmp/out");
 
-        expect(fs.mkdirSync).toHaveBeenCalled();
-        expect(fs.writeFileSync).toHaveBeenCalled();
+    expect(fs.mkdirSync).toHaveBeenCalled();
+    expect(fs.writeFileSync).toHaveBeenCalled();
 
-        const calls = (fs.writeFileSync as any).mock.calls;
-        const mcmetaCall = calls.find((c: any[]) => c[0].includes("pack.mcmeta"));
-        expect(mcmetaCall).toBeTruthy();
-    });
+    const calls = (fs.writeFileSync as any).mock.calls;
+    const mcmetaCall = calls.find((c: any[]) => c[0].includes("pack.mcmeta"));
+    expect(mcmetaCall).toBeTruthy();
+  });
 });

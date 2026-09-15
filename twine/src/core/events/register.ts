@@ -3,7 +3,12 @@ import "reflect-metadata";
 import { Detect } from "helix";
 import type { Detector, FunctionContext } from "helix";
 import { HandlerGroup } from "./group";
-import { handlerOf, type EventHandler, type HandlerArgs, type OnOptions } from "./types";
+import {
+  handlerOf,
+  type EventHandler,
+  type HandlerArgs,
+  type OnOptions,
+} from "./types";
 
 const HANDLERS = Symbol("datapack:event-handlers");
 
@@ -27,9 +32,10 @@ export function On(detector: Detector, opts: OnOptions = {}): MethodDecorator {
   return (target, key) => {
     const owner = target.constructor;
     // Own metadata only, so a subclass's handlers don't leak to its siblings.
-    const existing: EventHandler[] = Reflect.getOwnMetadata(HANDLERS, owner) ?? [
-      ...(Reflect.getMetadata(HANDLERS, owner) ?? []),
-    ];
+    const existing: EventHandler[] = Reflect.getOwnMetadata(
+      HANDLERS,
+      owner,
+    ) ?? [...(Reflect.getMetadata(HANDLERS, owner) ?? [])];
     existing.push({ method: String(key), detector, opts });
     Reflect.defineMetadata(HANDLERS, existing, owner);
   };
@@ -40,7 +46,10 @@ export function On(detector: Detector, opts: OnOptions = {}): MethodDecorator {
  *
  * Still gated by the module's area, so it costs nothing while dormant.
  */
-export function Every(ticks: number, opts: Omit<OnOptions, "once" | "every"> = {}): MethodDecorator {
+export function Every(
+  ticks: number,
+  opts: Omit<OnOptions, "once" | "every"> = {},
+): MethodDecorator {
   return On(Detect.always(), { ...opts, once: false, every: ticks });
 }
 
@@ -58,7 +67,10 @@ const INSTANCE_HANDLERS = Symbol("datapack:instance-event-handlers");
 export function addEventHandler(instance: object, handler: EventHandler): void {
   const store = instance as { [INSTANCE_HANDLERS]?: EventHandler[] };
   const list = (store[INSTANCE_HANDLERS] ??= []);
-  if (handler.method !== undefined && list.some((h) => h.method === handler.method)) {
+  if (
+    handler.method !== undefined &&
+    list.some((h) => h.method === handler.method)
+  ) {
     throw new Error(`duplicate event handler key "${handler.method}"`);
   }
   list.push(handler);
@@ -96,7 +108,6 @@ export function every(
   on(instance, Detect.always(), fn, { ...opts, once: false, every: ticks });
 }
 
-
 /**
  * Every handler on `instance`: decorated, imperatively added, then those of each
  * {@link HandlerGroup} field, namespaced by {@link HandlerGroup.ns}.
@@ -108,12 +119,19 @@ export function getEventHandlers(instance: object): EventHandler[] {
   const groups = Object.values(instance)
     .flatMap((v) => (Array.isArray(v) ? (v as unknown[]) : [v]))
     .filter((v): v is HandlerGroup => v instanceof HandlerGroup);
-  return [...getOwnEventHandlers(instance), ...groups.flatMap((g) => g.collect())];
+  return [
+    ...getOwnEventHandlers(instance),
+    ...groups.flatMap((g) => g.collect()),
+  ];
 }
 
 /** Handlers declared on `instance`'s own class, or registered on it directly. */
 function getOwnEventHandlers(instance: object): EventHandler[] {
-  const decorated = (Reflect.getMetadata(HANDLERS, instance.constructor) as EventHandler[]) ?? [];
-  const imperative = (instance as { [INSTANCE_HANDLERS]?: EventHandler[] })[INSTANCE_HANDLERS] ?? [];
+  const decorated =
+    (Reflect.getMetadata(HANDLERS, instance.constructor) as EventHandler[]) ??
+    [];
+  const imperative =
+    (instance as { [INSTANCE_HANDLERS]?: EventHandler[] })[INSTANCE_HANDLERS] ??
+    [];
   return [...decorated, ...imperative];
 }

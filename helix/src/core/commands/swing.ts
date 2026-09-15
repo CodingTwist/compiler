@@ -8,14 +8,22 @@ import { Selector } from "../frontend/nodes/selector";
 
 /** `swing` */
 export class SwingBuilder extends CommandBuilder<TreeCommandNode> {
-  mainhand(targets: Selector, animation?: SwingAnimation, duration?: Time): this {
+  mainhand(
+    targets: Selector,
+    animation?: SwingAnimation,
+    duration?: Time,
+  ): this {
     this.$set(litPart("swing"), argPart(targets), litPart("mainhand"));
     if (animation !== undefined) this.$append(argPart(animation));
     if (duration !== undefined) this.$append(argPart(duration));
     return this;
   }
 
-  offhand(targets: Selector, animation?: SwingAnimation, duration?: Time): this {
+  offhand(
+    targets: Selector,
+    animation?: SwingAnimation,
+    duration?: Time,
+  ): this {
     this.$set(litPart("swing"), argPart(targets), litPart("offhand"));
     if (animation !== undefined) this.$append(argPart(animation));
     if (duration !== undefined) this.$append(argPart(duration));
@@ -30,7 +38,10 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.swing = function (this: FunctionContext, targets?: Selector) {
+FunctionContext.prototype.swing = function (
+  this: FunctionContext,
+  targets?: Selector,
+) {
   const node = new TreeCommandNode("swing", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("swing")];

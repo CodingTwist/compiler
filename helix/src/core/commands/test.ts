@@ -57,7 +57,13 @@ export class TestBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  run(tests: TestInstance, numberOfTimes?: number, untilFailed?: boolean, rotationSteps?: number, testsPerRow?: number): this {
+  run(
+    tests: TestInstance,
+    numberOfTimes?: number,
+    untilFailed?: boolean,
+    rotationSteps?: number,
+    testsPerRow?: number,
+  ): this {
     this.$set(litPart("test"), litPart("run"), argPart(tests));
     if (numberOfTimes !== undefined) this.$append(argPart(numberOfTimes));
     if (untilFailed !== undefined) this.$append(argPart(untilFailed));
@@ -73,9 +79,16 @@ export class TestBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  runfailed(onlyRequiredTests?: boolean, numberOfTimes?: number, untilFailed?: boolean, rotationSteps?: number, testsPerRow?: number): this {
+  runfailed(
+    onlyRequiredTests?: boolean,
+    numberOfTimes?: number,
+    untilFailed?: boolean,
+    rotationSteps?: number,
+    testsPerRow?: number,
+  ): this {
     this.$set(litPart("test"), litPart("runfailed"));
-    if (onlyRequiredTests !== undefined) this.$append(argPart(onlyRequiredTests));
+    if (onlyRequiredTests !== undefined)
+      this.$append(argPart(onlyRequiredTests));
     if (numberOfTimes !== undefined) this.$append(argPart(numberOfTimes));
     if (untilFailed !== undefined) this.$append(argPart(untilFailed));
     if (rotationSteps !== undefined) this.$append(argPart(rotationSteps));

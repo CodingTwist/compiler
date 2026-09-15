@@ -11,7 +11,11 @@ import type { PhysicsDeps } from "./types";
  * this
  * tick, so that would read zero. Capped at `RELEASE_KICK_MAX`. Must run at the player.
  */
-export function releaseKick(d: PhysicsDeps, scratch: SwingScratch, ctx: FunctionContext): void {
+export function releaseKick(
+  d: PhysicsDeps,
+  scratch: SwingScratch,
+  ctx: FunctionContext,
+): void {
   const consts = d.consts;
 
   // speed² = v·v of last tick's stored velocity. Not pos − prev, which drive has
@@ -22,6 +26,9 @@ export function releaseKick(d: PhysicsDeps, scratch: SwingScratch, ctx: Function
   const launch = d.repo.launchVec();
   launch.x.set(0);
   launch.y.set(0);
-  math`min(${scratch.frac} * ${consts.releaseKick}, ${consts.releaseKickMax})`.into(launch.z, ctx);
+  math`min(${scratch.frac} * ${consts.releaseKick}, ${consts.releaseKickMax})`.into(
+    launch.z,
+    ctx,
+  );
   d.motion.applyLocal(ctx);
 }

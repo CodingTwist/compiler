@@ -34,7 +34,10 @@ export interface ProbeOptions {
 }
 
 const slug = (name: string): string =>
-  name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
 
 /**
  * In-game tests, run with `/function <ns>:probe/run`.
@@ -98,7 +101,9 @@ export class Suite {
     fns.forEach((f, i) => {
       f.setup.build((ctx) => {
         f.spec.setup?.(ctx);
-        ctx.schedule().function_(this.dp.idOf(f.check), Time(f.spec.after ?? 1));
+        ctx
+          .schedule()
+          .function_(this.dp.idOf(f.check), Time(f.spec.after ?? 1));
       });
 
       f.check.build((ctx) => {
@@ -124,13 +129,24 @@ export class Suite {
     return entry;
   }
 
-  private result(ctx: FunctionContext, ok: Score, passed: Score, name: string): void {
+  private result(
+    ctx: FunctionContext,
+    ok: Score,
+    passed: Score,
+    name: string,
+  ): void {
     detect(ctx, Detect.score(ok, Range.exactly(1)), (c) => {
-      c.tellraw(Selector.allPlayers(), [text("[PASS] ").color(Color.GREEN), text(name)]);
+      c.tellraw(Selector.allPlayers(), [
+        text("[PASS] ").color(Color.GREEN),
+        text(name),
+      ]);
       passed.add(1);
     });
     detect(ctx, Detect.score(ok, Range.exactly(0)), (c) => {
-      c.tellraw(Selector.allPlayers(), [text("[FAIL] ").color(Color.RED), text(name)]);
+      c.tellraw(Selector.allPlayers(), [
+        text("[FAIL] ").color(Color.RED),
+        text(name),
+      ]);
     });
   }
 }

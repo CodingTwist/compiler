@@ -10,7 +10,11 @@ const AIR = Block.tag(BLOCK_TAGS.AIR);
  * Builds the raycast into `fn`: a loop that steps forward while the cell is air, steps
  * remain and `stopAt` isn't here, then runs `onReach` (returning its result) or `onHit`.
  */
-export function buildMarcher(state: RaycastState, fn: FunctionRef, opts: RaycastOptions): void {
+export function buildMarcher(
+  state: RaycastState,
+  fn: FunctionRef,
+  opts: RaycastOptions,
+): void {
   const steps = state.steps(opts.name);
   const stepBlocks = opts.stepBlocks ?? 0.5;
 
@@ -35,9 +39,15 @@ export function buildMarcher(state: RaycastState, fn: FunctionRef, opts: Raycast
         })
         .else((c) => {
           // Checked before the hit, so the target's own cell never counts as a block hit.
-          if (reach) c.execute().ifEntity(opts.stopAt!).run((b) => b.returnRun((x) => x.call(reach)));
+          if (reach)
+            c.execute()
+              .ifEntity(opts.stopAt!)
+              .run((b) => b.returnRun((x) => x.call(reach)));
           if (!opts.onHit) return;
-          if (opts.hitOn) c.execute().ifBlock(Pos.here(), opts.hitOn).run((b) => opts.onHit!(b));
+          if (opts.hitOn)
+            c.execute()
+              .ifBlock(Pos.here(), opts.hitOn)
+              .run((b) => opts.onHit!(b));
           else opts.onHit(c);
         }),
     ),

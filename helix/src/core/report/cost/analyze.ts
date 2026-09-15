@@ -5,9 +5,25 @@
 // inlined branches.
 import type { Datapack } from "../../ir/datapack";
 import type { SourceLoc } from "../../debug/sources";
-import type { CallSiteCost, CostReport, FunctionCost, NbtRead, TickRootCost } from "./types";
-import { directCallSites, indexedCommandLines, linePeriod, unboundedScansIn } from "./lines";
-import { NBT_READ, NBT_READ_MIN_PERIOD, collapseReads, nbtReadHint } from "./nbt-reads";
+import type {
+  CallSiteCost,
+  CostReport,
+  FunctionCost,
+  NbtRead,
+  TickRootCost,
+} from "./types";
+import {
+  directCallSites,
+  indexedCommandLines,
+  linePeriod,
+  unboundedScansIn,
+} from "./lines";
+import {
+  NBT_READ,
+  NBT_READ_MIN_PERIOD,
+  collapseReads,
+  nbtReadHint,
+} from "./nbt-reads";
 import { cadence, guardedFns } from "./cadence";
 import { lint } from "./lints";
 
@@ -34,7 +50,12 @@ function analyseFunctions(dp: Datapack): {
       callRe.lastIndex = 0;
       while ((m = callRe.exec(line)) !== null) callees.push(m[1]);
     }
-    costs.set(name, { name, commands: lines.length, unboundedScans, scanSources });
+    costs.set(name, {
+      name,
+      commands: lines.length,
+      unboundedScans,
+      scanSources,
+    });
     calls.set(name, callees);
   }
   return { costs, calls };
@@ -96,10 +117,18 @@ export function analyzeCost(dp: Datapack): CostReport {
     const claimed = new Set<string>([root]);
     const seen = new Set<string>();
     const breakdown: CallSiteCost[] = [];
-    for (const { callee, guard } of directCallSites(dp.files.get(root) ?? "", dp.name)) {
+    for (const { callee, guard } of directCallSites(
+      dp.files.get(root) ?? "",
+      dp.name,
+    )) {
       if (seen.has(callee)) continue; // one row per callee; first guard wins
       seen.add(callee);
-      const { commands, functions } = attributeSubtree(callee, calls, costs, claimed);
+      const { commands, functions } = attributeSubtree(
+        callee,
+        calls,
+        costs,
+        claimed,
+      );
       breakdown.push({ callee, guard, commands, functions });
     }
     breakdown.sort((a, b) => b.commands - a.commands);
@@ -114,7 +143,11 @@ export function analyzeCost(dp: Datapack): CostReport {
     });
   }
 
-  const { period, allowedBy } = cadence(dp, tickRoots, dp.allowed.get("nbt-read"));
+  const { period, allowedBy } = cadence(
+    dp,
+    tickRoots,
+    dp.allowed.get("nbt-read"),
+  );
   const guarded = guardedFns(dp, tickRoots, period);
   const nbtReads: NbtRead[] = [];
   for (const [fn, p] of [...period].sort(([a], [b]) => a.localeCompare(b))) {
@@ -152,11 +185,15 @@ export function analyzeCost(dp: Datapack): CostReport {
     unboundedScanners,
     perFunction: costs,
     nbtReads,
-    warnings: collapseReads(nbtReads.filter((r) => r.period < NBT_READ_MIN_PERIOD && !r.allowed)),
+    warnings: collapseReads(
+      nbtReads.filter((r) => r.period < NBT_READ_MIN_PERIOD && !r.allowed),
+    ),
     lints,
     allowedLints,
     staleAllows: [...dp.allowed].flatMap(([rule, fns]) =>
-      [...fns.keys()].filter((fn) => !dp.files.has(fn)).map((fn) => ({ rule, fn })),
+      [...fns.keys()]
+        .filter((fn) => !dp.files.has(fn))
+        .map((fn) => ({ rule, fn })),
     ),
   };
 }

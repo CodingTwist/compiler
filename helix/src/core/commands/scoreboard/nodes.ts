@@ -5,7 +5,16 @@ import { Score } from "../../frontend/nodes/score";
 import { ArgInput } from "../../values/value";
 
 /** The `scoreboard players operation` operators. */
-export type ScoreOperator = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<" | ">" | "><";
+export type ScoreOperator =
+  | "="
+  | "+="
+  | "-="
+  | "*="
+  | "/="
+  | "%="
+  | "<"
+  | ">"
+  | "><";
 
 export class ScoreboardNode extends ASTNode {
   readonly type = "scoreboard";
@@ -18,7 +27,6 @@ export class ScoreboardNode extends ASTNode {
     super();
   }
 }
-
 
 /** `scoreboard objectives add <objective> <criteria>` - declare/init an objective. */
 export const scoreInitNode = (objective: Objective): ScoreboardNode =>
@@ -57,7 +65,10 @@ export const scoreLitNode = (
  * `scoreboard players get|reset|enable <target> <objective>`. The holder arg is `targets`,
  * except `get` uses `target`.
  */
-export const playersNode = (verb: "get" | "reset" | "enable", score: Score): ScoreboardNode =>
+export const playersNode = (
+  verb: "get" | "reset" | "enable",
+  score: Score,
+): ScoreboardNode =>
   new ScoreboardNode(["players", verb], {
     [verb === "get" ? "target" : "targets"]: score.target,
     objective: score.objective.getName(),

@@ -53,7 +53,10 @@ describe("IfHandler - nested if chains", () => {
     const ob = new Objective("score");
     const condA = new ScoreRangeNode("@s", ob, new Range(0, 0));
     const condB = new ScoreRangeNode("@s", ob, new Range(1, 1));
-    const inner = new IfElseNode(condB, buildBody("inner_then", new SayNode("hi")));
+    const inner = new IfElseNode(
+      condB,
+      buildBody("inner_then", new SayNode("hi")),
+    );
     const outer = new IfElseNode(condA, buildBody("outer_then", inner));
     new IfHandler().generate(outer, ctx);
 
@@ -83,8 +86,7 @@ describe("IfHandler - nested if chains", () => {
       "execute if score @s score matches 0 run function testpack:inner_then_chain",
     );
     expect(dp.files.get("inner_then_chain")).toBe(
-      "execute if score @s score matches 1 run return run say hi\n" +
-        "say bye",
+      "execute if score @s score matches 1 run return run say hi\n" + "say bye",
     );
   });
 
@@ -109,7 +111,10 @@ describe("IfHandler - nested if chains", () => {
     const ob = new Objective("score");
     const condA = new ScoreRangeNode("@s", ob, new Range(0, 0));
     const selector = Selector.allPlayers();
-    const inner = new IfElseNode(condA, buildBody("inner_then", new SayNode("hi")));
+    const inner = new IfElseNode(
+      condA,
+      buildBody("inner_then", new SayNode("hi")),
+    );
     const guard = new EntityGuardNode("if", selector, inner);
     const ctxWrapper = new IfElseNode(
       new ScoreRangeNode("@s", ob, new Range(1, 1)),
@@ -128,7 +133,12 @@ describe("IfHandler - nested if chains", () => {
     const { dp, ctx } = createCommandTestEnv();
     const ob = new Objective("score");
     const condA = new ScoreRangeNode("@s", ob, new Range(0, 0));
-    const guard = new NearGuardNode(Pos(0, 64, 0), 6, undefined, new SayNode("hi"));
+    const guard = new NearGuardNode(
+      Pos(0, 64, 0),
+      6,
+      undefined,
+      new SayNode("hi"),
+    );
     const outer = new IfElseNode(condA, buildBody("outer_then", guard));
     new IfHandler().generate(outer, ctx);
 

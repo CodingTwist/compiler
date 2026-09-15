@@ -9,7 +9,9 @@ import { Path } from "../../../values/paths";
 import "../../../commands";
 
 /** Build one function body and return its rendered command lines. */
-function emit(build: (vec: (p: string) => ScoreVec3, sc: (n: string) => any) => void): string {
+function emit(
+  build: (vec: (p: string) => ScoreVec3, sc: (n: string) => any) => void,
+): string {
   const dp = new Datapack("test", v1_21_4);
   const work = new Objective("work");
   const vec = (p: string) =>
@@ -30,10 +32,16 @@ describe("ScoreVec3", () => {
       vec("v").assign(vec("pos")).sub(vec("prev")).scale(sc("k"));
     });
     // assign
-    expect(out).toContain("scoreboard players operation #v_x work = #pos_x work");
-    expect(out).toContain("scoreboard players operation #v_z work = #pos_z work");
+    expect(out).toContain(
+      "scoreboard players operation #v_x work = #pos_x work",
+    );
+    expect(out).toContain(
+      "scoreboard players operation #v_z work = #pos_z work",
+    );
     // sub
-    expect(out).toContain("scoreboard players operation #v_y work -= #prev_y work");
+    expect(out).toContain(
+      "scoreboard players operation #v_y work -= #prev_y work",
+    );
     // scale
     expect(out).toContain("scoreboard players operation #v_x work *= #k work");
   });
@@ -43,10 +51,16 @@ describe("ScoreVec3", () => {
       vec("a").dot(vec("b"), sc("dot"));
     });
     expect(out).toContain("scoreboard players operation #dot work = #a_x work");
-    expect(out).toContain("scoreboard players operation #dot work *= #b_x work");
+    expect(out).toContain(
+      "scoreboard players operation #dot work *= #b_x work",
+    );
     expect(out).toContain("scoreboard players operation #_t0 work = #a_y work");
-    expect(out).toContain("scoreboard players operation #_t0 work *= #b_y work");
-    expect(out).toContain("scoreboard players operation #dot work += #_t0 work");
+    expect(out).toContain(
+      "scoreboard players operation #_t0 work *= #b_y work",
+    );
+    expect(out).toContain(
+      "scoreboard players operation #dot work += #_t0 work",
+    );
   });
 
   it("builds from a per-axis score with `from`", () => {
@@ -82,7 +96,12 @@ describe("ScoreVec3", () => {
 
   it("writes the components back out into an NBT list", () => {
     const out = emit((vec) => {
-      vec("v").storeEntity(Selector.self(), Path.Entity.Motion, "double", 0.0001);
+      vec("v").storeEntity(
+        Selector.self(),
+        Path.Entity.Motion,
+        "double",
+        0.0001,
+      );
     });
     expect(out).toContain(
       "execute store result entity @s Motion[0] double 0.0001 run scoreboard players get #v_x work",
@@ -96,8 +115,14 @@ describe("ScoreVec3", () => {
     const out = emit((vec, sc) => {
       vec("imp").clamp(sc("min"), sc("max"));
     });
-    expect(out).toContain("scoreboard players operation #imp_x work < #max work");
-    expect(out).toContain("scoreboard players operation #imp_x work > #min work");
-    expect(out).toContain("scoreboard players operation #imp_z work < #max work");
+    expect(out).toContain(
+      "scoreboard players operation #imp_x work < #max work",
+    );
+    expect(out).toContain(
+      "scoreboard players operation #imp_x work > #min work",
+    );
+    expect(out).toContain(
+      "scoreboard players operation #imp_z work < #max work",
+    );
   });
 });

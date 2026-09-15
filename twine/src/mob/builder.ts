@@ -5,7 +5,13 @@ import { defineModule } from "../core/module.decorator";
 import { resolveGesture, type Gesture } from "./gesture";
 import { MobModule, type Relay } from "./module";
 import { mobPreview } from "./preview/rig";
-import type { MobDifficulty, MobModuleOpts, MobModuleRef, MobState, MobTick } from "./types";
+import type {
+  MobDifficulty,
+  MobModuleOpts,
+  MobModuleRef,
+  MobState,
+  MobTick,
+} from "./types";
 
 /**
  * Builds a custom mob: a vanilla mob does the AI, with a display-entity model riding it.
@@ -59,7 +65,9 @@ export class MobBuilder<S extends string = never> {
   }
 
   /** The mob's states by name. Declare before gestures and `onTick` so state names are typed. */
-  states<T extends string>(defs: Record<T, MobState<NoInfer<T>>>): MobBuilder<T> {
+  states<T extends string>(
+    defs: Record<T, MobState<NoInfer<T>>>,
+  ): MobBuilder<T> {
     const self = this as unknown as MobBuilder<T>;
     self.stateDefs = new Map(Object.entries(defs) as [T, MobState<T>][]);
     return self;
@@ -79,7 +87,9 @@ export class MobBuilder<S extends string = never> {
   /** Compile to a drop-in {@link ConfiguredModule} (name = module / tag id). */
   toModule(name: string, opts: MobModuleOpts = {}): MobModuleRef {
     const tickEvery = opts.tickEvery ?? 2;
-    const gestures = [...this.gestures].map(([g, def]) => resolveGesture(g, def, tickEvery));
+    const gestures = [...this.gestures].map(([g, def]) =>
+      resolveGesture(g, def, tickEvery),
+    );
     const mob = new MobModule<S>({
       name,
       nbt: this.nbt,
@@ -92,15 +102,25 @@ export class MobBuilder<S extends string = never> {
       states: this.stateDefs,
       onDifficulty: this.difficultyBody,
     });
-    const mod = defineModule({ name, tickEvery, dimension: opts.dimension }, mob) as MobModuleRef;
-    const refs = (keys: string[], short: (k: string) => string) => Object.fromEntries(keys.map((k) => [k, mob.fnRef(short(k))]));
+    const mod = defineModule(
+      { name, tickEvery, dimension: opts.dimension },
+      mob,
+    ) as MobModuleRef;
+    const refs = (keys: string[], short: (k: string) => string) =>
+      Object.fromEntries(keys.map((k) => [k, mob.fnRef(short(k))]));
     // Getters, because the functions don't exist until the module registers.
     Object.defineProperties(mod, {
       summon: { get: () => mob.fnRef("summon"), enumerable: true },
       spawn: { get: () => mob.fnRef("spawn"), enumerable: true },
       onTickFn: { get: () => mob.fnRef("on_tick"), enumerable: true },
-      gestures: { get: () => refs([...this.gestures.keys()], (g) => g), enumerable: true },
-      states: { get: () => refs([...this.stateDefs.keys()], (s) => `enter/${s}`), enumerable: true },
+      gestures: {
+        get: () => refs([...this.gestures.keys()], (g) => g),
+        enumerable: true,
+      },
+      states: {
+        get: () => refs([...this.stateDefs.keys()], (s) => `enter/${s}`),
+        enumerable: true,
+      },
       preview: { value: () => mobPreview(this.model, gestures, tickEvery) },
     });
     return mod;
@@ -108,6 +128,9 @@ export class MobBuilder<S extends string = never> {
 }
 
 /** Start a custom-mob definition from the mob it really is and the model it wears. */
-export function defineMob(nbt: IdentifiedEntityNbt, model: DisplayValue): MobBuilder {
+export function defineMob(
+  nbt: IdentifiedEntityNbt,
+  model: DisplayValue,
+): MobBuilder {
   return new MobBuilder(nbt, model);
 }

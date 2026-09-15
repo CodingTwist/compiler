@@ -35,8 +35,12 @@ describe("dp.fn / ctx.invoke", () => {
     const s = dp.objective("s").score("#s");
     const one = dp.fn("one", (_ctx, a) => void a.add(1));
     // @ts-expect-error wrong arity
-    expect(() => dp.createFunction("f").build((ctx) => ctx.invoke(one, [1, 2]))).toThrow(/takes 1 args, got 2/);
-    expect(() => dp.createFunction("g").build((ctx) => ctx.invoke(one, [1], s))).toThrow(/returns nothing/);
+    expect(() =>
+      dp.createFunction("f").build((ctx) => ctx.invoke(one, [1, 2])),
+    ).toThrow(/takes 1 args, got 2/);
+    expect(() =>
+      dp.createFunction("g").build((ctx) => ctx.invoke(one, [1], s)),
+    ).toThrow(/returns nothing/);
   });
 
   it("refuses a result on versions without return run", () => {

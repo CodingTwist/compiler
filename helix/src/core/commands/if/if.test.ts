@@ -28,24 +28,32 @@ describe("IfHandler - ScoreRangeNode", () => {
   it("emits execute if score matches for a range condition", () => {
     const { ctx } = createCommandTestEnv();
     const ob = new Objective("health");
-    const cond = new ScoreRangeNode("@s", ob, new Range(10,20));
-    const node = new IfElseNode(cond, buildBody("then", new SayNode("in range")));
+    const cond = new ScoreRangeNode("@s", ob, new Range(10, 20));
+    const node = new IfElseNode(
+      cond,
+      buildBody("then", new SayNode("in range")),
+    );
     new IfHandler().generate(node, ctx);
     // A single-command body is inlined into the `run` clause, no child function.
     expect(ctx.lines[0]).toBe(
-      "execute if score @s health matches 10..20 run say in range"
+      "execute if score @s health matches 10..20 run say in range",
     );
   });
 
   it("puts if/else in a branch function so else never sees the then body's changes", () => {
     const { dp, ctx } = createCommandTestEnv();
     const ob = new Objective("health");
-    const cond = new ScoreRangeNode("@s", ob, new Range(10,20));
-    const node = new IfElseNode(cond, buildBody("then", new SayNode("yes")), [], buildBody("else", new SayNode("no")));
+    const cond = new ScoreRangeNode("@s", ob, new Range(10, 20));
+    const node = new IfElseNode(
+      cond,
+      buildBody("then", new SayNode("yes")),
+      [],
+      buildBody("else", new SayNode("no")),
+    );
     new IfHandler().generate(node, ctx);
     expect(ctx.lines).toEqual(["function testpack:then_chain"]);
     expect(dp.files.get("then_chain")).toBe(
-      "execute if score @s health matches 10..20 run return run say yes\nsay no"
+      "execute if score @s health matches 10..20 run return run say yes\nsay no",
     );
   });
 
@@ -55,7 +63,12 @@ describe("IfHandler - ScoreRangeNode", () => {
     dp.createFunction("f").build((ctx) => {
       ctx
         .if(flag.equal(1), (c) => void c.return_(1))
-        .elif(flag.equal(2), (c) => c.execute().as(Selector.allPlayers()).run((b) => b.say("a")))
+        .elif(flag.equal(2), (c) =>
+          c
+            .execute()
+            .as(Selector.allPlayers())
+            .run((b) => b.say("a")),
+        )
         .else((c) => c.say("no"));
     });
     buildDatapack(dp);
@@ -77,7 +90,7 @@ describe("IfHandler - ScoreRangeNode", () => {
     );
     new IfHandler().generate(node, ctx);
     expect(ctx.lines[0]).toBe(
-      "execute if score @s health matches 10..20 run function testpack:then"
+      "execute if score @s health matches 10..20 run function testpack:then",
     );
     expect(dp.files.get("then")).toBe("say a\nsay b");
   });
@@ -94,7 +107,7 @@ describe("IfHandler - ScoreCompareNode", () => {
     const node = new IfElseNode(cond, buildBody("then", new SayNode("yes")));
     new IfHandler().generate(node, ctx);
     expect(ctx.lines[0]).toBe(
-      `execute if score @s lives ${op} target max run say yes`
+      `execute if score @s lives ${op} target max run say yes`,
     );
   });
 });
@@ -104,11 +117,9 @@ it("checks elif branches in order and stops at the first match", () => {
   const ob = new Objective("score");
   const cond1 = new ScoreRangeNode("@s", ob, new Range(1));
   const cond2 = new ScoreRangeNode("@s", ob, new Range(2));
-  const node = new IfElseNode(
-    cond1,
-    buildBody("then", new SayNode("one")),
-    [{ condition: cond2, body: buildBody("elif1", new SayNode("two")) }],
-  );
+  const node = new IfElseNode(cond1, buildBody("then", new SayNode("one")), [
+    { condition: cond2, body: buildBody("elif1", new SayNode("two")) },
+  ]);
   new IfHandler().generate(node, ctx);
   expect(ctx.lines).toEqual(["function testpack:then_chain"]);
   expect(dp.files.get("then_chain")).toBe(
@@ -121,7 +132,12 @@ it("an empty then body still stops the else", () => {
   const { dp, ctx } = createCommandTestEnv();
   const ob = new Objective("score");
   const cond = new ScoreCompareNode("@s", ob, "<", "#max", ob);
-  const node = new IfElseNode(cond, buildBody("then"), [], buildBody("else", new SayNode("no")));
+  const node = new IfElseNode(
+    cond,
+    buildBody("then"),
+    [],
+    buildBody("else", new SayNode("no")),
+  );
   new IfHandler().generate(node, ctx);
   expect(dp.files.get("then_chain")).toBe(
     "execute if score @s score < #max score run return 0\nsay no",
@@ -131,6 +147,11 @@ it("an empty then body still stops the else", () => {
 it("throws on unsupported condition type", () => {
   const { ctx } = createCommandTestEnv();
   const unsupported = { type: "unknown_expr" } as any;
-  const node = new IfElseNode(unsupported, buildBody("then", new SayNode("oops")));
-  expect(() => new IfHandler().generate(node, ctx)).toThrow("Unsupported condition");
+  const node = new IfElseNode(
+    unsupported,
+    buildBody("then", new SayNode("oops")),
+  );
+  expect(() => new IfHandler().generate(node, ctx)).toThrow(
+    "Unsupported condition",
+  );
 });

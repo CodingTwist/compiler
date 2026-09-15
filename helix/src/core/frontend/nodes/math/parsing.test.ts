@@ -102,7 +102,6 @@ describe("math`` parsing", () => {
   });
 });
 
-
 describe("math`` types", () => {
   it("accepts a Score, a ScoreVec3, a number and another expression as holes", () => {
     const e: unknown = math`${sc("a")} + ${1} + ${math`${sc("b")} * ${vec("v")} · ${vec("v")}`}`;

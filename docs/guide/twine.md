@@ -2,7 +2,7 @@
 
 `twine` is the **opinionated framework layer**: a NestJS-style module/area/lifecycle
 system for composing a whole datapack out of features. It sits above `helix` (the
-un-opinionated compiler) and `spool` (conveniences) and owns *project composition* -
+un-opinionated compiler) and `spool` (conveniences) and owns _project composition_ -
 which features are enabled, how they nest, and when their behaviour runs.
 
 Where helix deliberately refuses to dictate structure, twine **is** the structure: a

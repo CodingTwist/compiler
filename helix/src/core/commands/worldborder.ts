@@ -19,12 +19,22 @@ export class WorldborderBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   damageAmount(damagePerBlock: number): this {
-    this.$set(litPart("worldborder"), litPart("damage"), litPart("amount"), argPart(damagePerBlock));
+    this.$set(
+      litPart("worldborder"),
+      litPart("damage"),
+      litPart("amount"),
+      argPart(damagePerBlock),
+    );
     return this;
   }
 
   damageBuffer(distance: number): this {
-    this.$set(litPart("worldborder"), litPart("damage"), litPart("buffer"), argPart(distance));
+    this.$set(
+      litPart("worldborder"),
+      litPart("damage"),
+      litPart("buffer"),
+      argPart(distance),
+    );
     return this;
   }
 
@@ -40,12 +50,22 @@ export class WorldborderBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   warningDistance(distance: number): this {
-    this.$set(litPart("worldborder"), litPart("warning"), litPart("distance"), argPart(distance));
+    this.$set(
+      litPart("worldborder"),
+      litPart("warning"),
+      litPart("distance"),
+      argPart(distance),
+    );
     return this;
   }
 
   warningTime(time: Time): this {
-    this.$set(litPart("worldborder"), litPart("warning"), litPart("time"), argPart(time));
+    this.$set(
+      litPart("worldborder"),
+      litPart("warning"),
+      litPart("time"),
+      argPart(time),
+    );
     return this;
   }
 }

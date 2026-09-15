@@ -13,7 +13,11 @@ import type { VersionProfile } from "../versions/profile";
 function versionById(id: string): VersionProfile {
   const found = knownVersions().find((p) => p.id === id);
   if (!found) {
-    throw new Error(`helix: unknown --version "${id}" - known versions: ${knownVersions().map((p) => p.id).join(", ")}`);
+    throw new Error(
+      `helix: unknown --version "${id}" - known versions: ${knownVersions()
+        .map((p) => p.id)
+        .join(", ")}`,
+    );
   }
   return found;
 }
@@ -65,7 +69,10 @@ export async function runCli(argv: string[]): Promise<number> {
     return command || values.help ? 0 : 1;
   }
   const mode = values.prod ? "prod" : "dev";
-  if (values.target && !RUNTIME_TARGETS.includes(values.target as RuntimeTarget)) {
+  if (
+    values.target &&
+    !RUNTIME_TARGETS.includes(values.target as RuntimeTarget)
+  ) {
     console.error(
       `helix: unknown --target "${values.target}" - expected one of ${RUNTIME_TARGETS.join(", ")} (for a Minecraft version, use --version)`,
     );
@@ -91,12 +98,19 @@ export async function runCli(argv: string[]): Promise<number> {
     let warned = false;
     let result;
     try {
-      const { root, packs } = await loadPack({ mode, target, version, optimize, debug: { sources: true } });
+      const { root, packs } = await loadPack({
+        mode,
+        target,
+        version,
+        optimize,
+        debug: { sources: true },
+      });
       result = {
         root,
         packs: packs.map(({ target, dp }) => {
           const { lints, warnings, staleAllows } = dp.report();
-          warned = warnings.length + lints.length + staleAllows.length > 0 || warned;
+          warned =
+            warnings.length + lints.length + staleAllows.length > 0 || warned;
           return { target, lints, warnings, staleAllows };
         }),
       };
@@ -119,7 +133,9 @@ export async function runCli(argv: string[]): Promise<number> {
       let warned = false;
       for (const { dp } of (await load()).packs) {
         const r = dp.printReport();
-        warned = r.warnings.length + r.lints.length + r.staleAllows.length > 0 || warned;
+        warned =
+          r.warnings.length + r.lints.length + r.staleAllows.length > 0 ||
+          warned;
       }
       return values.strict && warned ? 1 : 0;
     }
@@ -135,9 +151,13 @@ export async function runCli(argv: string[]): Promise<number> {
 
 async function build({ config, packs }: LoadResult): Promise<number> {
   for (const { target, dp, out } of packs) {
-    await dp.writeDatapack(out.datapack, { zip: out.datapack.endsWith(".zip") });
+    await dp.writeDatapack(out.datapack, {
+      zip: out.datapack.endsWith(".zip"),
+    });
     if (out.resourcePack) await dp.writeResourcePack(out.resourcePack);
-    const rp = out.resourcePack ? `  (+ resource pack -> ${out.resourcePack})` : "";
+    const rp = out.resourcePack
+      ? `  (+ resource pack -> ${out.resourcePack})`
+      : "";
     console.log(`[${config.name}:${target}] datapack -> ${out.datapack}${rp}`);
   }
   return 0;
@@ -145,10 +165,15 @@ async function build({ config, packs }: LoadResult): Promise<number> {
 
 function profile(loaded: LoadResult, dumpFile?: string): number {
   const found = dumpFile
-    ? { file: dumpFile, dump: JSON.parse(fs.readFileSync(dumpFile, "utf8")) as ProfileDump }
+    ? {
+        file: dumpFile,
+        dump: JSON.parse(fs.readFileSync(dumpFile, "utf8")) as ProfileDump,
+      }
     : latestProfile(worldDir(loaded));
   if (!found) {
-    console.error(`helix: no profile dump in ${worldDir(loaded)}/${PROFILE_DIR} - run /helixprof start, then /helixprof stop`);
+    console.error(
+      `helix: no profile dump in ${worldDir(loaded)}/${PROFILE_DIR} - run /helixprof start, then /helixprof stop`,
+    );
     return 1;
   }
   console.log(found.file);
@@ -157,7 +182,8 @@ function profile(loaded: LoadResult, dumpFile?: string): number {
 }
 
 async function validate({ packs }: LoadResult): Promise<number> {
-  const { validateDatapack, formatMcdocDiagnostics } = await import("../validate/index.js");
+  const { validateDatapack, formatMcdocDiagnostics } =
+    await import("../validate/index.js");
   let errors = false;
   for (const { dp } of packs) {
     const problems = await validateDatapack(dp);

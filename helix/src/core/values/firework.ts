@@ -62,4 +62,5 @@ export class FireworkValue implements CommandValue {
 }
 
 export type Firework = FireworkValue;
-export const Firework = (input: FireworkInput): FireworkValue => new FireworkValue(input);
+export const Firework = (input: FireworkInput): FireworkValue =>
+  new FireworkValue(input);

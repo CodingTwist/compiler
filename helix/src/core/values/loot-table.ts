@@ -14,7 +14,9 @@ interface EntryOpts {
 
 /** One loot-pool entry, rendered version-aware. */
 class LootEntry {
-  constructor(private readonly build: (v: VersionProfile) => Record<string, unknown>) {}
+  constructor(
+    private readonly build: (v: VersionProfile) => Record<string, unknown>,
+  ) {}
   toJson(version: VersionProfile): Record<string, unknown> {
     return this.build(version);
   }
@@ -29,7 +31,8 @@ class LootEntry {
       const fns: LootFunction[] = [];
       const count = item.getCount();
       if (count !== undefined) fns.push(LootFunction.setCount(count));
-      if (Object.keys(item.componentsJson(v)).length) fns.push(LootFunction.setComponents(item));
+      if (Object.keys(item.componentsJson(v)).length)
+        fns.push(LootFunction.setComponents(item));
       fns.push(...(opts.functions ?? []));
       return {
         type: "minecraft:item",
@@ -41,13 +44,18 @@ class LootEntry {
   }
 
   /** A `minecraft:loot_table` entry referencing another table by id (or {@link LootTableRef}). */
-  static lootTable(ref: string | LootTableRef, opts: EntryOpts = {}): LootEntry {
+  static lootTable(
+    ref: string | LootTableRef,
+    opts: EntryOpts = {},
+  ): LootEntry {
     const id = ref instanceof LootTableRef ? ref.id : normalizeId(ref);
     return new LootEntry((v) => ({
       type: "minecraft:loot_table",
       value: id,
       ...(opts.weight !== undefined ? { weight: opts.weight } : {}),
-      ...(opts.functions?.length ? { functions: opts.functions.map((f) => f.toJson(v)) } : {}),
+      ...(opts.functions?.length
+        ? { functions: opts.functions.map((f) => f.toJson(v)) }
+        : {}),
     }));
   }
 

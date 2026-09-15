@@ -21,7 +21,11 @@ const BARE_KEY = /^[A-Za-z0-9_.+-]+$/;
 
 /** Control characters with short SNBT escapes, matching vanilla; others use `\xHH`. */
 const CONTROL_ESCAPE: Readonly<Record<number, string>> = {
-  8: "b", 9: "t", 10: "n", 12: "f", 13: "r",
+  8: "b",
+  9: "t",
+  10: "n",
+  12: "f",
+  13: "r",
 };
 
 /**
@@ -33,7 +37,9 @@ function quote(s: string): string {
     if (ch === "\\" || ch === '"') return "\\" + ch;
     const code = ch.charCodeAt(0);
     const named = CONTROL_ESCAPE[code];
-    return named !== undefined ? `\\${named}` : `\\x${code.toString(16).padStart(2, "0")}`;
+    return named !== undefined
+      ? `\\${named}`
+      : `\\x${code.toString(16).padStart(2, "0")}`;
   })}"`;
 }
 
@@ -90,7 +96,14 @@ export class NbtValue implements CommandValue {
   /** The top-level keys of a compound, or `undefined` for raw SNBT or anything else. */
   keys(_version: VersionProfile): string[] | undefined {
     const v = this.value;
-    if (typeof v !== "object" || v === null || Array.isArray(v) || v instanceof NbtNum || v instanceof NbtIntArray || isCommandValue(v)) {
+    if (
+      typeof v !== "object" ||
+      v === null ||
+      Array.isArray(v) ||
+      v instanceof NbtNum ||
+      v instanceof NbtIntArray ||
+      isCommandValue(v)
+    ) {
       return undefined;
     }
     return Object.entries(v).flatMap(([k, x]) => (x === undefined ? [] : [k]));

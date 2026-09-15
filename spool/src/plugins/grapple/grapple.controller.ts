@@ -35,7 +35,10 @@ export function defineController(d: ControllerDeps): void {
       .run((b) => d.ray.fire(b));
 
     // Only latch if the ray placed an anchor, so no stale rope length carries over.
-    ctx.execute().ifEntity(d.selectors.freshAnchor()).run((b) => d.attach.latch(b));
+    ctx
+      .execute()
+      .ifEntity(d.selectors.freshAnchor())
+      .run((b) => d.attach.latch(b));
 
     if (DEBUG) {
       ctx

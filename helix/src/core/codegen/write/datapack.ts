@@ -8,7 +8,11 @@ import { deriveClearStructure } from "../structure";
 import { buildZip } from "../zip";
 import { syncFiles, walkNbt } from "./sync";
 
-export function writeDatapack(dp: Datapack, outDir: string, opts?: { zip?: boolean }) {
+export function writeDatapack(
+  dp: Datapack,
+  outDir: string,
+  opts?: { zip?: boolean },
+) {
   if (opts?.zip) {
     const files = collectDatapackFiles(dp);
     fs.mkdirSync(path.dirname(outDir), { recursive: true });
@@ -35,7 +39,9 @@ export const SOURCE_MAP_FILE = "helix-sources.json";
 function sourceMapJson(dp: Datapack): string | undefined {
   if (!dp.debug.sources && !dp.debug.comments) return undefined;
   const out: Record<string, Record<string, string>> = {};
-  for (const [fn, locs] of [...dp.sourceMap].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [fn, locs] of [...dp.sourceMap].sort(([a], [b]) =>
+    a.localeCompare(b),
+  )) {
     const lines: Record<string, string> = {};
     locs.forEach((loc, i) => {
       if (loc) lines[i + 1] = loc;
@@ -65,7 +71,10 @@ function collectDatapackFiles(dp: Datapack): Map<string, Buffer> {
       const content = fs.readFileSync(src);
       files.set(dest, content);
 
-      const key = rel.replace(/\.nbt$/, "").split(path.sep).join("/");
+      const key = rel
+        .replace(/\.nbt$/, "")
+        .split(path.sep)
+        .join("/");
       const fill = clearVariants.get(key);
       if (fill) {
         const clearDest = dest.replace(/\.nbt$/, "_clear.nbt");
@@ -74,7 +83,10 @@ function collectDatapackFiles(dp: Datapack): Map<string, Buffer> {
     }
   }
 
-  files.set("pack.mcmeta", Buffer.from(JSON.stringify(buildPackMcmeta(dp), null, 2), "utf-8"));
+  files.set(
+    "pack.mcmeta",
+    Buffer.from(JSON.stringify(buildPackMcmeta(dp), null, 2), "utf-8"),
+  );
   const sources = sourceMapJson(dp);
   if (sources) files.set(SOURCE_MAP_FILE, Buffer.from(sources, "utf-8"));
 
@@ -90,7 +102,12 @@ export function shippedStructureNames(dp: Datapack): Set<string> {
   const names = new Set<string>();
   for (const dir of dp.structureSources) {
     for (const rel of walkNbt(dir)) {
-      names.add(rel.replace(/\.nbt$/, "").split(path.sep).join("/"));
+      names.add(
+        rel
+          .replace(/\.nbt$/, "")
+          .split(path.sep)
+          .join("/"),
+      );
     }
   }
   return names;

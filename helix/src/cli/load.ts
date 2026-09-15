@@ -28,7 +28,8 @@ export interface LoadResult {
 /** A module's default export, unwrapping any CJS interop `default` layers. */
 async function importDefault<T>(file: string): Promise<T> {
   let mod = (await import(pathToFileURL(file).href)) as { default?: unknown };
-  while (mod && typeof mod === "object" && "default" in mod) mod = mod.default as typeof mod;
+  while (mod && typeof mod === "object" && "default" in mod)
+    mod = mod.default as typeof mod;
   return mod as T;
 }
 
@@ -45,21 +46,31 @@ export async function loadPack(opts: {
 }): Promise<LoadResult> {
   const root = path.resolve(opts.root ?? process.cwd());
   const configFile = path.join(root, CONFIG_FILE);
-  if (!fs.existsSync(configFile)) throw new Error(`helix: no ${CONFIG_FILE} in ${root}`);
+  if (!fs.existsSync(configFile))
+    throw new Error(`helix: no ${CONFIG_FILE} in ${root}`);
   const envFile = path.join(root, ".env");
   if (fs.existsSync(envFile)) process.loadEnvFile(envFile);
 
   const config = await importDefault<HelixConfig>(configFile);
-  const entry = await importDefault<PackEntry>(path.resolve(root, config.entry));
+  const entry = await importDefault<PackEntry>(
+    path.resolve(root, config.entry),
+  );
   if (typeof entry !== "function") {
-    throw new Error(`helix: ${config.entry} must default-export a pack function (dp, build) => void`);
+    throw new Error(
+      `helix: ${config.entry} must default-export a pack function (dp, build) => void`,
+    );
   }
 
   if (entry.version && config.version) {
-    throw new Error(`helix: version is set in both ${CONFIG_FILE} and ${config.entry} - keep one`);
+    throw new Error(
+      `helix: version is set in both ${CONFIG_FILE} and ${config.entry} - keep one`,
+    );
   }
   const version = opts.version ?? entry.version ?? config.version;
-  if (!version) throw new Error(`helix: no version - set it in ${CONFIG_FILE} or definePack({ version }, ...)`);
+  if (!version)
+    throw new Error(
+      `helix: no version - set it in ${CONFIG_FILE} or definePack({ version }, ...)`,
+    );
 
   const targets = opts.target ? [opts.target] : (config.targets ?? ["vanilla"]);
   const packs: LoadedPack[] = [];
@@ -76,7 +87,9 @@ export async function loadPack(opts: {
       out: {
         datapack: path.resolve(root, config.out.datapack) + suffix,
         // The resource pack is client assets, identical across targets.
-        resourcePack: config.out.resourcePack && path.resolve(root, config.out.resourcePack),
+        resourcePack:
+          config.out.resourcePack &&
+          path.resolve(root, config.out.resourcePack),
       },
     });
   }

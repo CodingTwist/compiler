@@ -20,10 +20,14 @@ export function defineStore(I: PlayerMotionInternals): void {
     fn.build((ctx) => {
       // Clear bits 0..30, set bit 31 = 0 (as the run target so it's one execute).
       const clear = ctx.execute();
-      for (let bit = 0; bit <= 30; bit++) clear.storeResultScore(storeBit(`#${axis}.${bit}`));
+      for (let bit = 0; bit <= 30; bit++)
+        clear.storeResultScore(storeBit(`#${axis}.${bit}`));
       clear.run((b) => storeBit(`#${axis}.31`).set(0));
 
-      ctx.execute().ifScoreMatches(value, new Range(0, 0)).run((b) => b.return_(1));
+      ctx
+        .execute()
+        .ifScoreMatches(value, new Range(0, 0))
+        .run((b) => b.return_(1));
 
       // Sign bit: if negative, flag bit 31 and add 2^31-1 to make it positive.
       ctx

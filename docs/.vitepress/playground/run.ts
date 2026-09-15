@@ -14,7 +14,8 @@ const BASE = import.meta.env.BASE_URL; // honours a deployed sub-path base
 
 let esbuildReady: Promise<void> | null = null;
 function initEsbuild(): Promise<void> {
-  if (!esbuildReady) esbuildReady = esbuild.initialize({ wasmURL, worker: true });
+  if (!esbuildReady)
+    esbuildReady = esbuild.initialize({ wasmURL, worker: true });
   return esbuildReady;
 }
 
@@ -37,9 +38,9 @@ async function loadProfile(name: string): Promise<VersionProfile> {
   // dotted read on a namespace import of a CJS module trips a Rollup
   // "not exported" false-positive. The runtime namespace has every export
   // (that's also what the injection below relies on via Object.keys).
-  const profileFromRaw = (helix as Record<string, unknown>)["profileFromRaw"] as (
-    raw: RawProfile,
-  ) => VersionProfile;
+  const profileFromRaw = (helix as Record<string, unknown>)[
+    "profileFromRaw"
+  ] as (raw: RawProfile) => VersionProfile;
   const profile = profileFromRaw((await res.json()) as RawProfile);
   profileCache.set(name, profile);
   return profile;
@@ -47,7 +48,8 @@ async function loadProfile(name: string): Promise<VersionProfile> {
 
 // Strip every `import ... from "..."` / bare `import "..."` line: the browser
 // can't resolve module specifiers, and helix's exports are injected instead.
-const IMPORT_RE = /^[ \t]*import\b[^\n]*?(?:from[ \t]*["'][^"']*["']|["'][^"']*["'])[ \t]*;?[ \t]*$/gm;
+const IMPORT_RE =
+  /^[ \t]*import\b[^\n]*?(?:from[ \t]*["'][^"']*["']|["'][^"']*["'])[ \t]*;?[ \t]*$/gm;
 
 export interface CompileOk {
   ok: true;
@@ -84,9 +86,12 @@ export async function compile(source: string): Promise<CompileResult> {
     // legal, non-reserved identifiers: CJS interop adds `default`/`__esModule` to
     // the namespace, and `default` is a reserved word - an invalid parameter name.
     const helixKeys = Object.keys(helix).filter(
-      (k) => /^[A-Za-z_$][\w$]*$/.test(k) && k !== "default" && k !== "__esModule",
+      (k) =>
+        /^[A-Za-z_$][\w$]*$/.test(k) && k !== "default" && k !== "__esModule",
     );
-    const helixVals = helixKeys.map((k) => (helix as Record<string, unknown>)[k]);
+    const helixVals = helixKeys.map(
+      (k) => (helix as Record<string, unknown>)[k],
+    );
 
     const body =
       code +
@@ -100,6 +105,9 @@ export async function compile(source: string): Promise<CompileResult> {
     const files = runner(...helixVals, ...profiles);
     return { ok: true, files };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }

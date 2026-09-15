@@ -13,7 +13,10 @@ import type {
   HoldingOptions,
   Item,
 } from "helix";
-import type { ConfiguredModule, DatapackModule } from "../core/module.interface";
+import type {
+  ConfiguredModule,
+  DatapackModule,
+} from "../core/module.interface";
 import { defineModule } from "../core/module.decorator";
 
 /** A behaviour body: commands emitted into a generated function. */
@@ -43,15 +46,25 @@ export function itemSlug(item: Item): string {
  *
  * Shares the predicate file with spool's `holding` plugin if both are used.
  */
-export function itemHolderSelector(dp: Datapack, item: Item, opts?: HoldingOptions): Selector {
+export function itemHolderSelector(
+  dp: Datapack,
+  item: Item,
+  opts?: HoldingOptions,
+): Selector {
   return Selector.allPlayers().predicate(holdingPredicate(dp, item, opts));
 }
 
 /** Emit (once) the give function granting `item` to `@s`; idempotent across calls/bubbles. */
-export function itemGiveFunction(dp: Datapack, item: Item, slug: string): FunctionRef {
+export function itemGiveFunction(
+  dp: Datapack,
+  item: Item,
+  slug: string,
+): FunctionRef {
   const name = `zzz/item/${slug}/give`;
   if (!dp.functions.has(name)) {
-    dp.createFunction(name).build((ctx) => ctx.playerGive(Selector.self(), item));
+    dp.createFunction(name).build((ctx) =>
+      ctx.playerGive(Selector.self(), item),
+    );
   }
   return dp.getOrCreateFunction(name);
 }
@@ -77,7 +90,11 @@ export class ItemModule implements DatapackModule {
     if (this.opts.give) itemGiveFunction(dp, this.item, this.slug);
 
     if (this.opts.attack) {
-      dp.event(`${base}/on_attack`, Trigger.playerHurtEntity(this.item), this.opts.attack);
+      dp.event(
+        `${base}/on_attack`,
+        Trigger.playerHurtEntity(this.item),
+        this.opts.attack,
+      );
     }
     if (this.opts.use) {
       dp.event(`${base}/on_use`, Trigger.usingItem(this.item), this.opts.use);
@@ -86,7 +103,9 @@ export class ItemModule implements DatapackModule {
       this.rightClick(dp, base, this.opts.rightClick);
     }
     if (this.opts.held) {
-      this.heldSelector = itemHolderSelector(dp, this.item, { exact: this.opts.exact });
+      this.heldSelector = itemHolderSelector(dp, this.item, {
+        exact: this.opts.exact,
+      });
     }
   }
 
@@ -94,7 +113,9 @@ export class ItemModule implements DatapackModule {
     const held = this.opts.held;
     if (!held || !this.heldSelector) return;
     // Run the held body as each holder, at them.
-    this.heldSelector.run((as) => as.atEntity(Selector.self(), held, "xyz"))(ctx);
+    this.heldSelector.run((as) => as.atEntity(Selector.self(), held, "xyz"))(
+      ctx,
+    );
   }
 
   /**
@@ -110,11 +131,17 @@ export class ItemModule implements DatapackModule {
 
     const rc = new Objective(`rc_${this.slug}`, usedStatCriteria(this.item));
     const holder = holdingPredicate(dp, this.item, { exact: this.opts.exact });
-    const clicked = Selector.allPlayers().score(rc, Range.atLeast(1)).predicate(holder);
+    const clicked = Selector.allPlayers()
+      .score(rc, Range.atLeast(1))
+      .predicate(holder);
 
     dp.createFunction(`${base}/rc_load`, "load").build(() => rc.init());
     dp.createFunction(tickName, "tick").build((ctx) => {
-      ctx.execute().as(clicked).at(Selector.self()).run((b) => body(b));
+      ctx
+        .execute()
+        .as(clicked)
+        .at(Selector.self())
+        .run((b) => body(b));
       // Reset every player so this tick's use doesn't fire again next tick.
       rc.score(Selector.allPlayers()).set(0);
     });

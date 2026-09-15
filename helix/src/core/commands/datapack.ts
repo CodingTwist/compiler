@@ -8,7 +8,12 @@ import { Component } from "../values";
 /** `datapack` */
 export class DatapackBuilder extends CommandBuilder<TreeCommandNode> {
   create(id: string, description: Component): this {
-    this.$set(litPart("datapack"), litPart("create"), argPart(id), argPart(description));
+    this.$set(
+      litPart("datapack"),
+      litPart("create"),
+      argPart(id),
+      argPart(description),
+    );
     return this;
   }
 
@@ -23,22 +28,44 @@ export class DatapackBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   enableAfter(name: string, existing: string): this {
-    this.$set(litPart("datapack"), litPart("enable"), argPart(name), litPart("after"), argPart(existing));
+    this.$set(
+      litPart("datapack"),
+      litPart("enable"),
+      argPart(name),
+      litPart("after"),
+      argPart(existing),
+    );
     return this;
   }
 
   enableBefore(name: string, existing: string): this {
-    this.$set(litPart("datapack"), litPart("enable"), argPart(name), litPart("before"), argPart(existing));
+    this.$set(
+      litPart("datapack"),
+      litPart("enable"),
+      argPart(name),
+      litPart("before"),
+      argPart(existing),
+    );
     return this;
   }
 
   enableFirst(name: string): this {
-    this.$set(litPart("datapack"), litPart("enable"), argPart(name), litPart("first"));
+    this.$set(
+      litPart("datapack"),
+      litPart("enable"),
+      argPart(name),
+      litPart("first"),
+    );
     return this;
   }
 
   enableLast(name: string): this {
-    this.$set(litPart("datapack"), litPart("enable"), argPart(name), litPart("last"));
+    this.$set(
+      litPart("datapack"),
+      litPart("enable"),
+      argPart(name),
+      litPart("last"),
+    );
     return this;
   }
 

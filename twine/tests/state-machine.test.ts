@@ -16,7 +16,11 @@ describe("StateMachine", () => {
       sm.state("idle", { onEnter: (c) => c.say("start") })
         .state("active")
         .initial("idle")
-        .transition("idle", "active", dp.objective("flag").score(Selector.self()).equal(1));
+        .transition(
+          "idle",
+          "active",
+          dp.objective("flag").score(Selector.self()).equal(1),
+        );
       sm.build();
     });
 
@@ -37,7 +41,10 @@ describe("StateMachine", () => {
     const files = compile((dp) => {
       const flag = dp.objective("flag").score(Selector.self());
       const sm = new StateMachine(dp, "quest");
-      sm.state("a").state("b").state("c").initial("a")
+      sm.state("a")
+        .state("b")
+        .state("c")
+        .initial("a")
         .transition("a", "b", flag.equal(1))
         .transition("a", "c", flag.equal(2));
       sm.build();

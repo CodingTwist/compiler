@@ -41,7 +41,9 @@ export class ClipTimeline {
   // --- primary-track sugar (so `dp.clip(model).move(...).spin(...)` reads well) -
   private prim(): TransformTrack {
     if (!this.primary) {
-      throw new Error(`Clip "${this.s.label}" has no primary model track; use .track()/.nbt()/.tp().`);
+      throw new Error(
+        `Clip "${this.s.label}" has no primary model track; use .track()/.nbt()/.tp().`,
+      );
     }
     return this.primary;
   }
@@ -84,7 +86,11 @@ export class ClipTimeline {
     return t;
   }
   /** Animate an arbitrary NBT path on `selector` over keyframes (baked). */
-  nbt(selector: Selector, path: string, keys: readonly Keyframe<NbtValue>[]): this {
+  nbt(
+    selector: Selector,
+    path: string,
+    keys: readonly Keyframe<NbtValue>[],
+  ): this {
     this.s.tracks.push(new NbtTrack(selector, path, keys));
     return this;
   }
@@ -101,7 +107,8 @@ export class ClipTimeline {
   // --- duration / snap / events ------------------------------------------------
   /** Run for this many ticks. */
   over(ticks: number): this {
-    if (!(ticks > 0)) throw new Error(`clip duration must be > 0 ticks (got ${ticks}).`);
+    if (!(ticks > 0))
+      throw new Error(`clip duration must be > 0 ticks (got ${ticks}).`);
     this.s.durationTicks = Math.round(ticks);
     return this;
   }
@@ -114,7 +121,8 @@ export class ClipTimeline {
    * divide `degrees`.
    */
   snap(degrees = 90): this {
-    if (!(degrees > 0)) throw new Error(`snap degrees must be > 0 (got ${degrees}).`);
+    if (!(degrees > 0))
+      throw new Error(`snap degrees must be > 0 (got ${degrees}).`);
     this.s.snapDeg = degrees;
     return this;
   }

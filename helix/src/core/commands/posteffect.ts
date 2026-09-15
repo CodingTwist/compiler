@@ -9,7 +9,12 @@ import { Selector } from "../frontend/nodes/selector";
 /** `posteffect` */
 export class PosteffectBuilder extends CommandBuilder<TreeCommandNode> {
   add(targets: Selector, posteffect: Id): this {
-    this.$set(litPart("posteffect"), litPart("add"), argPart(targets), argPart(posteffect));
+    this.$set(
+      litPart("posteffect"),
+      litPart("add"),
+      argPart(targets),
+      argPart(posteffect),
+    );
     return this;
   }
 
@@ -19,12 +24,21 @@ export class PosteffectBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   list(target: Selector): this {
-    this.$set(litPart("posteffect"), litPart("list"), argPart(single(target, "posteffect")));
+    this.$set(
+      litPart("posteffect"),
+      litPart("list"),
+      argPart(single(target, "posteffect")),
+    );
     return this;
   }
 
   remove(targets: Selector, posteffect: Id): this {
-    this.$set(litPart("posteffect"), litPart("remove"), argPart(targets), argPart(posteffect));
+    this.$set(
+      litPart("posteffect"),
+      litPart("remove"),
+      argPart(targets),
+      argPart(posteffect),
+    );
     return this;
   }
 }

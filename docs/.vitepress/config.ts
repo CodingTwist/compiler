@@ -6,12 +6,16 @@ import { compileHelix } from "./plugins/compile-helix.mjs";
 // Empty stand-in for Node built-ins so the playground can bundle helix (whose
 // disk-writer chunk references `fs`/`path`/`zlib` but is never executed in the
 // browser - the pure compile path is builtin-free). See playground/node-stub.ts.
-const nodeStub = fileURLToPath(new URL("./playground/node-stub.ts", import.meta.url));
+const nodeStub = fileURLToPath(
+  new URL("./playground/node-stub.ts", import.meta.url),
+);
 
 // The API sidebar is regrouped by domain (scripts/group-api.mjs) into
 // .vitepress/api-sidebar.json during `gen:api`. Fall back to plain package
 // links on a fresh checkout where it hasn't been generated yet.
-const apiSidebarPath = fileURLToPath(new URL("./api-sidebar.json", import.meta.url));
+const apiSidebarPath = fileURLToPath(
+  new URL("./api-sidebar.json", import.meta.url),
+);
 const apiSidebar = existsSync(apiSidebarPath)
   ? JSON.parse(readFileSync(apiSidebarPath, "utf8"))
   : [
@@ -28,7 +32,8 @@ const apiSidebar = existsSync(apiSidebarPath)
 
 export default defineConfig({
   title: "Helix Compiler",
-  description: "A TypeScript Minecraft-datapack compiler - helix, spool, and twine",
+  description:
+    "A TypeScript Minecraft-datapack compiler - helix, spool, and twine",
   srcDir: ".",
   head: [["link", { rel: "icon", type: "image/svg+xml", href: "/logo.svg" }]],
   markdown: {
@@ -45,8 +50,7 @@ export default defineConfig({
           searchOptions: {
             // Push the generated API reference below hand-written guide/examples
             // pages: same match, a fraction of the weight.
-            boostDocument: (id: string) =>
-              id.includes("/api/") ? 0.15 : 1,
+            boostDocument: (id: string) => (id.includes("/api/") ? 0.15 : 1),
           },
         },
       },
@@ -77,19 +81,31 @@ export default defineConfig({
           text: "Concepts",
           items: [
             { text: "Selectors", link: "/guide/concepts/selectors" },
-            { text: "Positions & blocks", link: "/guide/concepts/positions-and-blocks" },
+            {
+              text: "Positions & blocks",
+              link: "/guide/concepts/positions-and-blocks",
+            },
             { text: "Items & NBT", link: "/guide/concepts/items-and-nbt" },
             { text: "Objectives", link: "/guide/concepts/objectives" },
             { text: "Scores", link: "/guide/concepts/scores" },
             { text: "Score vectors", link: "/guide/concepts/score-vectors" },
             { text: "Fixed-point numbers", link: "/guide/concepts/fixed" },
-            { text: "Math and /compute", link: "/guide/concepts/math-and-compute" },
-            { text: "Conditions, loops & functions", link: "/guide/concepts/control-flow" },
+            {
+              text: "Math and /compute",
+              link: "/guide/concepts/math-and-compute",
+            },
+            {
+              text: "Conditions, loops & functions",
+              link: "/guide/concepts/control-flow",
+            },
             { text: "Rotations", link: "/guide/concepts/rotations" },
             { text: "Text & tellraw", link: "/guide/concepts/text" },
             { text: "Execute chains", link: "/guide/concepts/execute" },
             { text: "Data resources", link: "/guide/concepts/data-resources" },
-            { text: "Loot & advancements", link: "/guide/concepts/loot-and-advancements" },
+            {
+              text: "Loot & advancements",
+              link: "/guide/concepts/loot-and-advancements",
+            },
             { text: "Resource-pack models", link: "/guide/concepts/models" },
           ],
         },
@@ -99,7 +115,10 @@ export default defineConfig({
           text: "Examples",
           items: [
             { text: "Overview", link: "/examples/" },
-            { text: "Spool plugin: player motion", link: "/examples/spool-player-motion" },
+            {
+              text: "Spool plugin: player motion",
+              link: "/examples/spool-player-motion",
+            },
           ],
         },
       ],
@@ -107,7 +126,8 @@ export default defineConfig({
     },
     socialLinks: [],
     footer: {
-      message: "Released under the MIT License · <a href=\"/credits\">Credits</a>",
+      message:
+        'Released under the MIT License · <a href="/credits">Credits</a>',
       copyright: "Built by Twist",
     },
   },

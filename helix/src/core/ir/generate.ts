@@ -5,10 +5,21 @@ import { ASTNode, FunctionNode } from "./node";
 import { CodegenContext, Dispatcher } from "./commandhandler";
 import { validateCommand } from "./command-validator";
 import { sourceOf } from "../debug/sources";
-import { callLine, COMMENT_LINE, commandLine, Effect, UNKNOWN_LINE, type LineInfo } from "./line-info";
+import {
+  callLine,
+  COMMENT_LINE,
+  commandLine,
+  Effect,
+  UNKNOWN_LINE,
+  type LineInfo,
+} from "./line-info";
 
 /** Dispatch every node of `fn`, each one's lines tagged with where it was authored. */
-function dispatchAll(fn: FunctionNode, ctx: CodegenContext, dispatcher: Dispatcher): void {
+function dispatchAll(
+  fn: FunctionNode,
+  ctx: CodegenContext,
+  dispatcher: Dispatcher,
+): void {
   for (const node of fn.nodes) {
     ctx.current = sourceOf(fn, node);
     dispatcher.dispatch(node, ctx);
@@ -73,7 +84,9 @@ export function generateFunction(
  * the chain instead of nesting.
  */
 export function runClause(cmd: string): string {
-  return cmd.startsWith("execute ") ? cmd.slice("execute ".length) : `run ${cmd}`;
+  return cmd.startsWith("execute ")
+    ? cmd.slice("execute ".length)
+    : `run ${cmd}`;
 }
 
 /** `cmd` run under the rendered `execute` context `clauses`. */
@@ -85,16 +98,23 @@ export function underClauses(clauses: string[], cmd: string): string {
 export function withoutClauses(line: string, clauses: string[]): string {
   const head = `execute ${clauses.join(" ")} `;
   // The clauses come from the handler that rendered the line, so a mismatch is a bug there.
-  if (!line.startsWith(head)) throw new Error(`Line doesn't start with its recorded clauses: ${line}`);
+  if (!line.startsWith(head))
+    throw new Error(`Line doesn't start with its recorded clauses: ${line}`);
   const rest = line.slice(head.length);
-  return rest.startsWith("run ") ? rest.slice("run ".length) : `execute ${rest}`;
+  return rest.startsWith("run ")
+    ? rest.slice("run ".length)
+    : `execute ${rest}`;
 }
 
 /** Matches a command that can run once per entity, which `return run` would stop after the first. */
 export const FORKS = /\s(as|at|on|summon)\s|facing entity/;
 
 /** Stores `ctx`'s lines as the function `name` and returns the call to it. */
-export function commitLines(name: string, dp: Datapack, ctx: CodegenContext): { cmd: string; info: LineInfo } {
+export function commitLines(
+  name: string,
+  dp: Datapack,
+  ctx: CodegenContext,
+): { cmd: string; info: LineInfo } {
   commit(new FunctionNode(name), dp, ctx);
   return { cmd: functionCall(dp, name), info: callLine(name) };
 }
@@ -122,21 +142,28 @@ export function generateRunTargetLine(
   fn: FunctionNode,
   dp: Datapack,
   dispatcher: Dispatcher,
-  opts: { keepEmpty?: boolean; inline?: (cmd: string, info: LineInfo) => boolean } = {},
+  opts: {
+    keepEmpty?: boolean;
+    inline?: (cmd: string, info: LineInfo) => boolean;
+  } = {},
 ): { cmd: string; info: LineInfo } {
   const ctx = new CodegenContext(dp, dispatcher);
   dispatchAll(fn, ctx, dispatcher);
 
-  const inlinable = ctx.lines.length === 1 && (opts.inline?.(ctx.lines[0], ctx.infos[0]) ?? true);
+  const inlinable =
+    ctx.lines.length === 1 &&
+    (opts.inline?.(ctx.lines[0], ctx.infos[0]) ?? true);
   if (inlinable && ctx.externalLines.size === 0) {
     // A macro line's `$` must go at the front of the whole composed line, so drop it here.
-    if (ctx.lines[0].startsWith("$")) return { cmd: ctx.lines[0].slice(1), info: ctx.infos[0] };
+    if (ctx.lines[0].startsWith("$"))
+      return { cmd: ctx.lines[0].slice(1), info: ctx.infos[0] };
     // Native calls aren't vanilla literals, so they can't follow `run` inline.
     return { cmd: ctx.lines[0], info: ctx.infos[0] };
   }
   // An empty body returns `""` so the caller can drop the line, unless it needs a real
   // call.
-  if (ctx.lines.length === 0 && !opts.keepEmpty) return { cmd: "", info: commandLine(Effect.NONE) };
+  if (ctx.lines.length === 0 && !opts.keepEmpty)
+    return { cmd: "", info: commandLine(Effect.NONE) };
 
   commit(fn, dp, ctx);
   return { cmd: functionCall(dp, fn.name), info: callLine(fn.name) };

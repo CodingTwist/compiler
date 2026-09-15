@@ -21,12 +21,23 @@ export {
 } from "./core/events";
 export type { OnOptions, EventHandler } from "./core/events";
 export { buildEnv, isDev, setBuildEnv } from "./core/env";
-export { DIFFICULTIES, DIFFICULTY, DIFFICULTY_IDS, defineDifficulty, setDifficulty } from "./core/difficulty";
+export {
+  DIFFICULTIES,
+  DIFFICULTY,
+  DIFFICULTY_IDS,
+  defineDifficulty,
+  setDifficulty,
+} from "./core/difficulty";
 export type { Difficulty } from "./core/difficulty";
 export { defineItem, ItemBuilder } from "./item/builder";
 export { defineBoss, BossBuilder } from "./boss/builder";
 export { defineMob, MobBuilder, writeMobPreview } from "./mob";
-export type { MobModuleOpts, MobModuleRef, MobPreview, MobPreviewOpts } from "./mob";
+export type {
+  MobModuleOpts,
+  MobModuleRef,
+  MobPreview,
+  MobPreviewOpts,
+} from "./mob";
 export type {
   AbilityOpts,
   BarStyle,
@@ -48,6 +59,12 @@ export type {
   ModuleRef,
   ModuleScope,
 } from "./core/module.interface";
-export type { AreaTrigger, PlayersTrigger, ScoreTrigger, Vec3, Zone } from "./core/area";
+export type {
+  AreaTrigger,
+  PlayersTrigger,
+  ScoreTrigger,
+  Vec3,
+  Zone,
+} from "./core/area";
 export { Logger } from "./logger";
 export type { LogLevel, NamespaceLogger } from "./logger";

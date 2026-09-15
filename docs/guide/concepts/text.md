@@ -15,13 +15,13 @@ Every part extends `TellrawPart`, so the styling methods below exist on all of t
 returns `this` for chaining. Colours are the typed [`Color`](/api/helix/variables/Color)
 constants (a raw `#RRGGBB` hex string also works):
 
-| Method | Effect |
-| --- | --- |
-| `.color(Color.GOLD)` | a named colour (or `"#ff8800"` hex) |
-| `.bold()` / `.italic()` | bold / italic on (pass `false` to force off) |
-| `.underlined()` / `.strikethrough()` / `.obfuscated()` | the remaining vanilla styles |
-| `.onClick(event)` | attach a click action (see below) |
-| `.onHover(event)` | attach a hover tooltip |
+| Method                                                 | Effect                                       |
+| ------------------------------------------------------ | -------------------------------------------- |
+| `.color(Color.GOLD)`                                   | a named colour (or `"#ff8800"` hex)          |
+| `.bold()` / `.italic()`                                | bold / italic on (pass `false` to force off) |
+| `.underlined()` / `.strikethrough()` / `.obfuscated()` | the remaining vanilla styles                 |
+| `.onClick(event)`                                      | attach a click action (see below)            |
+| `.onHover(event)`                                      | attach a hover tooltip                       |
 
 ```ts compile
 import { Datapack, v26_2, Selector, text, Color } from "helix";
@@ -44,12 +44,12 @@ appending another `TellrawText` splices its parts in.
 
 The [`click`](/api/helix/variables/click) helper builds the four click actions. Note `click.command` takes a **command node**, not a string - you pass a real helix command, so the click target is typed and rendered like any other command:
 
-| Helper | Action |
-| --- | --- |
-| `click.command(node)` | run a command |
+| Helper                | Action                |
+| --------------------- | --------------------- |
+| `click.command(node)` | run a command         |
 | `click.suggest(text)` | pre-fill the chat box |
-| `click.url(url)` | open a URL |
-| `click.copy(text)` | copy to clipboard |
+| `click.url(url)`      | open a URL            |
+| `click.copy(text)`    | copy to clipboard     |
 
 ## Hover events
 
@@ -68,7 +68,9 @@ menu.build((ctx) => {
       .color(Color.GREEN)
       .bold()
       .onClick(click.suggest("/tp @s 0 100 0"))
-      .onHover(hover.text(text("Fills the command in for you").color(Color.GRAY))),
+      .onHover(
+        hover.text(text("Fills the command in for you").color(Color.GRAY)),
+      ),
   ]);
 });
 ```

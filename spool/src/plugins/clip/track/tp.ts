@@ -19,10 +19,13 @@ export class TpTrack implements Track {
     private readonly keys: readonly Keyframe<Vec3>[],
     private readonly glide = false,
   ) {
-    if (keys.length === 0) throw new Error("tp track needs at least one keyframe.");
+    if (keys.length === 0)
+      throw new Error("tp track needs at least one keyframe.");
     // The client tween is always linear, so a held ("step") segment can't survive it.
     if (glide && keys.some((k) => k.ease === "step")) {
-      throw new Error("a glide tp track can't use a 'step' ease - the client tween is linear.");
+      throw new Error(
+        "a glide tp track can't use a 'step' ease - the client tween is linear.",
+      );
     }
   }
 
@@ -45,7 +48,9 @@ export class TpTrack implements Track {
     // `teleport <targets> <location>` isn't valid grammar, so use `execute as <sel> run
     // teleport <x y z>`.
     const tp = (p: Vec3) =>
-      this.selector.run((c) => c.teleport(undefined, Pos(p[0], p[1], p[2])))(ctx);
+      this.selector.run((c) => c.teleport(undefined, Pos(p[0], p[1], p[2])))(
+        ctx,
+      );
 
     if (!this.glide) {
       tp(sampleVec3(this.keys, f));
@@ -59,7 +64,10 @@ export class TpTrack implements Track {
     ctx
       .data()
       .merge()
-      .entity(this.selector, DisplayBase({ teleportDuration: next ? next.tick - f : 0 }));
+      .entity(
+        this.selector,
+        DisplayBase({ teleportDuration: next ? next.tick - f : 0 }),
+      );
     tp(this.keys[i].value);
   }
 

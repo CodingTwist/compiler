@@ -6,11 +6,17 @@ import type { MobParts } from "./parts";
 import { onDifficultyFn } from "./summon";
 
 /** `<mob>/wake`: tag the mobs worth running, count them, and sweep orphaned rigs. */
-export function wakeBody<S extends string>(m: MobParts<S>, ctx: FunctionContext, scope: ModuleScope): void {
+export function wakeBody<S extends string>(
+  m: MobParts<S>,
+  ctx: FunctionContext,
+  scope: ModuleScope,
+): void {
   const self = Selector.self();
   const orphan = `${m.name}.orphan`;
   // Stay awake while a gesture's or state's clock runs, so walking away can't freeze it halfway.
-  const clocks = m.def.gestures.filter((g) => g.cooldown !== 0).map((g) => m.cooldowns.get(g.name)!);
+  const clocks = m.def.gestures
+    .filter((g) => g.cooldown !== 0)
+    .map((g) => m.cooldowns.get(g.name)!);
   if (m.stateClockObj) clocks.push(m.stateClockObj);
   const finish = clocks.length
     ? m.internal("wake_finish", (c) => {
@@ -25,17 +31,24 @@ export function wakeBody<S extends string>(m: MobParts<S>, ctx: FunctionContext,
   const one = m.internal("wake_one", (c) => {
     c.tag().remove(self, m.awakeTag);
     c.tag().remove(self, m.finishingTag);
-    c.execute().on(Relation.PASSENGERS).run((b) => b.tag().remove(Selector.self(), orphan));
+    c.execute()
+      .on(Relation.PASSENGERS)
+      .run((b) => b.tag().remove(Selector.self(), orphan));
     // ponytail: one line per clock - fine at a handful; a shared "busy" score if a mob grows many.
     for (const obj of clocks) {
-      c.execute().ifScoreMatches(obj.score(self), Range.atLeast(1)).run((b) => b.call(finish!));
+      c.execute()
+        .ifScoreMatches(obj.score(self), Range.atLeast(1))
+        .run((b) => b.call(finish!));
     }
   });
   const near = m.internal("wake_near", (c) => {
     c.tag().add(self, m.awakeTag);
     c.tag().remove(self, m.finishingTag);
   });
-  ctx.execute().as(m.mobs).run((b) => b.call(one));
+  ctx
+    .execute()
+    .as(m.mobs)
+    .run((b) => b.call(one));
   if (m.def.onDifficulty) watchDifficulty(m, ctx);
   ctx
     .execute()
@@ -50,7 +63,9 @@ export function wakeBody<S extends string>(m: MobParts<S>, ctx: FunctionContext,
   // Rigs no mob claimed above lost their mob: kill them, passengers first, since killing a
   // vehicle only dismounts its riders.
   const killRig = scope.fn(privateName(`${m.name}/kill_rig`), (c) => {
-    c.execute().on(Relation.PASSENGERS).run((b) => b.kill(Selector.self()));
+    c.execute()
+      .on(Relation.PASSENGERS)
+      .run((b) => b.kill(Selector.self()));
     c.kill(Selector.self());
   });
   ctx
@@ -60,11 +75,19 @@ export function wakeBody<S extends string>(m: MobParts<S>, ctx: FunctionContext,
 }
 
 /** Reruns `on_difficulty` on every live mob when the pack's difficulty changed since last applied. */
-function watchDifficulty<S extends string>(m: MobParts<S>, ctx: FunctionContext): void {
+function watchDifficulty<S extends string>(
+  m: MobParts<S>,
+  ctx: FunctionContext,
+): void {
   const applied = m.awakeObj.score(ScoreTarget("#applied"));
   const rescale = m.internal("rescale", (c) => {
-    c.execute().as(m.mobs).run((b) => b.call(onDifficultyFn(m)!));
+    c.execute()
+      .as(m.mobs)
+      .run((b) => b.call(onDifficultyFn(m)!));
     applied.assign(DIFFICULTY, c);
   });
-  ctx.execute().unlessScore(DIFFICULTY, "=", applied).run((b) => b.call(rescale));
+  ctx
+    .execute()
+    .unlessScore(DIFFICULTY, "=", applied)
+    .run((b) => b.call(rescale));
 }

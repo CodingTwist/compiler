@@ -2,10 +2,16 @@ import "reflect-metadata";
 import { describe, it, expect } from "vitest";
 import { Id } from "helix";
 import { defineModule } from "../src/core/module.decorator";
-import { buildGraph, resolveDimensions, needsTickMemo } from "../src/core/graph";
+import {
+  buildGraph,
+  resolveDimensions,
+  needsTickMemo,
+} from "../src/core/graph";
 import type { DatapackModule } from "../src/core/module.interface";
 
-const leaf = (extra: Partial<DatapackModule> = {}): DatapackModule => ({ ...extra });
+const leaf = (extra: Partial<DatapackModule> = {}): DatapackModule => ({
+  ...extra,
+});
 
 describe("buildGraph", () => {
   it("visits a shared import once even when two parents both import it", () => {
@@ -24,7 +30,10 @@ describe("buildGraph", () => {
 
   it("prunes a module and its whole subtree when env excludes it", () => {
     const grandchild = defineModule({ name: "gc" }, leaf());
-    const child = defineModule({ name: "child", env: ["dev"], imports: [grandchild] }, leaf());
+    const child = defineModule(
+      { name: "child", env: ["dev"], imports: [grandchild] },
+      leaf(),
+    );
     const root = defineModule({ name: "root", imports: [child] }, leaf());
 
     const graph = buildGraph(root, "prod");
@@ -52,8 +61,14 @@ describe("resolveDimensions", () => {
   it("inherits the nearest ancestor's dimension when a module declares none", () => {
     const end = Id("minecraft:the_end");
     const grandchild = defineModule({ name: "gc" }, leaf());
-    const child = defineModule({ name: "child", imports: [grandchild] }, leaf());
-    const root = defineModule({ name: "root", dimension: end, imports: [child] }, leaf());
+    const child = defineModule(
+      { name: "child", imports: [grandchild] },
+      leaf(),
+    );
+    const root = defineModule(
+      { name: "root", dimension: end, imports: [child] },
+      leaf(),
+    );
 
     const graph = buildGraph(root, "prod");
     const dims = resolveDimensions(graph);
@@ -69,7 +84,10 @@ describe("resolveDimensions", () => {
       { name: "child", dimension: nether, imports: [grandchild] },
       leaf(),
     );
-    const root = defineModule({ name: "root", dimension: end, imports: [child] }, leaf());
+    const root = defineModule(
+      { name: "root", dimension: end, imports: [child] },
+      leaf(),
+    );
 
     const graph = buildGraph(root, "prod");
     const dims = resolveDimensions(graph);
@@ -99,7 +117,10 @@ describe("needsTickMemo", () => {
 
   it("propagates up from a descendant that needs tick, even through several ancestors", () => {
     const grandchild = defineModule({ name: "gc" }, leaf({ onTick: () => {} }));
-    const child = defineModule({ name: "child", imports: [grandchild] }, leaf());
+    const child = defineModule(
+      { name: "child", imports: [grandchild] },
+      leaf(),
+    );
     const root = defineModule({ name: "root", imports: [child] }, leaf());
 
     const graph = buildGraph(root, "prod");

@@ -1,4 +1,10 @@
-import type { Component, FunctionContext, Id, IdentifiedEntityNbt, Pos } from "helix";
+import type {
+  Component,
+  FunctionContext,
+  Id,
+  IdentifiedEntityNbt,
+  Pos,
+} from "helix";
 import type { AreaTrigger, ConfiguredModule } from "../core/module.interface";
 import { defineModule } from "../core/module.decorator";
 import { BossModule } from "./module";
@@ -7,7 +13,14 @@ import { BossModule } from "./module";
 export type BossBody = (ctx: FunctionContext) => void;
 
 /** The seven vanilla bossbar colours. */
-export type BossbarColor = "pink" | "blue" | "red" | "green" | "yellow" | "purple" | "white";
+export type BossbarColor =
+  | "pink"
+  | "blue"
+  | "red"
+  | "green"
+  | "yellow"
+  | "purple"
+  | "white";
 
 /** How the bar looks - set once at the start, and overridable per phase. */
 export interface BarStyle {
@@ -101,7 +114,9 @@ export class BossBuilder {
       throw new Error(`Duplicate boss phase "${label}"`);
     }
     if (this.phases.length > 0 && opts.at === undefined) {
-      throw new Error(`Boss phase "${label}" needs an \`at\` health % threshold to enter it`);
+      throw new Error(
+        `Boss phase "${label}" needs an \`at\` health % threshold to enter it`,
+      );
     }
     this.phases.push({ ...opts, label, abilities: [] });
     return this;
@@ -113,9 +128,12 @@ export class BossBuilder {
    */
   ability(name: string, opts: AbilityOpts): this {
     const phase = this.phases[this.phases.length - 1];
-    if (!phase) throw new Error(`Boss ability "${name}" declared before any phase`);
+    if (!phase)
+      throw new Error(`Boss ability "${name}" declared before any phase`);
     if (phase.abilities.some((a) => a.name === name)) {
-      throw new Error(`Duplicate ability "${name}" in boss phase "${phase.label}"`);
+      throw new Error(
+        `Duplicate ability "${name}" in boss phase "${phase.label}"`,
+      );
     }
     phase.abilities.push({ ...opts, name });
     return this;
@@ -135,22 +153,37 @@ export class BossBuilder {
 
   /** Compile to a drop-in {@link ConfiguredModule} (name = module / objective / tag id). */
   toModule(name: string, opts: BossModuleOpts = {}): ConfiguredModule {
-    if (this.phases.length === 0) throw new Error(`Boss "${name}" declares no phases`);
-    if (!this.trigger) throw new Error(`Boss "${name}" has no arena - call .arena(trigger)`);
+    if (this.phases.length === 0)
+      throw new Error(`Boss "${name}" declares no phases`);
+    if (!this.trigger)
+      throw new Error(`Boss "${name}" has no arena - call .arena(trigger)`);
     if (this.trigger.kind === "score") {
       throw new Error(
         `Boss "${name}" cannot use a \`score\` arena trigger: it has no geometry, so the fight cannot tell who is participating. Use a region/cuboid/zones or players trigger.`,
       );
     }
     const tickEvery = opts.tickEvery ?? 5;
-    const module = new BossModule(name, this.nbt, this.spawn, this.trigger, tickEvery, {
-      phases: this.phases,
-      bar: this.bar,
-      victory: this.victory,
-      defeat: this.defeat,
-    });
+    const module = new BossModule(
+      name,
+      this.nbt,
+      this.spawn,
+      this.trigger,
+      tickEvery,
+      {
+        phases: this.phases,
+        bar: this.bar,
+        victory: this.victory,
+        defeat: this.defeat,
+      },
+    );
     return defineModule(
-      { name, area: true, trigger: this.trigger, tickEvery, dimension: opts.dimension },
+      {
+        name,
+        area: true,
+        trigger: this.trigger,
+        tickEvery,
+        dimension: opts.dimension,
+      },
       module,
     );
   }

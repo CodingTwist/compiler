@@ -43,20 +43,17 @@ describe("whenPlayerNear", () => {
       ctx.tellraw(player, "hi");
     });
     expect(render()).toEqual([
-      "execute positioned 0 64 0 as @a[distance=..6] run tellraw @s {\"text\":\"hi\"}",
+      'execute positioned 0 64 0 as @a[distance=..6] run tellraw @s {"text":"hi"}',
     ]);
   });
 
   it("keeps the unless guard in both forms", () => {
     const { fnCtx, render } = env();
     const guard = Selector.allEntities().tag("door_open");
-    fnCtx.whenPlayerNear(
-      Pos(0, 64, 0),
-      6,
-      (ctx) => ctx.say("once"),
-      guard,
+    fnCtx.whenPlayerNear(Pos(0, 64, 0), 6, (ctx) => ctx.say("once"), guard);
+    expect(render()[0]).toContain(
+      "if entity @a[distance=..6,limit=1] unless entity",
     );
-    expect(render()[0]).toContain("if entity @a[distance=..6,limit=1] unless entity");
   });
 });
 

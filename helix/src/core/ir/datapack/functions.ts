@@ -50,7 +50,10 @@ export class DatapackFunctions extends DatapackCore {
    *
    * Only name a function whose id is used outside the code (`/function`, a tag in another pack).
    */
-  createFunction(name: string = this.autoName(), ...tags: FunctionTag[]): FunctionRef {
+  createFunction(
+    name: string = this.autoName(),
+    ...tags: FunctionTag[]
+  ): FunctionRef {
     const fn = new FunctionNode(name);
     this.functions.set(name, fn);
     this.tagFunction(name, tags);
@@ -63,13 +66,20 @@ export class DatapackFunctions extends DatapackCore {
    * Params are counted from `body.length`, so they can't have defaults or be a rest param.
    * They are locals, so a recursive call overwrites them.
    */
-  fn<P extends Score[]>(body: (ctx: FunctionContext, ...params: P) => Score | void): CallableFn<P>;
-  fn<P extends Score[]>(name: string, body: (ctx: FunctionContext, ...params: P) => Score | void): CallableFn<P>;
+  fn<P extends Score[]>(
+    body: (ctx: FunctionContext, ...params: P) => Score | void,
+  ): CallableFn<P>;
+  fn<P extends Score[]>(
+    name: string,
+    body: (ctx: FunctionContext, ...params: P) => Score | void,
+  ): CallableFn<P>;
   fn<P extends Score[]>(
     nameOrBody: string | ((ctx: FunctionContext, ...params: P) => Score | void),
     maybeBody?: (ctx: FunctionContext, ...params: P) => Score | void,
   ): CallableFn<P> {
-    const ref = this.createFunction(typeof nameOrBody === "string" ? nameOrBody : undefined);
+    const ref = this.createFunction(
+      typeof nameOrBody === "string" ? nameOrBody : undefined,
+    );
     const body = typeof nameOrBody === "string" ? maybeBody! : nameOrBody;
     const name = ref.getName();
     let params = [] as unknown as P;
@@ -79,7 +89,9 @@ export class DatapackFunctions extends DatapackCore {
       const result = body(ctx, ...params);
       if (!result) return;
       if (!supportsCommand(this.version, ["return", "run"])) {
-        throw new Error(`dp.fn("${name}") returns a score, which needs \`return run\` (${this.version.id} lacks it)`);
+        throw new Error(
+          `dp.fn("${name}") returns a score, which needs \`return run\` (${this.version.id} lacks it)`,
+        );
       }
       returns = true;
       ctx.returnRun(() => void result.get());

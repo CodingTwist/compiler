@@ -3,7 +3,7 @@
 ## The governing stance
 
 **helix is un-opinionated, twine is opinionated, spool is the opt-in middle.** If
-something feels like a *shortcut* or a *best practice* rather than a primitive, it does
+something feels like a _shortcut_ or a _best practice_ rather than a primitive, it does
 not belong in helix - it gets pushed up to spool or twine instead.
 
 Concretely:
@@ -17,7 +17,7 @@ Concretely:
 - `twine` is the **opinionated framework**: a NestJS-style module/area/lifecycle system
   that dictates how a whole pack is composed - which features are enabled, how they
   nest, and when their behaviour runs. Where helix refuses to dictate structure, twine
-  *is* the structure.
+  _is_ the structure.
 
 ## How the layers link
 

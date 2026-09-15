@@ -19,17 +19,32 @@ export class BossbarBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   getPlayers(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("get"), argPart(id), litPart("players"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("get"),
+      argPart(id),
+      litPart("players"),
+    );
     return this;
   }
 
   getValue(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("get"), argPart(id), litPart("value"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("get"),
+      argPart(id),
+      litPart("value"),
+    );
     return this;
   }
 
   getVisible(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("get"), argPart(id), litPart("visible"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("get"),
+      argPart(id),
+      litPart("visible"),
+    );
     return this;
   }
 
@@ -44,88 +59,189 @@ export class BossbarBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   setColorBlue(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("color"), litPart("blue"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("color"),
+      litPart("blue"),
+    );
     return this;
   }
 
   setColorGreen(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("color"), litPart("green"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("color"),
+      litPart("green"),
+    );
     return this;
   }
 
   setColorPink(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("color"), litPart("pink"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("color"),
+      litPart("pink"),
+    );
     return this;
   }
 
   setColorPurple(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("color"), litPart("purple"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("color"),
+      litPart("purple"),
+    );
     return this;
   }
 
   setColorRed(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("color"), litPart("red"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("color"),
+      litPart("red"),
+    );
     return this;
   }
 
   setColorWhite(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("color"), litPart("white"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("color"),
+      litPart("white"),
+    );
     return this;
   }
 
   setColorYellow(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("color"), litPart("yellow"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("color"),
+      litPart("yellow"),
+    );
     return this;
   }
 
   setMax(id: Id, max: number): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("max"), argPart(max));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("max"),
+      argPart(max),
+    );
     return this;
   }
 
   setName(id: Id, name: Component): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("name"), argPart(name));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("name"),
+      argPart(name),
+    );
     return this;
   }
 
   setPlayers(id: Id, targets?: Selector): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("players"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("players"),
+    );
     if (targets !== undefined) this.$append(argPart(targets));
     return this;
   }
 
   setStyleNotched10(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("style"), litPart("notched_10"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("style"),
+      litPart("notched_10"),
+    );
     return this;
   }
 
   setStyleNotched12(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("style"), litPart("notched_12"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("style"),
+      litPart("notched_12"),
+    );
     return this;
   }
 
   setStyleNotched20(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("style"), litPart("notched_20"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("style"),
+      litPart("notched_20"),
+    );
     return this;
   }
 
   setStyleNotched6(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("style"), litPart("notched_6"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("style"),
+      litPart("notched_6"),
+    );
     return this;
   }
 
   setStyleProgress(id: Id): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("style"), litPart("progress"));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("style"),
+      litPart("progress"),
+    );
     return this;
   }
 
   setValue(id: Id, value: number): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("value"), argPart(value));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("value"),
+      argPart(value),
+    );
     return this;
   }
 
   setVisible(id: Id, visible: boolean): this {
-    this.$set(litPart("bossbar"), litPart("set"), argPart(id), litPart("visible"), argPart(visible));
+    this.$set(
+      litPart("bossbar"),
+      litPart("set"),
+      argPart(id),
+      litPart("visible"),
+      argPart(visible),
+    );
     return this;
   }
 }

@@ -19,7 +19,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   allowEnteringNetherUsingPortals(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("allow_entering_nether_using_portals"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("allow_entering_nether_using_portals"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -193,7 +196,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftAllowEnteringNetherUsingPortals(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:allow_entering_nether_using_portals"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:allow_entering_nether_using_portals"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -205,7 +211,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftBlockExplosionDropDecay(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:block_explosion_drop_decay"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:block_explosion_drop_decay"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -235,7 +244,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftEnderPearlsVanishOnDeath(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:ender_pearls_vanish_on_death"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:ender_pearls_vanish_on_death"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -259,7 +271,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftFireSpreadRadiusAroundPlayer(value?: number): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:fire_spread_radius_around_player"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:fire_spread_radius_around_player"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -319,7 +334,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftMaxBlockModifications(value?: number): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:max_block_modifications"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:max_block_modifications"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -331,7 +349,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftMaxCommandSequenceLength(value?: number): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:max_command_sequence_length"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:max_command_sequence_length"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -349,7 +370,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftMaxSnowAccumulationHeight(value?: number): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:max_snow_accumulation_height"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:max_snow_accumulation_height"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -361,7 +385,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftMobExplosionDropDecay(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:mob_explosion_drop_decay"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:mob_explosion_drop_decay"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -373,7 +400,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftNaturalHealthRegeneration(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:natural_health_regeneration"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:natural_health_regeneration"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -385,25 +415,37 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftPlayersNetherPortalCreativeDelay(value?: number): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:players_nether_portal_creative_delay"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:players_nether_portal_creative_delay"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
 
   minecraftPlayersNetherPortalDefaultDelay(value?: number): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:players_nether_portal_default_delay"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:players_nether_portal_default_delay"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
 
   minecraftPlayersSleepingPercentage(value?: number): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:players_sleeping_percentage"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:players_sleeping_percentage"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
 
   minecraftProjectilesCanBreakBlocks(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:projectiles_can_break_blocks"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:projectiles_can_break_blocks"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -445,7 +487,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftShowAdvancementMessages(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:show_advancement_messages"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:show_advancement_messages"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -487,7 +532,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftSpawnWanderingTraders(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:spawn_wandering_traders"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:spawn_wandering_traders"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -499,7 +547,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftSpectatorsGenerateChunks(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:spectators_generate_chunks"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:spectators_generate_chunks"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -517,7 +568,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftTntExplosionDropDecay(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:tnt_explosion_drop_decay"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:tnt_explosion_drop_decay"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -529,7 +583,10 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   minecraftWaterSourceConversion(value?: boolean): this {
-    this.$set(litPart("gamerule"), litPart("minecraft:water_source_conversion"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("minecraft:water_source_conversion"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
@@ -565,13 +622,19 @@ export class GameruleBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   playersNetherPortalCreativeDelay(value?: number): this {
-    this.$set(litPart("gamerule"), litPart("players_nether_portal_creative_delay"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("players_nether_portal_creative_delay"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }
 
   playersNetherPortalDefaultDelay(value?: number): this {
-    this.$set(litPart("gamerule"), litPart("players_nether_portal_default_delay"));
+    this.$set(
+      litPart("gamerule"),
+      litPart("players_nether_portal_default_delay"),
+    );
     if (value !== undefined) this.$append(argPart(value));
     return this;
   }

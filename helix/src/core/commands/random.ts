@@ -21,7 +21,9 @@ export class RandomValueNode extends ASTNode {
 export class RandomCommand extends CommandHandler<RandomValueNode> {
   generate(node: RandomValueNode, ctx: CodegenContext): void {
     ctx.emit(
-      buildCommand(ctx.version, ["random", "value"], { range: `${node.range}` }),
+      buildCommand(ctx.version, ["random", "value"], {
+        range: `${node.range}`,
+      }),
       commandLine(Effect.NONE),
     );
   }

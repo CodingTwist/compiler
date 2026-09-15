@@ -10,7 +10,12 @@ import {
   type SpawnCategory,
   type TemperatureModifier,
 } from "./enums";
-import type { DefState, SpawnCostOpts, SpawnerOpts, WorldgenRef } from "./types";
+import type {
+  DefState,
+  SpawnCostOpts,
+  SpawnerOpts,
+  WorldgenRef,
+} from "./types";
 import { biomeJson } from "./def-json";
 
 const renderRef = (ref: WorldgenRef): string =>
@@ -94,7 +99,10 @@ export class BiomeDef {
 
   /** A `spawn_costs` entry: density-limit `type` by potential-field charge. */
   spawnCost(type: EntityType, opts: SpawnCostOpts): this {
-    this.s.spawnCosts[type.render()] = { energy_budget: opts.energyBudget, charge: opts.charge };
+    this.s.spawnCosts[type.render()] = {
+      energy_budget: opts.energyBudget,
+      charge: opts.charge,
+    };
     return this;
   }
 

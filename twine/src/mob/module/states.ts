@@ -9,16 +9,23 @@ export function stateHandle<S extends string>(m: MobParts<S>): MobStates<S> {
   return {
     enter: (ctx, s) => ctx.call(m.fnRef(`enter/${s}`)),
     leave: () => m.stateObj.score(Selector.self()).set(0),
-    byDifficulty: (ctx, body) => ctx.call(byDifficulty(m, `by_difficulty_${m.byDifficultyCalls++}`, body)),
+    byDifficulty: (ctx, body) =>
+      ctx.call(byDifficulty(m, `by_difficulty_${m.byDifficultyCalls++}`, body)),
     get clock() {
-      if (!m.stateClockObj) throw new Error(`Mob "${m.name}" has no states - declare them with .states() to use the clock.`);
+      if (!m.stateClockObj)
+        throw new Error(
+          `Mob "${m.name}" has no states - declare them with .states() to use the clock.`,
+        );
       return m.stateClockObj.score(Selector.self());
     },
   };
 }
 
 /** Emits `<mob>/enter/<s>`, `<mob>/state/<s>` (and `/done` if timed), and the `<mob>/state` dispatch. */
-export function registerStates<S extends string>(m: MobParts<S>, dp: Datapack): void {
+export function registerStates<S extends string>(
+  m: MobParts<S>,
+  dp: Datapack,
+): void {
   if (!m.def.states.size) return;
   const state = m.stateObj.score(Selector.self());
   const clock = m.stateClockObj!.score(Selector.self());

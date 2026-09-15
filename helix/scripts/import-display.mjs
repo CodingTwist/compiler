@@ -27,7 +27,8 @@ function parseSnbt(src) {
     while (i < src.length && /\s/.test(src[i])) i++;
   };
   const expect = (ch) => {
-    if (src[i] !== ch) throw new Error(`expected '${ch}' at ${i}: ...${src.slice(i, i + 20)}`);
+    if (src[i] !== ch)
+      throw new Error(`expected '${ch}' at ${i}: ...${src.slice(i, i + 20)}`);
     i++;
   };
 
@@ -103,7 +104,8 @@ function parseSnbt(src) {
 
   function scalar() {
     let out = "";
-    while (i < src.length && !/[,}\]:]/.test(src[i]) && !/\s/.test(src[i])) out += src[i++];
+    while (i < src.length && !/[,}\]:]/.test(src[i]) && !/\s/.test(src[i]))
+      out += src[i++];
     // Number with optional type suffix?
     const m = /^([-+]?(?:\d+\.?\d*|\.\d+))([bslfdBSLFD]?)$/.exec(out);
     if (m) return Number(m[1]);
@@ -121,7 +123,11 @@ function parseSnbt(src) {
 const IDENTITY_QUAT = [0, 0, 0, 1];
 const UNIT_SCALE = [1, 1, 1];
 
-const eq = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((v, k) => v === b[k]);
+const eq = (a, b) =>
+  Array.isArray(a) &&
+  Array.isArray(b) &&
+  a.length === b.length &&
+  a.every((v, k) => v === b[k]);
 const vec = (a) => `[${a.join(", ")}]`;
 
 function blockExpr(blockState) {
@@ -130,7 +136,10 @@ function blockExpr(blockState) {
   const props = blockState.Properties;
   if (!props || Object.keys(props).length === 0) return member;
   const entries = Object.entries(props)
-    .map(([k, v]) => `${/^[A-Za-z_][\w]*$/.test(k) ? k : JSON.stringify(k)}: ${JSON.stringify(String(v))}`)
+    .map(
+      ([k, v]) =>
+        `${/^[A-Za-z_][\w]*$/.test(k) ? k : JSON.stringify(k)}: ${JSON.stringify(String(v))}`,
+    )
     .join(", ");
   return `${member}.state({ ${entries} })`;
 }
@@ -138,10 +147,13 @@ function blockExpr(blockState) {
 function transformOpts(t) {
   if (!t) return "{}";
   const parts = [];
-  if (t.translation && !eq(t.translation, [0, 0, 0])) parts.push(`translation: ${vec(t.translation)}`);
+  if (t.translation && !eq(t.translation, [0, 0, 0]))
+    parts.push(`translation: ${vec(t.translation)}`);
   if (t.scale && !eq(t.scale, UNIT_SCALE)) parts.push(`scale: ${vec(t.scale)}`);
-  if (t.left_rotation && !eq(t.left_rotation, IDENTITY_QUAT)) parts.push(`leftRotation: ${vec(t.left_rotation)}`);
-  if (t.right_rotation && !eq(t.right_rotation, IDENTITY_QUAT)) parts.push(`rightRotation: ${vec(t.right_rotation)}`);
+  if (t.left_rotation && !eq(t.left_rotation, IDENTITY_QUAT))
+    parts.push(`leftRotation: ${vec(t.left_rotation)}`);
+  if (t.right_rotation && !eq(t.right_rotation, IDENTITY_QUAT))
+    parts.push(`rightRotation: ${vec(t.right_rotation)}`);
   return parts.length ? `{ ${parts.join(", ")} }` : "{}";
 }
 

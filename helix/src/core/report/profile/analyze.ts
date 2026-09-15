@@ -1,14 +1,22 @@
 // Matches the helix-profiler mod's timings to this pack's functions, lines and TS sources.
 import type { Datapack } from "../../ir/datapack";
 import { analyzeCost, type FunctionCost } from "../cost";
-import type { ProfileDump, ProfileDumpSpan, ProfiledCommand, ProfiledFunction, ProfileReport, ProfileSpanReport } from "./types";
+import type {
+  ProfileDump,
+  ProfileDumpSpan,
+  ProfiledCommand,
+  ProfiledFunction,
+  ProfileReport,
+  ProfileSpanReport,
+} from "./types";
 
 /**
  * Matches a measured profile to this pack. Needs `dp.files`; use {@link
  * Datapack.profileReport}.
  */
 export function analyzeProfile(dp: Datapack, raw: ProfileDump): ProfileReport {
-  if (raw.version !== 1) throw new Error(`helix profile: unsupported version ${raw.version}`);
+  if (raw.version !== 1)
+    throw new Error(`helix profile: unsupported version ${raw.version}`);
   const cost = analyzeCost(dp);
   return {
     mc: raw.mc,
@@ -29,14 +37,24 @@ function analyzeSpan(
   span: ProfileDumpSpan,
   costs: Map<string, FunctionCost>,
 ): ProfileSpanReport {
-  const local = (id: string) => (id.startsWith(`${dp.name}:`) ? id.slice(dp.name.length + 1) : id);
+  const local = (id: string) =>
+    id.startsWith(`${dp.name}:`) ? id.slice(dp.name.length + 1) : id;
   const fns = new Map<string, ProfiledFunction>();
   const fnOf = (id: string) => {
     const fn = local(id);
     let f = fns.get(fn);
     if (!f) {
       const commands = costs.get(fn)?.commands;
-      fns.set(fn, (f = { fn, calls: 0, selfNs: 0, totalNs: 0, ...(commands !== undefined && { commands }) }));
+      fns.set(
+        fn,
+        (f = {
+          fn,
+          calls: 0,
+          selfNs: 0,
+          totalNs: 0,
+          ...(commands !== undefined && { commands }),
+        }),
+      );
     }
     return f;
   };
@@ -49,7 +67,8 @@ function analyzeSpan(
     return idx.get(command.trim());
   };
 
-  for (const c of span.calls) if (c.stack.length > 0) fnOf(c.stack[c.stack.length - 1]).calls += c.count;
+  for (const c of span.calls)
+    if (c.stack.length > 0) fnOf(c.stack[c.stack.length - 1]).calls += c.count;
 
   const commands = new Map<string, ProfiledCommand>();
   let totalNs = 0;

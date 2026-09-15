@@ -31,7 +31,9 @@ export function emitArm(
   }
   ctx.if(w.flags.score(meta.name).equal(0), (off) => {
     if (trigger.kind === "score") {
-      off.if(scoreOf(w, trigger).matches(scoreRange(trigger)), (hit) => hit.call(activate));
+      off.if(scoreOf(w, trigger).matches(scoreRange(trigger)), (hit) =>
+        hit.call(activate),
+      );
     } else if (trigger.kind === "players") {
       off.whenEntity(trigger.selector, (any) => any.call(activate));
     }
@@ -60,11 +62,17 @@ function armByAdvancement(
     if (w.dp.functionRef(name)) return; // area reached from a second parent: already armed
     const [from, to] =
       zone.shape === "sphere"
-        ? [zone.center.map((c) => c - zone.radius), zone.center.map((c) => c + zone.radius)]
+        ? [
+            zone.center.map((c) => c - zone.radius),
+            zone.center.map((c) => c + zone.radius),
+          ]
         : [zone.from, zone.to];
     // Cuboid corners are inclusive blocks, so the box runs to the far block's far face.
     const far = zone.shape === "sphere" ? 0 : 1;
-    const axis = (k: number) => ({ min: Math.min(from[k], to[k]), max: Math.max(from[k], to[k]) + far });
+    const axis = (k: number) => ({
+      min: Math.min(from[k], to[k]),
+      max: Math.max(from[k], to[k]) + far,
+    });
     const trigger = Trigger.location({
       ...(dim ? { dimension: dim } : {}),
       position: { x: axis(0), y: axis(1), z: axis(2) },
@@ -74,7 +82,9 @@ function armByAdvancement(
       for (const gate of gates) chain.ifScoreMatches(gate, Range.exactly(1));
       chain.ifScoreMatches(self, Range.exactly(0));
       if (zone.shape === "sphere") {
-        chain.positioned(Pos(...zone.center)).ifEntity(Selector.self().distance(Range.atMost(zone.radius)));
+        chain
+          .positioned(Pos(...zone.center))
+          .ifEntity(Selector.self().distance(Range.atMost(zone.radius)));
       }
       chain.run((hit) => hit.call(activate));
     });

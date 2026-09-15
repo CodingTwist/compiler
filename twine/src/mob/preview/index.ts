@@ -16,10 +16,17 @@ export interface MobPreviewOpts {
  * Writes an HTML page that renders a mob's rig and plays its gestures, using the game's
  * transform maths. Open it in a browser.
  */
-export function writeMobPreview(file: string, mob: MobModuleRef, opts: MobPreviewOpts = {}): void {
+export function writeMobPreview(
+  file: string,
+  mob: MobModuleRef,
+  opts: MobPreviewOpts = {},
+): void {
   const data = mob.preview();
   mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(file, page(mob.metadata.name, data, textures(data, opts.clientJar)));
+  writeFileSync(
+    file,
+    page(mob.metadata.name, data, textures(data, opts.clientJar)),
+  );
 }
 
 function textures(data: MobPreview, jar?: string): Record<string, string> {
@@ -30,10 +37,15 @@ function textures(data: MobPreview, jar?: string): Record<string, string> {
     try {
       // ponytail: only textures named after the id; resource-pack models and per-face blocks render
       // as flat colour.
-      const png = execFileSync("unzip", ["-p", jar, `assets/${ns}/textures/${kind}/${path}.png`], {
-        stdio: ["ignore", "pipe", "ignore"],
-      });
-      if (png.length) out[id] = `data:image/png;base64,${png.toString("base64")}`;
+      const png = execFileSync(
+        "unzip",
+        ["-p", jar, `assets/${ns}/textures/${kind}/${path}.png`],
+        {
+          stdio: ["ignore", "pipe", "ignore"],
+        },
+      );
+      if (png.length)
+        out[id] = `data:image/png;base64,${png.toString("base64")}`;
     } catch {
       // Missing entry - flat colour.
     }

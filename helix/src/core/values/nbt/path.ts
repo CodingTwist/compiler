@@ -25,7 +25,9 @@ export class NbtPathValue implements CommandValue {
   /** Whether this path is `other` or inside it: `Pos[1]` is within `Pos`. */
   within(other: NbtPathValue): boolean {
     const rest = this.path.slice(other.path.length);
-    return this.path.startsWith(other.path) && (rest === "" || /^[.[{]/.test(rest));
+    return (
+      this.path.startsWith(other.path) && (rest === "" || /^[.[{]/.test(rest))
+    );
   }
 }
 

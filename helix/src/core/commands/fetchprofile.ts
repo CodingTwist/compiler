@@ -9,7 +9,11 @@ import { Selector } from "../frontend/nodes/selector";
 /** `fetchprofile` */
 export class FetchprofileBuilder extends CommandBuilder<TreeCommandNode> {
   entity(entity: Selector): this {
-    this.$set(litPart("fetchprofile"), litPart("entity"), argPart(single(entity, "fetchprofile")));
+    this.$set(
+      litPart("fetchprofile"),
+      litPart("entity"),
+      argPart(single(entity, "fetchprofile")),
+    );
     return this;
   }
 

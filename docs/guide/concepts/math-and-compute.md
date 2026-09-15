@@ -9,7 +9,7 @@ scores. helix gives you two ways in:
   for. Write the formula once; helix lowers it to a single `/compute` on 26.3+ or the
   equivalent operation chain below it, whichever the target version needs. **All of the
   arithmetic lives here**, including the float ops - they just pin the pack to 26.3+.
-- **`ctx.compute()`** with **`ContextInt`/`ContextFloat`** - the *leaves* a formula can't
+- **`ctx.compute()`** with **`ContextInt`/`ContextFloat`** - the _leaves_ a formula can't
   spell (`uniform`, `storage`, `conditional`, `binomial`, `raw`) and the
   destinations a `Score` isn't (entity/block data). 26.3+ only, no exceptions.
 
@@ -22,7 +22,9 @@ you haven't - both read and write ordinary `Score` cells.
 ## `math` - the formula syntax
 
 ```ts
-math`-${dot} + min((${distSq} - ${ropeLenSq}) / ${BAUM_DIV}, ${BAUM_MAX})`.into(coef);
+math`-${dot} + min((${distSq} - ${ropeLenSq}) / ${BAUM_DIV}, ${BAUM_MAX})`.into(
+  coef,
+);
 ```
 
 `${}` holes are ordinary TypeScript - a `Score`, a `ScoreVec3`, a number, another `math`
@@ -90,7 +92,7 @@ wrap in `round()` when you want nearest instead of down.
 
 `` math`…` `` doesn't run your formula directly - it parses the template into the
 {@link ExprNode} tree from `frontend/nodes/expr.ts` (a plain `{ kind, op, args }` data
-structure, no version or context attached), and it's *that* tree the handler lowers, either
+structure, no version or context attached), and it's _that_ tree the handler lowers, either
 to `/compute` or an operation chain. `a² + b²` shows the shape clearly - two `mul` nodes
 under one `add`:
 
@@ -235,7 +237,7 @@ Finishing the triangle from above needs none of it - `len()` takes one `ScoreVec
 number of scalar legs, so the hypotenuse is one line:
 
 ```ts
-math`len(${legA}, ${legB}) * 100`.into(hyp);   // *100 for two decimal places
+math`len(${legA}, ${legB}) * 100`.into(hyp); // *100 for two decimal places
 ```
 
 What you do need `ctx.compute()` for is the **destination**. `.into()` writes score cells;
@@ -243,7 +245,14 @@ to land a formula in entity or block data, hand the formula over as a provider w
 `.provider` (integer) or `.floatProvider` (float) instead of rebuilding it by hand:
 
 ```ts compile
-import { Datapack, v26_3_rc_2, ScoreTarget, ScoreVec3, Selector, math } from "helix";
+import {
+  Datapack,
+  v26_3_rc_2,
+  ScoreTarget,
+  ScoreVec3,
+  Selector,
+  math,
+} from "helix";
 
 const dp = new Datapack("compute-dest-demo", v26_3_rc_2);
 const phys = dp.objective("phys");
@@ -255,7 +264,9 @@ tick.build((ctx) => {
 
   // Write |vel| * 0.05 straight onto the entity - a float destination, so the
   // formula stays on the float side all the way in: no truncation at all.
-  ctx.compute().entityFloat(Selector.self(), math`len(${vel}) * 0.05`.floatProvider);
+  ctx
+    .compute()
+    .entityFloat(Selector.self(), math`len(${vel}) * 0.05`.floatProvider);
 });
 ```
 
@@ -273,7 +284,14 @@ The mixed style, and the one to copy: the one thing a formula can't name comes f
 kind of expression that would otherwise take half a dozen scratch-score operations.
 
 ```ts compile
-import { Datapack, v26_3_rc_2, ScoreTarget, Selector, ContextFloat, math } from "helix";
+import {
+  Datapack,
+  v26_3_rc_2,
+  ScoreTarget,
+  Selector,
+  ContextFloat,
+  math,
+} from "helix";
 
 const dp = new Datapack("ballistics-demo", v26_3_rc_2);
 const shot = dp.objective("shot");
@@ -299,13 +317,13 @@ instead: `` math`${a} * 500 / 1000` `` for `a * 0.5`.
 
 ## Choosing between them
 
-| | `math` | `ContextInt`/`ContextFloat` + `ctx.compute()` |
-| --- | --- | --- |
-| Works below 26.3 | The portable ops, yes; the 26.3+ ops throw at build time | No - throws unconditionally |
-| Values | Int, crossing to float where an op or a literal needs it | Int and float, as separate namespaces |
-| Ops | All of them: `+ - * / % min max abs dot len2 vec`, then `sqrt sin cos pow avg round floor ceil len` | The same ops, plus the leaves: `uniform storage conditional binomial raw` |
-| Destination | a `Score` / `ScoreVec3` via `.into()`, or any store target via `.provider` / `.floatProvider` | any store target - scores, entity data, block data |
-| Syntax | Infix template string | Fluent builder tree |
+|                  | `math`                                                                                              | `ContextInt`/`ContextFloat` + `ctx.compute()`                             |
+| ---------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Works below 26.3 | The portable ops, yes; the 26.3+ ops throw at build time                                            | No - throws unconditionally                                               |
+| Values           | Int, crossing to float where an op or a literal needs it                                            | Int and float, as separate namespaces                                     |
+| Ops              | All of them: `+ - * / % min max abs dot len2 vec`, then `sqrt sin cos pow avg round floor ceil len` | The same ops, plus the leaves: `uniform storage conditional binomial raw` |
+| Destination      | a `Score` / `ScoreVec3` via `.into()`, or any store target via `.provider` / `.floatProvider`       | any store target - scores, entity data, block data                        |
+| Syntax           | Infix template string                                                                               | Fluent builder tree                                                       |
 
 Write `math`. It covers the arithmetic - all of it - and builds the one `/compute` command
 on 26.3+ or the operation chain below, without being asked. Reach for

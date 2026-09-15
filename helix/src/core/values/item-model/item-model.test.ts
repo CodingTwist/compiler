@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { ModelRef } from "../model";
-import { ItemModel, TintSource, SpecialModel, CONDITION_PROPERTIES, RANGE_DISPATCH_PROPERTIES, SELECT_PROPERTIES } from ".";
+import {
+  ItemModel,
+  TintSource,
+  SpecialModel,
+  CONDITION_PROPERTIES,
+  RANGE_DISPATCH_PROPERTIES,
+  SELECT_PROPERTIES,
+} from ".";
 
 describe("ItemModel union", () => {
   it("model: flat, with optional tints", () => {
@@ -8,7 +15,9 @@ describe("ItemModel union", () => {
       type: "minecraft:model",
       model: "ns:item/sword",
     });
-    expect(ItemModel.model("ns:item/leather", [TintSource.dye(0xffffff)]).toJson()).toEqual({
+    expect(
+      ItemModel.model("ns:item/leather", [TintSource.dye(0xffffff)]).toJson(),
+    ).toEqual({
       type: "minecraft:model",
       model: "ns:item/leather",
       tints: [{ type: "minecraft:dye", default: 0xffffff }],
@@ -25,7 +34,10 @@ describe("ItemModel union", () => {
 
   it("composite nests sub-models", () => {
     expect(
-      ItemModel.composite([ItemModel.model("ns:a"), ItemModel.empty()]).toJson(),
+      ItemModel.composite([
+        ItemModel.model("ns:a"),
+        ItemModel.empty(),
+      ]).toJson(),
     ).toEqual({
       type: "minecraft:composite",
       models: [
@@ -56,7 +68,10 @@ describe("ItemModel union", () => {
     expect(
       ItemModel.select(
         SELECT_PROPERTIES.DISPLAY_CONTEXT,
-        [{ when: "gui", model: ItemModel.model("ns:flat") }, { when: ["firstperson_righthand"], model: ItemModel.model("ns:3d") }],
+        [
+          { when: "gui", model: ItemModel.model("ns:flat") },
+          { when: ["firstperson_righthand"], model: ItemModel.model("ns:3d") },
+        ],
         ItemModel.model("ns:default"),
       ).toJson(),
     ).toEqual({
@@ -64,7 +79,10 @@ describe("ItemModel union", () => {
       property: "minecraft:display_context",
       cases: [
         { when: "gui", model: { type: "minecraft:model", model: "ns:flat" } },
-        { when: ["firstperson_righthand"], model: { type: "minecraft:model", model: "ns:3d" } },
+        {
+          when: ["firstperson_righthand"],
+          model: { type: "minecraft:model", model: "ns:3d" },
+        },
       ],
       fallback: { type: "minecraft:model", model: "ns:default" },
     });
@@ -86,7 +104,10 @@ describe("ItemModel union", () => {
       scale: 1,
       entries: [
         { threshold: 0, model: { type: "minecraft:model", model: "ns:fresh" } },
-        { threshold: 0.5, model: { type: "minecraft:model", model: "ns:cracked" } },
+        {
+          threshold: 0.5,
+          model: { type: "minecraft:model", model: "ns:cracked" },
+        },
       ],
       fallback: { type: "minecraft:model", model: "ns:broken" },
     });
@@ -100,7 +121,9 @@ describe("ItemModel union", () => {
   });
 
   it("special wraps a SpecialModel with a base", () => {
-    expect(ItemModel.special("ns:template/bed", SpecialModel.bed("ns:red")).toJson()).toEqual({
+    expect(
+      ItemModel.special("ns:template/bed", SpecialModel.bed("ns:red")).toJson(),
+    ).toEqual({
       type: "minecraft:special",
       base: "ns:template/bed",
       model: { type: "minecraft:bed", texture: "ns:red" },

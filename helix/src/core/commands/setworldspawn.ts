@@ -6,9 +6,7 @@ import { CommandBuilder, litPart, argPart } from "./base";
 import { Pos } from "../values";
 
 /** `setworldspawn` */
-export class SetworldspawnBuilder extends CommandBuilder<TreeCommandNode> {
-
-}
+export class SetworldspawnBuilder extends CommandBuilder<TreeCommandNode> {}
 
 declare module "../frontend/context" {
   interface FunctionContext {
@@ -17,7 +15,11 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.setworldspawn = function (this: FunctionContext, pos?: Pos, rotation?: Pos) {
+FunctionContext.prototype.setworldspawn = function (
+  this: FunctionContext,
+  pos?: Pos,
+  rotation?: Pos,
+) {
   const node = new TreeCommandNode("setworldspawn", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("setworldspawn")];

@@ -17,7 +17,9 @@ export const LOCALS_OBJECTIVE = "helix.var";
 export function allocLocal(fn: FunctionNode): Score {
   const root = fn.root;
   // Built per call: at module load `Objective` may not exist yet, due to the import cycle.
-  return new Objective(LOCALS_OBJECTIVE).score(ScoreTarget(`#${root.name}.${root.locals++}`));
+  return new Objective(LOCALS_OBJECTIVE).score(
+    ScoreTarget(`#${root.name}.${root.locals++}`),
+  );
 }
 
 declare module "../frontend/context" {
@@ -32,7 +34,10 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.let = function (this: FunctionContext, init?: number | Score | MathExpr): Score {
+FunctionContext.prototype.let = function (
+  this: FunctionContext,
+  init?: number | Score | MathExpr,
+): Score {
   const score = allocLocal(this.fn);
   if (typeof init === "number") score.set(init, this);
   else if (init instanceof Score) score.assign(init, this);

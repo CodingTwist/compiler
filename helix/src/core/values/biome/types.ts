@@ -1,7 +1,12 @@
 // Option shapes for biome settings.
 import type { IdValue } from "../id";
 import type { BiomeEffects } from "./effects";
-import type { CarveStep, GrassColorModifier, SpawnCategory, TemperatureModifier } from "./enums";
+import type {
+  CarveStep,
+  GrassColorModifier,
+  SpawnCategory,
+  TemperatureModifier,
+} from "./enums";
 import { SoundEvent } from "../sound";
 
 /** A colour: packed `0xRRGGBB` or `"#RRGGBB"`. */

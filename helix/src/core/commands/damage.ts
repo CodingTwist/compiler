@@ -8,18 +8,57 @@ import { Selector } from "../frontend/nodes/selector";
 
 /** `damage` */
 export class DamageBuilder extends CommandBuilder<TreeCommandNode> {
-  at(target: Selector, amount: number, damageType: DamageType, location: Pos): this {
-    this.$set(litPart("damage"), argPart(single(target, "damage")), argPart(amount), argPart(damageType), litPart("at"), argPart(location));
+  at(
+    target: Selector,
+    amount: number,
+    damageType: DamageType,
+    location: Pos,
+  ): this {
+    this.$set(
+      litPart("damage"),
+      argPart(single(target, "damage")),
+      argPart(amount),
+      argPart(damageType),
+      litPart("at"),
+      argPart(location),
+    );
     return this;
   }
 
-  by(target: Selector, amount: number, damageType: DamageType, entity: Selector): this {
-    this.$set(litPart("damage"), argPart(single(target, "damage")), argPart(amount), argPart(damageType), litPart("by"), argPart(single(entity, "damage")));
+  by(
+    target: Selector,
+    amount: number,
+    damageType: DamageType,
+    entity: Selector,
+  ): this {
+    this.$set(
+      litPart("damage"),
+      argPart(single(target, "damage")),
+      argPart(amount),
+      argPart(damageType),
+      litPart("by"),
+      argPart(single(entity, "damage")),
+    );
     return this;
   }
 
-  byFrom(target: Selector, amount: number, damageType: DamageType, entity: Selector, cause: Selector): this {
-    this.$set(litPart("damage"), argPart(single(target, "damage")), argPart(amount), argPart(damageType), litPart("by"), argPart(single(entity, "damage")), litPart("from"), argPart(single(cause, "damage")));
+  byFrom(
+    target: Selector,
+    amount: number,
+    damageType: DamageType,
+    entity: Selector,
+    cause: Selector,
+  ): this {
+    this.$set(
+      litPart("damage"),
+      argPart(single(target, "damage")),
+      argPart(amount),
+      argPart(damageType),
+      litPart("by"),
+      argPart(single(entity, "damage")),
+      litPart("from"),
+      argPart(single(cause, "damage")),
+    );
     return this;
   }
 }
@@ -27,11 +66,20 @@ export class DamageBuilder extends CommandBuilder<TreeCommandNode> {
 declare module "../frontend/context" {
   interface FunctionContext {
     /** `damage` - `ctx.damage()...` */
-    damage(target?: Selector, amount?: number, damageType?: DamageType): DamageBuilder;
+    damage(
+      target?: Selector,
+      amount?: number,
+      damageType?: DamageType,
+    ): DamageBuilder;
   }
 }
 
-FunctionContext.prototype.damage = function (this: FunctionContext, target?: Selector, amount?: number, damageType?: DamageType) {
+FunctionContext.prototype.damage = function (
+  this: FunctionContext,
+  target?: Selector,
+  amount?: number,
+  damageType?: DamageType,
+) {
   const node = new TreeCommandNode("damage", { effect: Effect.MOVES });
   this.emit(node);
   const parts: CommandPart[] = [litPart("damage")];

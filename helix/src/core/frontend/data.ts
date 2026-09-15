@@ -3,7 +3,12 @@
 //   const state = ctx.storage("example:state");
 //   state.set("players", ctx.entity(Selector.self()).at("SelectedItem"));
 //   state.get("players");
-import { DataOpNode, DataSourceSpec, ModifyAction, NbtTargetSpec } from "../commands/data_op";
+import {
+  DataOpNode,
+  DataSourceSpec,
+  ModifyAction,
+  NbtTargetSpec,
+} from "../commands/data_op";
 import { CommandValue, toCommandValue } from "../values/value";
 import { Id, Nbt, NbtPath, Pos } from "../values";
 import { Selector } from "./nodes/selector";
@@ -19,7 +24,8 @@ const opt = (x: NbtPath | undefined): CommandValue | undefined =>
 export type DataSource = Nbt | NbtRef | DataSourceSpec;
 
 function toSource(s: DataSource): DataSourceSpec {
-  if (s instanceof NbtRef) return { via: "from", target: s.target, path: s.path };
+  if (s instanceof NbtRef)
+    return { via: "from", target: s.target, path: s.path };
   if (typeof s === "object" && s !== null && "via" in s) return s;
   return { via: "value", value: toCommandValue(s) };
 }
@@ -41,17 +47,36 @@ export class NbtHolder {
 
   /** `data get` - read a value (optionally scaled). */
   get(path?: NbtPath, scale?: number): void {
-    this.ctx.emit(new DataOpNode({ op: "get", target: this.target, path: opt(path), scale }));
+    this.ctx.emit(
+      new DataOpNode({
+        op: "get",
+        target: this.target,
+        path: opt(path),
+        scale,
+      }),
+    );
   }
 
   /** `data remove` - delete the value at a path. */
   remove(path: NbtPath): void {
-    this.ctx.emit(new DataOpNode({ op: "remove", target: this.target, path: toCommandValue(path) }));
+    this.ctx.emit(
+      new DataOpNode({
+        op: "remove",
+        target: this.target,
+        path: toCommandValue(path),
+      }),
+    );
   }
 
   /** `data merge` - merge a compound into the whole holder. */
   mergeAll(value: Nbt): void {
-    this.ctx.emit(new DataOpNode({ op: "mergeAll", target: this.target, value: toCommandValue(value) }));
+    this.ctx.emit(
+      new DataOpNode({
+        op: "mergeAll",
+        target: this.target,
+        value: toCommandValue(value),
+      }),
+    );
   }
 
   /** `data modify … set` */
@@ -75,7 +100,12 @@ export class NbtHolder {
     this.modify("insert", path, source, index);
   }
 
-  private modify(action: ModifyAction, path: NbtPath, source: DataSource, index?: number): void {
+  private modify(
+    action: ModifyAction,
+    path: NbtPath,
+    source: DataSource,
+    index?: number,
+  ): void {
     this.ctx.emit(
       new DataOpNode({
         op: "modify",
@@ -103,8 +133,14 @@ declare module "./context" {
 FunctionContext.prototype.storage = function (this: FunctionContext, id: Id) {
   return new NbtHolder(this, { kind: "storage", locator: toCommandValue(id) });
 };
-FunctionContext.prototype.entity = function (this: FunctionContext, target: Selector) {
-  return new NbtHolder(this, { kind: "entity", locator: toCommandValue(target) });
+FunctionContext.prototype.entity = function (
+  this: FunctionContext,
+  target: Selector,
+) {
+  return new NbtHolder(this, {
+    kind: "entity",
+    locator: toCommandValue(target),
+  });
 };
 FunctionContext.prototype.block = function (this: FunctionContext, pos: Pos) {
   return new NbtHolder(this, { kind: "block", locator: toCommandValue(pos) });

@@ -23,7 +23,10 @@ declare module "../frontend/context" {
      * `body` leaves the tag on. `ref()` keeps `target`'s `type=`, so give one to keep lookups
      * narrow. It is a new selector each call because selectors change in place.
      */
-    ref(target: Selector, body: (ctx: FunctionContext, ref: () => Selector) => void): void;
+    ref(
+      target: Selector,
+      body: (ctx: FunctionContext, ref: () => Selector) => void,
+    ): void;
   }
 }
 

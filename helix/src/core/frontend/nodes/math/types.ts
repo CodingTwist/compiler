@@ -2,7 +2,10 @@
 import { Score } from "../score";
 import { ScoreVec3 } from "../score_vec3";
 import { ExprNode } from "../expr";
-import { ContextFloatProvider, ContextIntProvider } from "../../../values/context-provider";
+import {
+  ContextFloatProvider,
+  ContextIntProvider,
+} from "../../../values/context-provider";
 import type { MathExpr } from "./math";
 
 /** Anything that can be interpolated into a `math` formula. */

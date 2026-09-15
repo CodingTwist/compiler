@@ -24,7 +24,12 @@ export async function loadSpyglass(): Promise<{
       import("@spyglassmc/java-edition"),
       import("@spyglassmc/core/lib/nodejs.js"),
     ]);
-    return { core, mcdoc, je, NodeJsExternals: (nodejs as any).NodeJsExternals };
+    return {
+      core,
+      mcdoc,
+      je,
+      NodeJsExternals: (nodejs as any).NodeJsExternals,
+    };
   } catch (e) {
     throw new Error(
       "helix JSON validation needs the optional Spyglass packages. Install them with:\n" +

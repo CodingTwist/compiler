@@ -12,17 +12,22 @@ if (args[0] === "data") {
   // which throws while the (unshipped) data is missing.
   const root = fileURLToPath(new URL("..", import.meta.url));
   const run = (script, extra = []) =>
-    spawnSync(process.execPath, [`scripts/${script}`, ...extra], { cwd: root, stdio: "inherit" }).status;
-  process.exitCode = run("versions.mjs", ["sync", ...args.slice(1)]) || run("copy-data.mjs");
+    spawnSync(process.execPath, [`scripts/${script}`, ...extra], {
+      cwd: root,
+      stdio: "inherit",
+    }).status;
+  process.exitCode =
+    run("versions.mjs", ["sync", ...args.slice(1)]) || run("copy-data.mjs");
 } else if (process.env.HELIX_CLI_CHILD) {
   const { runCli } = await import("../dist/cli/run.js");
   process.exitCode = await runCli(args);
 } else {
   const tsx = createRequire(import.meta.url).resolve("tsx/cli");
   const self = fileURLToPath(import.meta.url);
-  const argv = args[0] === "dev"
-    ? [tsx, "watch", "--clear-screen=false", self, "build", ...args.slice(1)]
-    : [tsx, self, ...args];
+  const argv =
+    args[0] === "dev"
+      ? [tsx, "watch", "--clear-screen=false", self, "build", ...args.slice(1)]
+      : [tsx, self, ...args];
   const child = spawn(process.execPath, argv, {
     stdio: "inherit",
     env: { ...process.env, HELIX_CLI_CHILD: "1" },

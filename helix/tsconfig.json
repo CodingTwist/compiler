@@ -9,15 +9,8 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": [
-      "node"
-    ]
+    "types": ["node"]
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "**/*.test.ts",
-    "tests"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["**/*.test.ts", "tests"]
 }

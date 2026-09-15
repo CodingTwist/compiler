@@ -1,6 +1,14 @@
 import "reflect-metadata";
 import { describe, it, expect } from "vitest";
-import { Block, buildDatapack, Id, Pos, Selector, Datapack, v1_20_4 } from "helix";
+import {
+  Block,
+  buildDatapack,
+  Id,
+  Pos,
+  Selector,
+  Datapack,
+  v1_20_4,
+} from "helix";
 import { Module, defineModule } from "../src/core/module.decorator";
 import { DatapackFactory, consolidateTick } from "../src/core/factory";
 import { isDev, setBuildEnv } from "../src/core/env";
@@ -8,9 +16,7 @@ import { isDev, setBuildEnv } from "../src/core/env";
 /** Render a function node's body to joined command text. */
 function bodyOf(dp: Datapack, name: string): string {
   const all = buildDatapack(dp);
-  return (
-    [...all].find(([p]) => p.endsWith(`/${name}.mcfunction`))?.[1] ?? ""
-  );
+  return [...all].find(([p]) => p.endsWith(`/${name}.mcfunction`))?.[1] ?? "";
 }
 
 /** Compile a root module in-memory and join all generated files for matching. */
@@ -21,8 +27,14 @@ function compileRoot(
   const dp = DatapackFactory.create(root as never, { name: "test", env });
   const files = buildDatapack(dp);
   // root tick + each module's own `<name>/tick`
-  const tick = [...files].filter(([p]) => p.endsWith("/tick.mcfunction")).map(([, b]) => b).join("\n");
-  const rootTick = [...files].find(([p]) => /^data\/[^/]+\/[^/]+\/tick\.mcfunction$/.test(p))?.[1] ?? "";
+  const tick = [...files]
+    .filter(([p]) => p.endsWith("/tick.mcfunction"))
+    .map(([, b]) => b)
+    .join("\n");
+  const rootTick =
+    [...files].find(([p]) =>
+      /^data\/[^/]+\/[^/]+\/tick\.mcfunction$/.test(p),
+    )?.[1] ?? "";
   return { files, all: [...files.values()].join("\n"), tick, root: rootTick };
 }
 
@@ -40,8 +52,12 @@ describe("area gating", () => {
     const { files, tick } = compileRoot(Root);
 
     expect(tick).toContain("if score #zone active matches 1");
-    expect([...files.keys()].some((p) => p.endsWith("zone/activate.mcfunction"))).toBe(true);
-    expect([...files.keys()].some((p) => p.endsWith("zone/deactivate.mcfunction"))).toBe(true);
+    expect(
+      [...files.keys()].some((p) => p.endsWith("zone/activate.mcfunction")),
+    ).toBe(true);
+    expect(
+      [...files.keys()].some((p) => p.endsWith("zone/deactivate.mcfunction")),
+    ).toBe(true);
   });
 
   it("does not gate a plain (non-area) module", () => {
@@ -57,7 +73,9 @@ describe("area gating", () => {
     const { all, files } = compileRoot(Root);
 
     expect(all).not.toContain("#plain active");
-    expect([...files.keys()].some((p) => p.includes("plain/activate"))).toBe(false);
+    expect([...files.keys()].some((p) => p.includes("plain/activate"))).toBe(
+      false,
+    );
   });
 
   it("nests a child's tick inside its parent area's guard (one check skips the subtree)", () => {
@@ -132,21 +150,32 @@ describe("triggers", () => {
 
     // Entry is a location advancement, not a per-tick poll: the tick only disarms.
     expect(tick).not.toContain("if score #vaultlike active matches 0");
-    const adv = [...files].find(([p]) => p.endsWith("vaultlike/zzz/enter_0.json"))![1];
+    const adv = [...files].find(([p]) =>
+      p.endsWith("vaultlike/zzz/enter_0.json"),
+    )![1];
     expect(JSON.parse(adv).criteria.trigger.trigger).toBe("minecraft:location");
     expect(adv).toContain('"min": -11');
-    const reward = [...files].find(([p]) => p.endsWith("vaultlike/zzz/enter_0.mcfunction"))![1];
+    const reward = [...files].find(([p]) =>
+      p.endsWith("vaultlike/zzz/enter_0.mcfunction"),
+    )![1];
     expect(reward).toContain(
       "if score #vaultlike active matches 0 positioned 1 2 3 if entity @s[distance=..12] run function test:vaultlike/activate",
     );
-    expect(reward).toContain("advancement revoke @s only test:vaultlike/zzz/enter_0");
+    expect(reward).toContain(
+      "advancement revoke @s only test:vaultlike/zzz/enter_0",
+    );
   });
 
   it("emits a score detector that runs only while the area is inactive", () => {
     @Module({
       name: "scored",
       area: true,
-      trigger: { kind: "score", objective: "phase", target: "#game", equals: 2 },
+      trigger: {
+        kind: "score",
+        objective: "phase",
+        target: "#game",
+        equals: 2,
+      },
     })
     class Scored {}
     @Module({ name: "root", imports: [Scored] })
@@ -184,7 +213,12 @@ describe("triggers", () => {
     @Module({
       name: "latched",
       area: true,
-      trigger: { kind: "score", objective: "phase", target: "#game", equals: 2 },
+      trigger: {
+        kind: "score",
+        objective: "phase",
+        target: "#game",
+        equals: 2,
+      },
     })
     class Latched {}
     @Module({ name: "root", imports: [Latched] })
@@ -234,8 +268,12 @@ describe("triggers", () => {
 
     // Armed only while inactive, disarmed once the set empties.
     expect(tick).toContain("if score #occupied active matches 0");
-    expect(tick).toContain("if entity @a[tag=Inside,limit=1] run function test:occupied/activate");
-    expect(tick).toContain("unless entity @a[tag=Inside,limit=1] run function test:occupied/deactivate");
+    expect(tick).toContain(
+      "if entity @a[tag=Inside,limit=1] run function test:occupied/activate",
+    );
+    expect(tick).toContain(
+      "unless entity @a[tag=Inside,limit=1] run function test:occupied/deactivate",
+    );
   });
 
   it("latch: true holds a players area on once armed", () => {
@@ -330,7 +368,9 @@ describe("triggers", () => {
     // Neither area polls for entry at top level; the tick just gates the outer subtree.
     expect(tick).not.toContain("distance=..3");
     expect(tick).not.toContain("if score #inner active");
-    expect(tick).toContain("if score #outer active matches 1 run function test:outer/tick");
+    expect(tick).toContain(
+      "if score #outer active matches 1 run function test:outer/tick",
+    );
     // The inner area's entry advancement re-checks the parent flag before activating.
     expect(all).toContain(
       "if score #outer active matches 1 if score #inner active matches 0 positioned 9 9 9 if entity @s[distance=..3] run function test:inner/activate",
@@ -399,9 +439,15 @@ describe("triggers", () => {
     const { all } = compileRoot(Root);
 
     // One guarded activate per zone (box + sphere), both calling the same fn.
-    expect(all).toContain("if entity @a[x=100,y=64,z=100,dx=10,dy=6,dz=10,limit=1]");
-    expect(all).toContain("positioned 200 64 200 if entity @a[distance=..5,limit=1]");
-    expect(all.match(/function test:yard\/activate/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(all).toContain(
+      "if entity @a[x=100,y=64,z=100,dx=10,dy=6,dz=10,limit=1]",
+    );
+    expect(all).toContain(
+      "positioned 200 64 200 if entity @a[distance=..5,limit=1]",
+    );
+    expect(
+      all.match(/function test:yard\/activate/g)?.length,
+    ).toBeGreaterThanOrEqual(2);
   });
 
   it("runs onActivate/onDeactivate lifecycle inside the flag flip", () => {
@@ -418,8 +464,12 @@ describe("triggers", () => {
     class Root {}
 
     const { files } = compileRoot(Root);
-    const activate = [...files].find(([p]) => p.endsWith("level/activate.mcfunction"))![1];
-    const deactivate = [...files].find(([p]) => p.endsWith("level/deactivate.mcfunction"))![1];
+    const activate = [...files].find(([p]) =>
+      p.endsWith("level/activate.mcfunction"),
+    )![1];
+    const deactivate = [...files].find(([p]) =>
+      p.endsWith("level/deactivate.mcfunction"),
+    )![1];
 
     expect(activate).toContain("scoreboard players set #level active 1");
     expect(activate).toContain("online");
@@ -461,7 +511,9 @@ describe("env gating (dev/prod builds)", () => {
     try {
       process.env.TWINE_ENV = "prod";
       const dp = DatapackFactory.create(Root as never, { name: "test" });
-      expect([...buildDatapack(dp).values()].join("\n")).not.toContain("debug_marker");
+      expect([...buildDatapack(dp).values()].join("\n")).not.toContain(
+        "debug_marker",
+      );
       // ...and the same value is what a module body's `isDev()` sees.
       expect(isDev()).toBe(false);
     } finally {
@@ -492,24 +544,33 @@ describe("configured modules (forFeature pattern)", () => {
       private ref: any;
       register(dp: any) {
         this.ref = dp.createFunction(`widget/${config.id}/run`);
-        this.ref.build((ctx: any) => ctx.tellraw(Selector.allPlayers(), config.id));
+        this.ref.build((ctx: any) =>
+          ctx.tellraw(Selector.allPlayers(), config.id),
+        );
       }
     }
     return defineModule({ name: `widget_${config.id}` }, new WidgetFeature());
   }
 
   it("gives each configured instance its own namespaced functions", () => {
-    @Module({ name: "root", imports: [Widget({ id: "a" }), Widget({ id: "b" })] })
+    @Module({
+      name: "root",
+      imports: [Widget({ id: "a" }), Widget({ id: "b" })],
+    })
     class Root {}
 
     const { files } = compileRoot(Root);
     const paths = [...files.keys()];
 
     for (const id of ["a", "b"]) {
-      expect(paths.some((p) => p.endsWith(`widget/${id}/run.mcfunction`))).toBe(true);
+      expect(paths.some((p) => p.endsWith(`widget/${id}/run.mcfunction`))).toBe(
+        true,
+      );
     }
     // Distinct instances are not de-duplicated into one.
-    expect(paths.filter((p) => p.endsWith("/run.mcfunction")).length).toBeGreaterThanOrEqual(2);
+    expect(
+      paths.filter((p) => p.endsWith("/run.mcfunction")).length,
+    ).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -533,7 +594,9 @@ describe("compile-time disable", () => {
     const { all, files } = compileRoot(Root);
 
     expect(all).not.toContain("#timer active");
-    expect([...files.keys()].some((p) => p.includes("timer/activate"))).toBe(false);
+    expect([...files.keys()].some((p) => p.includes("timer/activate"))).toBe(
+      false,
+    );
   });
 });
 
@@ -542,7 +605,10 @@ describe("root areas", () => {
     @Module({
       name: "tunnel",
       area: true,
-      trigger: { kind: "players", selector: Selector.allPlayers().tag("Inside") },
+      trigger: {
+        kind: "players",
+        selector: Selector.allPlayers().tag("Inside"),
+      },
     })
     class Tunnel {
       onTick(ctx: any) {
@@ -556,7 +622,9 @@ describe("root areas", () => {
     expect(tick).toContain("if score #tunnel active matches 0");
     expect(tick).toContain("if score #tunnel active matches 1");
     expect(all).toContain("function test:tunnel/deactivate");
-    expect([...files.keys()].some((p) => p.endsWith("tunnel/activate.mcfunction"))).toBe(true);
+    expect(
+      [...files.keys()].some((p) => p.endsWith("tunnel/activate.mcfunction")),
+    ).toBe(true);
     // The tick body itself is behind the flag, not emitted alongside it.
     expect(tick).not.toContain("inside");
   });
@@ -567,12 +635,16 @@ describe("register scope", () => {
     @Module({ name: "end", area: true, dimension: Id("minecraft:the_end") })
     class End {
       register(_dp: any, scope: any) {
-        scope.fn("admin/goto", (ctx: any) => ctx.setblock(Pos(0, 64, 0), Block.STONE));
+        scope.fn("admin/goto", (ctx: any) =>
+          ctx.setblock(Pos(0, 64, 0), Block.STONE),
+        );
       }
     }
 
     const { files } = compileRoot(End);
-    const admin = [...files].find(([p]) => p.endsWith("admin/goto.mcfunction"))![1];
+    const admin = [...files].find(([p]) =>
+      p.endsWith("admin/goto.mcfunction"),
+    )![1];
 
     expect(admin).toContain("in minecraft:the_end");
     expect(admin).toContain("setblock 0 64 0 minecraft:stone");
@@ -582,14 +654,18 @@ describe("register scope", () => {
     @Module({ name: "plain" })
     class Plain {
       register(_dp: any, scope: any) {
-        scope.fn("plain/thing", (ctx: any) => ctx.setblock(Pos(0, 64, 0), Block.STONE));
+        scope.fn("plain/thing", (ctx: any) =>
+          ctx.setblock(Pos(0, 64, 0), Block.STONE),
+        );
       }
     }
     @Module({ name: "root", imports: [Plain] })
     class Root {}
 
     const { files } = compileRoot(Root);
-    const thing = [...files].find(([p]) => p.endsWith("plain/thing.mcfunction"))![1];
+    const thing = [...files].find(([p]) =>
+      p.endsWith("plain/thing.mcfunction"),
+    )![1];
 
     expect(thing).not.toContain("execute in");
     expect(thing).toContain("setblock 0 64 0 minecraft:stone");

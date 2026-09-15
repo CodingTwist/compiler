@@ -23,7 +23,10 @@ export function renderData(s: ItemState, version: VersionProfile): string {
  * This item as `item_predicate` JSON, from the same definitions as `render`.
  * Items defined only by raw `.data(...)` match by id alone.
  */
-export function toPredicate(s: ItemState, version: VersionProfile): Record<string, unknown> {
+export function toPredicate(
+  s: ItemState,
+  version: VersionProfile,
+): Record<string, unknown> {
   const out: Record<string, unknown> = { items: baseId(s) };
   if (s.count !== undefined) {
     out.count = { min: s.count, max: s.count };
@@ -57,7 +60,10 @@ export function toPredicate(s: ItemState, version: VersionProfile): Record<strin
  * Same definitions as `render`. Empty before components or for raw `.data(...)`
  * items.
  */
-export function componentsJson(s: ItemState, version: VersionProfile): Record<string, unknown> {
+export function componentsJson(
+  s: ItemState,
+  version: VersionProfile,
+): Record<string, unknown> {
   if (!hasStructuredData(s) || version.dataVersion < COMPONENTS_DATA_VERSION) {
     return {};
   }
@@ -79,7 +85,10 @@ export function componentsJson(s: ItemState, version: VersionProfile): Record<st
 export function toStackNbt(s: ItemState, version: VersionProfile): string {
   const modern = version.dataVersion >= COMPONENTS_DATA_VERSION;
   const count = s.count ?? 1;
-  const parts = [`id:"${baseId(s)}"`, modern ? `count:${count}` : `Count:${count}b`];
+  const parts = [
+    `id:"${baseId(s)}"`,
+    modern ? `count:${count}` : `Count:${count}b`,
+  ];
 
   if (hasStructuredData(s)) {
     if (modern) {

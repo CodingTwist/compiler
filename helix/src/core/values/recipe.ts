@@ -14,7 +14,9 @@ export type Ingredient = string | ItemValue | IdValue;
 function ingredientId(ing: Ingredient): string {
   if (ing instanceof ItemValue) return ing.baseId();
   if (ing instanceof IdValue) return ing.render();
-  return ing.startsWith("#") ? "#" + normalizeId(ing.slice(1)) : normalizeId(ing);
+  return ing.startsWith("#")
+    ? "#" + normalizeId(ing.slice(1))
+    : normalizeId(ing);
 }
 
 /** Render one ingredient: a flat id string (1.20.5+) or a `{item|tag: id}` object (pre). */
@@ -25,7 +27,11 @@ function renderIngredient(ing: Ingredient, version: VersionProfile): unknown {
 }
 
 /** Render a recipe result: `{id|item, count}`, version-aware on the key. */
-function renderResult(result: Ingredient, count: number, version: VersionProfile): Record<string, unknown> {
+function renderResult(
+  result: Ingredient,
+  count: number,
+  version: VersionProfile,
+): Record<string, unknown> {
   const key = version.dataVersion >= RECIPE_FLAT_DATA_VERSION ? "id" : "item";
   return { [key]: ingredientId(result), count };
 }
@@ -37,7 +43,9 @@ function renderResult(result: Ingredient, count: number, version: VersionProfile
  *     ["###", "###", "###"], { "#": Item.of("mypack:ruby") }, Item.of("mypack:ruby_block")));
  */
 export class RecipeDef {
-  private constructor(private readonly build: (v: VersionProfile) => Record<string, unknown>) {}
+  private constructor(
+    private readonly build: (v: VersionProfile) => Record<string, unknown>,
+  ) {}
 
   /** The recipe JSON, with embedded ingredients rendered for `version`. */
   toJson(version: VersionProfile): Record<string, unknown> {
@@ -62,7 +70,11 @@ export class RecipeDef {
   }
 
   /** `minecraft:crafting_shapeless` - an unordered list of ingredients. */
-  static shapeless(ingredients: Ingredient[], result: Ingredient, count = 1): RecipeDef {
+  static shapeless(
+    ingredients: Ingredient[],
+    result: Ingredient,
+    count = 1,
+  ): RecipeDef {
     return new RecipeDef((v) => ({
       type: "minecraft:crafting_shapeless",
       ingredients: ingredients.map((ing) => renderIngredient(ing, v)),
@@ -93,7 +105,11 @@ export class RecipeDef {
   }
 
   /** `minecraft:stonecutting` - one ingredient to `count` of a result. */
-  static stonecutting(ingredient: Ingredient, result: Ingredient, count = 1): RecipeDef {
+  static stonecutting(
+    ingredient: Ingredient,
+    result: Ingredient,
+    count = 1,
+  ): RecipeDef {
     return new RecipeDef((v) => ({
       type: "minecraft:stonecutting",
       ingredient: renderIngredient(ingredient, v),

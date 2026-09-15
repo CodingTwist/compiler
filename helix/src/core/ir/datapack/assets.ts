@@ -22,7 +22,9 @@ export function serializeItemDef(def: ItemDefinition): Record<string, unknown> {
     ...(o?.handAnimationOnSwap !== undefined
       ? { hand_animation_on_swap: o.handAnimationOnSwap }
       : {}),
-    ...(o?.oversizedInGui !== undefined ? { oversized_in_gui: o.oversizedInGui } : {}),
+    ...(o?.oversizedInGui !== undefined
+      ? { oversized_in_gui: o.oversizedInGui }
+      : {}),
   };
 }
 
@@ -77,8 +79,14 @@ export class DatapackAssets extends DatapackData {
     const def: ItemDefinition = { model, options };
     const existing = this.itemDefinitions.get(name);
     // Compare rendered JSON, since `model()` builds a new wrapper each call.
-    if (existing && JSON.stringify(serializeItemDef(existing)) !== JSON.stringify(serializeItemDef(def))) {
-      throw new Error(`Item definition "${name}" already registered with a different definition`);
+    if (
+      existing &&
+      JSON.stringify(serializeItemDef(existing)) !==
+        JSON.stringify(serializeItemDef(def))
+    ) {
+      throw new Error(
+        `Item definition "${name}" already registered with a different definition`,
+      );
     }
     this.itemDefinitions.set(name, def);
     return new ModelRef(`${this.name}:${name}`, legacyModelData);
@@ -108,7 +116,9 @@ export class DatapackAssets extends DatapackData {
     const id = normalizeId(block);
     const existing = this.blockStates.get(id);
     if (existing && existing !== def) {
-      throw new Error(`Block state "${id}" already registered with a different definition`);
+      throw new Error(
+        `Block state "${id}" already registered with a different definition`,
+      );
     }
     this.blockStates.set(id, def);
   }

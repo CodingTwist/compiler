@@ -7,9 +7,23 @@ import type { PlayerMotionInternals } from "./context";
  */
 export function defineInit(I: PlayerMotionInternals): void {
   const {
-    fInit, constant, marker,
-    api, dummy, math, konst, gm, store,
-    prevVecK, prevXin, prevYin, prevZin, prevX, prevY, prevZ, prevMethod,
+    fInit,
+    constant,
+    marker,
+    api,
+    dummy,
+    math,
+    konst,
+    gm,
+    store,
+    prevVecK,
+    prevXin,
+    prevYin,
+    prevZin,
+    prevX,
+    prevY,
+    prevZ,
+    prevMethod,
   } = I;
 
   fInit.build((ctx) => {
@@ -17,7 +31,18 @@ export function defineInit(I: PlayerMotionInternals): void {
     // Seed the constant fake-players the math divides/multiplies by.
     const constants = [-1, 2, 10, 12, 100, 1000, 2000, 8000, 100000, 1000000];
     for (const n of constants) constant(`#constant.${n}`).set(n);
-    for (const o of [gm, prevVecK, prevXin, prevYin, prevZin, prevX, prevY, prevZ, prevMethod, store])
+    for (const o of [
+      gm,
+      prevVecK,
+      prevXin,
+      prevYin,
+      prevZin,
+      prevX,
+      prevY,
+      prevZ,
+      prevMethod,
+      store,
+    ])
       o.init();
 
     ctx.forceload().remove(Pos(0, 0));

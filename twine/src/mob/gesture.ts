@@ -51,8 +51,10 @@ export interface Gesture<S extends string = never> {
 }
 
 /** A {@link Gesture} with its defaults filled in and its timeline worked out. */
-export interface ResolvedGesture<S extends string = never>
-  extends Omit<Gesture<S>, "rise" | "linger" | "fall" | "cooldown" | "fireAfter" | "recoverAfter"> {
+export interface ResolvedGesture<S extends string = never> extends Omit<
+  Gesture<S>,
+  "rise" | "linger" | "fall" | "cooldown" | "fireAfter" | "recoverAfter"
+> {
   name: string;
   rise: number;
   linger: number;
@@ -76,8 +78,14 @@ export interface PoseWrite {
 }
 
 /** Fills in a gesture's defaults and checks every timed part lands inside its cooldown. */
-export function resolveGesture<S extends string>(name: string, g: Gesture<S>, tickEvery: number): ResolvedGesture<S> {
-  const steps = Array.isArray(g.rotate[0]) ? (g.rotate as Quat[]) : [g.rotate as Quat];
+export function resolveGesture<S extends string>(
+  name: string,
+  g: Gesture<S>,
+  tickEvery: number,
+): ResolvedGesture<S> {
+  const steps = Array.isArray(g.rotate[0])
+    ? (g.rotate as Quat[])
+    : [g.rotate as Quat];
   const r: ResolvedGesture<S> = {
     ...g,
     name,
@@ -119,27 +127,49 @@ export function resolveGesture<S extends string>(name: string, g: Gesture<S>, ti
  *
  * The emitter and the preview both read this, so the preview matches the game.
  */
-function poseSchedule(g: ResolvedGesture<string>, tickEvery: number): PoseWrite[] {
+function poseSchedule(
+  g: ResolvedGesture<string>,
+  tickEvery: number,
+): PoseWrite[] {
   // Only `rise` beyond 1 holds the first pose longer, so `rise: 0` output is unchanged.
   const hold = Math.max(0, g.rise - 1);
-  const later = g.steps.slice(1).map((q, k) => ({ poll: hold + k + 1, q, duration: tickEvery }));
+  const later = g.steps
+    .slice(1)
+    .map((q, k) => ({ poll: hold + k + 1, q, duration: tickEvery }));
   return [
     { poll: 0, q: g.steps[0], duration: g.rise },
     ...later,
     // A one-step gesture drops on the very next poll: its hold never applies.
-    { poll: g.sequenced ? hold + g.steps.length + g.linger : 1, q: undefined, duration: g.fall },
+    {
+      poll: g.sequenced ? hold + g.steps.length + g.linger : 1,
+      q: undefined,
+      duration: g.fall,
+    },
   ];
 }
 
 /** A member's transform while holding `q`, or its rest pose for `undefined`. */
-export function memberPose(model: DisplayValue, g: ResolvedGesture<string>, i: number, q: Quat | undefined): Transform {
+export function memberPose(
+  model: DisplayValue,
+  g: ResolvedGesture<string>,
+  i: number,
+  q: Quat | undefined,
+): Transform {
   const rest = model.members()[i]?.transform;
-  if (!rest) throw new Error(`Gesture member ${i} is not a member of the model.`);
+  if (!rest)
+    throw new Error(`Gesture member ${i} is not a member of the model.`);
   if (!q) return rest;
   // Rotating about the pivot moves the position and turns the orientation.
   return {
     ...rest,
-    translation: rotateAboutPivot(rest.translation ?? [0, 0, 0], add(g.pivot, model.getOffset()), q).map(round6) as Vec3,
-    leftRotation: mulQuat(g.tilt ? mulQuat(q, g.tilt) : q, rest.leftRotation ?? [0, 0, 0, 1]).map(round6) as Quat,
+    translation: rotateAboutPivot(
+      rest.translation ?? [0, 0, 0],
+      add(g.pivot, model.getOffset()),
+      q,
+    ).map(round6) as Vec3,
+    leftRotation: mulQuat(
+      g.tilt ? mulQuat(q, g.tilt) : q,
+      rest.leftRotation ?? [0, 0, 0, 1],
+    ).map(round6) as Quat,
   };
 }

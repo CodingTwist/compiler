@@ -14,11 +14,18 @@ function compile(root: new () => object): {
   tick: string;
   file: (suffix: string) => string | undefined;
 } {
-  const dp = DatapackFactory.create(root as never, { name: "test", env: "dev" });
+  const dp = DatapackFactory.create(root as never, {
+    name: "test",
+    env: "dev",
+  });
   const files = buildDatapack(dp);
   // root tick + each module's own `<name>/tick`
-  const tick = [...files].filter(([p]) => p.endsWith("/tick.mcfunction")).map(([, b]) => b).join("\n");
-  const file = (suffix: string) => [...files].find(([p]) => p.endsWith(suffix))?.[1];
+  const tick = [...files]
+    .filter(([p]) => p.endsWith("/tick.mcfunction"))
+    .map(([, b]) => b)
+    .join("\n");
+  const file = (suffix: string) =>
+    [...files].find(([p]) => p.endsWith(suffix))?.[1];
   return { files, all: [...files.values()].join("\n"), tick, file };
 }
 
@@ -26,16 +33,24 @@ const wand = () => Item("stick").named("Frost Wand").modelData(7);
 
 describe("defineItem", () => {
   it("emits nothing extra when no behaviours are attached", () => {
-    @Module({ name: "root", imports: [defineItem(wand()).toModule("frost_wand")] })
+    @Module({
+      name: "root",
+      imports: [defineItem(wand()).toModule("frost_wand")],
+    })
     class Root {}
 
     const { files, all } = compile(Root);
-    expect([...files.keys()].some((p) => p.includes("zzz/item/stick"))).toBe(false);
+    expect([...files.keys()].some((p) => p.includes("zzz/item/stick"))).toBe(
+      false,
+    );
     expect(all).not.toContain("advancement");
   });
 
   it("give() emits a give function granting the fully-built item", () => {
-    @Module({ name: "root", imports: [defineItem(wand()).give().toModule("frost_wand")] })
+    @Module({
+      name: "root",
+      imports: [defineItem(wand()).give().toModule("frost_wand")],
+    })
     class Root {}
 
     const { file } = compile(Root);
@@ -67,14 +82,18 @@ describe("defineItem", () => {
     const reward = file("zzz/item/stick/on_attack.mcfunction");
     expect(reward).toBeDefined();
     expect(reward).toContain("zap");
-    expect(reward).toContain("advancement revoke @s only test:zzz/item/stick/on_attack");
+    expect(reward).toContain(
+      "advancement revoke @s only test:zzz/item/stick/on_attack",
+    );
   });
 
   it("onUse() registers a using_item advancement", () => {
     @Module({
       name: "root",
       imports: [
-        defineItem(wand()).onUse((ctx) => ctx.tellraw(Selector.self(), "use")).toModule("frost_wand"),
+        defineItem(wand())
+          .onUse((ctx) => ctx.tellraw(Selector.self(), "use"))
+          .toModule("frost_wand"),
       ],
     })
     class Root {}
@@ -82,7 +101,9 @@ describe("defineItem", () => {
     const { file } = compile(Root);
     const adv = file("zzz/item/stick/on_use.json");
     expect(adv).toBeDefined();
-    expect(JSON.parse(adv!).criteria.trigger.trigger).toBe("minecraft:using_item");
+    expect(JSON.parse(adv!).criteria.trigger.trigger).toBe(
+      "minecraft:using_item",
+    );
   });
 
   it("onRightClick() detects right-clicks via the used:<item> statistic", () => {
@@ -113,7 +134,9 @@ describe("defineItem", () => {
     expect(rcTick).toContain(
       "execute as @a[scores={rc_carrot_on_a_stick=1..},predicate=test:zzz/holding/carrot_on_a_stick] at @s run function",
     );
-    expect(rcTick).toContain("scoreboard players set @a rc_carrot_on_a_stick 0");
+    expect(rcTick).toContain(
+      "scoreboard players set @a rc_carrot_on_a_stick 0",
+    );
 
     // The body runs in the scan's child function.
     const exec = file("zzz/item/carrot_on_a_stick/rc_tick/exec_0.mcfunction");
@@ -133,6 +156,8 @@ describe("defineItem", () => {
 
     const { tick, files } = compile(Root);
     expect(tick).toContain("execute as @a[predicate=test:zzz/holding/stick]");
-    expect([...files.keys()].some((p) => p.includes("zzz/holding/stick.json"))).toBe(true);
+    expect(
+      [...files.keys()].some((p) => p.includes("zzz/holding/stick.json")),
+    ).toBe(true);
   });
 });

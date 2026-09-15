@@ -20,7 +20,8 @@ export class BossModule extends BossAbilities implements DatapackModule {
     // Abilities first - the phase bodies below call into them.
     const pickers = new Map<Phase, FunctionRef>();
     for (const phase of this.opts.phases) {
-      if (phase.abilities.length > 0) pickers.set(phase, this.picker(scope, phase));
+      if (phase.abilities.length > 0)
+        pickers.set(phase, this.picker(scope, phase));
     }
 
     // The phase machine shares the boss's objective; its score holders don't collide.
@@ -54,7 +55,9 @@ export class BossModule extends BossAbilities implements DatapackModule {
       sm.go(ctx, this.opts.phases[0].label),
     );
 
-    this.cleanupFn = scope.fn(`${this.name}/cleanup`, (ctx) => this.cleanup(ctx));
+    this.cleanupFn = scope.fn(`${this.name}/cleanup`, (ctx) =>
+      this.cleanup(ctx),
+    );
     this.victoryFn = scope.fn(`${this.name}/victory`, (ctx) => {
       if (this.opts.victory) this.asParticipants(ctx, this.opts.victory);
       ctx.call(this.cleanupFn);
@@ -84,7 +87,11 @@ export class BossModule extends BossAbilities implements DatapackModule {
       .storeResultScore(this.score("max"))
       .run((b) => b.entity(this.boss).get(Path.Entity.Health, 1));
     this.score("live").set(1);
-    ctx.execute().as(this.boss).at(Selector.self()).run((b) => b.call(this.enterFirst));
+    ctx
+      .execute()
+      .as(this.boss)
+      .at(Selector.self())
+      .run((b) => b.call(this.enterFirst));
   }
 
   onTick(ctx: FunctionContext): void {
@@ -103,7 +110,11 @@ export class BossModule extends BossAbilities implements DatapackModule {
               this.cooldown(phase, a).remove(this.tickEvery, alive);
             }
           }
-          alive.execute().as(this.boss).at(Selector.self()).run((b) => b.call(this.dispatch));
+          alive
+            .execute()
+            .as(this.boss)
+            .at(Selector.self())
+            .run((b) => b.call(this.dispatch));
         });
       // Death means the entity is gone, not health 0: a 5-tick poll can miss the health-0 tick.
       live

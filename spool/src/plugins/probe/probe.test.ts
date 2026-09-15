@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { Datapack, Detect, EntityType, Pos, Selector, buildDatapack, v1_21_4 } from "helix";
+import {
+  Datapack,
+  Detect,
+  EntityType,
+  Pos,
+  Selector,
+  buildDatapack,
+  v1_21_4,
+} from "helix";
 import { installKit } from "../../kit";
 import { probe } from "./index";
 
@@ -12,14 +20,16 @@ function build(enabled: boolean): Map<string, string> {
     setup: (ctx) => void ctx.summon(EntityType.TNT, Pos.here()),
     after: 40,
     expect: Detect.entity(Selector.allEntities().type(EntityType.TNT)),
-    teardown: (ctx) => void ctx.kill(Selector.allEntities().type(EntityType.TNT)),
+    teardown: (ctx) =>
+      void ctx.kill(Selector.allEntities().type(EntityType.TNT)),
   });
   suite.case("second", { expect: Detect.entity(Selector.allPlayers()) });
   suite.run();
   return new Map(buildDatapack(dp));
 }
 
-const text = (files: Map<string, string>): string => [...files.values()].join("\n");
+const text = (files: Map<string, string>): string =>
+  [...files.values()].join("\n");
 
 describe("probe", () => {
   it("captures the condition as a 0/1 score with no run clause", () => {

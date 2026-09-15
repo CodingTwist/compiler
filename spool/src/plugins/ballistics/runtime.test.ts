@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { Datapack, EntityType, Selector, buildDatapack, v1_21_4, type Vec3 } from "helix";
+import {
+  Datapack,
+  EntityType,
+  Selector,
+  buildDatapack,
+  v1_21_4,
+  type Vec3,
+} from "helix";
 import { installKit } from "../../kit";
 import { ballistics, type RuntimeShotOptions } from "./index";
 import { closestApproach, simulate, trajectoryBasis } from "./physics";
@@ -45,12 +52,18 @@ describe("runtime ballistics", () => {
     // The basis at tick 40 is baked in as literals; older versions need scratch scores for
     // them.
     const { A, G } = trajectoryBasis(TNT, 40);
-    expect(lines).toContain(`scoreboard players set #_t0 ballistics ${Math.round(A[40] * 100)}`);
-    expect(lines).toContain("scoreboard players operation #vx ballistics /= #_t0 ballistics");
+    expect(lines).toContain(
+      `scoreboard players set #_t0 ballistics ${Math.round(A[40] * 100)}`,
+    );
+    expect(lines).toContain(
+      "scoreboard players operation #vx ballistics /= #_t0 ballistics",
+    );
     expect(lines).toContain("scoreboard players set #_t0 ballistics 10000");
     // Gravity comes out of the vertical axis before the divide; G(40) is negative.
     expect(G[40]).toBeLessThan(0);
-    expect(lines).toContain(`scoreboard players add #vy ballistics ${-Math.round(G[40] * 100)}`);
+    expect(lines).toContain(
+      `scoreboard players add #vy ballistics ${-Math.round(G[40] * 100)}`,
+    );
 
     for (const axis of [0, 1, 2]) {
       const v = ["#vx", "#vy", "#vz"][axis];
@@ -69,9 +82,17 @@ describe("runtime ballistics", () => {
     }
     // Summoned at the launcher, fused to airburst on arrival, tagged only long enough
     // to have its Motion written.
-    expect(lines.some((l) => l.startsWith("execute at @e[tag=gun,limit=1] run summon minecraft:tnt ~ ~ ~ "))).toBe(true);
+    expect(
+      lines.some((l) =>
+        l.startsWith(
+          "execute at @e[tag=gun,limit=1] run summon minecraft:tnt ~ ~ ~ ",
+        ),
+      ),
+    ).toBe(true);
     expect(lines.some((l) => l.includes("fuse:40s"))).toBe(true);
-    expect(lines).toContain("tag @e[tag=art.shot,limit=1,type=minecraft:tnt] remove art.shot");
+    expect(lines).toContain(
+      "tag @e[tag=art.shot,limit=1,type=minecraft:tnt] remove art.shot",
+    );
     // Nothing fires unless every axis is within ±10; the return value says which happened.
     expect(lines).toContain(
       "execute unless score #vx ballistics matches -100000..100000 run return 0",
@@ -90,19 +111,27 @@ describe("runtime ballistics", () => {
     expect(lines).toContain(
       "execute store result score #vx ballistics run data get entity @p Pos[0] 100",
     );
-    expect(lines.some((l) => l.startsWith("execute at @s run summon"))).toBe(true);
+    expect(lines.some((l) => l.startsWith("execute at @s run summon"))).toBe(
+      true,
+    );
   });
 
   it("lead adds one shared per-tick tracker and aims ahead of the target", () => {
     const dp = new Datapack("art", v1_21_4);
     dp.ballisticRuntime("a", { lead: true, ticks: 30 });
     dp.ballisticRuntime("b", { lead: true, ticks: 60 });
-    const files = [...buildDatapack(dp)].filter(([p]) => p.endsWith(".mcfunction"));
-    const lines = files.flatMap(([, b]) => b.split("\n")).filter((l) => l.length > 0);
+    const files = [...buildDatapack(dp)].filter(([p]) =>
+      p.endsWith(".mcfunction"),
+    );
+    const lines = files
+      .flatMap(([, b]) => b.split("\n"))
+      .filter((l) => l.length > 0);
 
     // Emitted once, however many shots ask for it.
     expect(files.filter(([p]) => p.includes("track_targets"))).toHaveLength(1);
-    expect(lines.filter((l) => l.includes("run function art:zzz/track_targets"))).toHaveLength(1);
+    expect(
+      lines.filter((l) => l.includes("run function art:zzz/track_targets")),
+    ).toHaveLength(1);
     // Only players under fire are diffed, and firing is what enrols them.
     expect(lines).toContain(
       "execute as @a[tag=ballistics.tracked] run function art:zzz/track_targets",
@@ -128,10 +157,16 @@ describe("runtime ballistics", () => {
     expect(lines).toContain(
       "scoreboard players operation #lx ballistics = @p ballistics.vx",
     );
-    expect(lines).toContain("scoreboard players operation #_t0 ballistics = #lx ballistics");
+    expect(lines).toContain(
+      "scoreboard players operation #_t0 ballistics = #lx ballistics",
+    );
     expect(lines).toContain("scoreboard players set #_t1 ballistics 30");
-    expect(lines).toContain("scoreboard players operation #_t0 ballistics *= #_t1 ballistics");
-    expect(lines).toContain("scoreboard players operation #vx ballistics += #_t0 ballistics");
+    expect(lines).toContain(
+      "scoreboard players operation #_t0 ballistics *= #_t1 ballistics",
+    );
+    expect(lines).toContain(
+      "scoreboard players operation #vx ballistics += #_t0 ballistics",
+    );
   });
 
   it("the integer arithmetic still lands the shot", () => {
@@ -161,9 +196,9 @@ it("shellFunction lifts the summon into its own one-line function", () => {
   const shot = files.get("data/art/function/throw.mcfunction")!;
   expect(shot).toContain("execute at @s run function art:shell/throw");
   expect(shot).not.toContain("summon");
-  expect(() => dp.ballisticRuntime("throw2", { shellFunction: "shell/throw" })).toThrow(
-    /already exists/,
-  );
+  expect(() =>
+    dp.ballisticRuntime("throw2", { shellFunction: "shell/throw" }),
+  ).toThrow(/already exists/);
 });
 
 it("a shellFunction callback places the shell and is given the shot's spec", () => {
@@ -177,24 +212,41 @@ it("a shellFunction callback places the shell and is given the shot's spec", () 
     },
   });
   expect(seen).toEqual({ motion: [0, 0, 0], fuse: 20, tags: ["art.shot"] });
-  const shot = new Map(buildDatapack(dp)).get("data/art/function/throw.mcfunction")!;
+  const shot = new Map(buildDatapack(dp)).get(
+    "data/art/function/throw.mcfunction",
+  )!;
   expect(shot).not.toContain("summon");
-  expect(shot).toContain("execute at @s run tag @e[tag=ammo,limit=1] add art.shot");
+  expect(shot).toContain(
+    "execute at @s run tag @e[tag=ammo,limit=1] add art.shot",
+  );
 });
 
 it("shellTypes types the shot selector for a callback shell", () => {
   const dp = new Datapack("art", v1_21_4);
   const shellFunction = () => {};
   dp.ballisticRuntime("untyped", { shellFunction });
-  dp.ballisticRuntime("one", { shellFunction, shellTypes: [EntityType.ZOMBIE] });
-  dp.ballisticRuntime("mixed", { shellFunction, shellTypes: [EntityType.TNT, EntityType.ZOMBIE] });
+  dp.ballisticRuntime("one", {
+    shellFunction,
+    shellTypes: [EntityType.ZOMBIE],
+  });
+  dp.ballisticRuntime("mixed", {
+    shellFunction,
+    shellTypes: [EntityType.TNT, EntityType.ZOMBIE],
+  });
   const files = new Map(buildDatapack(dp));
-  const fn = (name: string) => files.get(`data/art/function/${name}.mcfunction`)!;
-  expect(fn("untyped")).toContain("tag @e[tag=art.shot,limit=1] remove art.shot");
-  expect(fn("one")).toContain("tag @e[tag=art.shot,limit=1,type=minecraft:zombie] remove art.shot");
-  expect(fn("mixed")).toContain("tag @e[tag=art.shot,limit=1,type=#art:ballistics/shot] remove art.shot");
-  expect(JSON.parse(files.get("data/art/tags/entity_type/ballistics/shot.json")!).values).toEqual([
-    "minecraft:tnt",
-    "minecraft:zombie",
-  ]);
+  const fn = (name: string) =>
+    files.get(`data/art/function/${name}.mcfunction`)!;
+  expect(fn("untyped")).toContain(
+    "tag @e[tag=art.shot,limit=1] remove art.shot",
+  );
+  expect(fn("one")).toContain(
+    "tag @e[tag=art.shot,limit=1,type=minecraft:zombie] remove art.shot",
+  );
+  expect(fn("mixed")).toContain(
+    "tag @e[tag=art.shot,limit=1,type=#art:ballistics/shot] remove art.shot",
+  );
+  expect(
+    JSON.parse(files.get("data/art/tags/entity_type/ballistics/shot.json")!)
+      .values,
+  ).toEqual(["minecraft:tnt", "minecraft:zombie"]);
 });

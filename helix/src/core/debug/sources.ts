@@ -45,13 +45,20 @@ export function enableSourceTracking(): void {
  * `framework`,
  * so lines they emit themselves point at the framework instead of the shared build entry.
  */
-export function ignoreSourceFrames(dir: string, opts: { framework?: boolean } = {}): void {
+export function ignoreSourceFrames(
+  dir: string,
+  opts: { framework?: boolean } = {},
+): void {
   const root = dir.replace(/\\/g, "/").replace(/\/?$/, "/");
-  if (!ignored.some((r) => r.root === root)) ignored.push({ root, framework: !!opts.framework });
+  if (!ignored.some((r) => r.root === root))
+    ignored.push({ root, framework: !!opts.framework });
 }
 
 /** Where `node` was pushed into `fn`, if tracking was on at the time. */
-export function sourceOf(fn: FunctionNode, node: ASTNode): SourceLoc | undefined {
+export function sourceOf(
+  fn: FunctionNode,
+  node: ASTNode,
+): SourceLoc | undefined {
   return locs.get(fn)?.get(node);
 }
 
@@ -90,7 +97,8 @@ export function captureSource(fn: FunctionNode, node: ASTNode): void {
 
 /** Whether a frame in file `name` counts as the author (vs. a library/runtime frame to skip). */
 function isAuthor(name: string | null | undefined): boolean {
-  if (!name || name.startsWith("node:") || name.includes("/node_modules/")) return false;
+  if (!name || name.startsWith("node:") || name.includes("/node_modules/"))
+    return false;
   const file = name.replace(/^file:\/\//, "").replace(/\\/g, "/");
   if (/\.test\.[cm]?[jt]s$/.test(file)) return true; // a test file is always the author
   const lib = ignored.find((r) => file.startsWith(r.root));
@@ -110,7 +118,10 @@ function fromStack(stack: string): SourceLoc | null {
 /** `file` relative to cwd, or `@<pkg>/...` when it's under an ignored library root. */
 function relative(file: string): string {
   const lib = ignored.find((r) => file.startsWith(r.root));
-  if (lib) return `@${lib.root.split("/").at(-2)}/${file.slice(lib.root.length)}`;
-  const cwd = (globalThis as { process?: { cwd(): string } }).process?.cwd().replace(/\\/g, "/");
+  if (lib)
+    return `@${lib.root.split("/").at(-2)}/${file.slice(lib.root.length)}`;
+  const cwd = (globalThis as { process?: { cwd(): string } }).process
+    ?.cwd()
+    .replace(/\\/g, "/");
   return cwd && file.startsWith(`${cwd}/`) ? file.slice(cwd.length + 1) : file;
 }

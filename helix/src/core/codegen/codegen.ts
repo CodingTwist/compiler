@@ -1,10 +1,7 @@
 // Builds the datapack's files: functions, tags and data JSON.
 import { Datapack, splitDefName } from "../ir/datapack";
 import { ASTNode } from "../ir/node";
-import {
-  CommandHandler,
-  Dispatcher,
-} from "../ir/commandhandler";
+import { CommandHandler, Dispatcher } from "../ir/commandhandler";
 import { createCommandHandlers } from "../commands";
 import { generateFunction, generateSingleNode } from "../ir/generate";
 import { inlineSingleCommandFunctions } from "./inline";
@@ -24,7 +21,6 @@ export function buildDatapack(dp: Datapack): Map<string, string> {
   for (const fn of dp.functions.values()) {
     generateFunction(fn, dp, dispatcher);
   }
-
 
   // Generate minecraft tag files (load, tick etc.)
   for (const [tag, fnNames] of dp.tags) {
@@ -85,7 +81,9 @@ export function buildDatapack(dp: Datapack): Map<string, string> {
   // Emit registry tags. The folder is plural before 1.21 (`tags/blocks`), singular after.
   // The key is `<registry>/<name>`, and the name may be nested.
   for (const [key, tag] of dp.registryTagDefs) {
-    const folder = dp.version.singularFolders ? tag.registry : `${tag.registry}s`;
+    const folder = dp.version.singularFolders
+      ? tag.registry
+      : `${tag.registry}s`;
     const name = key.slice(tag.registry.length + 1);
     files.set(
       `data/${dp.name}/tags/${folder}/${name}.json`,
@@ -95,18 +93,19 @@ export function buildDatapack(dp: Datapack): Map<string, string> {
 
   // Emit raw registry files (dimensions, worldgen, damage types, …) verbatim.
   for (const [relPath, json] of dp.registryFileDefs) {
-    files.set(
-      `data/${dp.name}/${relPath}.json`,
-      JSON.stringify(json, null, 2),
-    );
+    files.set(`data/${dp.name}/${relPath}.json`, JSON.stringify(json, null, 2));
   }
 
   // JSON may name functions, so inline once it's all rendered. Function files go first.
-  if (dp.optimize.inline !== false) inlineSingleCommandFunctions(dp, files.values());
+  if (dp.optimize.inline !== false)
+    inlineSingleCommandFunctions(dp, files.values());
   if (dp.optimize.group !== false) groupExecutePrefixes(dp);
   const out = new Map<string, string>();
   for (const [name, content] of dp.files) {
-    out.set(`data/${dp.name}/${dp.version.paths.function}/${name}.mcfunction`, content);
+    out.set(
+      `data/${dp.name}/${dp.version.paths.function}/${name}.mcfunction`,
+      content,
+    );
   }
   for (const [path, content] of files) out.set(path, content);
   return out;

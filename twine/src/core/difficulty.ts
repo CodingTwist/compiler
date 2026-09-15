@@ -25,10 +25,16 @@ export type Difficulty = "easy" | "medium" | "hard";
 export const DIFFICULTIES: readonly Difficulty[] = ["easy", "medium", "hard"];
 
 /** The score value for each level, matching the `/difficulty` query result. */
-export const DIFFICULTY_IDS: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
+export const DIFFICULTY_IDS: Record<Difficulty, number> = {
+  easy: 1,
+  medium: 2,
+  hard: 3,
+};
 
 /** The pack's difficulty level score, `#level twine.difficulty`. */
-export const DIFFICULTY: Score = new Objective("twine.difficulty").score(ScoreTarget("#level"));
+export const DIFFICULTY: Score = new Objective("twine.difficulty").score(
+  ScoreTarget("#level"),
+);
 
 /** Sets the pack's difficulty level, in the ambient function. */
 export const setDifficulty = (level: Difficulty): void => {
@@ -36,4 +42,6 @@ export const setDifficulty = (level: Difficulty): void => {
 };
 
 /** Types a difficulty config. Every level must be listed, so nothing falls back silently. */
-export const defineDifficulty = <T>(config: Record<Difficulty, T>): Record<Difficulty, T> => config;
+export const defineDifficulty = <T>(
+  config: Record<Difficulty, T>,
+): Record<Difficulty, T> => config;

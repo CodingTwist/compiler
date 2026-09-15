@@ -25,12 +25,19 @@ export function wireTick(
     const child = w.graph.nodes.get(childRef)!;
     if (!child.meta.area) {
       // A module with only imports gets no `<name>/tick`; it would just forward.
-      if (!child.instance.onTick && getEventHandlers(child.instance).length === 0) {
+      if (
+        !child.instance.onTick &&
+        getEventHandlers(child.instance).length === 0
+      ) {
         wireTick(w, childRef, ctx, dim, gates);
         continue;
       }
       // gated by (and in the dimension of) ancestors
-      ctx.call(moduleTick(w, childRef, dim, (c) => wireTick(w, childRef, c, dim, gates)));
+      ctx.call(
+        moduleTick(w, childRef, dim, (c) =>
+          wireTick(w, childRef, c, dim, gates),
+        ),
+      );
       continue;
     }
     emitArea(w, childRef, ctx, dim, gates);
@@ -60,7 +67,9 @@ export function emitArea(
       wireTick(w, ref, inner, areaDim, inside);
       if (node.meta.trigger) emitPresence(w, ref, inner);
     });
-    host.if(w.flags.score(node.meta.name).equal(1), (inner) => inner.call(tick));
+    host.if(w.flags.score(node.meta.name).equal(1), (inner) =>
+      inner.call(tick),
+    );
   };
   if (areaDim && areaDim !== dim) ctx.execute().in(areaDim).run(body);
   else body(ctx);

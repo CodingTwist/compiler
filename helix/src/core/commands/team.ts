@@ -37,97 +37,211 @@ export class TeamBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   modifyCollisionRuleAlways(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("collisionRule"), litPart("always"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("collisionRule"),
+      litPart("always"),
+    );
     return this;
   }
 
   modifyCollisionRuleNever(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("collisionRule"), litPart("never"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("collisionRule"),
+      litPart("never"),
+    );
     return this;
   }
 
   modifyCollisionRulePushOtherTeams(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("collisionRule"), litPart("pushOtherTeams"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("collisionRule"),
+      litPart("pushOtherTeams"),
+    );
     return this;
   }
 
   modifyCollisionRulePushOwnTeam(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("collisionRule"), litPart("pushOwnTeam"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("collisionRule"),
+      litPart("pushOwnTeam"),
+    );
     return this;
   }
 
   modifyColor(team: Team, value: TeamColor): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("color"), argPart(value));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("color"),
+      argPart(value),
+    );
     return this;
   }
 
   modifyColorReset(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("color"), litPart("reset"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("color"),
+      litPart("reset"),
+    );
     return this;
   }
 
   modifyDeathMessageVisibilityAlways(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("deathMessageVisibility"), litPart("always"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("deathMessageVisibility"),
+      litPart("always"),
+    );
     return this;
   }
 
   modifyDeathMessageVisibilityHideForOtherTeams(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("deathMessageVisibility"), litPart("hideForOtherTeams"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("deathMessageVisibility"),
+      litPart("hideForOtherTeams"),
+    );
     return this;
   }
 
   modifyDeathMessageVisibilityHideForOwnTeam(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("deathMessageVisibility"), litPart("hideForOwnTeam"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("deathMessageVisibility"),
+      litPart("hideForOwnTeam"),
+    );
     return this;
   }
 
   modifyDeathMessageVisibilityNever(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("deathMessageVisibility"), litPart("never"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("deathMessageVisibility"),
+      litPart("never"),
+    );
     return this;
   }
 
   modifyDisplayName(team: Team, displayName: Component): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("displayName"), argPart(displayName));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("displayName"),
+      argPart(displayName),
+    );
     return this;
   }
 
   modifyFriendlyFire(team: Team, allowed: boolean): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("friendlyFire"), argPart(allowed));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("friendlyFire"),
+      argPart(allowed),
+    );
     return this;
   }
 
   modifyNametagVisibilityAlways(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("nametagVisibility"), litPart("always"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("nametagVisibility"),
+      litPart("always"),
+    );
     return this;
   }
 
   modifyNametagVisibilityHideForOtherTeams(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("nametagVisibility"), litPart("hideForOtherTeams"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("nametagVisibility"),
+      litPart("hideForOtherTeams"),
+    );
     return this;
   }
 
   modifyNametagVisibilityHideForOwnTeam(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("nametagVisibility"), litPart("hideForOwnTeam"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("nametagVisibility"),
+      litPart("hideForOwnTeam"),
+    );
     return this;
   }
 
   modifyNametagVisibilityNever(team: Team): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("nametagVisibility"), litPart("never"));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("nametagVisibility"),
+      litPart("never"),
+    );
     return this;
   }
 
   modifyPrefix(team: Team, prefix: Component): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("prefix"), argPart(prefix));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("prefix"),
+      argPart(prefix),
+    );
     return this;
   }
 
   modifySeeFriendlyInvisibles(team: Team, allowed: boolean): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("seeFriendlyInvisibles"), argPart(allowed));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("seeFriendlyInvisibles"),
+      argPart(allowed),
+    );
     return this;
   }
 
   modifySuffix(team: Team, suffix: Component): this {
-    this.$set(litPart("team"), litPart("modify"), argPart(team), litPart("suffix"), argPart(suffix));
+    this.$set(
+      litPart("team"),
+      litPart("modify"),
+      argPart(team),
+      litPart("suffix"),
+      argPart(suffix),
+    );
     return this;
   }
 

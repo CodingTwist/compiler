@@ -105,7 +105,9 @@ export class ItemBuilder {
       );
     }
     this.module({ held: false }).register(dp);
-    return this.giveFn ? itemGiveFunction(dp, this.item, itemSlug(this.item)) : undefined;
+    return this.giveFn
+      ? itemGiveFunction(dp, this.item, itemSlug(this.item))
+      : undefined;
   }
 
   /** Compile to a drop-in {@link ConfiguredModule} (name = module/scoreboard id). */

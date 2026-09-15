@@ -27,13 +27,24 @@ const hasCompute = (version: VersionProfile): boolean =>
  * `scoreboard players operation` does for free. Caught before `/compute` so a compile-time
  * constant offset - the common case - never pays for a full expression tree, on any version.
  */
-function selfIncrement(dest: Score, expr: ExprNode, version: VersionProfile): ASTNode | undefined {
-  if (expr.kind !== "op" || (expr.op !== "add" && expr.op !== "sub") || expr.args.length !== 2)
+function selfIncrement(
+  dest: Score,
+  expr: ExprNode,
+  version: VersionProfile,
+): ASTNode | undefined {
+  if (
+    expr.kind !== "op" ||
+    (expr.op !== "add" && expr.op !== "sub") ||
+    expr.args.length !== 2
+  )
     return undefined;
   const [a, b] = expr.args;
-  const key = (s: Score) => `${s.target.render(version)} ${s.objective.getName()}`;
-  const isDest = (n: ExprNode) => n.kind === "score" && key(n.score) === key(dest);
-  const litOf = (n: ExprNode) => (n.kind === "lit" && Number.isInteger(n.value) ? n.value : undefined);
+  const key = (s: Score) =>
+    `${s.target.render(version)} ${s.objective.getName()}`;
+  const isDest = (n: ExprNode) =>
+    n.kind === "score" && key(n.score) === key(dest);
+  const litOf = (n: ExprNode) =>
+    n.kind === "lit" && Number.isInteger(n.value) ? n.value : undefined;
 
   let value: number | undefined;
   if (isDest(a)) value = litOf(b);

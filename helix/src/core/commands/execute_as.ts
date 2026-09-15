@@ -1,4 +1,8 @@
-import { generateSingleNode, generateSingleNodeLine, runClause } from "../ir/generate";
+import {
+  generateSingleNode,
+  generateSingleNodeLine,
+  runClause,
+} from "../ir/generate";
 import { chainLine, selectorClause } from "../ir/line-info";
 import { ASTNode } from "../ir/node";
 import { SelectorNode } from "./selector";
@@ -43,7 +47,11 @@ export class ExecuteAsHandler extends CommandHandler<ExecuteAsNode> {
       ctx.datapack,
       ctx.dispatcher,
     );
-    const { cmd: command, info } = generateSingleNodeLine(node.command, ctx.datapack, ctx.dispatcher);
+    const { cmd: command, info } = generateSingleNodeLine(
+      node.command,
+      ctx.datapack,
+      ctx.dispatcher,
+    );
 
     const folded = this.fold(command, selector);
     if (folded) {

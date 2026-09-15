@@ -9,49 +9,135 @@ import { Selector } from "../frontend/nodes/selector";
 /** `attribute` */
 export class AttributeBuilder extends CommandBuilder<TreeCommandNode> {
   baseGet(target: Selector, attribute: Attribute, scale?: number): this {
-    this.$set(litPart("attribute"), argPart(single(target, "attribute")), argPart(attribute), litPart("base"), litPart("get"));
+    this.$set(
+      litPart("attribute"),
+      argPart(single(target, "attribute")),
+      argPart(attribute),
+      litPart("base"),
+      litPart("get"),
+    );
     if (scale !== undefined) this.$append(argPart(scale));
     return this;
   }
 
   baseReset(target: Selector, attribute: Attribute): this {
-    this.$set(litPart("attribute"), argPart(single(target, "attribute")), argPart(attribute), litPart("base"), litPart("reset"));
+    this.$set(
+      litPart("attribute"),
+      argPart(single(target, "attribute")),
+      argPart(attribute),
+      litPart("base"),
+      litPart("reset"),
+    );
     return this;
   }
 
   baseSet(target: Selector, attribute: Attribute, value: number): this {
-    this.$set(litPart("attribute"), argPart(single(target, "attribute")), argPart(attribute), litPart("base"), litPart("set"), argPart(value));
+    this.$set(
+      litPart("attribute"),
+      argPart(single(target, "attribute")),
+      argPart(attribute),
+      litPart("base"),
+      litPart("set"),
+      argPart(value),
+    );
     return this;
   }
 
   get(target: Selector, attribute: Attribute, scale?: number): this {
-    this.$set(litPart("attribute"), argPart(single(target, "attribute")), argPart(attribute), litPart("get"));
+    this.$set(
+      litPart("attribute"),
+      argPart(single(target, "attribute")),
+      argPart(attribute),
+      litPart("get"),
+    );
     if (scale !== undefined) this.$append(argPart(scale));
     return this;
   }
 
-  modifierAddAddMultipliedBase(target: Selector, attribute: Attribute, id: Id, value: number): this {
-    this.$set(litPart("attribute"), argPart(single(target, "attribute")), argPart(attribute), litPart("modifier"), litPart("add"), argPart(id), argPart(value), litPart("add_multiplied_base"));
+  modifierAddAddMultipliedBase(
+    target: Selector,
+    attribute: Attribute,
+    id: Id,
+    value: number,
+  ): this {
+    this.$set(
+      litPart("attribute"),
+      argPart(single(target, "attribute")),
+      argPart(attribute),
+      litPart("modifier"),
+      litPart("add"),
+      argPart(id),
+      argPart(value),
+      litPart("add_multiplied_base"),
+    );
     return this;
   }
 
-  modifierAddAddMultipliedTotal(target: Selector, attribute: Attribute, id: Id, value: number): this {
-    this.$set(litPart("attribute"), argPart(single(target, "attribute")), argPart(attribute), litPart("modifier"), litPart("add"), argPart(id), argPart(value), litPart("add_multiplied_total"));
+  modifierAddAddMultipliedTotal(
+    target: Selector,
+    attribute: Attribute,
+    id: Id,
+    value: number,
+  ): this {
+    this.$set(
+      litPart("attribute"),
+      argPart(single(target, "attribute")),
+      argPart(attribute),
+      litPart("modifier"),
+      litPart("add"),
+      argPart(id),
+      argPart(value),
+      litPart("add_multiplied_total"),
+    );
     return this;
   }
 
-  modifierAddAddValue(target: Selector, attribute: Attribute, id: Id, value: number): this {
-    this.$set(litPart("attribute"), argPart(single(target, "attribute")), argPart(attribute), litPart("modifier"), litPart("add"), argPart(id), argPart(value), litPart("add_value"));
+  modifierAddAddValue(
+    target: Selector,
+    attribute: Attribute,
+    id: Id,
+    value: number,
+  ): this {
+    this.$set(
+      litPart("attribute"),
+      argPart(single(target, "attribute")),
+      argPart(attribute),
+      litPart("modifier"),
+      litPart("add"),
+      argPart(id),
+      argPart(value),
+      litPart("add_value"),
+    );
     return this;
   }
 
   modifierRemove(target: Selector, attribute: Attribute, id: Id): this {
-    this.$set(litPart("attribute"), argPart(single(target, "attribute")), argPart(attribute), litPart("modifier"), litPart("remove"), argPart(id));
+    this.$set(
+      litPart("attribute"),
+      argPart(single(target, "attribute")),
+      argPart(attribute),
+      litPart("modifier"),
+      litPart("remove"),
+      argPart(id),
+    );
     return this;
   }
 
-  modifierValueGet(target: Selector, attribute: Attribute, id: Id, scale?: number): this {
-    this.$set(litPart("attribute"), argPart(single(target, "attribute")), argPart(attribute), litPart("modifier"), litPart("value"), litPart("get"), argPart(id));
+  modifierValueGet(
+    target: Selector,
+    attribute: Attribute,
+    id: Id,
+    scale?: number,
+  ): this {
+    this.$set(
+      litPart("attribute"),
+      argPart(single(target, "attribute")),
+      argPart(attribute),
+      litPart("modifier"),
+      litPart("value"),
+      litPart("get"),
+      argPart(id),
+    );
     if (scale !== undefined) this.$append(argPart(scale));
     return this;
   }
@@ -65,7 +151,10 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.attribute = function (this: FunctionContext) {
-  const node = new TreeCommandNode("attribute", { effect: Effect.EDITS, local: true });
+  const node = new TreeCommandNode("attribute", {
+    effect: Effect.EDITS,
+    local: true,
+  });
   this.emit(node);
   const parts: CommandPart[] = [litPart("attribute")];
   node.parts = parts;

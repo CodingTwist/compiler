@@ -32,9 +32,15 @@ describe("solveLaunch", () => {
     // The reported angles must reconstruct the velocity they came from.
     const y = (south.yaw * Math.PI) / 180;
     const p = (south.pitch * Math.PI) / 180;
-    expect(-Math.sin(y) * Math.cos(p) * south.speed).toBeCloseTo(south.velocity[0], 9);
+    expect(-Math.sin(y) * Math.cos(p) * south.speed).toBeCloseTo(
+      south.velocity[0],
+      9,
+    );
     expect(-Math.sin(p) * south.speed).toBeCloseTo(south.velocity[1], 9);
-    expect(Math.cos(y) * Math.cos(p) * south.speed).toBeCloseTo(south.velocity[2], 9);
+    expect(Math.cos(y) * Math.cos(p) * south.speed).toBeCloseTo(
+      south.velocity[2],
+      9,
+    );
   });
 
   it("honours the speed budget, the pitch range and the preference", () => {
@@ -53,30 +59,44 @@ describe("solveLaunch", () => {
   });
 
   it("throws with a reachable-speed diagnostic when nothing fits", () => {
-    expect(() => solveLaunch([0, 64, 0], [4000, 64, 0], { maxSpeed: 1 })).toThrow(
-      /no launch from .* blocks\/tick/,
-    );
+    expect(() =>
+      solveLaunch([0, 64, 0], [4000, 64, 0], { maxSpeed: 1 }),
+    ).toThrow(/no launch from .* blocks\/tick/);
   });
 
   it("solves whole ticks by default so a fuse airburst is exact", () => {
     expect(solveLaunch([0, 64, 0], [73, 88, -19]).ticks % 1).toBe(0);
-    expect(solveLaunch([0, 64, 0], [73, 88, -19], { subTickSamples: 4 }).ticks % 0.25).toBe(0);
+    expect(
+      solveLaunch([0, 64, 0], [73, 88, -19], { subTickSamples: 4 }).ticks %
+        0.25,
+    ).toBe(0);
   });
 
   it("models each projectile's own constants", () => {
-    const tnt = solveLaunch([0, 64, 0], [40, 64, 0], { projectile: PROJECTILES.tnt, minTicks: 30, maxTicks: 30 });
-    const arrow = solveLaunch([0, 64, 0], [40, 64, 0], { projectile: PROJECTILES.arrow, minTicks: 30, maxTicks: 30 });
+    const tnt = solveLaunch([0, 64, 0], [40, 64, 0], {
+      projectile: PROJECTILES.tnt,
+      minTicks: 30,
+      maxTicks: 30,
+    });
+    const arrow = solveLaunch([0, 64, 0], [40, 64, 0], {
+      projectile: PROJECTILES.arrow,
+      minTicks: 30,
+      maxTicks: 30,
+    });
     // Same shot, different drag and gravity, so a different launch vector is required.
     expect(arrow.speed).not.toBeCloseTo(tnt.speed, 3);
     expect(arrow.error).toBeLessThan(1e-9);
   });
 
   it("solves a living entity exactly, anisotropic drag and all", () => {
-    const mob = solveLaunch([0, 64, 0], [40, 70, -12], { projectile: PROJECTILES.living });
+    const mob = solveLaunch([0, 64, 0], [40, 70, -12], {
+      projectile: PROJECTILES.living,
+    });
     // Checked against the real integrator: a mob with this Motion lands on the target.
     expect(mob.error).toBeLessThan(1e-9);
     expect(mob.speed).not.toBeCloseTo(
-      solveLaunch([0, 64, 0], [40, 70, -12], { projectile: PROJECTILES.tnt }).speed,
+      solveLaunch([0, 64, 0], [40, 70, -12], { projectile: PROJECTILES.tnt })
+        .speed,
       3,
     );
   });

@@ -1,7 +1,7 @@
 # Design philosophy
 
-The governing principles for this compiler. `CLAUDE.md` documents *how the code is
-wired*; this file documents *what we are trying to be* and the rules that protect it.
+The governing principles for this compiler. `CLAUDE.md` documents _how the code is
+wired_; this file documents _what we are trying to be_ and the rules that protect it.
 When a change conflicts with one of these principles, the change is wrong - fix the
 change, not the principle. If a principle genuinely needs to bend, edit this file in the
 same PR and say why.
@@ -9,7 +9,7 @@ same PR and say why.
 ## The one idea: source is concepts, not strings
 
 The whole point of compiling a datapack from TypeScript - rather than just writing
-`.mcfunction` files by hand - is that the compiler can *understand* what you wrote and
+`.mcfunction` files by hand - is that the compiler can _understand_ what you wrote and
 emit correct, version-specific output from it. That only works if the author programs
 with **typed domain concepts**, not with strings.
 
@@ -30,7 +30,7 @@ exists.** That is the failure mode the rest of this document defends against.
 
 ## Principle 1 - Typed objects, not strings (hard rule)
 
-Every author-facing argument that *denotes a domain concept* MUST be the typed object
+Every author-facing argument that _denotes a domain concept_ MUST be the typed object
 for that concept. Never a bare `string`, and never a `Concept | string` union.
 
 Concepts in scope: selectors, resource locations, NBT, NBT paths, positions, blocks,
@@ -39,15 +39,15 @@ of the same shape.
 
 **Reuse the existing value/builder types; do not invent parallel ones:**
 
-| Concept | Type | Location |
-| --- | --- | --- |
-| Selector | `Selector` | [src/core/frontend/nodes/selector/](src/core/frontend/nodes/selector/) |
-| Resource location (generic) | `Id` / `IdValue` | [src/core/values/id.ts](src/core/values/id.ts) |
+| Concept                                | Type                                                | Location                                                                                                                              |
+| -------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Selector                               | `Selector`                                          | [src/core/frontend/nodes/selector/](src/core/frontend/nodes/selector/)                                                                |
+| Resource location (generic)            | `Id` / `IdValue`                                    | [src/core/values/id.ts](src/core/values/id.ts)                                                                                        |
 | Registry entry (biome, enchantment, …) | `Biome`, `Enchantment`, … - branded `ResourceId<R>` | [src/core/values/resource.ts](src/core/values/resource.ts) + generated [resource.generated.ts](src/core/values/resource.generated.ts) |
-| NBT + NBT path | `Nbt` / `NbtPath` | [src/core/values/nbt/](src/core/values/nbt/) |
-| Position | `Pos` | [src/core/values/pos.ts](src/core/values/pos.ts) |
-| Block | `Block` | [src/core/values/block.ts](src/core/values/block.ts) |
-| Item | `Item` | [src/core/values/item/](src/core/values/item/) |
+| NBT + NBT path                         | `Nbt` / `NbtPath`                                   | [src/core/values/nbt/](src/core/values/nbt/)                                                                                          |
+| Position                               | `Pos`                                               | [src/core/values/pos.ts](src/core/values/pos.ts)                                                                                      |
+| Block                                  | `Block`                                             | [src/core/values/block.ts](src/core/values/block.ts)                                                                                  |
+| Item                                   | `Item`                                              | [src/core/values/item/](src/core/values/item/)                                                                                        |
 
 **Don't flatten distinct concepts to a generic type either.** A `biome` argument is
 `Biome`, not `Id`; an `enchantment` is `Enchantment`. The Brigadier tree records the
@@ -62,7 +62,7 @@ it is exactly what this principle is fighting. It must **shrink over time, never
 The target end-state is an `ArgInput` with no concept-replacing `string` arm.
 
 **Missing a type is not a license to accept a string.** Where no concept type exists yet
-(`ScoreTarget`, `TagName`, `EnchantmentId` today), the rule is *create the type*, then
+(`ScoreTarget`, `TagName`, `EnchantmentId` today), the rule is _create the type_, then
 use it - not fall back to `string`.
 
 ## Principle 2 - Layer separation: Frontend and IR must not touch
@@ -97,7 +97,7 @@ branching at construction time. Building the same source twice builds the same t
 - Corollary: no validation and no string emission at authoring time. Both are deferred
   to codegen, where the target version is known.
 
-This is *why* Principle 1 matters: a concept can only render itself correctly per version
+This is _why_ Principle 1 matters: a concept can only render itself correctly per version
 if it reached codegen as a concept. A string baked in at authoring time has already
 thrown that away.
 

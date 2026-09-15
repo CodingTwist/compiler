@@ -50,13 +50,21 @@ describe("cost report", () => {
     expect(root.selfCommands).toBe(3);
     // Heaviest first; numbers partition the subtree (self + breakdown = worst case).
     expect(root.breakdown.map((c) => c.callee)).toEqual(["heavy", "cheap"]);
-    expect(root.breakdown[0]).toMatchObject({ callee: "heavy", commands: 3, functions: 1 });
-    expect(root.breakdown[1]).toMatchObject({ callee: "cheap", commands: 1, functions: 1 });
+    expect(root.breakdown[0]).toMatchObject({
+      callee: "heavy",
+      commands: 3,
+      functions: 1,
+    });
+    expect(root.breakdown[1]).toMatchObject({
+      callee: "cheap",
+      commands: 1,
+      functions: 1,
+    });
     expect(root.breakdown[0].guard).toBe("as @a");
     expect(root.breakdown[1].guard).toBe("");
-    expect(root.selfCommands + root.breakdown.reduce((s, c) => s + c.commands, 0)).toBe(
-      root.worstCaseCommands,
-    );
+    expect(
+      root.selfCommands + root.breakdown.reduce((s, c) => s + c.commands, 0),
+    ).toBe(root.worstCaseCommands);
   });
 
   it("flags an unbounded @e scan but not a narrowed one", () => {

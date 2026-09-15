@@ -42,7 +42,9 @@ describe("Predicate builder", () => {
 
   it("gates newer flags by version", () => {
     const grounded = Predicate.entity({ flags: { is_on_ground: true } });
-    expect((grounded.toJson(v1_21_4) as any).predicate.flags).toEqual({ is_on_ground: true });
+    expect((grounded.toJson(v1_21_4) as any).predicate.flags).toEqual({
+      is_on_ground: true,
+    });
     expect(() => grounded.toJson(v1_20_1)).toThrow("is_on_ground needs 1.21+");
   });
 
@@ -59,7 +61,10 @@ describe("Predicate builder", () => {
 describe("Datapack.predicate registration", () => {
   it("emits a predicate JSON file under the 1.21 singular folder and returns a ref", () => {
     const dp = new Datapack("mypack", v1_21_4);
-    const ref = dp.predicate("sleeping", Predicate.entity({ nbt: Nbt({ SleepTimer: Short(1) }) }));
+    const ref = dp.predicate(
+      "sleeping",
+      Predicate.entity({ nbt: Nbt({ SleepTimer: Short(1) }) }),
+    );
     expect(ref).toBeInstanceOf(PredicateRef);
     expect(ref.id).toBe("mypack:sleeping");
 
@@ -112,7 +117,9 @@ describe("Item as single source of truth (give <-> predicate)", () => {
   });
 
   it("lowers the same Item to NBT-era give + predicate on pre-1.21", () => {
-    const item = Item("diamond_sword").named("Excalibur").enchant("sharpness", 5);
+    const item = Item("diamond_sword")
+      .named("Excalibur")
+      .enchant("sharpness", 5);
     expect(item.render(v1_20_1)).toBe(
       `minecraft:diamond_sword{display:{Name:'{"text":"Excalibur"}'},Enchantments:[{id:"minecraft:sharpness",lvl:5}]}`,
     );
@@ -126,7 +133,10 @@ describe("Item as single source of truth (give <-> predicate)", () => {
 describe("Selector.predicate integration", () => {
   it("adds a predicate=<id> arm from a PredicateRef", () => {
     const dp = new Datapack("mypack", v1_21_4);
-    const ref = dp.predicate("hider", Predicate.entity({ flags: { is_sneaking: true } }));
+    const ref = dp.predicate(
+      "hider",
+      Predicate.entity({ flags: { is_sneaking: true } }),
+    );
     const sel = Selector.allPlayers().predicate(ref);
     expect(sel.render(v1_21_4)).toBe("@a[predicate=mypack:hider]");
   });
@@ -147,7 +157,10 @@ describe("predicateCheck in ctx.if", () => {
 
   it("compiles to `execute if predicate <id> run ...`", () => {
     const { dp, dispatcher, ctx } = env();
-    const ref = dp.predicate("hider", Predicate.entity({ flags: { is_sneaking: true } }));
+    const ref = dp.predicate(
+      "hider",
+      Predicate.entity({ flags: { is_sneaking: true } }),
+    );
 
     const thenBody = new FunctionNode("__scratch");
     const innerCtx = new FunctionContext(thenBody, v1_21_4);

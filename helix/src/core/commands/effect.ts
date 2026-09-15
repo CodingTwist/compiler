@@ -15,16 +15,38 @@ export class EffectBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  give(targets: Selector, effect: MobEffect, seconds?: number, amplifier?: number, hideParticles?: boolean): this {
-    this.$set(litPart("effect"), litPart("give"), argPart(targets), argPart(effect));
+  give(
+    targets: Selector,
+    effect: MobEffect,
+    seconds?: number,
+    amplifier?: number,
+    hideParticles?: boolean,
+  ): this {
+    this.$set(
+      litPart("effect"),
+      litPart("give"),
+      argPart(targets),
+      argPart(effect),
+    );
     if (seconds !== undefined) this.$append(argPart(seconds));
     if (amplifier !== undefined) this.$append(argPart(amplifier));
     if (hideParticles !== undefined) this.$append(argPart(hideParticles));
     return this;
   }
 
-  giveInfinite(targets: Selector, effect: MobEffect, amplifier?: number, hideParticles?: boolean): this {
-    this.$set(litPart("effect"), litPart("give"), argPart(targets), argPart(effect), litPart("infinite"));
+  giveInfinite(
+    targets: Selector,
+    effect: MobEffect,
+    amplifier?: number,
+    hideParticles?: boolean,
+  ): this {
+    this.$set(
+      litPart("effect"),
+      litPart("give"),
+      argPart(targets),
+      argPart(effect),
+      litPart("infinite"),
+    );
     if (amplifier !== undefined) this.$append(argPart(amplifier));
     if (hideParticles !== undefined) this.$append(argPart(hideParticles));
     return this;

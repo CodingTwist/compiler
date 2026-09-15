@@ -47,7 +47,9 @@ export interface RuntimeShotOptions extends ShellOptions {
    * `spec.tags`,
    * e.g. for a macro shell or an existing entity.
    */
-  readonly shellFunction?: string | ((ctx: FunctionContext, spec: ShellSpec) => void);
+  readonly shellFunction?:
+    | string
+    | ((ctx: FunctionContext, spec: ShellSpec) => void);
   /**
    * Every type a callback `shellFunction` can summon, so finding the shot doesn't scan other
    * entities. Several types share one entity type tag.

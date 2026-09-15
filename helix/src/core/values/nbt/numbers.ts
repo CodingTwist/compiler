@@ -38,4 +38,5 @@ export class NbtIntArray {
   }
 }
 
-export const IntArray = (values: readonly number[]): NbtIntArray => new NbtIntArray(values);
+export const IntArray = (values: readonly number[]): NbtIntArray =>
+  new NbtIntArray(values);

@@ -62,22 +62,43 @@ const RANK: Record<Effect, number> = { none: 0, edits: 1, moves: 2 };
 
 /** The strongest of `effects`. */
 export function worst(...effects: Effect[]): Effect {
-  return effects.reduce<Effect>((a, b) => (RANK[b] > RANK[a] ? b : a), Effect.NONE);
+  return effects.reduce<Effect>(
+    (a, b) => (RANK[b] > RANK[a] ? b : a),
+    Effect.NONE,
+  );
 }
 
 /** A plain command with no `execute` clauses. */
-export function commandLine(effect: Effect, more: Partial<LineInfo> = {}): LineInfo {
-  return { clauses: [], open: true, effect, calls: [], exits: false, comment: false, local: false, ...more };
+export function commandLine(
+  effect: Effect,
+  more: Partial<LineInfo> = {},
+): LineInfo {
+  return {
+    clauses: [],
+    open: true,
+    effect,
+    calls: [],
+    exits: false,
+    comment: false,
+    local: false,
+    ...more,
+  };
 }
 
 /** A comment or blank line. */
-export const COMMENT_LINE: LineInfo = commandLine(Effect.NONE, { comment: true, local: true });
+export const COMMENT_LINE: LineInfo = commandLine(Effect.NONE, {
+  comment: true,
+  local: true,
+});
 
 /** A line nothing is known about, e.g. a native plugin call. */
-export const UNKNOWN_LINE: LineInfo = commandLine(Effect.MOVES, { open: false });
+export const UNKNOWN_LINE: LineInfo = commandLine(Effect.MOVES, {
+  open: false,
+});
 
 /** `function <ns>:<name>`. */
-export const callLine = (name: string): LineInfo => commandLine(Effect.NONE, { calls: [name], local: true });
+export const callLine = (name: string): LineInfo =>
+  commandLine(Effect.NONE, { calls: [name], local: true });
 
 /**
  * `execute <prefix> run <body>` (or a bare chain when `body` is missing).
@@ -112,7 +133,12 @@ export function chainLine(
  *
  * `returns` is for `return run function`, which now returns the body's result directly.
  */
-export function spliceCall(caller: LineInfo, callee: string, body: LineInfo, returns: boolean): LineInfo {
+export function spliceCall(
+  caller: LineInfo,
+  callee: string,
+  body: LineInfo,
+  returns: boolean,
+): LineInfo {
   const open = caller.open && !returns;
   return {
     clauses: open ? [...caller.clauses, ...body.clauses] : caller.clauses,
@@ -131,33 +157,58 @@ export function spliceCall(caller: LineInfo, callee: string, body: LineInfo, ret
  *
  * `executor` is true for `as`, where plain `@s` changes nothing.
  */
-export function selectorClause(text: string, sel: SelectorNode, executor = false): SharedClause | undefined {
+export function selectorClause(
+  text: string,
+  sel: SelectorNode,
+  executor = false,
+): SharedClause | undefined {
   // Picked once for a group instead of once per line: a different entity each time.
   if (sel.picksRandomly()) return undefined;
   // Any line may touch the scores, NBT or state these test.
   if (sel.readsState()) return undefined;
   if (!sel.picksOne()) {
     // Only `as` gives each entity its own `@s`; `at` would run every group at the same executor.
-    return executor ? { text, kind: "other", scans: sel.scans(), forks: true } : undefined;
+    return executor
+      ? { text, kind: "other", scans: sel.scans(), forks: true }
+      : undefined;
   }
-  if (sel.isBareSelf()) return { text, kind: executor ? "pure" : "self", scans: false, forks: false };
+  if (sel.isBareSelf())
+    return {
+      text,
+      kind: executor ? "pure" : "self",
+      scans: false,
+      forks: false,
+    };
   return { text, kind: "other", scans: sel.scans(), forks: false };
 }
 
 /** A clause that reads nothing a line could change, e.g. `in` or `positioned <pos>`. */
-export const pureClause = (text: string): SharedClause => ({ text, kind: "pure", scans: false, forks: false });
+export const pureClause = (text: string): SharedClause => ({
+  text,
+  kind: "pure",
+  scans: false,
+  forks: false,
+});
 
 /** Whether a command's `args` point at nothing but the executing entity. */
-export const onlySelf = (args: CommandValue[]): boolean => args.every((a) => a.reach?.() !== "world");
+export const onlySelf = (args: CommandValue[]): boolean =>
+  args.every((a) => a.reach?.() !== "world");
 
 /** Effect of writing NBT `path` on an entity. A path that isn't a plain {@link NbtPathValue} may be anything. */
 export function entityWriteEffect(path: CommandValue): Effect {
   if (!(path instanceof NbtPathValue)) return Effect.MOVES;
-  return [Path.Entity.Pos, Path.Entity.Rotation].some((p) => path.within(p)) ? Effect.MOVES : Effect.EDITS;
+  return [Path.Entity.Pos, Path.Entity.Rotation].some((p) => path.within(p))
+    ? Effect.MOVES
+    : Effect.EDITS;
 }
 
 /** Effect of merging `value` into an entity. Raw SNBT may hold `Pos` or `Rotation`. */
-export function entityMergeEffect(value: NbtValue, version: VersionProfile): Effect {
+export function entityMergeEffect(
+  value: NbtValue,
+  version: VersionProfile,
+): Effect {
   const keys = value.keys(version);
-  return keys ? worst(...keys.map((k) => entityWriteEffect(NbtPath(k)))) : Effect.MOVES;
+  return keys
+    ? worst(...keys.map((k) => entityWriteEffect(NbtPath(k))))
+    : Effect.MOVES;
 }

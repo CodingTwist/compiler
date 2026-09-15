@@ -32,7 +32,8 @@ export const SwingAnimation = {
   WHACK: "whack",
   STAB: "stab",
 } as const;
-export type SwingAnimation = (typeof SwingAnimation)[keyof typeof SwingAnimation];
+export type SwingAnimation =
+  (typeof SwingAnimation)[keyof typeof SwingAnimation];
 
 /** The volume slider a sound plays under. Use `SoundSource.HOSTILE`. */
 export const SoundSource = {

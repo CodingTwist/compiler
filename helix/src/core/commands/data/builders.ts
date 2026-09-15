@@ -65,7 +65,13 @@ export class DataModifyBuilder extends CommandBuilder<DataNode> {
     source: Selector,
     sourcePath?: NbtPath,
   ): void {
-    this.node.args = { sub: "modifyStorageMergeFromEntity", target, targetPath, source, sourcePath };
+    this.node.args = {
+      sub: "modifyStorageMergeFromEntity",
+      target,
+      targetPath,
+      source,
+      sourcePath,
+    };
   }
   entitySetFromEntity(
     target: Selector,
@@ -73,16 +79,49 @@ export class DataModifyBuilder extends CommandBuilder<DataNode> {
     source: Selector,
     sourcePath?: NbtPath,
   ): void {
-    this.node.args = { sub: "modifyEntitySetFromEntity", target, targetPath, source, sourcePath };
+    this.node.args = {
+      sub: "modifyEntitySetFromEntity",
+      target,
+      targetPath,
+      source,
+      sourcePath,
+    };
   }
-  entitySetFromBlock(target: Selector, targetPath: NbtPath, source: Pos, sourcePath?: NbtPath): void {
-    this.node.args = { sub: "modifyEntitySetFromBlock", target, targetPath, source, sourcePath };
+  entitySetFromBlock(
+    target: Selector,
+    targetPath: NbtPath,
+    source: Pos,
+    sourcePath?: NbtPath,
+  ): void {
+    this.node.args = {
+      sub: "modifyEntitySetFromBlock",
+      target,
+      targetPath,
+      source,
+      sourcePath,
+    };
   }
-  blockSetFromEntity(targetPos: Pos, targetPath: NbtPath, source: Selector, sourcePath?: NbtPath): void {
-    this.node.args = { sub: "modifyBlockSetFromEntity", targetPos, targetPath, source, sourcePath };
+  blockSetFromEntity(
+    targetPos: Pos,
+    targetPath: NbtPath,
+    source: Selector,
+    sourcePath?: NbtPath,
+  ): void {
+    this.node.args = {
+      sub: "modifyBlockSetFromEntity",
+      targetPos,
+      targetPath,
+      source,
+      sourcePath,
+    };
   }
   blockSetValue(targetPos: Pos, targetPath: NbtPath, value: Nbt): void {
-    this.node.args = { sub: "modifyBlockSetValue", targetPos, targetPath, value };
+    this.node.args = {
+      sub: "modifyBlockSetValue",
+      targetPos,
+      targetPath,
+      value,
+    };
   }
   // ...generator emits the remaining ~93 modify leaves
 }

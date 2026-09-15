@@ -5,7 +5,9 @@ import { Dust, DustTransition } from "./particle";
 describe("particle options", () => {
   it("renders dust as SNBT on 1.20.5+ and as positional args before it", () => {
     const dust = Dust(0xff0000, 1.5);
-    expect(dust.render(v1_21_4)).toBe("minecraft:dust{color:[1.0f,0.0f,0.0f],scale:1.5f}");
+    expect(dust.render(v1_21_4)).toBe(
+      "minecraft:dust{color:[1.0f,0.0f,0.0f],scale:1.5f}",
+    );
     expect(dust.render(v1_20_4)).toBe("minecraft:dust 1.0 0.0 0.0 1.5");
   });
 

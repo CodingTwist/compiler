@@ -27,7 +27,10 @@ export function hasCommandTree(root: BrigadierNode | undefined): boolean {
  * command;
  * only catches keywords that don't exist (e.g. `random` before 1.20.3).
  */
-export function validateCommand(command: string, version: VersionProfile): void {
+export function validateCommand(
+  command: string,
+  version: VersionProfile,
+): void {
   // A leading `$` marks a macro line; the command keyword follows it.
   const trimmed = command.trim().replace(/^[/$]/, "");
   if (!trimmed || trimmed.startsWith("#")) return;

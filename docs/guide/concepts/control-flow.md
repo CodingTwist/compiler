@@ -8,13 +8,13 @@ clauses to chain, which scratch holders to use, and which private functions to s
 `ctx.if(condition, body)` takes a score comparison, a [`Detect`](/api/helix/variables/Detect)
 check, or `and`/`or`/`not` of those. Chain `.elif` and `.else` onto it.
 
-| Condition | Emits |
-| --- | --- |
-| `score.equal(n)`, `.greaterThan`, `.lessThan`, `.atLeast`, `.atMost`, `.matches(range)` | `if score … matches …` |
-| `a.greaterThan(b)` where both are scores | `if score a > b` |
-| `Detect.entity(sel)`, `Detect.noEntity(sel)`, `Detect.block(pos, block)`, `Detect.predicate(ref)` | `if entity …`, `unless entity …`, … |
-| `and(a, b)` | one `execute` with both clauses |
-| `or(a, b)`, `not(and(a, b))` | one line per alternative, and the body still runs once |
+| Condition                                                                                         | Emits                                                  |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `score.equal(n)`, `.greaterThan`, `.lessThan`, `.atLeast`, `.atMost`, `.matches(range)`           | `if score … matches …`                                 |
+| `a.greaterThan(b)` where both are scores                                                          | `if score a > b`                                       |
+| `Detect.entity(sel)`, `Detect.noEntity(sel)`, `Detect.block(pos, block)`, `Detect.predicate(ref)` | `if entity …`, `unless entity …`, …                    |
+| `and(a, b)`                                                                                       | one `execute` with both clauses                        |
+| `or(a, b)`, `not(and(a, b))`                                                                      | one line per alternative, and the body still runs once |
 
 ```ts compile
 import { Datapack, v26_2, Detect, Selector, Range, and, or } from "helix";
@@ -25,7 +25,15 @@ const shield = dp.objective("shield").score(Selector.self());
 
 dp.createFunction("tick").build((ctx) => {
   ctx
-    .if(and(hp.atMost(4), Detect.noEntity(Selector.allPlayers().distance(new Range(undefined, 8)))), (c) => c.say("fleeing"))
+    .if(
+      and(
+        hp.atMost(4),
+        Detect.noEntity(
+          Selector.allPlayers().distance(new Range(undefined, 8)),
+        ),
+      ),
+      (c) => c.say("fleeing"),
+    )
     .elif(or(hp.lessThan(shield), shield.equal(0)), (c) => c.say("guarding"))
     .else((c) => c.say("attacking"));
 });

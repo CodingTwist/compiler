@@ -69,7 +69,11 @@ export class DatapackTags extends DatapackFunctions {
    */
   entityTypeTag(name: string, types: readonly EntityType[]): EntityType {
     const known = this.registryTags.get(`entity_type/${name}`)?.values ?? [];
-    this.tag("entity_type", name, { values: [...new Set(types.map((t) => t.render()))].filter((t) => !known.includes(t)) });
+    this.tag("entity_type", name, {
+      values: [...new Set(types.map((t) => t.render()))].filter(
+        (t) => !known.includes(t),
+      ),
+    });
     return EntityType(`#${this.name}:${name}`);
   }
 

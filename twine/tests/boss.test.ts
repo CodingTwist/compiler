@@ -9,7 +9,10 @@ import { DatapackFactory } from "../src/core/factory";
 import { defineBoss } from "../src/boss/builder";
 
 function compile(root: new () => object) {
-  const dp = DatapackFactory.create(root as never, { name: "test", env: "dev" });
+  const dp = DatapackFactory.create(root as never, {
+    name: "test",
+    env: "dev",
+  });
   const files = buildDatapack(dp);
   return {
     all: [...files.values()].join("\n"),
@@ -23,9 +26,17 @@ const king = () =>
     .arena({ kind: "region", center: [0, 70, 0], radius: 30 })
     .bossbar(Component("Bone King"), "purple")
     .phase("one")
-    .ability("slam", { cooldown: 60, weight: 3, body: (ctx) => ctx.say("slam") })
+    .ability("slam", {
+      cooldown: 60,
+      weight: 3,
+      body: (ctx) => ctx.say("slam"),
+    })
     .phase("two", { at: 50, bar: { name: Component("Enraged"), color: "red" } })
-    .ability("slam", { cooldown: 60, weight: 3, body: (ctx) => ctx.say("slam") })
+    .ability("slam", {
+      cooldown: 60,
+      weight: 3,
+      body: (ctx) => ctx.say("slam"),
+    })
     .ability("beam", { cooldown: 40, body: (ctx) => ctx.say("beam") })
     .onVictory((ctx) => ctx.say("won"))
     .onDefeat((ctx) => ctx.say("lost"));
@@ -47,7 +58,9 @@ describe("defineBoss", () => {
     expect(all).toContain(
       "store result score #king.hp king run data get entity @e[tag=king,limit=1,type=minecraft:wither] Health 100",
     );
-    expect(all).toContain("scoreboard players operation #king.hp king /= #king.max king");
+    expect(all).toContain(
+      "scoreboard players operation #king.hp king /= #king.max king",
+    );
     expect(all).toContain(
       "store result bossbar test:king value run scoreboard players get #king.hp king",
     );
@@ -91,8 +104,12 @@ describe("defineBoss", () => {
     // `random value` needs a build-time literal range, so the live total can only
     // enter via the modulo. This is the one place a RandomValueNode is fed to an
     // execute chain anywhere in the stack - if it stops inlining, no roll happens.
-    expect(pick).toContain("store result score #king.roll king run random value 0..2147483647");
-    expect(pick).toContain("scoreboard players operation #king.roll king %= #king.total king");
+    expect(pick).toContain(
+      "store result score #king.roll king run random value 0..2147483647",
+    );
+    expect(pick).toContain(
+      "scoreboard players operation #king.roll king %= #king.total king",
+    );
     expect(pick).toContain("scoreboard players add #king.roll king 1");
     expect(pick).toContain("scoreboard players set #king.pick king 0");
     // Only an unpicked, off-cooldown ability is even tried.
@@ -102,7 +119,9 @@ describe("defineBoss", () => {
 
     const trySlam = build().file("king/two/try_slam.mcfunction")!;
     expect(trySlam).toContain("scoreboard players remove #king.roll king 3");
-    expect(trySlam).toContain("if score #king.roll king matches ..0 run function test:king/two/slam");
+    expect(trySlam).toContain(
+      "if score #king.roll king matches ..0 run function test:king/two/slam",
+    );
 
     const slam = build().file("king/two/slam.mcfunction")!;
     expect(slam).toContain("scoreboard players set #king.pick king 1");
@@ -118,13 +137,17 @@ describe("defineBoss", () => {
 
   it("treats the entity being gone as death, and cleans up so the fight repeats", () => {
     const { all, file } = build();
-    expect(all).toContain("unless entity @e[tag=king,limit=1,type=minecraft:wither] run function test:king/victory");
+    expect(all).toContain(
+      "unless entity @e[tag=king,limit=1,type=minecraft:wither] run function test:king/victory",
+    );
 
     const cleanup = file("king/cleanup.mcfunction")!;
     expect(cleanup).toContain("kill @e[tag=king,type=minecraft:wither]");
     expect(cleanup).toContain("bossbar remove test:king");
     expect(cleanup).toContain("scoreboard players set #king.live king 0");
-    expect(cleanup).toContain("scoreboard players set #king.cd.two.beam king 0");
+    expect(cleanup).toContain(
+      "scoreboard players set #king.cd.two.beam king 0",
+    );
     expect(cleanup).toContain("tag @a[tag=king.p] remove king.p");
 
     // Victory rewards each participant, then resets.
@@ -138,13 +161,18 @@ describe("defineBoss", () => {
     // separately re-scans every loaded entity ten times a poll, which is the exact
     // cost the area gating exists to avoid.
     const { all } = build();
-    expect(all.split("if entity @e[tag=king,limit=1,type=minecraft:wither]").length - 1).toBe(1);
+    expect(
+      all.split("if entity @e[tag=king,limit=1,type=minecraft:wither]").length -
+        1,
+    ).toBe(1);
   });
 
   it("recomputes arena membership each poll and binds the bar to it", () => {
     const { all } = build();
     expect(all).toContain("tag @a[tag=king.p] remove king.p");
-    expect(all).toContain("positioned 0 70 0 run tag @a[distance=..30] add king.p");
+    expect(all).toContain(
+      "positioned 0 70 0 run tag @a[distance=..30] add king.p",
+    );
     expect(all).toContain("bossbar set test:king players @a[tag=king.p]");
   });
 
@@ -165,7 +193,10 @@ describe("defineBoss", () => {
 
   it("rejects an ability with no phase to belong to", () => {
     expect(() =>
-      defineBoss(Wither({}), Pos(0, 70, 0)).ability("slam", { cooldown: 1, body: () => {} }),
+      defineBoss(Wither({}), Pos(0, 70, 0)).ability("slam", {
+        cooldown: 1,
+        body: () => {},
+      }),
     ).toThrow(/before any phase/);
   });
 });

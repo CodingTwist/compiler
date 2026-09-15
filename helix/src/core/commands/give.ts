@@ -26,10 +26,12 @@ export interface ItemSpec {
 export function toItem(input: ItemSpec | Item | string): ItemValue {
   if (input instanceof ItemValue) return input;
   if (typeof input === "string") return Item(input);
-  const item = input.id instanceof ItemValue ? input.id : Item(String(input.id));
+  const item =
+    input.id instanceof ItemValue ? input.id : Item(String(input.id));
   if (input.count !== undefined) item.count(input.count);
   if (input.customName !== undefined) item.named(input.customName);
-  if (input.customModelData !== undefined) item.modelData(input.customModelData);
+  if (input.customModelData !== undefined)
+    item.modelData(input.customModelData);
   if (input.enchantments) {
     for (const [ench, lvl] of input.enchantments) item.enchant(ench, lvl);
   }
@@ -65,14 +67,21 @@ export class PlayerGiveCommand extends CommandHandler<PlayerGiveNode> {
     );
     const target = resolveTarget(node, ctx);
     const data = item.renderData(ctx.version);
-    ctx.emit(`give ${target} ${id}${data} ${item.getCount() ?? 1}`, commandLine(Effect.EDITS));
+    ctx.emit(
+      `give ${target} ${id}${data} ${item.getCount() ?? 1}`,
+      commandLine(Effect.EDITS),
+    );
   }
 }
 
 declare module "../frontend/context" {
   interface FunctionContext {
     /** `give <target> <item> [count]` - accepts a rich `Item`, a bare id string, or a legacy `ItemSpec`. */
-    playerGive(selector: Selector, item: ItemSpec | Item | string, count?: number): void;
+    playerGive(
+      selector: Selector,
+      item: ItemSpec | Item | string,
+      count?: number,
+    ): void;
     /** A named player as a selector helper: `ctx.player("Steve").giveItem(...)`. */
     player(name: string): Player;
   }
@@ -90,6 +99,9 @@ FunctionContext.prototype.playerGive = function (
   this.emit(new PlayerGiveNode(selector.build(), resolved));
 };
 
-FunctionContext.prototype.player = function (this: FunctionContext, name: string) {
+FunctionContext.prototype.player = function (
+  this: FunctionContext,
+  name: string,
+) {
   return new Player(this.fn, name);
 };

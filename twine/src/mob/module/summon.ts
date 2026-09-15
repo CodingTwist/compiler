@@ -1,11 +1,19 @@
 import { Pos, Range, Relation, Selector } from "helix";
 import type { FunctionContext, FunctionRef } from "helix";
 import type { ModuleScope } from "../../core/module.interface";
-import { DIFFICULTIES, DIFFICULTY, DIFFICULTY_IDS, type Difficulty } from "../../core/difficulty";
+import {
+  DIFFICULTIES,
+  DIFFICULTY,
+  DIFFICULTY_IDS,
+  type Difficulty,
+} from "../../core/difficulty";
 import type { MobParts } from "./parts";
 
 /** Emits `<mob>/summon` */
-export function registerSummon<S extends string>(m: MobParts<S>, scope: ModuleScope): void {
+export function registerSummon<S extends string>(
+  m: MobParts<S>,
+  scope: ModuleScope,
+): void {
   const fresh = `${m.name}.new`;
   m.add(
     "summon",
@@ -18,9 +26,17 @@ export function registerSummon<S extends string>(m: MobParts<S>, scope: ModuleSc
       ctx
         .execute()
         .as(m.rigRoots.tag(fresh).distance(here))
-        .run((b) => b.ride().mount(Selector.self(), m.mobs.tag(fresh).distance(here).limit(1)));
+        .run((b) =>
+          b
+            .ride()
+            .mount(Selector.self(), m.mobs.tag(fresh).distance(here).limit(1)),
+        );
       const scale = onDifficultyFn(m);
-      if (scale) ctx.execute().as(m.mobs.tag(fresh).distance(here).limit(1)).run((b) => b.call(scale));
+      if (scale)
+        ctx
+          .execute()
+          .as(m.mobs.tag(fresh).distance(here).limit(1))
+          .run((b) => b.call(scale));
       // Only the mob and the rig root carry `fresh`. The rig is reached through the mob, since
       // mounting may have moved it.
       ctx
@@ -34,10 +50,16 @@ export function registerSummon<S extends string>(m: MobParts<S>, scope: ModuleSc
 }
 
 /** `<mob>/on_difficulty`: the author's {@link MobDef.onDifficulty} for the current level, registered once. */
-export function onDifficultyFn<S extends string>(m: MobParts<S>): FunctionRef | undefined {
+export function onDifficultyFn<S extends string>(
+  m: MobParts<S>,
+): FunctionRef | undefined {
   const body = m.def.onDifficulty;
   if (!body) return undefined;
-  if (!m.fns.has("on_difficulty")) m.add("on_difficulty", byDifficulty(m, "on_difficulty", (c, level) => body(c, m.dp, level)));
+  if (!m.fns.has("on_difficulty"))
+    m.add(
+      "on_difficulty",
+      byDifficulty(m, "on_difficulty", (c, level) => body(c, m.dp, level)),
+    );
   return m.fns.get("on_difficulty");
 }
 

@@ -5,12 +5,18 @@ import { Module } from "../src/core/module.decorator";
 import { DatapackFactory } from "../src/core/factory";
 
 function compile(root: new () => object): { tick: string; clock: string } {
-  const dp = DatapackFactory.create(root as never, { name: "test", env: "dev" });
+  const dp = DatapackFactory.create(root as never, {
+    name: "test",
+    env: "dev",
+  });
   const files = buildDatapack(dp);
   const find = (suffix: string) =>
     [...files].find(([p]) => p.endsWith(suffix))?.[1] ?? "";
   // root tick + each module's own `<name>/tick`
-  const tick = [...files].filter(([p]) => p.endsWith("/tick.mcfunction")).map(([, b]) => b).join("\n");
+  const tick = [...files]
+    .filter(([p]) => p.endsWith("/tick.mcfunction"))
+    .map(([, b]) => b)
+    .join("\n");
   return { tick, clock: find("zzz/clock.mcfunction") };
 }
 

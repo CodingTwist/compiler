@@ -50,9 +50,7 @@ describe("ExecuteAsHandler - as @s folding", () => {
 
   it("does NOT fold when @s carries its own predicate block", () => {
     const { dispatcher, ctx } = env();
-    const inner = nodeOf((c) =>
-      c.kill(Selector.self().tag("dead")),
-    );
+    const inner = nodeOf((c) => c.kill(Selector.self().tag("dead")));
     const sel = Selector.allEntities().tag("mob").build();
     dispatcher.dispatch(new ExecuteAsNode(sel, inner), ctx);
     expect(ctx.lines[0]).toBe("execute as @e[tag=mob] run kill @s[tag=dead]");

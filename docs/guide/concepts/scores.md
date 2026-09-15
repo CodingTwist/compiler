@@ -5,8 +5,8 @@ pair - with typed methods for every scoreboard operation. You get one from an
 [`Objective`](/api/helix/classes/Objective):
 
 ```ts
-const game = dp.objective("game");        // scoreboard objective
-const score = game.score(ScoreTarget("total"));   // one cell on it
+const game = dp.objective("game"); // scoreboard objective
+const score = game.score(ScoreTarget("total")); // one cell on it
 ```
 
 `ScoreTarget` is the holder - a fake-player name like `"total"`, or a selector. The
@@ -18,16 +18,16 @@ const score = game.score(ScoreTarget("total"));   // one cell on it
 Minecraft splits score math into two commands, and `Score` mirrors that split with two
 naming families. Getting them straight is the one thing worth internalising here.
 
-| You want… | Method | Emits |
-| --- | --- | --- |
-| set/add/remove a **literal integer** | `.set(n)` `.add(n)` `.remove(n)` | `scoreboard players set/add/remove … n` |
-| combine with **another score** | `.assign` `.plus` `.minus` `.times` `.divide` `.modulo` `.min` `.max` `.swap` | `scoreboard players operation … <op> …` |
+| You want…                            | Method                                                                        | Emits                                   |
+| ------------------------------------ | ----------------------------------------------------------------------------- | --------------------------------------- |
+| set/add/remove a **literal integer** | `.set(n)` `.add(n)` `.remove(n)`                                              | `scoreboard players set/add/remove … n` |
+| combine with **another score**       | `.assign` `.plus` `.minus` `.times` `.divide` `.modulo` `.min` `.max` `.swap` | `scoreboard players operation … <op> …` |
 
-The verbs differ on purpose: `add`/`remove` are taken by the *literal-constant*
+The verbs differ on purpose: `add`/`remove` are taken by the _literal-constant_
 commands, so score-to-score `+=`/`-=` are `plus`/`minus`. All the `operation` verbs
 return `this`, so they chain - `acc.times(k).plus(delta)` reads as algebra.
 
-It only *reads* as algebra, though: a chain is a sequence of mutations, one command each,
+It only _reads_ as algebra, though: a chain is a sequence of mutations, one command each,
 and it can't express anything with a nested term (`(a + b) * c` needs a scratch cell you
 manage yourself). When you're writing a formula rather than stepping a counter, use
 `` math`…` `` - see [Math and `/compute`](/guide/concepts/math-and-compute).
@@ -43,8 +43,8 @@ tick.build((ctx) => {
   const score = game.score(ScoreTarget("score"));
   const bonus = game.score(ScoreTarget("bonus"));
 
-  score.add(1);        // literal:        scoreboard players add … 1
-  score.plus(bonus);   // score-to-score: score += bonus
+  score.add(1); // literal:        scoreboard players add … 1
+  score.plus(bonus); // score-to-score: score += bonus
 });
 ```
 
@@ -58,7 +58,7 @@ and you mean the outer one.
 
 ## Comparisons drive control flow
 
-`.equal`, `.greaterThan`, and `.lessThan` don't emit - they return a *condition* you hand
+`.equal`, `.greaterThan`, and `.lessThan` don't emit - they return a _condition_ you hand
 to [`ctx.if`](/api/helix/classes/FunctionContext). The `if` body compiles to its own
 child function, which is why you'll see a second `.mcfunction` in the output:
 
@@ -72,7 +72,7 @@ const tick = dp.createFunction("tick");
 tick.build((ctx) => {
   const score = game.score(ScoreTarget("score"));
   ctx.if(score.greaterThan(100), (ctx) => {
-    score.set(0);   // reset once we cross the threshold
+    score.set(0); // reset once we cross the threshold
   });
 });
 ```

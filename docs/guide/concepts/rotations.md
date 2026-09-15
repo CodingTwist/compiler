@@ -4,7 +4,7 @@ Display entities are how a datapack draws anything that isn't a block, and every
 them carries its orientation as a **quaternion** - four numbers, `[x, y, z, w]`, that are
 famously unpleasant to reason about.
 
-The good news: you never have to. This page is mostly about *not* thinking in
+The good news: you never have to. This page is mostly about _not_ thinking in
 quaternions. Read the first section and skip the rest until something looks wrong.
 
 ## Don't derive it. State the intent.
@@ -33,18 +33,18 @@ hand over both.
 It is an **orientation**, not an angle: "turn by some amount about some axis", stored so
 that it composes cleanly and has no gimbal lock. You need exactly three facts about it:
 
-1. `[0, 0, 0, 1]` is *no rotation* - the identity you'll see all over emitted NBT.
+1. `[0, 0, 0, 1]` is _no rotation_ - the identity you'll see all over emitted NBT.
 2. They **compose** by multiplication, and order matters.
 3. Minecraft interpolates between two of them along the **shortest path**. That is why a
-   spin is a *sequence* of poses rather than one big angle - see the gotchas below.
+   spin is a _sequence_ of poses rather than one big angle - see the gotchas below.
 
 ## The three ways to make one
 
-| | Use it when |
-| --- | --- |
-| `quatFromTo(from, to)` | You know where the model points and where you want it. **Start here.** |
-| `quat(axis, degrees)` | You want a turn about `"x"`, `"y"` or `"z"` - a spin, a hinge, a step of an animation. |
-| `mulQuat(a, b)` | You need two of them at once. |
+|                        | Use it when                                                                            |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| `quatFromTo(from, to)` | You know where the model points and where you want it. **Start here.**                 |
+| `quat(axis, degrees)`  | You want a turn about `"x"`, `"y"` or `"z"` - a spin, a hinge, a step of an animation. |
+| `mulQuat(a, b)`        | You need two of them at once.                                                          |
 
 The one thing about `mulQuat` that bites everyone: **`b` happens first.** It reads like
 the maths (`a * b`), which means right-to-left, which is the opposite of the order you
@@ -71,13 +71,21 @@ so reading in the order things happen to the model:
 
 - **`rightRotation` orients the model in its own space** - it happens before the scale.
   This is where you correct for however the item or block model happens to be built: a
-  2D item sprite lies in the XY plane with the item on its diagonal, so *something* has
+  2D item sprite lies in the XY plane with the item on its diagonal, so _something_ has
   to turn it into the shape you meant.
 - **`leftRotation` orients that result in the world** - the pose. This is the one an
   animation drives.
 
 ```ts compile
-import { Datapack, v26_2, Display, Item, quat, quatFromTo, mulQuat } from "helix";
+import {
+  Datapack,
+  v26_2,
+  Display,
+  Item,
+  quat,
+  quatFromTo,
+  mulQuat,
+} from "helix";
 
 const dp = new Datapack("blade", v26_2);
 
@@ -99,7 +107,7 @@ dp.createFunction("summon").build((ctx) => {
 ```
 
 The `"none"` display context matters here: the `head`/`thirdperson` contexts bake in
-their *own* rotation and offset, which fight whatever you set.
+their _own_ rotation and offset, which fight whatever you set.
 
 ## Turning part of a group
 
@@ -123,10 +131,10 @@ point-down, spun about `y`, is a sword hanging point-down. If a pose "does nothi
 this first - it is the most common cause by a distance, and it doesn't look like a bug,
 it looks like the code never ran.
 
-**Orbiting and turning are different things.** Rotating a part's *orientation* without
-its *translation* keeps it in place while it turns; doing both carries it around a circle.
+**Orbiting and turning are different things.** Rotating a part's _orientation_ without
+its _translation_ keeps it in place while it turns; doing both carries it around a circle.
 A blade that should sweep like a rotor needs its orientation laid flat (one constant
-rotation) while a *separate* per-step rotation walks its translation around the circle -
+rotation) while a _separate_ per-step rotation walks its translation around the circle -
 which is exactly the split between `Gesture`'s `tilt` and its `rotate`.
 
 **`quat("y", 405)` is not a full turn plus 45°.** It is the same orientation as

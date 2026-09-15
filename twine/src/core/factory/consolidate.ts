@@ -11,7 +11,9 @@ import type { Datapack } from "helix";
  */
 export function consolidateTick(dp: Datapack): void {
   const root = "tick";
-  const members = [...(dp.tags.get("tick") ?? [])].filter((name) => name !== root);
+  const members = [...(dp.tags.get("tick") ?? [])].filter(
+    (name) => name !== root,
+  );
   if (members.length === 0) return;
   for (const name of members) dp.untag(name, "tick");
   dp.tick((ctx) => {

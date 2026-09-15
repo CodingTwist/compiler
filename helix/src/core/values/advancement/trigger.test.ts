@@ -19,7 +19,8 @@ describe("Trigger", () => {
     const wand = Item("stick").named("Frost Wand");
     const json = Trigger.playerHurtEntity(wand).toJson(v1_21_4);
     expect(json.trigger).toBe("minecraft:player_hurt_entity");
-    const player = (json.conditions as Record<string, unknown>).player as Record<string, unknown>[];
+    const player = (json.conditions as Record<string, unknown>)
+      .player as Record<string, unknown>[];
     expect(player[0].condition).toBe("minecraft:entity_properties");
     expect((player[0].predicate as Record<string, unknown>).equipment).toEqual({
       mainhand: wand.toPredicate(v1_21_4),
@@ -29,26 +30,40 @@ describe("Trigger", () => {
 
 describe("Trigger location/entity/block helpers", () => {
   it("location renders through the same shape as an entity_properties location check", () => {
-    const t = Trigger.location({ dimension: "minecraft:the_end", position: { x: { min: 1, max: 2 } } });
+    const t = Trigger.location({
+      dimension: "minecraft:the_end",
+      position: { x: { min: 1, max: 2 } },
+    });
     expect(t.toJson(v1_21_4)).toEqual({
       trigger: "minecraft:location",
       conditions: {
-        player: { location: { dimension: "minecraft:the_end", position: { x: { min: 1, max: 2 } } } },
+        player: {
+          location: {
+            dimension: "minecraft:the_end",
+            position: { x: { min: 1, max: 2 } },
+          },
+        },
       },
     });
   });
 
   it("enterBlock renders the block id", () => {
-    expect(Trigger.enterBlock("minecraft:end_gateway").toJson(v1_21_4)).toEqual({
-      trigger: "minecraft:enter_block",
-      conditions: { block: "minecraft:end_gateway" },
-    });
+    expect(Trigger.enterBlock("minecraft:end_gateway").toJson(v1_21_4)).toEqual(
+      {
+        trigger: "minecraft:enter_block",
+        conditions: { block: "minecraft:end_gateway" },
+      },
+    );
   });
 
   it("placedBlock takes a Block, and a typed Dimension in its location", () => {
-    const json = Trigger.placedBlock(Block.STONE_BUTTON, { dimension: Dimension.THE_END }).toJson(v1_21_4);
+    const json = Trigger.placedBlock(Block.STONE_BUTTON, {
+      dimension: Dimension.THE_END,
+    }).toJson(v1_21_4);
     expect(json.conditions?.block).toBe("minecraft:stone_button");
-    expect(JSON.stringify(json.conditions?.location)).toContain('"dimension":"minecraft:the_end"');
+    expect(JSON.stringify(json.conditions?.location)).toContain(
+      '"dimension":"minecraft:the_end"',
+    );
   });
 
   it("consumeItem renders the item's predicate form", () => {
@@ -60,7 +75,11 @@ describe("Trigger location/entity/block helpers", () => {
   });
 
   it("playerKilledEntity renders the entity spec, or omits conditions entirely", () => {
-    expect(Trigger.playerKilledEntity({ type: "minecraft:ender_dragon" }).toJson(v1_21_4)).toEqual({
+    expect(
+      Trigger.playerKilledEntity({ type: "minecraft:ender_dragon" }).toJson(
+        v1_21_4,
+      ),
+    ).toEqual({
       trigger: "minecraft:player_killed_entity",
       conditions: { entity: { type: "minecraft:ender_dragon" } },
     });
@@ -70,17 +89,29 @@ describe("Trigger location/entity/block helpers", () => {
   });
 
   it("placedBlock renders block plus an optional location_check list", () => {
-    expect(Trigger.placedBlock("minecraft:stone_button", { dimension: "minecraft:the_end" }).toJson(v1_21_4)).toEqual({
+    expect(
+      Trigger.placedBlock("minecraft:stone_button", {
+        dimension: "minecraft:the_end",
+      }).toJson(v1_21_4),
+    ).toEqual({
       trigger: "minecraft:placed_block",
       conditions: {
         block: "minecraft:stone_button",
-        location: [Predicate.location({ dimension: "minecraft:the_end" }).toJson(v1_21_4)],
+        location: [
+          Predicate.location({ dimension: "minecraft:the_end" }).toJson(
+            v1_21_4,
+          ),
+        ],
       },
     });
   });
 
   it("inventoryChanged and impossible take no conditions", () => {
-    expect(Trigger.inventoryChanged().toJson(v1_21_4)).toEqual({ trigger: "minecraft:inventory_changed" });
-    expect(Trigger.impossible().toJson(v1_21_4)).toEqual({ trigger: "minecraft:impossible" });
+    expect(Trigger.inventoryChanged().toJson(v1_21_4)).toEqual({
+      trigger: "minecraft:inventory_changed",
+    });
+    expect(Trigger.impossible().toJson(v1_21_4)).toEqual({
+      trigger: "minecraft:impossible",
+    });
   });
 });

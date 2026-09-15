@@ -10,11 +10,40 @@ export type DataArgs =
   | { sub: "removeBlock"; targetPos: Pos; path: NbtPath }
   | { sub: "removeEntity"; target: Selector; path: NbtPath }
   | { sub: "removeStorage"; target: Id; path: NbtPath }
-  | { sub: "modifyStorageMergeFromEntity"; target: Id; targetPath: NbtPath; source: Selector; sourcePath?: NbtPath }
-  | { sub: "modifyEntitySetFromEntity"; target: Selector; targetPath: NbtPath; source: Selector; sourcePath?: NbtPath }
-  | { sub: "modifyEntitySetFromBlock"; target: Selector; targetPath: NbtPath; source: Pos; sourcePath?: NbtPath }
-  | { sub: "modifyBlockSetFromEntity"; targetPos: Pos; targetPath: NbtPath; source: Selector; sourcePath?: NbtPath }
-  | { sub: "modifyBlockSetValue"; targetPos: Pos; targetPath: NbtPath; value: Nbt }
+  | {
+      sub: "modifyStorageMergeFromEntity";
+      target: Id;
+      targetPath: NbtPath;
+      source: Selector;
+      sourcePath?: NbtPath;
+    }
+  | {
+      sub: "modifyEntitySetFromEntity";
+      target: Selector;
+      targetPath: NbtPath;
+      source: Selector;
+      sourcePath?: NbtPath;
+    }
+  | {
+      sub: "modifyEntitySetFromBlock";
+      target: Selector;
+      targetPath: NbtPath;
+      source: Pos;
+      sourcePath?: NbtPath;
+    }
+  | {
+      sub: "modifyBlockSetFromEntity";
+      targetPos: Pos;
+      targetPath: NbtPath;
+      source: Selector;
+      sourcePath?: NbtPath;
+    }
+  | {
+      sub: "modifyBlockSetValue";
+      targetPos: Pos;
+      targetPath: NbtPath;
+      value: Nbt;
+    }
   | { sub: "mergeEntity"; target: Selector; value: Nbt }
   | { sub: "mergeBlock"; targetPos: Pos; value: Nbt }
   | { sub: "mergeStorage"; target: Id; value: Nbt };

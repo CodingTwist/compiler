@@ -26,15 +26,23 @@ export function textJson(part: TellrawPart, ctx?: CodegenContext): any {
       name:
         typeof target === "string"
           ? target
-          : (target as { render(v: any): string }).render(needs(ctx, "a score's target").version),
+          : (target as { render(v: any): string }).render(
+              needs(ctx, "a score's target").version,
+            ),
       objective: part.objective.objective,
     };
   } else if (part instanceof SelectorText) {
     const c = needs(ctx, "a selector");
-    json.selector = generateSingleNode(part.selector.build(), c.datapack, c.dispatcher);
+    json.selector = generateSingleNode(
+      part.selector.build(),
+      c.datapack,
+      c.dispatcher,
+    );
   } else if (part instanceof NbtRef) {
     if (!part.path) {
-      throw new Error("Cannot display an NBT holder in a text component without a path");
+      throw new Error(
+        "Cannot display an NBT holder in a text component without a path",
+      );
     }
     const c = needs(ctx, "an NBT reference");
     json.nbt = part.path.render(c.version);
@@ -68,13 +76,20 @@ function clickJson(event: ClickEvent, ctx?: CodegenContext): any {
       ? event.value
       : (() => {
           const c = needs(ctx, "a command-node click action");
-          return generateSingleNode(event.value as any, c.datapack, c.dispatcher);
+          return generateSingleNode(
+            event.value as any,
+            c.datapack,
+            c.dispatcher,
+          );
         })();
   return { action: event.action, [CLICK_FIELD[event.action]]: payload };
 }
 
 function hoverJson(event: HoverEvent, ctx?: CodegenContext): any {
-  return { action: "show_text", value: event.parts.map((p) => textJson(p, ctx)) };
+  return {
+    action: "show_text",
+    value: event.parts.map((p) => textJson(p, ctx)),
+  };
 }
 
 function needs(ctx: CodegenContext | undefined, what: string): CodegenContext {

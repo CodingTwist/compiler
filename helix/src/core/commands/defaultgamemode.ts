@@ -6,9 +6,7 @@ import { CommandBuilder, litPart, argPart } from "./base";
 import { Gamemode } from "../values";
 
 /** `defaultgamemode` */
-export class DefaultgamemodeBuilder extends CommandBuilder<TreeCommandNode> {
-
-}
+export class DefaultgamemodeBuilder extends CommandBuilder<TreeCommandNode> {}
 
 declare module "../frontend/context" {
   interface FunctionContext {
@@ -17,7 +15,10 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.defaultgamemode = function (this: FunctionContext, gamemode: Gamemode) {
+FunctionContext.prototype.defaultgamemode = function (
+  this: FunctionContext,
+  gamemode: Gamemode,
+) {
   const node = new TreeCommandNode("defaultgamemode", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("defaultgamemode"), argPart(gamemode)];

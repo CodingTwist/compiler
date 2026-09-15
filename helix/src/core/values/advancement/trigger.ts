@@ -6,7 +6,10 @@ import { ItemValue } from "../item";
 import { EntityPredicateSpec, LocationSpec, Predicate } from "../predicate";
 
 /** JSON object Minecraft reads as one advancement criterion (`{ trigger, conditions? }`). */
-export type CriterionJson = { trigger: string; conditions?: Record<string, unknown> };
+export type CriterionJson = {
+  trigger: string;
+  conditions?: Record<string, unknown>;
+};
 
 function idStr(x: string | Id): string {
   return typeof x === "string" ? Id(x).render() : x.render();
@@ -24,7 +27,9 @@ function entityPredicateJson(
   spec: EntityPredicateSpec,
   version: VersionProfile,
 ): Record<string, unknown> {
-  const json = Predicate.entity(spec, "this").toJson(version) as { predicate: Record<string, unknown> };
+  const json = Predicate.entity(spec, "this").toJson(version) as {
+    predicate: Record<string, unknown>;
+  };
   return json.predicate;
 }
 
@@ -35,7 +40,9 @@ function entityPredicateJson(
  *   Trigger.playerHurtEntity(wand)   // attacked something while holding it
  */
 export class Trigger {
-  private constructor(private readonly builder: (v: VersionProfile) => CriterionJson) {}
+  private constructor(
+    private readonly builder: (v: VersionProfile) => CriterionJson,
+  ) {}
 
   /** The criterion JSON, with embedded item predicates rendered for `version`. */
   toJson(version: VersionProfile): CriterionJson {
@@ -54,7 +61,10 @@ export class Trigger {
    * `minecraft:player_hurt_entity`: fires when the player damages an entity while holding
    * `item`.
    */
-  static playerHurtEntity(item: ItemValue, slot: "mainhand" | "offhand" = "mainhand"): Trigger {
+  static playerHurtEntity(
+    item: ItemValue,
+    slot: "mainhand" | "offhand" = "mainhand",
+  ): Trigger {
     return new Trigger((v) => ({
       trigger: "minecraft:player_hurt_entity",
       conditions: { player: [Predicate.holding(item, slot).toJson(v)] },
@@ -100,9 +110,14 @@ export class Trigger {
   }
 
   /** `minecraft:placed_block`: fires when the player places `block`, optionally at `at`. */
-  static placedBlock(block: string | Id | BlockValue, at?: LocationSpec): Trigger {
+  static placedBlock(
+    block: string | Id | BlockValue,
+    at?: LocationSpec,
+  ): Trigger {
     return new Trigger((v) => {
-      const conditions: Record<string, unknown> = { block: typeof block === "string" ? idStr(block) : block.render() };
+      const conditions: Record<string, unknown> = {
+        block: typeof block === "string" ? idStr(block) : block.render(),
+      };
       if (at) conditions.location = [Predicate.location(at).toJson(v)];
       return { trigger: "minecraft:placed_block", conditions };
     });
@@ -120,6 +135,8 @@ export class Trigger {
 
   /** Escape hatch: a trigger by id with already-built conditions. */
   static of(trigger: string, conditions?: Record<string, unknown>): Trigger {
-    return new Trigger(() => (conditions ? { trigger, conditions } : { trigger }));
+    return new Trigger(() =>
+      conditions ? { trigger, conditions } : { trigger },
+    );
   }
 }

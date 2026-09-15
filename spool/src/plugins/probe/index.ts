@@ -21,7 +21,10 @@ declare module "helix" {
 export const probe: KitPlugin = {
   name: "probe",
   install() {
-    Datapack.prototype.probe = function (this: Datapack, opts?: ProbeOptions): Suite {
+    Datapack.prototype.probe = function (
+      this: Datapack,
+      opts?: ProbeOptions,
+    ): Suite {
       return new Suite(this, opts);
     };
   },

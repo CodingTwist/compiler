@@ -3,7 +3,12 @@ import type { FunctionContext } from "helix";
 import { DEBUG, ZERO_GRAVITY, GRAVITY_MODIFIER_ID } from "./tuning";
 import { fixRopeLength } from "./physics";
 import { swingScratch } from "./state";
-import type { Constants, GrappleSelectors, Scratch, StateRepository } from "./state";
+import type {
+  Constants,
+  GrappleSelectors,
+  Scratch,
+  StateRepository,
+} from "./state";
 
 interface AttachDeps {
   repo: StateRepository;
@@ -35,21 +40,31 @@ export function createAttachService(d: AttachDeps) {
       ctx
         .execute()
         .as(d.selectors.freshAnchor())
-        .run((a) => d.repo.id.score(Selector.self()).assign(d.consts.nextId, a));
+        .run((a) =>
+          d.repo.id.score(Selector.self()).assign(d.consts.nextId, a),
+        );
 
       // Tag the player, then clear the temporary summon tag. The swing service draws the
       // rope.
       ctx.tag().add(d.selectors.self(), "grappling");
       // Zero gravity while swinging (removed in `grapple/stop`). See `tuning.ts`.
       if (ZERO_GRAVITY) {
-        ctx.attribute().modifierAddAddMultipliedTotal(
-          d.selectors.self(), Attribute.GRAVITY, GRAVITY_MODIFIER_ID, -1,
-        );
+        ctx
+          .attribute()
+          .modifierAddAddMultipliedTotal(
+            d.selectors.self(),
+            Attribute.GRAVITY,
+            GRAVITY_MODIFIER_ID,
+            -1,
+          );
       }
       ctx.tag().remove(d.selectors.freshAnchor(), "grapple._new");
 
       if (DEBUG) {
-        ctx.tellraw(d.selectors.self(), "[grapple] hooked - swinging (watch the action bar)");
+        ctx.tellraw(
+          d.selectors.self(),
+          "[grapple] hooked - swinging (watch the action bar)",
+        );
       }
     },
   };

@@ -43,11 +43,15 @@ describe("fake future version: breaking grammar changes are absorbed", () => {
       objective: "obj",
       score: 5,
     });
-    const futureOrder = buildCommand(reordered, ["scoreboard", "players", "set"], {
-      targets: "@s",
-      objective: "obj",
-      score: 5,
-    });
+    const futureOrder = buildCommand(
+      reordered,
+      ["scoreboard", "players", "set"],
+      {
+        targets: "@s",
+        objective: "obj",
+        score: 5,
+      },
+    );
 
     expect(realOrder).toBe("scoreboard players set @s obj 5");
     expect(futureOrder).toBe("scoreboard players set 5 obj @s");
@@ -57,7 +61,10 @@ describe("fake future version: breaking grammar changes are absorbed", () => {
     // Compiled against the fake version; the handler doesn't know the order changed.
     const dp = new Datapack("pack", reordered);
     const fn = new FunctionNode("main");
-    new Score(new Objective("obj", "dummy"), ScoreTarget("@s")).set(5, new FunctionContext(fn, reordered));
+    new Score(new Objective("obj", "dummy"), ScoreTarget("@s")).set(
+      5,
+      new FunctionContext(fn, reordered),
+    );
     dp.functions.set("main", fn);
 
     const out = buildDatapack(dp).get("data/pack/function/main.mcfunction");
@@ -105,6 +112,8 @@ describe("fake future version: breaking grammar changes are absorbed", () => {
         objective: "obj",
         score: 5,
       }),
-    ).toThrow(/Unknown argument\(s\) "score".*slots: targets, objective, value/s);
+    ).toThrow(
+      /Unknown argument\(s\) "score".*slots: targets, objective, value/s,
+    );
   });
 });

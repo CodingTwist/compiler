@@ -7,12 +7,17 @@ import path from "path";
  * `files`
  * doesn't list, plus empty directories.
  */
-export function syncFiles(outDir: string, files: Map<string, Buffer>, owned: string[]) {
+export function syncFiles(
+  outDir: string,
+  files: Map<string, Buffer>,
+  owned: string[],
+) {
   const stale = new Set<string>();
   for (const dir of owned) {
     const full = path.join(outDir, dir);
     if (!fs.existsSync(full)) continue;
-    for (const rel of walkFiles(full)) stale.add(path.join(dir, rel).split(path.sep).join("/"));
+    for (const rel of walkFiles(full))
+      stale.add(path.join(dir, rel).split(path.sep).join("/"));
   }
   for (const [rel, content] of files) {
     stale.delete(rel);

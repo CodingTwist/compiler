@@ -12,7 +12,9 @@ import type { ItemValue } from "./value";
 
 /** A block id or `#tag`, normalized to its namespaced form (`#minecraft:stone_bricks`). */
 function normalizeBlockRef(ref: string): string {
-  return ref.startsWith("#") ? "#" + normalizeId(ref.slice(1)) : normalizeId(ref);
+  return ref.startsWith("#")
+    ? "#" + normalizeId(ref.slice(1))
+    : normalizeId(ref);
 }
 
 /** The setters of {@link ItemValue}; each returns the item for chaining. */
@@ -20,7 +22,14 @@ export class ItemBuilder {
   protected readonly s: ItemState;
 
   constructor(id: string) {
-    this.s = { id, enchantments: [], lore: [], canPlaceOn: [], extraComponents: [], subPredicates: [] };
+    this.s = {
+      id,
+      enchantments: [],
+      lore: [],
+      canPlaceOn: [],
+      extraComponents: [],
+      subPredicates: [],
+    };
   }
 
   /** Verbatim data escape hatch (`[components]` on 1.20.5+, `{nbt}` before). */
@@ -87,7 +96,11 @@ export class ItemBuilder {
    * compounds,
    * not JSON strings; a JSON string page shows its source as text. Throws before 1.20.5.
    */
-  writtenBook(title: string, author: string, pages: (TellrawPart | string | TellrawPart[])[]): this {
+  writtenBook(
+    title: string,
+    author: string,
+    pages: (TellrawPart | string | TellrawPart[])[],
+  ): this {
     this.s.writtenBook = { title, author, pages };
     return this;
   }

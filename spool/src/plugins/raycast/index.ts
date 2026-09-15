@@ -91,7 +91,10 @@ declare module "helix" {
 export const raycast: KitPlugin = {
   name: "raycast",
   install() {
-    Datapack.prototype.raycast = function (this: Datapack, opts: RaycastOptions): RaycastRef {
+    Datapack.prototype.raycast = function (
+      this: Datapack,
+      opts: RaycastOptions,
+    ): RaycastRef {
       return defineRaycast(this, opts);
     };
   },

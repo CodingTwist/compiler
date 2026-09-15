@@ -1,6 +1,11 @@
 // Solves the launch velocity that makes a projectile hit a target.
 import type { Vec3 } from "helix";
-import { closestApproach, sampleAt, simulate, trajectoryBasis } from "./physics";
+import {
+  closestApproach,
+  sampleAt,
+  simulate,
+  trajectoryBasis,
+} from "./physics";
 import { MOTION_AXIS_LIMIT, PROJECTILES } from "./projectiles";
 import type { LaunchOptions, LaunchSolution } from "./launch";
 
@@ -8,7 +13,11 @@ import type { LaunchOptions, LaunchSolution } from "./launch";
  * Solves a launch. Throws if nothing fits, since a shot that can't reach should fail the
  * build.
  */
-export function solveLaunch(from: Vec3, to: Vec3, opts: LaunchOptions = {}): LaunchSolution {
+export function solveLaunch(
+  from: Vec3,
+  to: Vec3,
+  opts: LaunchOptions = {},
+): LaunchSolution {
   const profile = opts.projectile ?? PROJECTILES.tnt;
   const maxTicks = Math.floor(opts.maxTicks ?? profile.defaultFuse ?? 200);
   const minTicks = Math.max(opts.minTicks ?? 1, 1);
@@ -16,7 +25,9 @@ export function solveLaunch(from: Vec3, to: Vec3, opts: LaunchOptions = {}): Lau
   const minSpeed = opts.minSpeed ?? 0;
   const maxSpeed = opts.maxSpeed ?? MOTION_AXIS_LIMIT;
   if (maxTicks < minTicks) {
-    throw new Error(`ballistics: maxTicks (${maxTicks}) is below minTicks (${minTicks}).`);
+    throw new Error(
+      `ballistics: maxTicks (${maxTicks}) is below minTicks (${minTicks}).`,
+    );
   }
 
   const dx = to[0] - from[0];
@@ -48,13 +59,25 @@ export function solveLaunch(from: Vec3, to: Vec3, opts: LaunchOptions = {}): Lau
     // Per-axis, because vanilla zeroes an axis over the limit rather than clamping it.
     if (v.some((c) => Math.abs(c) > MOTION_AXIS_LIMIT)) continue;
     const pitch = pitchOf(v);
-    if (opts.pitchRange && (pitch < opts.pitchRange[0] || pitch > opts.pitchRange[1])) continue;
+    if (
+      opts.pitchRange &&
+      (pitch < opts.pitchRange[0] || pitch > opts.pitchRange[1])
+    )
+      continue;
 
-    const score = opts.prefer === "min-time" ? t : opts.prefer === "max-time" ? -t : speed;
+    const score =
+      opts.prefer === "min-time" ? t : opts.prefer === "max-time" ? -t : speed;
     if (!best || score < best.score) best = { t, v, speed, score };
   }
 
-  if (!best) throw noSolution(from, to, opts, { minSpeed, maxSpeed, minTicks, maxTicks, closestSpeed });
+  if (!best)
+    throw noSolution(from, to, opts, {
+      minSpeed,
+      maxSpeed,
+      minTicks,
+      maxTicks,
+      closestSpeed,
+    });
 
   // Fly the solved velocity through the real integrator and measure the actual miss.
   const path = simulate(from, best.v, profile, maxTicks);
@@ -90,12 +113,20 @@ function noSolution(
   from: Vec3,
   to: Vec3,
   opts: LaunchOptions,
-  ctx: { minSpeed: number; maxSpeed: number; minTicks: number; maxTicks: number; closestSpeed: number },
+  ctx: {
+    minSpeed: number;
+    maxSpeed: number;
+    minTicks: number;
+    maxTicks: number;
+    closestSpeed: number;
+  },
 ): Error {
   const reach = Number.isFinite(ctx.closestSpeed)
     ? `the cheapest arc in ${ctx.minTicks}-${ctx.maxTicks} ticks needs ${ctx.closestSpeed.toFixed(3)} blocks/tick`
     : `no flight time in ${ctx.minTicks}-${ctx.maxTicks} ticks reaches it`;
-  const pitch = opts.pitchRange ? ` within pitch ${opts.pitchRange[0]}..${opts.pitchRange[1]}` : "";
+  const pitch = opts.pitchRange
+    ? ` within pitch ${opts.pitchRange[0]}..${opts.pitchRange[1]}`
+    : "";
   return new Error(
     `ballistics: no launch from [${from}] hits [${to}]${pitch} with speed in ` +
       `${ctx.minSpeed}..${ctx.maxSpeed} blocks/tick - ${reach}. ` +

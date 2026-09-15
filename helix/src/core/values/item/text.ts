@@ -35,7 +35,9 @@ export function textJson(value: TextComponent): Record<string, unknown> {
 }
 
 /** A book page as a text compound. Typed as a record so a JSON string page can't compile. */
-export function pageJson(page: TellrawPart | string | TellrawPart[]): Record<string, NbtInput> {
+export function pageJson(
+  page: TellrawPart | string | TellrawPart[],
+): Record<string, NbtInput> {
   if (Array.isArray(page)) {
     return { text: "", extra: page.map((part) => tellrawJson(part)) };
   }

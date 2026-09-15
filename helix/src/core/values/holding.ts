@@ -34,9 +34,15 @@ function shortHash(s: string): string {
 }
 
 /** The `zzz/holding/<slug>` predicate name for `item`, shared by spool and twine. */
-export function holdingPredicateName(item: ItemValue, opts: HoldingOptions, dp: Datapack): string {
+export function holdingPredicateName(
+  item: ItemValue,
+  opts: HoldingOptions,
+  dp: Datapack,
+): string {
   const base = slugify(item.baseId());
-  return opts.exact ? `zzz/holding/${base}_${shortHash(item.render(dp.version))}` : `zzz/holding/${base}`;
+  return opts.exact
+    ? `zzz/holding/${base}_${shortHash(item.render(dp.version))}`
+    : `zzz/holding/${base}`;
 }
 
 /**

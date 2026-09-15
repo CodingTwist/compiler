@@ -1,8 +1,22 @@
 // The boss module's state, and the selectors, scores and bar helpers every layer uses.
 import { EntityType, Id, ScoreTarget, Selector } from "helix";
-import type { Datapack, FunctionContext, FunctionRef, IdentifiedEntityNbt, Objective, Pos, Score } from "helix";
+import type {
+  Datapack,
+  FunctionContext,
+  FunctionRef,
+  IdentifiedEntityNbt,
+  Objective,
+  Pos,
+  Score,
+} from "helix";
 import type { AreaTrigger } from "../../core/module.interface";
-import type { Ability, BarStyle, BossBody, BossbarColor, Phase } from "../builder";
+import type {
+  Ability,
+  BarStyle,
+  BossBody,
+  BossbarColor,
+  Phase,
+} from "../builder";
 
 type Bossbar = ReturnType<FunctionContext["bossbar"]>;
 
@@ -51,7 +65,9 @@ export class BossParts {
    * Every entity with the boss tag, for cleanup. No `limit=1`, so duplicate bosses get killed too.
    */
   protected get allBosses(): Selector {
-    return Selector.allEntities().type(EntityType(this.nbt.entity)).tag(this.name);
+    return Selector.allEntities()
+      .type(EntityType(this.nbt.entity))
+      .tag(this.name);
   }
   /** Everyone in the arena, recomputed each poll. */
   protected get participants(): Selector {

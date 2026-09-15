@@ -3,7 +3,15 @@ import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
 import { CommandBuilder, litPart, argPart } from "./base";
-import { ConfiguredFeature, Id, Pos, Structure, TemplateMirror, TemplatePool, TemplateRotation } from "../values";
+import {
+  ConfiguredFeature,
+  Id,
+  Pos,
+  Structure,
+  TemplateMirror,
+  TemplatePool,
+  TemplateRotation,
+} from "../values";
 
 /** `place` */
 export class PlaceBuilder extends CommandBuilder<TreeCommandNode> {
@@ -13,8 +21,19 @@ export class PlaceBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  jigsaw(pool: TemplatePool, target: Id, max_depth: number, position?: Pos): this {
-    this.$set(litPart("place"), litPart("jigsaw"), argPart(pool), argPart(target), argPart(max_depth));
+  jigsaw(
+    pool: TemplatePool,
+    target: Id,
+    max_depth: number,
+    position?: Pos,
+  ): this {
+    this.$set(
+      litPart("place"),
+      litPart("jigsaw"),
+      argPart(pool),
+      argPart(target),
+      argPart(max_depth),
+    );
     if (position !== undefined) this.$append(argPart(position));
     return this;
   }
@@ -25,7 +44,14 @@ export class PlaceBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  template(template: Id, pos?: Pos, rotation?: TemplateRotation, mirror?: TemplateMirror, integrity?: number, seed?: number): this {
+  template(
+    template: Id,
+    pos?: Pos,
+    rotation?: TemplateRotation,
+    mirror?: TemplateMirror,
+    integrity?: number,
+    seed?: number,
+  ): this {
     this.$set(litPart("place"), litPart("template"), argPart(template));
     if (pos !== undefined) this.$append(argPart(pos));
     if (rotation !== undefined) this.$append(argPart(rotation));
@@ -35,8 +61,25 @@ export class PlaceBuilder extends CommandBuilder<TreeCommandNode> {
     return this;
   }
 
-  templateStrict(template: Id, pos: Pos, rotation: TemplateRotation, mirror: TemplateMirror, integrity: number, seed: number): this {
-    this.$set(litPart("place"), litPart("template"), argPart(template), argPart(pos), argPart(rotation), argPart(mirror), argPart(integrity), argPart(seed), litPart("strict"));
+  templateStrict(
+    template: Id,
+    pos: Pos,
+    rotation: TemplateRotation,
+    mirror: TemplateMirror,
+    integrity: number,
+    seed: number,
+  ): this {
+    this.$set(
+      litPart("place"),
+      litPart("template"),
+      argPart(template),
+      argPart(pos),
+      argPart(rotation),
+      argPart(mirror),
+      argPart(integrity),
+      argPart(seed),
+      litPart("strict"),
+    );
     return this;
   }
 }

@@ -19,10 +19,17 @@ import { spawnSync } from "node:child_process";
 import { CONCEPT_REGISTRIES } from "./concept-registries.mjs";
 
 const CACHE = path.join("scripts", ".cache", "vanilla-mcdoc");
-const TARBALL = "https://codeload.github.com/SpyglassMC/vanilla-mcdoc/tar.gz/refs/heads/main";
-const VERSIONS_URL = "https://raw.githubusercontent.com/misode/mcmeta/summary/versions/data.min.json";
+const TARBALL =
+  "https://codeload.github.com/SpyglassMC/vanilla-mcdoc/tar.gz/refs/heads/main";
+const VERSIONS_URL =
+  "https://raw.githubusercontent.com/misode/mcmeta/summary/versions/data.min.json";
 const OUT = path.join("src", "core", "values", "entities.generated.ts");
-const DV_OUT = path.join("src", "core", "values", "entity-versions.generated.ts");
+const DV_OUT = path.join(
+  "src",
+  "core",
+  "values",
+  "entity-versions.generated.ts",
+);
 
 // Structs whose generated names are the ones the hand-written schemas already used, so
 // consumers keep `ENTITY`/`MobFields`/… across this change.
@@ -35,7 +42,10 @@ const ALIASES = {
   Attribute: "AttributeInstance",
 };
 // Entity ids whose PascalCase name would collide with an existing helix value export.
-const FACTORY_RENAMES = { "minecraft:item": "ItemEntity", "minecraft:player": "PlayerEntity" };
+const FACTORY_RENAMES = {
+  "minecraft:item": "ItemEntity",
+  "minecraft:player": "PlayerEntity",
+};
 // Structs that get an id-less factory too: the three bases (any entity can be summoned
 // with them) plus the shared compounds a `data merge` writes on their own (a display's
 // transform tween is a partial Display, not a whole entity).
@@ -66,7 +76,11 @@ async function ensureMcdoc() {
   const tgz = path.join(path.dirname(CACHE), "vanilla-mcdoc.tar.gz");
   fs.writeFileSync(tgz, Buffer.from(await res.arrayBuffer()));
   fs.mkdirSync(CACHE, { recursive: true });
-  const r = spawnSync("tar", ["-xzf", tgz, "-C", CACHE, "--strip-components=1"], { stdio: "inherit" });
+  const r = spawnSync(
+    "tar",
+    ["-xzf", tgz, "-C", CACHE, "--strip-components=1"],
+    { stdio: "inherit" },
+  );
   if (r.status !== 0) throw new Error("tar failed");
   fs.rmSync(tgz);
   return CACHE;
@@ -152,13 +166,21 @@ function parseBody(body) {
       if (target.startsWith("struct")) {
         const open = target.indexOf("{");
         // Inline struct: its fields belong to the parent, under the spread's own gates.
-        for (const f of parseBody(target.slice(open + 1, matchBracket(target, open))))
+        for (const f of parseBody(
+          target.slice(open + 1, matchBracket(target, open)),
+        ))
           entries.push({ ...f, ...mergeGates(gates, f) });
       } else entries.push({ kind: "spread", name: bare(target), ...gates });
     } else {
       const colon = text.indexOf(":");
       const key = text.slice(0, colon).replace("?", "").trim();
-      entries.push({ kind: "field", key, type: text.slice(colon + 1).trim(), docs, ...gates });
+      entries.push({
+        kind: "field",
+        key,
+        type: text.slice(colon + 1).trim(),
+        docs,
+        ...gates,
+      });
     }
     flush();
   }
@@ -188,7 +210,8 @@ const idList = (s) =>
 /** Every `struct X {}` and `dispatch minecraft:entity[…] to …` in the tree. */
 function parseFile(text) {
   const structs = [];
-  const re = /(?:dispatch\s+minecraft:entity\[([^\]]*)\]\s+to\s+)?struct\s+([A-Za-z_]\w*)\s*\{/g;
+  const re =
+    /(?:dispatch\s+minecraft:entity\[([^\]]*)\]\s+to\s+)?struct\s+([A-Za-z_]\w*)\s*\{/g;
   let m;
   while ((m = re.exec(text))) {
     const open = text.indexOf("{", m.index + m[0].length - 1);
@@ -203,8 +226,10 @@ function parseFile(text) {
   // The other dispatch form: ids onto a struct declared elsewhere (`… to MobBase`), which
   // is how the 40-odd entities with no NBT of their own - blaze, spider, every boat - are
   // spelled. No entry list, just more ids for a struct another file defines.
-  const ref = /dispatch\s+minecraft:entity\[([^\]]*)\]\s+to\s+(?!struct\b)([A-Za-z_]\w*)/g;
-  while ((m = ref.exec(text))) structs.push({ name: m[2], ids: idList(m[1]), entries: [] });
+  const ref =
+    /dispatch\s+minecraft:entity\[([^\]]*)\]\s+to\s+(?!struct\b)([A-Za-z_]\w*)/g;
+  while ((m = ref.exec(text)))
+    structs.push({ name: m[2], ids: idList(m[1]), entries: [] });
   return structs;
 }
 
@@ -229,10 +254,15 @@ const OVERRIDES = {
 const RESOURCE_CONCEPTS = new Map(
   [
     ...fs
-      .readFileSync(path.join("src", "core", "values", "resource.generated.ts"), "utf-8")
+      .readFileSync(
+        path.join("src", "core", "values", "resource.generated.ts"),
+        "utf-8",
+      )
       .matchAll(/export type (\w+) = ResourceId<"minecraft:([^"]+)">/g),
   ]
-    .filter(([, , registry]) => CONCEPT_REGISTRIES.includes(`minecraft:${registry}`))
+    .filter(([, , registry]) =>
+      CONCEPT_REGISTRIES.includes(`minecraft:${registry}`),
+    )
     .map(([, concept, registry]) => [registry, concept]),
 );
 /** Concepts actually referenced by the generated file, so the import list stays exact. */
@@ -240,7 +270,10 @@ const usedConcepts = new Set();
 
 /** `{ enc, ts }`: the `field({ encode })` argument and the author-facing TS type. */
 function encoderFor(type) {
-  const t = type.replace(/#\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
+  const t = type
+    .replace(/#\[[^\]]*\]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   const uuid = /#\[uuid\]/.test(type);
   // A registry-backed id: state the concept, let it render its own id.
   const registry = /#\[id="([^"]+)"\]/.exec(type)?.[1];
@@ -252,7 +285,10 @@ function encoderFor(type) {
   // A homogeneous list of scalars keeps its element type; anything richer is raw NBT.
   const list = /^\[\s*(?:#\[[^\]]*\]\s*)?(\w+)/.exec(t);
   if (list && /^(string|int|short|long|byte)$/.test(list[1]))
-    return { enc: "asList", ts: `readonly ${list[1] === "string" ? "string" : "number"}[]` };
+    return {
+      enc: "asList",
+      ts: `readonly ${list[1] === "string" ? "string" : "number"}[]`,
+    };
   if (/^boolean$/.test(t)) return { enc: "asByte", ts: "boolean" };
   if (/^byte\b/.test(t)) return { enc: "Byte", ts: "number" };
   if (/^short\b/.test(t)) return { enc: "Short", ts: "number" };
@@ -261,11 +297,14 @@ function encoderFor(type) {
   if (/^double\b/.test(t)) return { enc: "Double", ts: "number" };
   if (/^int\b(?!\[)/.test(t)) return { enc: undefined, ts: "number" };
   if (/^string\b/.test(t)) return { enc: undefined, ts: "string" };
-  if (/^int\[\]/.test(t)) return { enc: "IntArray", ts: "readonly number[]", uuid };
-  if (/^\[double\]/.test(t)) return { enc: "asDoubles", ts: "readonly number[]" };
+  if (/^int\[\]/.test(t))
+    return { enc: "IntArray", ts: "readonly number[]", uuid };
+  if (/^\[double\]/.test(t))
+    return { enc: "asDoubles", ts: "readonly number[]" };
   if (/^\[float\]/.test(t)) return { enc: "asFloats", ts: "readonly number[]" };
   if (/^\[/.test(t)) return { enc: "asList", ts: "readonly NbtInput[]" };
-  if (/text_component|\bText\b/.test(t) && /string/.test(t)) return { enc: "asText", ts: "string" };
+  if (/text_component|\bText\b/.test(t) && /string/.test(t))
+    return { enc: "asText", ts: "string" };
   return { enc: undefined, ts: "NbtInput" };
 }
 
@@ -276,9 +315,12 @@ const camel = (key) =>
     .replace(/_(\w)/g, (_, c) => c.toUpperCase());
 
 const pascal = (id) =>
-  id.replace(/^minecraft:/, "").replace(/(^|_)(\w)/g, (_, __, c) => c.toUpperCase());
+  id
+    .replace(/^minecraft:/, "")
+    .replace(/(^|_)(\w)/g, (_, __, c) => c.toUpperCase());
 
-const structConst = (name) => name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+const structConst = (name) =>
+  name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
 
 // --- emit ---------------------------------------------------------------------------
 
@@ -312,7 +354,8 @@ function main(structs, dataVersions) {
     if (prior) prior.ids.push(...s.ids);
     else byName.set(s.name, { ...s, ids: [...s.ids] });
   }
-  for (const [name, ids] of Object.entries(EXTRA_DISPATCH)) byName.get(name)?.ids.push(...ids);
+  for (const [name, ids] of Object.entries(EXTRA_DISPATCH))
+    byName.get(name)?.ids.push(...ids);
 
   const gateVersions = new Set();
   const resolved = new Map();
@@ -341,7 +384,11 @@ function main(structs, dataVersions) {
         out.push(f);
         continue;
       }
-      if (prior.until && f.since && (prior.ts === f.ts || (scalar(prior.ts) && scalar(f.ts)))) {
+      if (
+        prior.until &&
+        f.since &&
+        (prior.ts === f.ts || (scalar(prior.ts) && scalar(f.ts)))
+      ) {
         prior.rename = f;
         prior.ts = f.ts;
       } else {
@@ -353,7 +400,9 @@ function main(structs, dataVersions) {
   };
 
   const parents = (s) =>
-    s.entries.filter((e) => e.kind === "spread" && byName.has(e.name)).map((e) => e.name);
+    s.entries
+      .filter((e) => e.kind === "spread" && byName.has(e.name))
+      .map((e) => e.name);
 
   const tsName = (n) => ALIASES[n] ?? n;
   for (const s of byName.values()) resolved.set(s.name, own(s));
@@ -363,7 +412,9 @@ function main(structs, dataVersions) {
   const nestTarget = (f) => {
     const t = f.type.replace(/#\[[^\]]*\]/g, " ").trim();
     const target = byName.get(bare(t));
-    return target && /^[\w:]+$/.test(t) && resolved.get(target.name)?.length ? target.name : null;
+    return target && /^[\w:]+$/.test(t) && resolved.get(target.name)?.length
+      ? target.name
+      : null;
   };
   for (const s of byName.values())
     for (const f of resolved.get(s.name)) {
@@ -422,7 +473,9 @@ function main(structs, dataVersions) {
         ? `Omit<${iface}, ${clash.map((f) => JSON.stringify(f.name)).join(" | ")}>`
         : iface;
     });
-    const doc = s.ids.length ? `/** \`${s.ids.map((i) => `minecraft:${i}`).join("`, `")}\` */` : "";
+    const doc = s.ids.length
+      ? `/** \`${s.ids.map((i) => `minecraft:${i}`).join("`, `")}\` */`
+      : "";
 
     const iface = [
       doc,
@@ -439,7 +492,10 @@ function main(structs, dataVersions) {
     const schema = [
       `export const ${structConst(name)}: EntityNbtSchema<${name}Fields> = {`,
       ...parents(s).map((p) => `  ...${structConst(tsName(p))},`),
-      ...fields.map((f) => `  ${f.name}: ${f.rename ? renameSource(f, f.rename) : fieldSource(f)},`),
+      ...fields.map(
+        (f) =>
+          `  ${f.name}: ${f.rename ? renameSource(f, f.rename) : fieldSource(f)},`,
+      ),
       "};",
     ].join("\n");
 
@@ -490,7 +546,9 @@ ${
   const map =
     `/** The factory curating each entity, for the raw-NBT warning. */\n` +
     `export const ENTITY_FACTORY_NAMES: Readonly<Record<string, string>> = {\n` +
-    [...names].map(([id, n]) => `  ${JSON.stringify(id)}: ${JSON.stringify(n)},`).join("\n") +
+    [...names]
+      .map(([id, n]) => `  ${JSON.stringify(id)}: ${JSON.stringify(n)},`)
+      .join("\n") +
     `\n};`;
 
   fs.writeFileSync(
@@ -504,13 +562,16 @@ ${
   // dataVersion to compare against, so gate it past every profile rather than guess.
   const UNRELEASED = 99999999;
   const unreleased = dv.filter((v) => !dataVersions[v]);
-  if (unreleased.length) console.log(`  unreleased, gated off: ${unreleased.join(", ")}`);
+  if (unreleased.length)
+    console.log(`  unreleased, gated off: ${unreleased.join(", ")}`);
   fs.writeFileSync(
     DV_OUT,
     `// GENERATED by scripts/gen-entity-nbt.mjs from misode/mcmeta.\n` +
       `/** The dataVersion each version gated by an entity schema starts at. */\n` +
       `export const DV = {\n` +
-      dv.map((v) => `  ${JSON.stringify(v)}: ${dataVersions[v] ?? UNRELEASED},`).join("\n") +
+      dv
+        .map((v) => `  ${JSON.stringify(v)}: ${dataVersions[v] ?? UNRELEASED},`)
+        .join("\n") +
       `\n} as const;\n`,
   );
 

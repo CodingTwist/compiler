@@ -39,7 +39,6 @@ describe("math`` on /compute (26.3+)", () => {
       sc("coef"),
     );
 
-
   it("is one /compute command on 26.3", () => {
     const [line, ...rest] = emit(coef, v26_3_rc_2);
     expect(rest).toEqual([]);
@@ -147,10 +146,7 @@ describe("math`` on /compute (26.3+)", () => {
     const [sub] = emit(() => math`${sc("a")} - 5`.into(sc("a")), v26_3_rc_2);
     expect(sub).toBe("scoreboard players remove #a work 5");
     // Not the destination on both sides, or not a bare literal: still /compute.
-    const [other] = emit(
-      () => math`${sc("b")} + 5`.into(sc("a")),
-      v26_3_rc_2,
-    );
+    const [other] = emit(() => math`${sc("b")} + 5`.into(sc("a")), v26_3_rc_2);
     expect(other).toContain("compute default integer");
   });
 

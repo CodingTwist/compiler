@@ -1,6 +1,11 @@
 import { Component, Path } from "helix";
 import type { FunctionContext } from "helix";
-import type { GrappleSelectors, Scratch, StateRepository, SwingScratch } from "./state";
+import type {
+  GrappleSelectors,
+  Scratch,
+  StateRepository,
+  SwingScratch,
+} from "./state";
 
 interface DebugDeps {
   scratch: Scratch;
@@ -14,8 +19,18 @@ export function createDebugService(d: DebugDeps) {
   function readFacing(ctx: FunctionContext) {
     const yaw = d.scratch.scalar("face_yaw");
     const pitch = d.scratch.scalar("face_pitch");
-    ctx.execute().storeResultScore(yaw).run((b) => b.entity(d.selectors.self()).get(Path.Entity.Rotation.index(0), 100));
-    ctx.execute().storeResultScore(pitch).run((b) => b.entity(d.selectors.self()).get(Path.Entity.Rotation.index(1), 100));
+    ctx
+      .execute()
+      .storeResultScore(yaw)
+      .run((b) =>
+        b.entity(d.selectors.self()).get(Path.Entity.Rotation.index(0), 100),
+      );
+    ctx
+      .execute()
+      .storeResultScore(pitch)
+      .run((b) =>
+        b.entity(d.selectors.self()).get(Path.Entity.Rotation.index(1), 100),
+      );
     return { yaw, pitch };
   }
 
@@ -31,15 +46,35 @@ export function createDebugService(d: DebugDeps) {
         d.selectors.self(),
         Component([
           "grapple  dist²=",
-          { score: { name: scratch.distSq.target.render(v), objective: scratch.distSq.objective.getName() } },
+          {
+            score: {
+              name: scratch.distSq.target.render(v),
+              objective: scratch.distSq.objective.getName(),
+            },
+          },
           "  rope²=",
           { score: { name: "@s", objective: d.repo.ropeLenSq.getName() } },
           "  dot=",
-          { score: { name: scratch.dot.target.render(v), objective: scratch.dot.objective.getName() } },
+          {
+            score: {
+              name: scratch.dot.target.render(v),
+              objective: scratch.dot.objective.getName(),
+            },
+          },
           "  facing=",
-          { score: { name: yaw.target.render(v), objective: yaw.objective.getName() } },
+          {
+            score: {
+              name: yaw.target.render(v),
+              objective: yaw.objective.getName(),
+            },
+          },
           "/",
-          { score: { name: pitch.target.render(v), objective: pitch.objective.getName() } },
+          {
+            score: {
+              name: pitch.target.render(v),
+              objective: pitch.objective.getName(),
+            },
+          },
         ]),
       );
     },
@@ -57,13 +92,30 @@ export function createDebugService(d: DebugDeps) {
       frame.add(1);
       const { yaw, pitch } = readFacing(ctx);
       ctx.tellraw(d.selectors.self(), [
-        "[g] f=", frame,
-        " pos=", scratch.pos.x, " ", scratch.pos.y, " ", scratch.pos.z,
-        " vel=", scratch.velocity.x, " ", scratch.velocity.y, " ", scratch.velocity.z,
-        " facing=", yaw, " ", pitch,
-        " d2=", scratch.distSq,
-        " r2=", d.repo.ropeLenSq.score(d.selectors.self()),
-        " dot=", scratch.dot,
+        "[g] f=",
+        frame,
+        " pos=",
+        scratch.pos.x,
+        " ",
+        scratch.pos.y,
+        " ",
+        scratch.pos.z,
+        " vel=",
+        scratch.velocity.x,
+        " ",
+        scratch.velocity.y,
+        " ",
+        scratch.velocity.z,
+        " facing=",
+        yaw,
+        " ",
+        pitch,
+        " d2=",
+        scratch.distSq,
+        " r2=",
+        d.repo.ropeLenSq.score(d.selectors.self()),
+        " dot=",
+        scratch.dot,
       ]);
     },
   };

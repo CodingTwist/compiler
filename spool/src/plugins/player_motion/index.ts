@@ -73,7 +73,11 @@ export interface PlayerMotion {
    * block/tick).
    * Prefer {@link launchLocal} / {@link launchGlobal}, which convert for you.
    */
-  readonly launchInput: { readonly x: Score; readonly y: Score; readonly z: Score };
+  readonly launchInput: {
+    readonly x: Score;
+    readonly y: Score;
+    readonly z: Score;
+  };
 }
 
 /** Fixed-point scale of the input scores: `10000` units == 1.0 block/tick. */

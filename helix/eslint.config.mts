@@ -16,7 +16,12 @@ export default defineConfig([
       "src/versions/ids.ts",
     ],
   },
-  { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.browser } },
+  {
+    files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
+    plugins: { js },
+    extends: ["js/recommended"],
+    languageOptions: { globals: globals.browser },
+  },
   tseslint.configs.recommended,
   {
     // Allow a leading-underscore convention for deliberately-unused args (e.g. a

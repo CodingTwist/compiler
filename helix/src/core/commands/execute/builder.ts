@@ -87,17 +87,65 @@ export class ExecuteBuilder extends ExecuteShifts {
    * entity NBT.
    * `scale` turns an integer score into the fractional value the field needs.
    */
-  storeResultEntity(sel: Selector, path: NbtPath, type: StoreNumType, scale: number): this {
-    return this.push({ k: "storeEntity", mode: "result", sel, path, type, scale });
+  storeResultEntity(
+    sel: Selector,
+    path: NbtPath,
+    type: StoreNumType,
+    scale: number,
+  ): this {
+    return this.push({
+      k: "storeEntity",
+      mode: "result",
+      sel,
+      path,
+      type,
+      scale,
+    });
   }
-  storeSuccessEntity(sel: Selector, path: NbtPath, type: StoreNumType, scale: number): this {
-    return this.push({ k: "storeEntity", mode: "success", sel, path, type, scale });
+  storeSuccessEntity(
+    sel: Selector,
+    path: NbtPath,
+    type: StoreNumType,
+    scale: number,
+  ): this {
+    return this.push({
+      k: "storeEntity",
+      mode: "success",
+      sel,
+      path,
+      type,
+      scale,
+    });
   }
-  storeResultStorage(id: Id, path: NbtPath, type: StoreNumType, scale: number): this {
-    return this.push({ k: "storeStorage", mode: "result", id, path, type, scale });
+  storeResultStorage(
+    id: Id,
+    path: NbtPath,
+    type: StoreNumType,
+    scale: number,
+  ): this {
+    return this.push({
+      k: "storeStorage",
+      mode: "result",
+      id,
+      path,
+      type,
+      scale,
+    });
   }
-  storeSuccessStorage(id: Id, path: NbtPath, type: StoreNumType, scale: number): this {
-    return this.push({ k: "storeStorage", mode: "success", id, path, type, scale });
+  storeSuccessStorage(
+    id: Id,
+    path: NbtPath,
+    type: StoreNumType,
+    scale: number,
+  ): this {
+    return this.push({
+      k: "storeStorage",
+      mode: "success",
+      id,
+      path,
+      type,
+      scale,
+    });
   }
   /**
    * `store <result|success> bossbar <id> <value|max>`. The only way to drive a bar from a

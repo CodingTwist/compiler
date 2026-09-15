@@ -5,9 +5,7 @@ import { FunctionContext } from "../frontend/context";
 import { CommandBuilder, litPart } from "./base";
 
 /** `reload` */
-export class ReloadBuilder extends CommandBuilder<TreeCommandNode> {
-
-}
+export class ReloadBuilder extends CommandBuilder<TreeCommandNode> {}
 
 declare module "../frontend/context" {
   interface FunctionContext {

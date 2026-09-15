@@ -7,18 +7,25 @@ import { Pos } from "../values";
 import { Selector } from "../frontend/nodes/selector";
 
 /** `spawnpoint` */
-export class SpawnpointBuilder extends CommandBuilder<TreeCommandNode> {
-
-}
+export class SpawnpointBuilder extends CommandBuilder<TreeCommandNode> {}
 
 declare module "../frontend/context" {
   interface FunctionContext {
     /** `spawnpoint` - `ctx.spawnpoint()...` */
-    spawnpoint(targets?: Selector, pos?: Pos, rotation?: Pos): SpawnpointBuilder;
+    spawnpoint(
+      targets?: Selector,
+      pos?: Pos,
+      rotation?: Pos,
+    ): SpawnpointBuilder;
   }
 }
 
-FunctionContext.prototype.spawnpoint = function (this: FunctionContext, targets?: Selector, pos?: Pos, rotation?: Pos) {
+FunctionContext.prototype.spawnpoint = function (
+  this: FunctionContext,
+  targets?: Selector,
+  pos?: Pos,
+  rotation?: Pos,
+) {
   const node = new TreeCommandNode("spawnpoint", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("spawnpoint")];

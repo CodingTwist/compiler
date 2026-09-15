@@ -49,7 +49,11 @@ describe("FunctionContext", () => {
 
     const node = fn.nodes[0] as ScoreboardNode;
     expect(node.spine).toEqual(["players", "set"]);
-    expect(node.args).toEqual({ targets: "player", objective: "kills", score: 5 });
+    expect(node.args).toEqual({
+      targets: "player",
+      objective: "kills",
+      score: 5,
+    });
   });
 
   it("tellraw() pushes a TellrawNode", () => {
@@ -115,6 +119,5 @@ describe("FunctionContext", () => {
     const sayElif2 = node.elifs[0].body.nodes[1] as SayNode;
     expect(sayElif.value).toBe("inside elif");
     expect(sayElif2.value).toBe("another value");
-
   });
 });

@@ -54,9 +54,14 @@ export class EntityNbtValue extends NbtValue {
   /** A copy with extra `Tags` appended, so a caller can find what it summoned. */
   tagged<T extends EntityNbtValue>(this: T, ...names: string[]): T {
     if (!this.schema.tags) {
-      throw new Error(`${this.entity ?? "This"} entity NBT schema has no \`tags\` field`);
+      throw new Error(
+        `${this.entity ?? "This"} entity NBT schema has no \`tags\` field`,
+      );
     }
-    const tags = [...((this.fields.tags as readonly string[] | undefined) ?? []), ...names];
+    const tags = [
+      ...((this.fields.tags as readonly string[] | undefined) ?? []),
+      ...names,
+    ];
     return new EntityNbtValue(
       this.schema,
       { ...this.fields, tags },

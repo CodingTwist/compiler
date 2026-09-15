@@ -9,8 +9,8 @@ names, instead of a comment you have to keep in your head. It sits on top of the
 ## The scale, and the optional scale score
 
 A `Fixed` wraps one `Score` and a `scale` number (the factor, e.g. `1000` for three decimal
-places). Two of its operations - `mul` and `divide` - need to multiply/divide *by the scale
-itself*, and a `scoreboard players operation` operand must be a score, not a literal. So
+places). Two of its operations - `mul` and `divide` - need to multiply/divide _by the scale
+itself_, and a `scoreboard players operation` operand must be a score, not a literal. So
 `Fixed` takes an optional third argument: a `scaleScore` slot you seed once at load.
 
 ```ts
@@ -28,17 +28,18 @@ same goes for `negate`'s `-1` slot. Operations that don't touch the scale (`assi
 
 ## The operations, and what they do to the scale
 
-| Method | Meaning | Scale |
-| --- | --- | --- |
-| `.assign` / `.add` / `.sub` | same-scale copy / `+=` / `-=` | unchanged |
-| `.mul(other)` | fixed-point multiply | rebalanced (`*= other; /= scale`) |
-| `.divide(divisor)` | **precision-preserving** divide | rebalanced (`*= scale; /= divisor`) |
-| `.gain(k)` / `.reduce(k)` | multiply / divide by a *unitless* factor | unchanged |
-| `.negate(negOne?)` | `*= -1` | unchanged |
-| `.clamp(lo, hi)` | clamp into `[lo, hi]` | unchanged |
+| Method                      | Meaning                                  | Scale                               |
+| --------------------------- | ---------------------------------------- | ----------------------------------- |
+| `.assign` / `.add` / `.sub` | same-scale copy / `+=` / `-=`            | unchanged                           |
+| `.mul(other)`               | fixed-point multiply                     | rebalanced (`*= other; /= scale`)   |
+| `.divide(divisor)`          | **precision-preserving** divide          | rebalanced (`*= scale; /= divisor`) |
+| `.gain(k)` / `.reduce(k)`   | multiply / divide by a _unitless_ factor | unchanged                           |
+| `.negate(negOne?)`          | `*= -1`                                  | unchanged                           |
+| `.clamp(lo, hi)`            | clamp into `[lo, hi]`                    | unchanged                           |
 
 `.divide` is the one that earns its keep: it pre-multiplies by the scale so a small
 numerator over a large divisor keeps `scale` fractional bits instead of truncating to zero
+
 - the classic "the value silently vanished" scoreboard bug, defused.
 
 ```ts compile
@@ -50,7 +51,7 @@ const scaleScore = work.score(ScoreTarget("#scale"));
 
 const setup = dp.createFunction("setup");
 setup.build((ctx) => {
-  scaleScore.set(1000, ctx);   // seed the scale slot once
+  scaleScore.set(1000, ctx); // seed the scale slot once
 });
 
 const tick = dp.createFunction("tick");
@@ -65,16 +66,16 @@ tick.build((ctx) => {
 
 ## Going further
 
-Like `Score` and [`ScoreVec3`](/guide/concepts/score-vectors), a `Fixed` holds a *reference*
+Like `Score` and [`ScoreVec3`](/guide/concepts/score-vectors), a `Fixed` holds a _reference_
 and allocates nothing, emits into the ambient context (pass `ctx` to be explicit), and
-chains by returning `this`. For fractional *vectors*, back each `ScoreVec3` component with a
+chains by returning `this`. For fractional _vectors_, back each `ScoreVec3` component with a
 `Fixed`-scaled cell and scale before you divide.
 
 On 26.3+, a `math` formula can use real floats (`sqrt`, `len`, `sin`, `pow`, …) - which is
-*not* a replacement for `Fixed`. That precision is **transient**: it lives inside the one
+_not_ a replacement for `Fixed`. That precision is **transient**: it lives inside the one
 `/compute` command and the result still truncates into an integer cell on the way out. A
 score is an integer on every version. So keep using `Fixed` for a fraction you **store**
-across ticks, and use the float ops for precision you need *within* one formula - the two
+across ticks, and use the float ops for precision you need _within_ one formula - the two
 compose, since a `Fixed`'s cell is an ordinary `Score` hole.
 
 Every scale-rebalancing method here is itself written as one `` math`…` `` expression -

@@ -12,7 +12,9 @@ import { buildDatapack } from "../codegen/codegen";
 
 describe("Selector rendering", () => {
   it("renders near() as a fixed x/y/z origin plus distance", () => {
-    const sel = Selector.allEntities().tag("d").near([10.5, 64, 40.5], Range.atMost(1));
+    const sel = Selector.allEntities()
+      .tag("d")
+      .near([10.5, 64, 40.5], Range.atMost(1));
     expect(sel.toString()).toBe("@e[x=10.5,y=64,z=40.5,distance=..1,tag=d]");
   });
 
@@ -37,43 +39,55 @@ describe("Selector rendering", () => {
   });
 
   it("passes a #tag entity type through as a registry tag reference", () => {
-    expect(Selector.allEntities().type(EntityType("#tunnel:removable")).toString()).toBe(
-      "@e[type=#tunnel:removable]",
-    );
+    expect(
+      Selector.allEntities().type(EntityType("#tunnel:removable")).toString(),
+    ).toBe("@e[type=#tunnel:removable]");
   });
 
   it("matches several types through a declared entity type tag", () => {
     const dp = new Datapack("p", v1_21_4);
     const shot = dp.entityTypeTag("shot", [EntityType.TNT, EntityType.ZOMBIE]);
     dp.entityTypeTag("shot", [EntityType.TNT, EntityType.ARMOR_STAND]);
-    expect(Selector.allEntities().type(shot).toString()).toBe("@e[type=#p:shot]");
-    expect(JSON.parse(buildDatapack(dp).get("data/p/tags/entity_type/shot.json")!).values).toEqual([
-      "minecraft:tnt",
-      "minecraft:zombie",
-      "minecraft:armor_stand",
-    ]);
+    expect(Selector.allEntities().type(shot).toString()).toBe(
+      "@e[type=#p:shot]",
+    );
+    expect(
+      JSON.parse(buildDatapack(dp).get("data/p/tags/entity_type/shot.json")!)
+        .values,
+    ).toEqual(["minecraft:tnt", "minecraft:zombie", "minecraft:armor_stand"]);
   });
 
   it("renders a partial vertical band (y/dy, no x/z)", () => {
-    expect(Selector.self().yBand(-30, -100).toString()).toBe("@s[y=-30,dy=-100]");
-    expect(Selector.allPlayers().span(0, 16, 0).toString()).toBe("@a[dx=0,dy=16,dz=0]");
+    expect(Selector.self().yBand(-30, -100).toString()).toBe(
+      "@s[y=-30,dy=-100]",
+    );
+    expect(Selector.allPlayers().span(0, 16, 0).toString()).toBe(
+      "@a[dx=0,dy=16,dz=0]",
+    );
   });
 
   it("ANDs negated game modes onto a selector", () => {
     expect(
-      Selector.allPlayers().notGamemode(Gamemode.CREATIVE).notGamemode(Gamemode.SPECTATOR).toString(),
+      Selector.allPlayers()
+        .notGamemode(Gamemode.CREATIVE)
+        .notGamemode(Gamemode.SPECTATOR)
+        .toString(),
     ).toBe("@a[gamemode=!creative,gamemode=!spectator]");
   });
 
   it("throws if an nbt selector is rendered without a version (toString)", () => {
-    const sel = Selector.allPlayers().nbt(Nbt({ SelectedItem: { id: "minecraft:lantern" } }));
+    const sel = Selector.allPlayers().nbt(
+      Nbt({ SelectedItem: { id: "minecraft:lantern" } }),
+    );
     expect(() => sel.toString()).toThrow(/requires a version/);
   });
 });
 
 describe("renderExistence", () => {
   it("adds limit=1 only to selectors that can match many", () => {
-    expect(renderExistence(Selector.allEntities().tag("t"))).toBe("@e[tag=t,limit=1]");
+    expect(renderExistence(Selector.allEntities().tag("t"))).toBe(
+      "@e[tag=t,limit=1]",
+    );
     expect(renderExistence(Selector.nearest())).toBe("@p");
     expect(renderExistence(Selector.self())).toBe("@s");
     expect(renderExistence("@e[tag=raw]")).toBe("@e[tag=raw]");
@@ -94,7 +108,9 @@ describe("SelectorNode queries", () => {
 
   it("isBareSelf is false once any filter is added", () => {
     expect(Selector.self().build().isBareSelf()).toBe(true);
-    expect(Selector.self().notGamemode(Gamemode.CREATIVE).build().isBareSelf()).toBe(false);
+    expect(
+      Selector.self().notGamemode(Gamemode.CREATIVE).build().isBareSelf(),
+    ).toBe(false);
     expect(Selector.self().yBand(0, 1).build().isBareSelf()).toBe(false);
   });
 
@@ -106,13 +122,24 @@ describe("SelectorNode queries", () => {
 
   it("readsState for scores, nbt and predicates but not tags", () => {
     expect(Selector.allEntities().tag("t").build().readsState()).toBe(false);
-    expect(Selector.allEntities().score(new Objective("o"), Range.atLeast(1)).build().readsState()).toBe(true);
-    expect(Selector.allEntities().predicate("p:x").build().readsState()).toBe(true);
+    expect(
+      Selector.allEntities()
+        .score(new Objective("o"), Range.atLeast(1))
+        .build()
+        .readsState(),
+    ).toBe(true);
+    expect(Selector.allEntities().predicate("p:x").build().readsState()).toBe(
+      true,
+    );
   });
 
   it("picksRandomly for @r or sort=random", () => {
     expect(Selector.random().build().picksRandomly()).toBe(true);
-    expect(Selector.allEntities().sort(Sort.RANDOM).build().picksRandomly()).toBe(true);
-    expect(Selector.allEntities().sort(Sort.NEAREST).build().picksRandomly()).toBe(false);
+    expect(
+      Selector.allEntities().sort(Sort.RANDOM).build().picksRandomly(),
+    ).toBe(true);
+    expect(
+      Selector.allEntities().sort(Sort.NEAREST).build().picksRandomly(),
+    ).toBe(false);
   });
 });

@@ -37,7 +37,11 @@ export class DatapackFactory {
    * Wires the module tree into an existing `dp`, e.g. the one the `helix` CLI created.
    * {@link create} does this on a new Datapack.
    */
-  static mount(dp: Datapack, root: ModuleClass, opts: { env?: BuildEnv } = {}): Datapack {
+  static mount(
+    dp: Datapack,
+    root: ModuleClass,
+    opts: { env?: BuildEnv } = {},
+  ): Datapack {
     const flags = new ActiveFlags(dp);
     const latches = new EventLatches(dp);
     // Resolved once and published, so `isDev()` agrees with how the graph was pruned.
@@ -49,7 +53,13 @@ export class DatapackFactory {
     // Seeded from /difficulty only while unset, so a level the pack chose survives /reload.
     // ponytail: every twine pack gets this, used or not; gate on use if that ever matters.
     dp.objective(DIFFICULTY.objective.getName());
-    dp.load((ctx) => ctx.execute().unlessScoreMatches(DIFFICULTY, Range.atLeast(1)).storeResultScore(DIFFICULTY).run((b) => b.difficulty()));
+    dp.load((ctx) =>
+      ctx
+        .execute()
+        .unlessScoreMatches(DIFFICULTY, Range.atLeast(1))
+        .storeResultScore(DIFFICULTY)
+        .run((b) => b.difficulty()),
+    );
 
     // Each module's dimension, so its lifecycle, ticks and functions run where the module is.
     const dims = resolveDimensions(graph);
@@ -61,7 +71,9 @@ export class DatapackFactory {
     }
 
     // load: seed every area's flag, then run all (ungated) load bodies.
-    const loaders = graph.order.filter((ref) => graph.nodes.get(ref)!.instance.onLoad);
+    const loaders = graph.order.filter(
+      (ref) => graph.nodes.get(ref)!.instance.onLoad,
+    );
     const areas = graph.order.filter((ref) => graph.nodes.get(ref)!.meta.area);
     if (loaders.length || areas.length) {
       dp.load((ctx) => {
@@ -73,7 +85,14 @@ export class DatapackFactory {
       });
     }
 
-    const { activateOf, deactivateOf } = buildLifecycle({ dp, graph, flags, latches, dims, areas });
+    const { activateOf, deactivateOf } = buildLifecycle({
+      dp,
+      graph,
+      flags,
+      latches,
+      dims,
+      areas,
+    });
 
     // tick: one tree walk. An area's ticks, its children's ticks, and its children's triggers are
     // all behind its `active` flag, so a dormant area costs one check.
@@ -94,7 +113,9 @@ export class DatapackFactory {
     if (w.needsTick(graph.root)) {
       const rootIsArea = graph.nodes.get(graph.root)!.meta.area;
       dp.tick((ctx) =>
-        rootIsArea ? emitArea(w, graph.root, ctx) : wireTick(w, graph.root, ctx),
+        rootIsArea
+          ? emitArea(w, graph.root, ctx)
+          : wireTick(w, graph.root, ctx),
       );
     }
 

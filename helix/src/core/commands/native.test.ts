@@ -18,7 +18,11 @@ function build(target: RuntimeTarget, withFallback: boolean): string {
   const fn = new FunctionNode("main");
   const ctx = new FunctionContext(fn, dp.version);
 
-  const call = ctx.native(Id("paper:pathfind"), Selector.allPlayers(), Pos(0, 64, 0));
+  const call = ctx.native(
+    Id("paper:pathfind"),
+    Selector.allPlayers(),
+    Pos(0, 64, 0),
+  );
   if (withFallback) call.fallback((c) => c.say("no server pathfinder"));
 
   generateFunction(fn, dp, dispatcher);

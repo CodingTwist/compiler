@@ -19,10 +19,18 @@ export interface MobModuleOpts {
 }
 
 /** Per-mob body, run as and at the mob. `mob` switches between its {@link MobBuilder.states}. */
-export type MobTick<S extends string = never> = (ctx: FunctionContext, dp: Datapack, mob: MobStates<S>) => void;
+export type MobTick<S extends string = never> = (
+  ctx: FunctionContext,
+  dp: Datapack,
+  mob: MobStates<S>,
+) => void;
 
 /** Run as and at one mob for the pack's difficulty `level`. Built once per level. */
-export type MobDifficulty = (ctx: FunctionContext, dp: Datapack, level: Difficulty) => void;
+export type MobDifficulty = (
+  ctx: FunctionContext,
+  dp: Datapack,
+  level: Difficulty,
+) => void;
 
 /** One phase of a mob, e.g. airborne or stunned. A mob is in at most one state, stored as a score. */
 export interface MobState<S extends string> {
@@ -49,7 +57,10 @@ export interface MobStates<S extends string> {
    *
    * Built once per level, so `if (!config[level].shockwave) return` drops a feature.
    */
-  byDifficulty(ctx: FunctionContext, body: (ctx: FunctionContext, level: Difficulty) => void): void;
+  byDifficulty(
+    ctx: FunctionContext,
+    body: (ctx: FunctionContext, level: Difficulty) => void,
+  ): void;
   /** Polls left in the current timed state, on `@s` - what phases within a state test. */
   readonly clock: Score;
 }

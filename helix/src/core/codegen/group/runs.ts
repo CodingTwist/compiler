@@ -10,7 +10,9 @@ import type { ReachOf } from "./reach";
 function shareable(line: Line, reachOf: ReachOf): SharedClause[] {
   if (line.info.exits) return [];
   const fork = line.info.clauses.findIndex((c) => c.forks);
-  return fork < 0 || reachOf(line.info).local ? line.info.clauses : line.info.clauses.slice(0, fork);
+  return fork < 0 || reachOf(line.info).local
+    ? line.info.clauses
+    : line.info.clauses.slice(0, fork);
 }
 
 /** Splits `lines` into runs; a line that shares nothing is a run of its own. */
@@ -60,7 +62,10 @@ export function splitAtBlockers(run: Run, reachOf: ReachOf): Run[] {
     if (line.info.comment || line === lastCommand) continue;
     const { effect } = reachOf(line.info);
     // A selector may pick another entity after any change; `@s` only moves with its entity.
-    if ((other && effect !== Effect.NONE) || (self && effect === Effect.MOVES)) {
+    if (
+      (other && effect !== Effect.NONE) ||
+      (self && effect === Effect.MOVES)
+    ) {
       parts.push({ lines: part, shared: run.shared });
       part = [];
     }

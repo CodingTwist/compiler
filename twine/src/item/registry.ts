@@ -24,7 +24,10 @@ export function registerItem<T extends ItemValue>(name: string, item: T): T {
  *
  * Call from a module's `register`, after the item modules are imported.
  */
-export function registerItemGiveCommands(dp: Datapack, path = "debug/give"): void {
+export function registerItemGiveCommands(
+  dp: Datapack,
+  path = "debug/give",
+): void {
   if (!isDev()) return;
   for (const { name, item } of REGISTRY) {
     dp.createFunction(`${path}/${name}`).build((ctx: FunctionContext) =>

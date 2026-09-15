@@ -25,14 +25,14 @@ Full guide, curated examples and API reference: see [`docs/`](docs/index.md).
 Three sibling packages under this repo, forming a layered stack - each builds **only on
 the public API of the one below**:
 
-| Package | Layer | One line |
-| --- | --- | --- |
-| [`helix`](helix/CLAUDE.md) | core compiler | AST → IR → `.mcfunction` + tag JSON, version-profile aware. **Mechanism, never policy.** |
-| [`spool`](spool/CLAUDE.md) | conveniences | Opt-in `KitPlugin`s composed from helix's public API. Nothing on by default. |
-| [`twine`](twine/CLAUDE.md) | framework | The opinionated layer: NestJS-style module / area / lifecycle composition of a whole pack. |
+| Package                    | Layer         | One line                                                                                   |
+| -------------------------- | ------------- | ------------------------------------------------------------------------------------------ |
+| [`helix`](helix/CLAUDE.md) | core compiler | AST → IR → `.mcfunction` + tag JSON, version-profile aware. **Mechanism, never policy.**   |
+| [`spool`](spool/CLAUDE.md) | conveniences  | Opt-in `KitPlugin`s composed from helix's public API. Nothing on by default.               |
+| [`twine`](twine/CLAUDE.md) | framework     | The opinionated layer: NestJS-style module / area / lifecycle composition of a whole pack. |
 
 The governing stance: **helix is un-opinionated, twine is opinionated, spool is the
-opt-in middle.** If something feels like a *shortcut* or a *best practice* rather than a
+opt-in middle.** If something feels like a _shortcut_ or a _best practice_ rather than a
 primitive, it belongs in spool or twine, not helix. See
 [helix/PHILOSOPHY.md](helix/PHILOSOPHY.md) for the why.
 

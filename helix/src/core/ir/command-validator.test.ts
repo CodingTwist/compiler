@@ -17,10 +17,7 @@ describe("validateCommand", () => {
   it("does not false-positive on arguments that span whitespace", () => {
     // tellraw's JSON contains spaces and braces; must not be parsed as literals.
     expect(() =>
-      validateCommand(
-        'tellraw @a {"text":"hello there","bold":true}',
-        v1_21_4,
-      ),
+      validateCommand('tellraw @a {"text":"hello there","bold":true}', v1_21_4),
     ).not.toThrow();
   });
 

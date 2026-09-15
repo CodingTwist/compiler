@@ -5,7 +5,16 @@ import { createAttachService } from "./attach.service";
 import { createSwingService } from "./swing.service";
 import { createReleaseService } from "./release.service";
 import { defineController } from "./grapple.controller";
-import { createAnchorService, createConfig, createConstants, createFunctions, createScratch, createSelectors, createStateRepository, defineInit } from "./state";
+import {
+  createAnchorService,
+  createConfig,
+  createConstants,
+  createFunctions,
+  createScratch,
+  createSelectors,
+  createStateRepository,
+  defineInit,
+} from "./state";
 import type { GrappleOptions } from "./state";
 
 /** The public handle {@link Datapack.grapple} returns - just the two entry functions. */
@@ -37,8 +46,23 @@ export function defineGrapple(dp: Datapack, opts: GrappleOptions): Grapple {
   const rope = createRopeService({ scratch, selectors, repo, config, fn });
   const anchor = createAnchorService({ config, selectors, repo });
   const attach = createAttachService({ repo, consts, selectors, scratch });
-  const swing = createSwingService({ repo, consts, selectors, motion, scratch, fn, debug, rope });
-  const release = createReleaseService({ repo, consts, selectors, motion, scratch });
+  const swing = createSwingService({
+    repo,
+    consts,
+    selectors,
+    motion,
+    scratch,
+    fn,
+    debug,
+    rope,
+  });
+  const release = createReleaseService({
+    repo,
+    consts,
+    selectors,
+    motion,
+    scratch,
+  });
 
   const ray = dp.raycast({
     name: "grapple/web",
@@ -52,9 +76,17 @@ export function defineGrapple(dp: Datapack, opts: GrappleOptions): Grapple {
   defineController({ fn, selectors, ray, attach, swing, release });
   // Players have no score source for position, so `drive` must read NBT each tick.
   dp.allow("nbt-read", fn.drive, "player Pos has no command source");
-  dp.allow("repeated-selector", fn.drive, "`facing entity` can't bind @s; one typed tagged marker, untagged after");
+  dp.allow(
+    "repeated-selector",
+    fn.drive,
+    "`facing entity` can't bind @s; one typed tagged marker, untagged after",
+  );
   dp.allow("nbt-read", fn.start, "once per web fire");
-  dp.allow("repeated-selector", fn.start, "once per web fire; the hit writes into the firing player's scores");
+  dp.allow(
+    "repeated-selector",
+    fn.start,
+    "once per web fire; the hit writes into the firing player's scores",
+  );
 
   return { start: fn.start, stop: fn.stop };
 }

@@ -8,7 +8,8 @@ export const TemperatureModifier = {
   NONE: "none",
   FROZEN: "frozen",
 } as const;
-export type TemperatureModifier = (typeof TemperatureModifier)[keyof typeof TemperatureModifier];
+export type TemperatureModifier =
+  (typeof TemperatureModifier)[keyof typeof TemperatureModifier];
 
 /** `effects.grass_color_modifier` - the built-in grass recolour hacks. */
 export const GrassColorModifier = {
@@ -18,7 +19,8 @@ export const GrassColorModifier = {
   /** Position-dependent `#4c763c` / `#6a7039`; the base colour is ignored. */
   SWAMP: "swamp",
 } as const;
-export type GrassColorModifier = (typeof GrassColorModifier)[keyof typeof GrassColorModifier];
+export type GrassColorModifier =
+  (typeof GrassColorModifier)[keyof typeof GrassColorModifier];
 
 /** The mob categories a biome's `spawners` map is keyed by. */
 export const SpawnCategory = {
@@ -50,7 +52,8 @@ export const DecorationStep = {
   VEGETAL_DECORATION: 9,
   TOP_LAYER_MODIFICATION: 10,
 } as const;
-export type DecorationStep = (typeof DecorationStep)[keyof typeof DecorationStep];
+export type DecorationStep =
+  (typeof DecorationStep)[keyof typeof DecorationStep];
 
 export const DECORATION_STEP_COUNT = 11;
 

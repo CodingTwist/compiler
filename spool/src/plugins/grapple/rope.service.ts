@@ -1,6 +1,12 @@
 import { Range, Pos, Particle, Selector, EntityAnchor } from "helix";
 import type { FunctionContext } from "helix";
-import type { GrappleConfig, GrappleFunctions, GrappleSelectors, Scratch, StateRepository } from "./state";
+import type {
+  GrappleConfig,
+  GrappleFunctions,
+  GrappleSelectors,
+  Scratch,
+  StateRepository,
+} from "./state";
 
 /**
  * Rope particle. Redrawn every tick, so it must be short-lived and still, or old frames

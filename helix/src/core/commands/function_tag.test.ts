@@ -34,7 +34,9 @@ describe("function tags", () => {
 
   it("ctx.callTag renders `function #<ns>:<name>`", () => {
     const files = build((dp) => {
-      const tag = dp.functionTag("entrance", { values: [dp.createFunction("a")] });
+      const tag = dp.functionTag("entrance", {
+        values: [dp.createFunction("a")],
+      });
       dp.createFunction("caller").build((ctx) => ctx.callTag(tag));
     });
     expect(files.get("data/pack/function/caller.mcfunction")!.trim()).toBe(

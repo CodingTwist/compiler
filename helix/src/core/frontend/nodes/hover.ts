@@ -8,5 +8,6 @@ export class HoverEvent {
 }
 
 export const hover = {
-  text: (value: TellrawPart | TellrawPart[]): HoverEvent => new HoverEvent(value),
+  text: (value: TellrawPart | TellrawPart[]): HoverEvent =>
+    new HoverEvent(value),
 };

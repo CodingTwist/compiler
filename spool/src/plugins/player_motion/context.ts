@@ -58,7 +58,11 @@ export function createInternals(dp: Datapack) {
   dp.registryFile("enchantment", "internal/apply_impulse", enchantmentJson(ns));
   const predicateFolder = dp.version.paths.predicate;
   dp.registryFile(predicateFolder, "internal/large_global", largeGlobalJson());
-  dp.registryFile(predicateFolder, "internal/falling_creative_player", fallingCreativeJson());
+  dp.registryFile(
+    predicateFolder,
+    "internal/falling_creative_player",
+    fallingCreativeJson(),
+  );
   const largeGlobal = `${ns}:internal/large_global`;
   const fallingCreative = `${ns}:internal/falling_creative_player`;
 
@@ -71,25 +75,65 @@ export function createInternals(dp: Datapack) {
   const fReset = dp.createFunction("internal/launch/reset");
   const fUsePrevious = dp.createFunction("internal/launch/use_previous");
   const fPolarGlobal = dp.createFunction("internal/launch/handle_polar/global");
-  const fStoreRefVectors = dp.createFunction("internal/math/global/store_reference_vectors");
-  const fConvertToLocal = dp.createFunction("internal/math/global/convert_to_local");
+  const fStoreRefVectors = dp.createFunction(
+    "internal/math/global/store_reference_vectors",
+  );
+  const fConvertToLocal = dp.createFunction(
+    "internal/math/global/convert_to_local",
+  );
   const fLaunchLocal = dp.createFunction("api/launch_local_xyz");
   const fLaunchGlobal = dp.createFunction("api/launch_global_xyz");
 
   return {
-    dp, ns, self, marker, temp,
+    dp,
+    ns,
+    self,
+    marker,
+    temp,
     // objectives
-    api, dummy, math, konst, gm, store,
-    prevVecK, prevXin, prevYin, prevZin, prevX, prevY, prevZ, prevMethod,
+    api,
+    dummy,
+    math,
+    konst,
+    gm,
+    store,
+    prevVecK,
+    prevXin,
+    prevYin,
+    prevZin,
+    prevX,
+    prevY,
+    prevZ,
+    prevMethod,
     // score helpers
-    dummyScore, constant, storeBit, gamemodeScore,
+    dummyScore,
+    constant,
+    storeBit,
+    gamemodeScore,
     // working vector + public inputs
-    workX, workY, workZ, sustain, inputX, inputY, inputZ,
+    workX,
+    workY,
+    workZ,
+    sustain,
+    inputX,
+    inputY,
+    inputZ,
     // predicate refs
-    largeGlobal, fallingCreative,
+    largeGlobal,
+    fallingCreative,
     // function refs
-    fInit, fStoreX, fStoreY, fStoreZ, fLaunchMain, fReset, fUsePrevious,
-    fPolarGlobal, fStoreRefVectors, fConvertToLocal, fLaunchLocal, fLaunchGlobal,
+    fInit,
+    fStoreX,
+    fStoreY,
+    fStoreZ,
+    fLaunchMain,
+    fReset,
+    fUsePrevious,
+    fPolarGlobal,
+    fStoreRefVectors,
+    fConvertToLocal,
+    fLaunchLocal,
+    fLaunchGlobal,
   };
 }
 

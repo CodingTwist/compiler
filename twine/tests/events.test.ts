@@ -9,7 +9,10 @@ import { HandlerGroup, On, rearmEvents } from "../src/core/events";
 const AT = Pos(1, 2, 3);
 const PRESSED = Block.STONE_BUTTON.state({ powered: true });
 
-function compile(root: new () => object): { files: Map<string, string>; all: string } {
+function compile(root: new () => object): {
+  files: Map<string, string>;
+  all: string;
+} {
   const dp = DatapackFactory.create(root as never, { name: "test" });
   const files = buildDatapack(dp);
   return { files, all: [...files.values()].join("\n") };
@@ -105,7 +108,9 @@ describe("@On", () => {
     class Root {}
 
     const { files, all } = compile(Root);
-    expect(files.get("data/test/functions/named/zzz/fn_0.mcfunction")).toContain("say two");
+    expect(
+      files.get("data/test/functions/named/zzz/fn_0.mcfunction"),
+    ).toContain("say two");
     expect(all).toContain("function test:named/zzz/fn_0");
   });
 
@@ -125,7 +130,9 @@ describe("@On", () => {
         ctx.say("c");
       }
       register(dp: Datapack) {
-        dp.createFunction("reset").build((ctx) => rearmEvents(ctx, dp, "puzzle", this));
+        dp.createFunction("reset").build((ctx) =>
+          rearmEvents(ctx, dp, "puzzle", this),
+        );
       }
     }
     @Module({ name: "root", imports: [Puzzle] })
@@ -202,7 +209,9 @@ describe("handler groups", () => {
     class Root {}
 
     const { files, all } = compile(Root);
-    expect(files.get("data/test/functions/hum/zzz/fn_0.mcfunction")).toContain("say hmm");
+    expect(files.get("data/test/functions/hum/zzz/fn_0.mcfunction")).toContain(
+      "say hmm",
+    );
     expect(all).toContain("function test:hum/zzz/fn_0");
   });
 });
@@ -224,7 +233,9 @@ describe("generated rearm", () => {
     class Root {}
 
     const { files } = compile(Root);
-    const rearm = [...files].find(([p]) => p.endsWith("puzzle/rearm.mcfunction"))![1];
+    const rearm = [...files].find(([p]) =>
+      p.endsWith("puzzle/rearm.mcfunction"),
+    )![1];
 
     expect(rearm).toContain("scoreboard players set #puzzle.solved events 0");
     // `once: false` never allocated a latch, so there is nothing to clear.
@@ -242,6 +253,8 @@ describe("generated rearm", () => {
     @Module({ name: "root", imports: [Quiet] })
     class Root {}
 
-    expect([...compile(Root).files.keys()].some((p) => p.includes("quiet/rearm"))).toBe(false);
+    expect(
+      [...compile(Root).files.keys()].some((p) => p.includes("quiet/rearm")),
+    ).toBe(false);
   });
 });

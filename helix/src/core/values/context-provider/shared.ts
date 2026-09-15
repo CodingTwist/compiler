@@ -48,14 +48,26 @@ export function sharedOps<P extends ProviderBase, R extends number | P>(
 
     /** `base ** exponent`. */
     pow: (base: R, exponent: R): P =>
-      wrap((v) => ({ type: "pow", base: jsonOf(base)(v), exponent: jsonOf(exponent)(v) })),
+      wrap((v) => ({
+        type: "pow",
+        base: jsonOf(base)(v),
+        exponent: jsonOf(exponent)(v),
+      })),
 
     /** A uniform random draw in `[min, max]` - a real roll, evaluated by the game. */
     uniform: (min: R, max: R): P =>
-      wrap((v) => ({ type: "uniform", min: jsonOf(min)(v), max: jsonOf(max)(v) })),
+      wrap((v) => ({
+        type: "uniform",
+        min: jsonOf(min)(v),
+        max: jsonOf(max)(v),
+      })),
 
     /** Pick `onTrue` or `onFalse` (default `0`) by a predicate. */
-    conditional: (condition: PredicateRef | Id | string, onTrue: R, onFalse?: R): P =>
+    conditional: (
+      condition: PredicateRef | Id | string,
+      onTrue: R,
+      onFalse?: R,
+    ): P =>
       wrap((v) => ({
         type: "conditional",
         condition: predicateId(condition),
@@ -76,7 +88,8 @@ export function sharedOps<P extends ProviderBase, R extends number | P>(
     storage: (storage: Id | string, path: NbtPath | string, fallback?: R): P =>
       wrap((v) => ({
         type: "storage",
-        storage: typeof storage === "string" ? Id(storage).render() : storage.render(),
+        storage:
+          typeof storage === "string" ? Id(storage).render() : storage.render(),
         path: typeof path === "string" ? path : path.render(),
         ...(fallback === undefined ? {} : { fallback: jsonOf(fallback)(v) }),
       })),
@@ -87,4 +100,8 @@ export function sharedOps<P extends ProviderBase, R extends number | P>(
 }
 
 const predicateId = (p: PredicateRef | Id | string): string =>
-  typeof p === "string" ? Id(p).render() : p instanceof PredicateRef ? p.id : p.render();
+  typeof p === "string"
+    ? Id(p).render()
+    : p instanceof PredicateRef
+      ? p.id
+      : p.render();

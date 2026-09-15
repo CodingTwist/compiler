@@ -57,7 +57,10 @@ export class Clip extends ClipTimeline {
     const ns = this.s.dp.name;
     if (mode === "smooth") {
       if (baseTick <= 0) ctx.emit(new FunctionNode(`${this.s.name}/play`));
-      else ctx.schedule().function_(FunctionId(`${ns}:${this.s.name}/play`), Time(baseTick));
+      else
+        ctx
+          .schedule()
+          .function_(FunctionId(`${ns}:${this.s.name}/play`), Time(baseTick));
       return;
     }
     for (let t = 0; t < duration; t++) {
@@ -71,7 +74,9 @@ export class Clip extends ClipTimeline {
   private call(ctx: FunctionContext, which: string, afterTicks: number): void {
     const id = `${this.s.name}/${which}`;
     if (afterTicks > 0) {
-      ctx.schedule().function_(FunctionId(`${this.s.dp.name}:${id}`), Time(afterTicks));
+      ctx
+        .schedule()
+        .function_(FunctionId(`${this.s.dp.name}:${id}`), Time(afterTicks));
     } else {
       ctx.emit(new FunctionNode(id));
     }

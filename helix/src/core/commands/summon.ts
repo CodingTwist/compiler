@@ -4,12 +4,17 @@ import { CommandPart, TreeCommandNode } from "../ir/node";
 import { Effect } from "../ir/line-info";
 import { FunctionContext } from "../frontend/context";
 import { CommandBuilder, litPart, argPart } from "./base";
-import { EntityNbtValue, EntityType, type IdentifiedEntityNbt, Nbt, Pos, warnRawEntityNbt } from "../values";
+import {
+  EntityNbtValue,
+  EntityType,
+  type IdentifiedEntityNbt,
+  Nbt,
+  Pos,
+  warnRawEntityNbt,
+} from "../values";
 
 /** `summon` */
-export class SummonBuilder extends CommandBuilder<TreeCommandNode> {
-
-}
+export class SummonBuilder extends CommandBuilder<TreeCommandNode> {}
 
 declare module "../frontend/context" {
   interface FunctionContext {
@@ -27,7 +32,8 @@ FunctionContext.prototype.summon = function (
   nbt?: Nbt,
 ) {
   // The one-argument form: the concept carries the id, so shift it into place.
-  if (entity instanceof EntityNbtValue) [entity, nbt, pos] = [EntityType(entity.entity), entity, pos];
+  if (entity instanceof EntityNbtValue)
+    [entity, nbt, pos] = [EntityType(entity.entity), entity, pos];
   const node = new TreeCommandNode("summon", { effect: Effect.EDITS });
   this.emit(node);
   const parts: CommandPart[] = [litPart("summon"), argPart(entity)];

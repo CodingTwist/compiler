@@ -19,7 +19,10 @@ describe("dp.itemDefinition codegen", () => {
       "sword",
       ItemModel.rangeDispatch(RANGE_DISPATCH_PROPERTIES.DAMAGE, [
         { threshold: 0, model: ItemModel.model("testpack:item/sword") },
-        { threshold: 0.5, model: ItemModel.model("testpack:item/sword_cracked") },
+        {
+          threshold: 0.5,
+          model: ItemModel.model("testpack:item/sword_cracked"),
+        },
       ]),
     );
     expect(ref).toBeInstanceOf(ModelRef);
@@ -29,8 +32,17 @@ describe("dp.itemDefinition codegen", () => {
         type: "minecraft:range_dispatch",
         property: "minecraft:damage",
         entries: [
-          { threshold: 0, model: { type: "minecraft:model", model: "testpack:item/sword" } },
-          { threshold: 0.5, model: { type: "minecraft:model", model: "testpack:item/sword_cracked" } },
+          {
+            threshold: 0,
+            model: { type: "minecraft:model", model: "testpack:item/sword" },
+          },
+          {
+            threshold: 0.5,
+            model: {
+              type: "minecraft:model",
+              model: "testpack:item/sword_cracked",
+            },
+          },
         ],
       },
     });

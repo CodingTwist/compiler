@@ -10,14 +10,44 @@ import { Selector } from "../frontend/nodes/selector";
 
 /** `particle` */
 export class ParticleBuilder extends CommandBuilder<TreeCommandNode> {
-  force(name: Particle, pos: Pos, delta: Pos, speed: number, count: number, viewers?: Selector): this {
-    this.$set(litPart("particle"), argPart(name), argPart(pos), argPart(delta), argPart(speed), argPart(count), litPart("force"));
+  force(
+    name: Particle,
+    pos: Pos,
+    delta: Pos,
+    speed: number,
+    count: number,
+    viewers?: Selector,
+  ): this {
+    this.$set(
+      litPart("particle"),
+      argPart(name),
+      argPart(pos),
+      argPart(delta),
+      argPart(speed),
+      argPart(count),
+      litPart("force"),
+    );
     if (viewers !== undefined) this.$append(argPart(viewers));
     return this;
   }
 
-  normal(name: Particle, pos: Pos, delta: Pos, speed: number, count: number, viewers?: Selector): this {
-    this.$set(litPart("particle"), argPart(name), argPart(pos), argPart(delta), argPart(speed), argPart(count), litPart("normal"));
+  normal(
+    name: Particle,
+    pos: Pos,
+    delta: Pos,
+    speed: number,
+    count: number,
+    viewers?: Selector,
+  ): this {
+    this.$set(
+      litPart("particle"),
+      argPart(name),
+      argPart(pos),
+      argPart(delta),
+      argPart(speed),
+      argPart(count),
+      litPart("normal"),
+    );
     if (viewers !== undefined) this.$append(argPart(viewers));
     return this;
   }
@@ -44,18 +74,36 @@ declare module "../frontend/context" {
     /** Spawns `name` particles; options left out take their defaults. */
     particle(name: Particle, options: ParticleOptions): void;
     /** `particle` - `ctx.particle()...` */
-    particle(name?: Particle, pos?: Pos, delta?: Pos, speed?: number, count?: number): ParticleBuilder;
+    particle(
+      name?: Particle,
+      pos?: Pos,
+      delta?: Pos,
+      speed?: number,
+      count?: number,
+    ): ParticleBuilder;
   }
 }
 
-FunctionContext.prototype.particle = function (this: FunctionContext, name?: Particle, pos?: Pos | ParticleOptions, delta?: Pos, speed?: number, count?: number) {
+FunctionContext.prototype.particle = function (
+  this: FunctionContext,
+  name?: Particle,
+  pos?: Pos | ParticleOptions,
+  delta?: Pos,
+  speed?: number,
+  count?: number,
+) {
   const node = new TreeCommandNode("particle", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("particle")];
   if (name !== undefined) parts.push(argPart(name));
   if (pos !== undefined && !("render" in pos)) {
     const o = pos;
-    parts.push(argPart(o.at ?? Pos.here()), argPart(Pos(...(o.spread ?? [0, 0, 0]))), argPart(o.speed ?? 0), argPart(o.count ?? 1));
+    parts.push(
+      argPart(o.at ?? Pos.here()),
+      argPart(Pos(...(o.spread ?? [0, 0, 0]))),
+      argPart(o.speed ?? 0),
+      argPart(o.count ?? 1),
+    );
     if (o.force || o.viewers) parts.push(litPart(o.force ? "force" : "normal"));
     if (o.viewers) parts.push(argPart(o.viewers));
     node.parts = parts;

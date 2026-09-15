@@ -2,4 +2,8 @@
 //
 // Triggers are native event listeners, so prefer them over tick polling for anything a player does.
 export { Trigger, type CriterionJson } from "./trigger";
-export { AdvancementDef, type AdvancementDisplay, type AdvancementFrame } from "./def";
+export {
+  AdvancementDef,
+  type AdvancementDisplay,
+  type AdvancementFrame,
+} from "./def";

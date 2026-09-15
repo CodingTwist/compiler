@@ -33,7 +33,9 @@ describe("selectorText", () => {
         );
       });
     });
-    expect(out.trim()).toBe('tellraw @s {"selector":"@a[tag=Verbose,limit=1]"}');
+    expect(out.trim()).toBe(
+      'tellraw @s {"selector":"@a[tag=Verbose,limit=1]"}',
+    );
   });
 
   it("carries style alongside the selector, like any other part", () => {

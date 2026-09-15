@@ -27,7 +27,8 @@ export async function setupMonaco(): Promise<typeof monaco> {
 
   self.MonacoEnvironment = {
     getWorker(_workerId: string, label: string) {
-      if (label === "typescript" || label === "javascript") return new tsWorker();
+      if (label === "typescript" || label === "javascript")
+        return new tsWorker();
       return new editorWorker();
     },
   };

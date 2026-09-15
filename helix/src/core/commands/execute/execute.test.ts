@@ -1,5 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { Datapack, Objective, ScoreTarget, Selector, Id, NbtPath, Pos, Range, Block, Nbt, Item, Relation } from "../../../index";
+import {
+  Datapack,
+  Objective,
+  ScoreTarget,
+  Selector,
+  Id,
+  NbtPath,
+  Pos,
+  Range,
+  Block,
+  Nbt,
+  Item,
+  Relation,
+} from "../../../index";
 import { v26_2 } from "../../../versions/profiles";
 import { buildDatapack } from "../../codegen/codegen";
 
@@ -22,7 +35,9 @@ describe("ctx.execute() chain builder", () => {
         .execute()
         .ifBlock(
           Pos(1, 2, 3),
-          Block.JUKEBOX.data(Nbt({ RecordItem: Item.MUSIC_DISC_11.count(1).stackNbt() })),
+          Block.JUKEBOX.data(
+            Nbt({ RecordItem: Item.MUSIC_DISC_11.count(1).stackNbt() }),
+          ),
         )
         .run((b: any) => b.say("x")),
     );
@@ -109,7 +124,9 @@ describe("ctx.execute() chain builder", () => {
         .storeResultBossbar(Id("t:king"), "value")
         .run((b: any) => D("#hp").get(b)),
     );
-    expect(line).toBe("execute store result bossbar t:king value run scoreboard players get #hp d");
+    expect(line).toBe(
+      "execute store result bossbar t:king value run scoreboard players get #hp d",
+    );
   });
 
   it("returnRun renders `return run <command>` and nests under execute", () => {
@@ -133,7 +150,10 @@ describe("ctx.execute() chain builder", () => {
     const probe = dp.createFunction("probe");
     probe.build((ctx) => ctx.return_(1));
     dp.createFunction("f").build((ctx) =>
-      ctx.execute().ifFunction(probe).run((b: any) => b.say("hit")),
+      ctx
+        .execute()
+        .ifFunction(probe)
+        .run((b: any) => b.say("hit")),
     );
     buildDatapack(dp);
     expect(dp.files.get("f")).toBe("execute if function t:probe run say hit");

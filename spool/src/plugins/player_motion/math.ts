@@ -57,7 +57,11 @@ export function defineMath(I: PlayerMotionInternals): void {
 
     // Save the world vector, because the work slots are reused for the reference vectors
     // below.
-    const g = { x: dummyScore("#_x"), y: dummyScore("#_y"), z: dummyScore("#_z") };
+    const g = {
+      x: dummyScore("#_x"),
+      y: dummyScore("#_y"),
+      z: dummyScore("#_z"),
+    };
     g.x.assign(workX);
     g.y.assign(workY);
     g.z.assign(workZ);
@@ -80,7 +84,11 @@ export function defineMath(I: PlayerMotionInternals): void {
     // local = (g·i, g·j, g·k) / 100000
     const S = constant("#constant.100000");
     math`(${workX} * ${g.x} + ${iZ} * ${g.z}) / ${S}`.into(workX);
-    math`(${workY} * ${g.x} + ${jY} * ${g.y} + ${jZ} * ${g.z}) / ${S}`.into(workY);
-    math`(${workZ} * ${g.x} + ${kY} * ${g.y} + ${kZ} * ${g.z}) / ${S}`.into(workZ);
+    math`(${workY} * ${g.x} + ${jY} * ${g.y} + ${jZ} * ${g.z}) / ${S}`.into(
+      workY,
+    );
+    math`(${workZ} * ${g.x} + ${kY} * ${g.y} + ${kZ} * ${g.z}) / ${S}`.into(
+      workZ,
+    );
   });
 }

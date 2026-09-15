@@ -21,7 +21,8 @@ export function reaches(dp: Datapack): ReachOf {
     const known = memo.get(name);
     if (known) return [known, Infinity];
     const depth = visiting.get(name);
-    if (depth !== undefined) return [{ effect: Effect.NONE, local: true }, depth];
+    if (depth !== undefined)
+      return [{ effect: Effect.NONE, local: true }, depth];
     const infos = dp.lineInfo.get(name);
     // A call we can't read might do anything.
     if (!infos) return [{ effect: Effect.MOVES, local: false }, Infinity];
@@ -29,11 +30,17 @@ export function reaches(dp: Datapack): ReachOf {
     const own = visiting.size;
     visiting.set(name, own);
     let low = Infinity;
-    const reach = infos.reduce<Reach>((acc, info) => {
-      const [r, l] = combine(info);
-      low = Math.min(low, l);
-      return { effect: worst(acc.effect, r.effect), local: acc.local && r.local };
-    }, { effect: Effect.NONE, local: true });
+    const reach = infos.reduce<Reach>(
+      (acc, info) => {
+        const [r, l] = combine(info);
+        low = Math.min(low, l);
+        return {
+          effect: worst(acc.effect, r.effect),
+          local: acc.local && r.local,
+        };
+      },
+      { effect: Effect.NONE, local: true },
+    );
     visiting.delete(name);
     // Inside a loop through a caller, the result is missing that caller's lines.
     if (low >= own) memo.set(name, reach);
@@ -46,7 +53,10 @@ export function reaches(dp: Datapack): ReachOf {
     let low = Infinity;
     for (const callee of info.calls) {
       const [r, l] = visit(callee);
-      reach = { effect: worst(reach.effect, r.effect), local: reach.local && r.local };
+      reach = {
+        effect: worst(reach.effect, r.effect),
+        local: reach.local && r.local,
+      };
       low = Math.min(low, l);
     }
     return [reach, low];

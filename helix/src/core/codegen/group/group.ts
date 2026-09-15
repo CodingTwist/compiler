@@ -20,10 +20,14 @@ export function groupExecutePrefixes(dp: Datapack): void {
     const text = dp.files.get(name)!;
     const texts = text ? text.split("\n") : [];
     if (texts.length !== infos.length) {
-      throw new Error(`Line info for '${name}' has ${infos.length} lines, the file ${texts.length}`);
+      throw new Error(
+        `Line info for '${name}' has ${infos.length} lines, the file ${texts.length}`,
+      );
     }
     const sources = dp.sourceMap.get(name);
-    const lines = texts.map((t, i): Line => ({ text: t, source: sources?.[i], info: infos[i] }));
+    const lines = texts.map(
+      (t, i): Line => ({ text: t, source: sources?.[i], info: infos[i] }),
+    );
 
     let n = 0;
     const call = (part: Run): Line[] => {
@@ -34,16 +38,34 @@ export function groupExecutePrefixes(dp: Datapack): void {
       do child = privateChild(name, `group_${n++}`);
       while (dp.files.has(child) || dp.inlined.has(child));
 
-      dp.files.set(child, body.map((l) => (l.info.comment ? l.text : withoutClauses(l.text, clauses))).join("\n"));
+      dp.files.set(
+        child,
+        body
+          .map((l) =>
+            l.info.comment ? l.text : withoutClauses(l.text, clauses),
+          )
+          .join("\n"),
+      );
       dp.lineInfo.set(
         child,
-        body.map((l) => (l.info.comment ? l.info : { ...l.info, clauses: l.info.clauses.slice(clauses.length) })),
+        body.map((l) =>
+          l.info.comment
+            ? l.info
+            : { ...l.info, clauses: l.info.clauses.slice(clauses.length) },
+        ),
       );
-      if (sources) dp.sourceMap.set(child, body.map((l) => l.source));
+      if (sources)
+        dp.sourceMap.set(
+          child,
+          body.map((l) => l.source),
+        );
       queue.push(child);
       const callText = underClauses(clauses, functionCall(dp, child));
       const info = chainLine(part.shared, callLine(child));
-      return [...part.lines.slice(0, lead), { text: callText, source: body[0].source, info }];
+      return [
+        ...part.lines.slice(0, lead),
+        { text: callText, source: body[0].source, info },
+      ];
     };
 
     const out: Line[] = [];
@@ -52,9 +74,17 @@ export function groupExecutePrefixes(dp: Datapack): void {
         out.push(...(worthGrouping(part) ? call(part) : part.lines));
       }
     }
-    if (out.length === lines.length && out.every((l, i) => l === lines[i])) continue;
+    if (out.length === lines.length && out.every((l, i) => l === lines[i]))
+      continue;
     dp.files.set(name, out.map((l) => l.text).join("\n"));
-    dp.lineInfo.set(name, out.map((l) => l.info));
-    if (sources) dp.sourceMap.set(name, out.map((l) => l.source));
+    dp.lineInfo.set(
+      name,
+      out.map((l) => l.info),
+    );
+    if (sources)
+      dp.sourceMap.set(
+        name,
+        out.map((l) => l.source),
+      );
   }
 }

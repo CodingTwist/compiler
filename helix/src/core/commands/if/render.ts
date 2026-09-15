@@ -8,7 +8,11 @@ import { clause } from "../execute/render";
 import type { ChainLink } from "./links";
 
 /** Full rendered fragment for one chain link, including its own leading keyword(s). */
-export function linkText(link: ChainLink, version: VersionProfile, ns: string): string {
+export function linkText(
+  link: ChainLink,
+  version: VersionProfile,
+  ns: string,
+): string {
   if (link.kind === "entity") {
     return `${link.mode} entity ${renderExistence(link.selector, version)}`;
   }
@@ -24,7 +28,9 @@ function nearLinkText(
   version: VersionProfile,
 ): string {
   const posStr = toCommandValue(link.pos).render(version);
-  const near = Selector.allPlayers().distance(new Range(undefined, link.radius));
+  const near = Selector.allPlayers().distance(
+    new Range(undefined, link.radius),
+  );
   const nearStr = link.perPlayer
     ? toCommandValue(near).render(version)
     : renderExistence(near, version);

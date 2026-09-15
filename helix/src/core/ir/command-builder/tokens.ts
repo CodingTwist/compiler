@@ -59,7 +59,9 @@ export function buildTokens(version: VersionProfile, tokens: Token[]): string {
         const expected = literalChildren(node).sort();
         throw new Error(
           `Unknown ${where} "${tok.text}" for Minecraft ${version.id}` +
-            (expected.length ? ` (expected one of: ${expected.join(", ")})` : ""),
+            (expected.length
+              ? ` (expected one of: ${expected.join(", ")})`
+              : ""),
         );
       }
       node = child;

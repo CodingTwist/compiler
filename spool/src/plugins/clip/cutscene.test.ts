@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { Datapack, buildDatapack, Display, Block, Selector, v1_21_4 } from "helix";
+import {
+  Datapack,
+  buildDatapack,
+  Display,
+  Block,
+  Selector,
+  v1_21_4,
+} from "helix";
 import { installKit } from "../../kit";
 import { clip } from ".";
 
@@ -34,12 +41,16 @@ describe("Cutscene: compose clips + camera + events on one timeline", () => {
     const play = fn(files, "zzz/intro/play");
     expect(play).toContain("function anim:zzz/door/play"); // smooth clip kicked at 0
     expect(play).toContain("execute as @a run teleport 0 100 0"); // frame 0 inlined
-    expect(play).toContain("schedule function anim:zzz/intro/cam_0/frame_1 1 append");
+    expect(play).toContain(
+      "schedule function anim:zzz/intro/cam_0/frame_1 1 append",
+    );
     expect(play).toContain("schedule function anim:zzz/intro/event_3 3");
   });
 
   it("camera interpolates the dolly via execute-as teleport", () => {
     // tick 2 of a 0..4 path [0,100,0]->[8,100,0] => x = 4
-    expect(fn(files, "zzz/intro/cam_0/frame_2")).toContain("execute as @a run teleport 4 100 0");
+    expect(fn(files, "zzz/intro/cam_0/frame_2")).toContain(
+      "execute as @a run teleport 4 100 0",
+    );
   });
 });

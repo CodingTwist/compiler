@@ -15,7 +15,12 @@ export interface Track {
   /** If this track is a pure periodic spin, its revolution frame count (for snap). */
   revolution(): number | undefined;
   /** Frame mode: emit the commands for frame index `f`. */
-  emitFrame(ctx: FunctionContext, f: number, period: number, duration: number): void;
+  emitFrame(
+    ctx: FunctionContext,
+    f: number,
+    period: number,
+    duration: number,
+  ): void;
   /** Smooth mode: emit the one-shot native tween toward the end pose (or base if `reverse`). */
   emitSmooth(ctx: FunctionContext, duration: number, reverse: boolean): void;
 }

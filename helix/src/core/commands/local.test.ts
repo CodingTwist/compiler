@@ -21,7 +21,9 @@ describe("ctx.let", () => {
     dp.createFunction("b").build((ctx) => void ctx.let());
     const out = output(dp);
     expect(out).toContain("scoreboard players set #a.0 helix.var 5");
-    expect(out).toContain("scoreboard players operation #a.1 helix.var = @s hp");
+    expect(out).toContain(
+      "scoreboard players operation #a.1 helix.var = @s hp",
+    );
     expect(dp.functionRef("b")!.node.locals).toBe(1);
     expect(out).toContain("scoreboard objectives add helix.var dummy");
   });
@@ -34,7 +36,10 @@ describe("ctx.let", () => {
 
   it("lowers a math init for the target version", () => {
     for (const [version, expected] of [
-      [v1_21_4, "scoreboard players operation #f.1 helix.var *= #f.0 helix.var"],
+      [
+        v1_21_4,
+        "scoreboard players operation #f.1 helix.var *= #f.0 helix.var",
+      ],
       [v26_3_rc_2, "execute store result score #f.1 helix.var run compute"],
     ] as const) {
       const dp = new Datapack("p", version);

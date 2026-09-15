@@ -92,7 +92,10 @@ declare module "../frontend/context" {
   }
 }
 
-FunctionContext.prototype.stopsound = function (this: FunctionContext, targets?: Selector) {
+FunctionContext.prototype.stopsound = function (
+  this: FunctionContext,
+  targets?: Selector,
+) {
   const node = new TreeCommandNode("stopsound", { effect: Effect.NONE });
   this.emit(node);
   const parts: CommandPart[] = [litPart("stopsound")];

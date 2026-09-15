@@ -8,12 +8,21 @@ import { Selector } from "../frontend/nodes/selector";
 /** `ride` */
 export class RideBuilder extends CommandBuilder<TreeCommandNode> {
   dismount(target: Selector): this {
-    this.$set(litPart("ride"), argPart(single(target, "ride")), litPart("dismount"));
+    this.$set(
+      litPart("ride"),
+      argPart(single(target, "ride")),
+      litPart("dismount"),
+    );
     return this;
   }
 
   mount(target: Selector, vehicle: Selector): this {
-    this.$set(litPart("ride"), argPart(single(target, "ride")), litPart("mount"), argPart(single(vehicle, "ride")));
+    this.$set(
+      litPart("ride"),
+      argPart(single(target, "ride")),
+      litPart("mount"),
+      argPart(single(vehicle, "ride")),
+    );
     return this;
   }
 }

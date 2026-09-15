@@ -37,7 +37,11 @@ type PredicateLike = PredicateRef | Id | string;
 /**
  * Emits `detector` and runs `hit` where it holds. With no clauses, `hit` is emitted bare.
  */
-export function detect(ctx: FunctionContext, detector: Detector, hit: OnHit): void {
+export function detect(
+  ctx: FunctionContext,
+  detector: Detector,
+  hit: OnHit,
+): void {
   const chain = ctx.execute();
   detector(chain);
   chain.runOrInline(hit);
@@ -126,7 +130,9 @@ export const Detect = {
   near(pos: Pos, radius: number, inner: Detector): Detector {
     return (c) => {
       // Built per emission because selectors change in place.
-      c.positioned(pos).ifEntity(Selector.allPlayers().distance(new Range(undefined, radius)));
+      c.positioned(pos).ifEntity(
+        Selector.allPlayers().distance(new Range(undefined, radius)),
+      );
       inner(c);
     };
   },

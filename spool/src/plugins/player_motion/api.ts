@@ -11,8 +11,19 @@ const MATRIX = NbtPath("matrix");
 
 export function defineApi(I: PlayerMotionInternals): void {
   const {
-    self, temp, fLaunchMain, fPolarGlobal, dummyScore, inputX, inputY, inputZ, workX, workY, workZ,
-    fLaunchLocal, fLaunchGlobal,
+    self,
+    temp,
+    fLaunchMain,
+    fPolarGlobal,
+    dummyScore,
+    inputX,
+    inputY,
+    inputZ,
+    workX,
+    workY,
+    workZ,
+    fLaunchLocal,
+    fLaunchGlobal,
   } = I;
 
   // --- api/launch_global_xyz ------------------------------------------------
@@ -34,9 +45,18 @@ export function defineApi(I: PlayerMotionInternals): void {
       .ifEntity(self().xRotation(new Range(-90, -90)))
       .run((b) => b.returnRun((r) => r.call(fPolarGlobal)));
 
-    ctx.execute().storeResultStorage(temp, MATRIX.child("x"), "double", 1).run((b) => workX.get(b));
-    ctx.execute().storeResultStorage(temp, MATRIX.child("y"), "double", 1).run((b) => workY.get(b));
-    ctx.execute().storeResultStorage(temp, MATRIX.child("z"), "double", 1).run((b) => workZ.get(b));
+    ctx
+      .execute()
+      .storeResultStorage(temp, MATRIX.child("x"), "double", 1)
+      .run((b) => workX.get(b));
+    ctx
+      .execute()
+      .storeResultStorage(temp, MATRIX.child("y"), "double", 1)
+      .run((b) => workY.get(b));
+    ctx
+      .execute()
+      .storeResultStorage(temp, MATRIX.child("z"), "double", 1)
+      .run((b) => workZ.get(b));
 
     globalConversionTail(I, ctx, 0);
   });

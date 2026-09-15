@@ -5,7 +5,13 @@ import type { PlayerMotion } from "../player_motion";
 import type { DebugService } from "./debug.service";
 import type { RopeService } from "./rope.service";
 import { swingScratch } from "./state";
-import type { Constants, GrappleFunctions, GrappleSelectors, Scratch, StateRepository } from "./state";
+import type {
+  Constants,
+  GrappleFunctions,
+  GrappleSelectors,
+  Scratch,
+  StateRepository,
+} from "./state";
 
 interface SwingDeps {
   repo: StateRepository;
@@ -67,7 +73,11 @@ export function createSwingService(d: SwingDeps) {
   return {
     /** The tick-loop body: drive every grappling player, as + at each. */
     driveAll(ctx: FunctionContext): void {
-      ctx.execute().as(d.selectors.grappling()).at(d.selectors.self()).run((b) => b.call(d.fn.drive));
+      ctx
+        .execute()
+        .as(d.selectors.grappling())
+        .at(d.selectors.self())
+        .run((b) => b.call(d.fn.drive));
     },
   };
 }

@@ -48,7 +48,11 @@ export function createStateRepository(d: StateRepositoryDeps) {
   const ropeLenSqOf = () => ropeLenSq.score(self());
   /** player_motion's launch input, viewed as a vector the constraint writes into. */
   const launchVec = () =>
-    new ScoreVec3(d.motion.launchInput.x, d.motion.launchInput.y, d.motion.launchInput.z);
+    new ScoreVec3(
+      d.motion.launchInput.x,
+      d.motion.launchInput.y,
+      d.motion.launchInput.z,
+    );
 
   /** Reads an entity's position into a vector in decimetres. */
   const readPos = (
@@ -61,10 +65,17 @@ export function createStateRepository(d: StateRepositoryDeps) {
 
   // The objectives `grapple/init` must create, in a stable order.
   const objectives = [
-    anchorX, anchorY, anchorZ,
-    prevX, prevY, prevZ,
-    velX, velY, velZ,
-    ropeLenSq, id,
+    anchorX,
+    anchorY,
+    anchorZ,
+    prevX,
+    prevY,
+    prevZ,
+    velX,
+    velY,
+    velZ,
+    ropeLenSq,
+    id,
   ];
 
   return {

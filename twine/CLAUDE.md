@@ -7,7 +7,7 @@ root [helix/CLAUDE.md](../helix/CLAUDE.md) for the compiler core and the package
 
 `twine` is the **opinionated framework layer**: a NestJS-style module / area / lifecycle
 system for composing a whole datapack out of features. It sits above `helix` (the
-un-opinionated compiler) and `spool` (conveniences) and owns *project composition* - which
+un-opinionated compiler) and `spool` (conveniences) and owns _project composition_ - which
 features are enabled, how they nest, and when their behaviour runs.
 
 Where helix deliberately refuses to dictate structure, twine **is** the structure: it
@@ -62,7 +62,7 @@ and cooldowns are scores on the boss's objective.
   (divided by a max read at spawn), driving both phase guards and the bar.
 - Abilities roll the full int range **modulo** the summed weight of what's off cooldown, since
   `random value` needs a build-time range.
-- Death is the entity being *gone*, not health 0. `cleanup` calls `rearmEvents`, which is what
+- Death is the entity being _gone_, not health 0. `cleanup` calls `rearmEvents`, which is what
   makes a fight repeatable.
 
 ### Custom mobs (`src/mob/`)
@@ -70,12 +70,12 @@ and cooldowns are scores on the boss's objective.
 A real vanilla mob (AI, damage, death) wearing a helix `Display` rig, summoned separately and
 joined with `ride mount`. The module owns what riding doesn't give you:
 
-- **Yaw:** every rig member keeps its own rotation, so each is turned from *its own* mob, yaw
+- **Yaw:** every rig member keeps its own rotation, so each is turned from _its own_ mob, yaw
   only (a copied pitch tilts the model). 1.21.2+ uses `rotate`; older versions copy
   `Rotation[0]` through NBT.
 - **Hit relay:** hits on the model's `interaction` hitbox become damage on the mob, tested with
   `if function <name>/attacked` (`on attacker`), not an NBT read.
-- **Orphans:** a killed vehicle only *dismounts* its passengers and nothing can test "has a
+- **Orphans:** a killed vehicle only _dismounts_ its passengers and nothing can test "has a
   vehicle", so rigs are found by mark-and-sweep in `wake`.
 - A riding rig sits at the mount point (`height * 0.75` up); `Display.offset(...)` cancels it.
 
@@ -129,7 +129,7 @@ A `DatapackModule` may implement any of:
 - `register(dp, scope)` - one-off build-time setup (objectives, standalone functions,
   structures). `scope` is the module's own `{ name, dimension, fn }` (`ModuleScope`):
   `scope.fn(name, body)` creates a function whose body is wrapped in the module's
-  dimension, which is what anything called from *outside* the tick tree (admin
+  dimension, which is what anything called from _outside_ the tick tree (admin
   commands, scheduled one-shots, event rewards) needs - a `dimension` on `@Module`
   only reaches what the framework itself emits.
 - `onLoad(ctx)` - appended to the shared `load` function; always runs (not gated).
@@ -157,7 +157,7 @@ the flag set before the body. `@Every(ticks)` is the same thing with no conditio
 no latch - the degenerate case that used to need a module of its own just to carry a
 `tickEvery`.
 
-Two things are deliberately the *author's* choice, not the framework's, because both
+Two things are deliberately the _author's_ choice, not the framework's, because both
 are where per-tick cost comes from:
 
 - **The detector.** A `Detector` is helix's (`Detect.block/entity/score/predicate`,
@@ -177,19 +177,19 @@ all of them), or a stale latch silently suppresses its trigger forever.
 
 A module composes `HandlerGroup`s by holding them - discovered by type, from a
 field or from an **array** field. Prefer one `groups = [new A(...), new B(...)]` field
-when firing order matters: per-field discovery follows *declaration* order, not the
+when firing order matters: per-field discovery follows _declaration_ order, not the
 order the constructor assigns, which is not visible where the groups are built.
 
 ### One `minecraft:tick` entry (the framework owns the tick tag)
 
-helix auto-tags *every* function created with the `tick` tag straight into vanilla
+helix auto-tags _every_ function created with the `tick` tag straight into vanilla
 `minecraft:tick` (spool plugins, `defineItem` item ticks, the scoreboard clock). That's the
 right un-opinionated default for a plain-helix pack, but the framework collapses it to a
 single owned entry: `consolidateTick(dp)` (run automatically at the end of
-`DatapackFactory.create`) untags every *other* member and `function`-calls it from the root
+`DatapackFactory.create`) untags every _other_ member and `function`-calls it from the root
 `<ns>:tick` body, so the whole pack's per-tick work is one traceable, gateable list. It's
-**idempotent and exported** - if a consumer adds more `tick`-tagged functions *imperatively
-after* `create` (raw helix/spool calls, as `lab/src/pack.ts` does for grapple), call
+**idempotent and exported** - if a consumer adds more `tick`-tagged functions _imperatively
+after_ `create` (raw helix/spool calls, as `lab/src/pack.ts` does for grapple), call
 `consolidateTick(datapack)` again just before `writeDatapack` to sweep those too. Backed by
 helix's `dp.untag(name, tag)` / `dp.functionRef(name)` mechanism primitives.
 
@@ -204,6 +204,7 @@ an existing function throws. Tests reading "the tick" should join every
 **Debug source tracking.** Pass `DatapackFactory.create(Root, { …, debug: { sources, comments } })`.
 It's off by default; lab turns it on for dev builds via `helix.config.ts`. Each command then maps to the TS line that
 emitted it:
+
 - report `↳`
 - `# loc` comments in the pack
 - `helix-sources.json`
@@ -229,7 +230,7 @@ non-source file, so a prod `node dist/main.js` can't find the structure `.nbt` t
 `__dirname`. The bin mirrors them `src/` → `dist/`, preserving paths. It's a **denylist**
 (copies anything that isn't a TS/JS source or `.md`), so a consumer never maintains a
 per-project extension whitelist. This is framework-owned build plumbing on purpose - asset
-staging is a *how-a-pack-is-built* concern, so it lives here, not re-hand-rolled per
+staging is a _how-a-pack-is-built_ concern, so it lives here, not re-hand-rolled per
 consumer (and not in helix, which ships no consumer conveniences). Args:
 `twine-stage-assets [srcDir=src] [distDir=dist]`.
 

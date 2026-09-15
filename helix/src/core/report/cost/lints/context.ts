@@ -11,7 +11,8 @@ export function allowLookup(dp: Datapack, roots: string[]) {
   return (rule: LintRule, fn: string): string | undefined => {
     const allows = allowed.get(rule);
     if (!allows?.size) return undefined;
-    if (!allowWalks.has(rule)) allowWalks.set(rule, cadence(dp, roots, allows).allowedBy);
+    if (!allowWalks.has(rule))
+      allowWalks.set(rule, cadence(dp, roots, allows).allowedBy);
     return allowWalks.get(rule)!.get(fn) ?? allows.get(fn);
   };
 }
@@ -20,7 +21,8 @@ export function allowLookup(dp: Datapack, roots: string[]) {
 export function packFacts(dp: Datapack, roots: string[]): PackFacts {
   const criteria = new Map<string, string>();
   for (const text of dp.files.values()) {
-    for (const m of text.matchAll(/^scoreboard objectives add (\S+) (\S+)/gm)) criteria.set(m[1], m[2]);
+    for (const m of text.matchAll(/^scoreboard objectives add (\S+) (\S+)/gm))
+      criteria.set(m[1], m[2]);
   }
 
   // Called behind `as @a…` and down through calls that keep `@s`.
@@ -33,9 +35,17 @@ export function packFacts(dp: Datapack, roots: string[]): PackFacts {
     if (visited.has(key)) continue;
     visited.add(key);
     if (asPlayer) perPlayer.add(name);
-    for (const { callee, guard } of directCallSites(dp.files.get(name) ?? "", dp.name)) {
-      const rebinds = [...guard.matchAll(/\bas (@\w)/g)].map((m) => m[1]).filter((k) => k !== "@s");
-      stack.push([callee, rebinds.length ? rebinds[rebinds.length - 1] === "@a" : asPlayer]);
+    for (const { callee, guard } of directCallSites(
+      dp.files.get(name) ?? "",
+      dp.name,
+    )) {
+      const rebinds = [...guard.matchAll(/\bas (@\w)/g)]
+        .map((m) => m[1])
+        .filter((k) => k !== "@s");
+      stack.push([
+        callee,
+        rebinds.length ? rebinds[rebinds.length - 1] === "@a" : asPlayer,
+      ]);
     }
   }
   return { criteria, perPlayer };

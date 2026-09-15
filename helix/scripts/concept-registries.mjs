@@ -31,17 +31,25 @@ export const CONCEPT_REGISTRIES = [
 // `Block.tag(BLOCK_TAGS.AIR)` instead of the `"#minecraft:air"` string - same
 // autocomplete + typo-safety as the id members, for tags. mcmeta already carries
 // these under `tag/<registry>` in the registries summary (no extra fetch).
-export const CONCEPT_TAG_REGISTRIES = ["tag/block", "tag/item", "tag/entity_type"];
+export const CONCEPT_TAG_REGISTRIES = [
+  "tag/block",
+  "tag/item",
+  "tag/entity_type",
+];
 
 /** "minecraft:entity_type" -> "ENTITY_TYPE_IDS"; "minecraft:worldgen/biome" -> "WORLDGEN_BIOME_IDS". */
 export const idsConstName = (registry) =>
-  registry.replace(/^minecraft:/, "").replace(/[^A-Za-z0-9]+/g, "_").toUpperCase() +
-  "_IDS";
+  registry
+    .replace(/^minecraft:/, "")
+    .replace(/[^A-Za-z0-9]+/g, "_")
+    .toUpperCase() + "_IDS";
 
 /** "tag/block" -> "BLOCK_TAGS"; "tag/entity_type" -> "ENTITY_TYPE_TAGS". */
 export const tagsConstName = (registry) =>
-  registry.replace(/^tag\//, "").replace(/[^A-Za-z0-9]+/g, "_").toUpperCase() +
-  "_TAGS";
+  registry
+    .replace(/^tag\//, "")
+    .replace(/[^A-Za-z0-9]+/g, "_")
+    .toUpperCase() + "_TAGS";
 
 /** "minecraft:grass_block" -> "GRASS_BLOCK"; digit-leading ids get a "_" prefix. */
 export const memberKey = (id) => {

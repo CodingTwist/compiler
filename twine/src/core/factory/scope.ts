@@ -5,7 +5,11 @@ import type { ModuleScope } from "../module.interface";
 /**
  * The {@link ModuleScope} passed to `register`: its dimension and a `createFunction` that uses it.
  */
-export function scopeFor(dp: Datapack, name: string, dimension: Id | undefined): ModuleScope {
+export function scopeFor(
+  dp: Datapack,
+  name: string,
+  dimension: Id | undefined,
+): ModuleScope {
   return {
     name,
     dimension,

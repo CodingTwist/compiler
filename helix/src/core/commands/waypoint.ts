@@ -14,27 +14,59 @@ export class WaypointBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   modifyColor(waypoint: Selector, color: TeamColor): this {
-    this.$set(litPart("waypoint"), litPart("modify"), argPart(single(waypoint, "waypoint")), litPart("color"), argPart(color));
+    this.$set(
+      litPart("waypoint"),
+      litPart("modify"),
+      argPart(single(waypoint, "waypoint")),
+      litPart("color"),
+      argPart(color),
+    );
     return this;
   }
 
   modifyColorHex(waypoint: Selector, color: HexColor): this {
-    this.$set(litPart("waypoint"), litPart("modify"), argPart(single(waypoint, "waypoint")), litPart("color"), litPart("hex"), argPart(color));
+    this.$set(
+      litPart("waypoint"),
+      litPart("modify"),
+      argPart(single(waypoint, "waypoint")),
+      litPart("color"),
+      litPart("hex"),
+      argPart(color),
+    );
     return this;
   }
 
   modifyColorReset(waypoint: Selector): this {
-    this.$set(litPart("waypoint"), litPart("modify"), argPart(single(waypoint, "waypoint")), litPart("color"), litPart("reset"));
+    this.$set(
+      litPart("waypoint"),
+      litPart("modify"),
+      argPart(single(waypoint, "waypoint")),
+      litPart("color"),
+      litPart("reset"),
+    );
     return this;
   }
 
   modifyStyleReset(waypoint: Selector): this {
-    this.$set(litPart("waypoint"), litPart("modify"), argPart(single(waypoint, "waypoint")), litPart("style"), litPart("reset"));
+    this.$set(
+      litPart("waypoint"),
+      litPart("modify"),
+      argPart(single(waypoint, "waypoint")),
+      litPart("style"),
+      litPart("reset"),
+    );
     return this;
   }
 
   modifyStyleSet(waypoint: Selector, style: Id): this {
-    this.$set(litPart("waypoint"), litPart("modify"), argPart(single(waypoint, "waypoint")), litPart("style"), litPart("set"), argPart(style));
+    this.$set(
+      litPart("waypoint"),
+      litPart("modify"),
+      argPart(single(waypoint, "waypoint")),
+      litPart("style"),
+      litPart("set"),
+      argPart(style),
+    );
     return this;
   }
 }

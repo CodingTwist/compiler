@@ -26,7 +26,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="el" class="alpha-banner">
-    <strong>Alpha:</strong> this compiler is under active development and updates will break your projects. Not recommended for real use yet.
+    <strong>Alpha:</strong> this compiler is under active development and
+    updates will break your projects. Not recommended for real use yet.
   </div>
 </template>
 

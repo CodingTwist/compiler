@@ -52,7 +52,10 @@ export function buildResourcePack(dp: Datapack): Map<string, string> {
 
   // Raw resource files (sounds.json, fonts, atlases, …) verbatim.
   for (const [relPath, json] of dp.resourceFileDefs) {
-    files.set(`assets/${dp.name}/${relPath}.json`, JSON.stringify(json, null, 2));
+    files.set(
+      `assets/${dp.name}/${relPath}.json`,
+      JSON.stringify(json, null, 2),
+    );
   }
 
   return files;

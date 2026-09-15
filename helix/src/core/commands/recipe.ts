@@ -8,12 +8,22 @@ import { Selector } from "../frontend/nodes/selector";
 /** `recipe` */
 export class RecipeBuilder extends CommandBuilder<TreeCommandNode> {
   give(targets: Selector): this {
-    this.$set(litPart("recipe"), litPart("give"), argPart(targets), litPart("*"));
+    this.$set(
+      litPart("recipe"),
+      litPart("give"),
+      argPart(targets),
+      litPart("*"),
+    );
     return this;
   }
 
   take(targets: Selector): this {
-    this.$set(litPart("recipe"), litPart("take"), argPart(targets), litPart("*"));
+    this.$set(
+      litPart("recipe"),
+      litPart("take"),
+      argPart(targets),
+      litPart("*"),
+    );
     return this;
   }
 }

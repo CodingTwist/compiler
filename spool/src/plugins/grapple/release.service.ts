@@ -4,7 +4,12 @@ import { ZERO_GRAVITY, GRAVITY_MODIFIER_ID } from "./tuning";
 import { releaseKick } from "./physics";
 import type { PlayerMotion } from "../player_motion";
 import { swingScratch } from "./state";
-import type { Constants, GrappleSelectors, Scratch, StateRepository } from "./state";
+import type {
+  Constants,
+  GrappleSelectors,
+  Scratch,
+  StateRepository,
+} from "./state";
 
 interface ReleaseDeps {
   repo: StateRepository;
@@ -27,12 +32,21 @@ export function createReleaseService(d: ReleaseDeps) {
       // Fling first, while the stored velocity is intact. `at @s` because `applyLocal`
       // needs the
       // player's position and rotation.
-      ctx.execute().at(d.selectors.self()).run((b) => releaseKick(d, scratch, b));
+      ctx
+        .execute()
+        .at(d.selectors.self())
+        .run((b) => releaseKick(d, scratch, b));
 
       ctx.tag().remove(d.selectors.self(), "grappling");
       // Restore gravity if we zeroed it on attach (exact restore - it's a removable modifier).
       if (ZERO_GRAVITY) {
-        ctx.attribute().modifierRemove(d.selectors.self(), Attribute.GRAVITY, GRAVITY_MODIFIER_ID);
+        ctx
+          .attribute()
+          .modifierRemove(
+            d.selectors.self(),
+            Attribute.GRAVITY,
+            GRAVITY_MODIFIER_ID,
+          );
       }
 
       // Kill the anchor with this player's id. Removing the tag already stops the drive and

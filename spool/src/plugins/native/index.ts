@@ -41,7 +41,9 @@ declare module "helix" {
 export const native: KitPlugin = {
   name: "native",
   install() {
-    FunctionContext.prototype.paper = function (this: FunctionContext): PaperOps {
+    FunctionContext.prototype.paper = function (
+      this: FunctionContext,
+    ): PaperOps {
       return new PaperOps(this);
     };
   },

@@ -3,8 +3,8 @@
 Guidance for working in this repo. Keep it current when architecture or conventions change.
 
 See [PHILOSOPHY.md](PHILOSOPHY.md) for the governing design principles (typed concepts
-not strings, Frontend/IR separation, IR purity). This file covers *how the code is
-wired*; that one covers *why*.
+not strings, Frontend/IR separation, IR purity). This file covers _how the code is
+wired_; that one covers _why_.
 
 ## What this is
 
@@ -14,7 +14,7 @@ the same source emits correct, different output across versions (folder names, p
 grammar, registry membership).
 
 `helix` is the **core**, and its defining stance is that it is **un-opinionated**: it
-provides *mechanism* (typed values, commands, codegen for a version), never *policy*. It
+provides _mechanism_ (typed values, commands, codegen for a version), never _policy_. It
 ships no "convenient" way to do anything - no bundled gameplay patterns, no opinions about
 how a pack is composed. Anything that picks a convention belongs in a layer above. When a
 feature feels like a shortcut or a best-practice rather than a primitive, it does **not**
@@ -24,13 +24,13 @@ Two sibling packages live beside it under `/home/sam/compiler` and consume its b
 `dist/` via `file:../helix` (symlinked in their `node_modules`). Each owns the opinions
 helix refuses to:
 
-- **`spool`** - opt-in convenience plugins built on helix's *public* API. Composed
+- **`spool`** - opt-in convenience plugins built on helix's _public_ API. Composed
   shortcuts live here, not in core.
 - **`twine`** - the opinionated framework: an NestJS-style module/area/lifecycle system
   that dictates how a whole pack is composed.
 
 Each sibling has its own `CLAUDE.md`; read that for how to work in it. The rule of thumb:
-if you're about to add something *helpful* to helix, it probably belongs in `spool` or
+if you're about to add something _helpful_ to helix, it probably belongs in `spool` or
 `twine` instead.
 
 **Consequence:** after changing helix source you must `npm run build` here before consumers
@@ -76,7 +76,7 @@ the `vscode/` extension), `profile [dump.json]`
 - **No `src/core/ast/` folder.** Every node lives **with its handler** in `src/core/commands/<cmd>.ts`.
   The only shared node vocabulary - base classes (`ASTNode`, `ExpressionNode`, `CommandNodeBase`,
   `CommandPart`, `FunctionNode`, `Range`) - lives in **`src/core/ir/node.ts`**. The `SelectorNode`
-  value node lives in `commands/selector.ts`; the score *expression* nodes (`ScoreCompareNode`,
+  value node lives in `commands/selector.ts`; the score _expression_ nodes (`ScoreCompareNode`,
   `ScoreRangeNode`, conditions with no command of their own) live in `commands/if/`.
 - **`src/core/frontend/`** - the author-facing fluent API.
   - `context/` - only `base.ts` (`ContextBase`: emit/call/version/child-function plumbing) and
@@ -104,25 +104,21 @@ the `vscode/` extension), `profile [dump.json]`
      chain, plus the `atEntity`/`whenItems` sugar), `execute_as`, `entity_guard`, `near_guard`,
      `selector`, `data_op`, `native`. These are NOT 1:1 vanilla commands - their nodes are emitted
      by the frontend mixins. Registered via the generator's `EXTRA_HANDLERS` list, never regenerated.
-  3. **`score-expr`** - the one handler that picks a *backend*. `math\`…\`` (frontend/nodes/math/,
-     jsep-parsed infix → the `ExprNode` tree in `frontend/nodes/expr.ts`) emits one `ScoreExprNode`
-     per destination slot; the handler lowers it to a single `/compute` on 26.3+ and to the
-     equivalent `scoreboard players operation` chain below it. Both lowerings live in `score-expr/`
-     (`toProvider` / `toScoreOps`) so an op is written once, not once per version. `COMPUTE_ONLY_OPS`
-     in expr.ts (`sqrt`, `sin`, `cos`, `pow`, `avg`, `round`, `floor`, `ceil`, `len`) and the
-     `provider` leaf kind (a `ContextInt`/`ContextFloat` tree interpolated as a `${}` hole - how
-     `uniform`/`storage`/`conditional` reach a formula) and a **non-integer `lit`**
-     have no scoreboard lowering: `toScoreOps` calls `reject()` for all three, naming the target
-     version. Deliberate - they're in the
-     formula syntax, and a pre-26.3 target is an author error caught at build time. `FLOAT_OPS`,
-     a `ContextFloatProvider` leaf and a fractional literal are the three things that put a node on
-     `/compute`'s float side; `toProvider` propagates float-ness up the tree
-     and inserts `from_int`/`from_float` at the boundaries only, so an int-only formula renders
-     exactly as before and a float one truncates once, at the destination (`toFloatProvider` is the
-     variant that skips that last truncation, behind `MathExpr.provider`/`.floatProvider` for a
-     non-score `/compute` destination). `Fixed` and
-     `ScoreVec3.dot` route through it, so every pack gets `/compute` on 26.3 without opting in.
-     Temps are `#_t<depth>` fake players on the destination's own objective - a **reserved prefix**.
+  3. **`score-expr`** - the one handler that picks a _backend_. `math\`…\``(frontend/nodes/math/,
+jsep-parsed infix → the`ExprNode`tree in`frontend/nodes/expr.ts`) emits one `ScoreExprNode`per destination slot; the handler lowers it to a single`/compute`on 26.3+ and to the
+equivalent`scoreboard players operation`chain below it. Both lowerings live in`score-expr/`
+(`toProvider`/`toScoreOps`) so an op is written once, not once per version. `COMPUTE_ONLY_OPS`
+in expr.ts (`sqrt`, `sin`, `cos`, `pow`, `avg`, `round`, `floor`, `ceil`, `len`) and the
+`provider`leaf kind (a`ContextInt`/`ContextFloat`tree interpolated as a`${}`hole - how`uniform`/`storage`/`conditional`reach a formula) and a **non-integer`lit`**
+have no scoreboard lowering: `toScoreOps`calls`reject()`for all three, naming the target
+version. Deliberate - they're in the
+formula syntax, and a pre-26.3 target is an author error caught at build time.`FLOAT_OPS`,
+a `ContextFloatProvider`leaf and a fractional literal are the three things that put a node on`/compute`'s float side; `toProvider`propagates float-ness up the tree
+and inserts`from_int`/`from_float` at the boundaries only, so an int-only formula renders
+exactly as before and a float one truncates once, at the destination (`toFloatProvider`is the
+variant that skips that last truncation, behind`MathExpr.provider`/`.floatProvider`for a
+non-score`/compute`destination).`Fixed`and`ScoreVec3.dot`route through it, so every pack gets`/compute`on 26.3 without opting in.
+Temps are`#\_t<depth>` fake players on the destination's own objective - a **reserved prefix**.
 - **Function macros.** `Macro<T>("name")` (`values/macro.ts`) is a `CommandValue` rendering
   `$(name)`; `CodegenContext.emit` prefixes any line containing `$(` with `$`, so every
   handler gets macro lines right without knowing about them (`generateRunTarget` strips the
@@ -135,9 +131,9 @@ the `vscode/` extension), `profile [dump.json]`
   `execute`/`if` handlers drop the whole line, unless a `store` clause needs its result.
 - **if/elif/else** (`commands/if/handler.ts`): a lone `if` folds into one `execute` chain. With
   `elif`/`else` the whole chain becomes a private `<then>_chain` function of `execute if <cond> run
-  return run <body>` lines ending in the `else` body, so exactly one branch runs and no condition is
+return run <body>` lines ending in the `else` body, so exactly one branch runs and no condition is
   checked after a body changed it. Bodies that fork or `return` stay function calls under `return
-  run`. Versions without `return run` (1.20.1) record the branch number in a local: every
+run`. Versions without `return run` (1.20.1) record the branch number in a local: every
   condition sets it unless an earlier one did, then each body runs under its number.
 - **Locals** (`commands/local.ts`): `ctx.let(init?)` returns a Score `#<root fn>.<n>` on
   `helix.var`. Child bodies share their root's counter via `FunctionNode.root`, so any code that
@@ -166,7 +162,7 @@ the `vscode/` extension), `profile [dump.json]`
   clauses can't be negated). One chain folds like before; an `or` goes through the `_chain`
   function, one `return run` line per chain, so the body runs once. `and` puts a chain that moves
   position last so it can't shift the other guards.
-- **Single-command inlining** (`codegen/inline.ts`, end of `buildDatapack`): a *private*
+- **Single-command inlining** (`codegen/inline.ts`, end of `buildDatapack`): a _private_
   (`zzz/`) function with one command is spliced into its `function` / `execute … run function`
   / `return run function` call sites, and dropped if nothing else names it (tags, JSON,
   `schedule`, `if function`). Skipped: macro or `return` bodies, `store` callers, functions
@@ -186,7 +182,7 @@ the `vscode/` extension), `profile [dump.json]`
   tests no scores/NBT/predicates; no `return`/macro lines; and no line before the last can
   change what the prefix resolves to - `at @s`-style clauses block on `Effect.MOVES`, other
   selectors on anything but `Effect.NONE` (calls followed through their bodies). Forks (`on
-  passengers`, multi-entity `as`) are shared only when every line is `local` (touches only `@s`),
+passengers`, multi-entity `as`) are shared only when every line is `local` (touches only `@s`),
   since the group then runs whole per entity. Needs ≥3 lines, or ≥2 when the prefix scans or forks. Runs declined as unsafe still show up as the `group-execute` lint.
 - **Turning passes off**: `new Datapack(..., { optimize: { inline: false, group: false } })` or
   `optimize` in `helix.config.ts` (every mode) skips that pass in `buildDatapack`.
@@ -203,7 +199,7 @@ the `vscode/` extension), `profile [dump.json]`
   the whole authoring import graph) imports **no Node built-ins** - that's what lets helix run in a
   browser (see the browser entry below). The resource pack is built here too: `buildResourcePack`
   emits the `assets/` tree (item `Model`s → `models/item` + `items/` definitions, block `Model`s →
-  `models/block`, `BlockState`s → `blockstates/`, `resourceFile` JSON) with a *resource-format*
+  `models/block`, `BlockState`s → `blockstates/`, `resourceFile` JSON) with a _resource-format_
   `pack.mcmeta` (`profile.resourcePack`, distinct from the datapack `pack_format`).
 - **Data resources.** Each typed builder in `values/` registers on the `Datapack` and is
   serialized by a loop in `codegen.ts` into its version-aware folder (`paths.lootTable`, …).
@@ -215,7 +211,7 @@ the `vscode/` extension), `profile [dump.json]`
   `toJson` decides the half. Biomes are also the one registry whose registered name is
   **namespace-aware** (`dp.biome("minecraft:plains", …)` overrides vanilla) - see
   `splitDefName` in `ir/datapack/data.ts`.
-- **`src/core/codegen/write/`** - the **disk** half, and the *only* codegen module that imports
+- **`src/core/codegen/write/`** - the **disk** half, and the _only_ codegen module that imports
   `fs`/`path` (and, via `structure/`, `zlib`): `writeDatapack`/`writeResourcePack` (build, then
   `syncFiles` the owned trees - `data/<ns>/`, `assets/<ns>/models|items` - writing only files whose
   content changed and deleting anything the build no longer produces; `addStructures`/`addAssets`
@@ -236,8 +232,8 @@ the `vscode/` extension), `profile [dump.json]`
   `model`/`composite`/`condition`/`select`/`range_dispatch`/`empty`/`special`, `TintSource`,
   `SpecialModel`, property-id enums, each with a `.raw()` escape). Both feed one `itemDefinitionDefs`
   registry that codegen serializes via `serializeItemDef`. `dp.blockModel`/`dp.blockState`
-  are the block-side file mechanism (blockstate files *override an existing block's* appearance -
-  there is no vanilla "new block", so the custom-block *technique* is spool policy, not core).
+  are the block-side file mechanism (blockstate files _override an existing block's_ appearance -
+  there is no vanilla "new block", so the custom-block _technique_ is spool policy, not core).
 
 ### Cost report NBT-read warnings (`src/core/report/cost/`)
 
@@ -252,7 +248,7 @@ allow inherits down the call tree (so it covers `execute … run` child function
 an event-driven function called from the tick tree looks per-tick - allow it where the
 caller knows better.
 
-It also runs the Minecraft Wiki's *Optimizing a data pack* checks as `lints` (`WARN <rule>`,
+It also runs the Minecraft Wiki's _Optimizing a data pack_ checks as `lints` (`WARN <rule>`,
 identical findings in one function collapsed into `count`). **Exact** rules flag a line that has
 an equivalent cheaper form and check every function: `vacuous-execute`, `fold-into-selector`
 (`as <sel> if score|entity @s…` right after `as`, skipped across `limit`/`sort`),
@@ -284,11 +280,13 @@ costs, and a loop emitting thousands of commands from one line hits the memo. A 
 can't live on the node itself. `generate.ts` sets `CodegenContext.current` per node, so every
 line gets `ctx.sources[i]`. Validation runs first; then `comments` adds `# <loc>` lines, and
 `dp.sourceMap` is indexed by **file line** (`undefined` on comment lines). Uses:
+
 - the cost report's `↳ <loc>` on WARNs and `@e` scans
 - `writeDatapack` writes `helix-sources.json` at the pack root, and deletes it when debug is off
 
 Frames under helix are skipped. Other packages register with `ignoreSourceFrames(dir)`, with
 two behaviours:
+
 - plain (spool): a line is attributed to whoever called the plugin;
 - `{ framework: true }` (twine): a line twine emits itself points at twine, not at the shared
   `DatapackFactory.create` call.
@@ -298,8 +296,8 @@ byte-identical to a normal build.
 
 ### JSON validation (`src/validate/`) - optional
 
-`validateDatapack(dp, opts?)` checks the pack's emitted JSON resources against the *vanilla
-schema* for `dp.version.id`, returning `McdocDiagnostic[]` (`formatMcdocDiagnostics` pretty-prints).
+`validateDatapack(dp, opts?)` checks the pack's emitted JSON resources against the _vanilla
+schema_ for `dp.version.id`, returning `McdocDiagnostic[]` (`formatMcdocDiagnostics` pretty-prints).
 It reads **rendered output** (`buildDatapack(dp)` → temp datapack root), same stance as `dp.report()`,
 never the AST - and is aimed at the `dp.registryFile(...)` raw-JSON seam (pass
 `registryFilesOnly: true` to scope to just those; default validates every emitted `.json`, which also
@@ -326,6 +324,7 @@ Command files are imported by the frontend context mixins (which need their node
 augmentation). That's why `generate*` lives in leaf `ir/generate.ts`, `NbtRef` in leaf
 `frontend/nodes/nbt_ref.ts`, and `commandhandler.ts` imports `Datapack` as `import type`. Importing a
 node would otherwise pull a `FunctionContext` augmentation before `FunctionContext` is defined.
+
 - **`src/versions/`** - `profile.ts` (`VersionProfile`: id, dataVersion, pack spec, paths,
   registries, command tree), `load.ts`, `registry.ts` (runtime id validation), and the generated
   `profiles.ts` - one `loadProfile("<ver>.json")` const per supported version, rewritten by
@@ -350,7 +349,7 @@ rebuild the handler map per version.
   `src/versions/data/*.json` - **gitignored, NOT committed/shipped.** `sync` runs before every build
   and test, and skips versions already present (so a normal build needs no network).
 - **`helix data [--force]`** is the consumer-facing wrapper: `versions.mjs sync` + `copy-data.mjs`,
-  run from the helix package root. The bin handles it *before* importing `dist` (importing helix
+  run from the helix package root. The bin handles it _before_ importing `dist` (importing helix
   eagerly loads every profile, which throws while data is missing). The npm `files` list excludes
   `dist/versions/data` and ships just the scripts it needs.
 - It also generates `src/versions/data/ids.ts` (the `Blocks`/`Items`/`Effects`/… const namespaces)
@@ -377,7 +376,7 @@ rebuild the handler map per version.
 - **`AUGMENT_ONLY`** = hand-written modules the barrel re-exports for their `ctx.<method>`
   augmentation but that register no handler.
 - **`EXTRA_RESOURCE_TYPES`** = resource types `values/resource.generated.ts` must keep even when
-  no *generated* command argument names their registry. `RESOURCE_TYPES` is collected while
+  no _generated_ command argument names their registry. `RESOURCE_TYPES` is collected while
   rendering, so a registry used only by a `HAND_REFINED` file silently vanishes from the public
   API on the next run - that is how `EntityType` (only `summon` names `minecraft:entity_type`,
   and summon is hand-refined) disappeared once.

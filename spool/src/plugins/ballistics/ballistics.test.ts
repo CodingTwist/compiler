@@ -28,7 +28,8 @@ describe("ctx.ballistic", () => {
     dp.createFunction("fire").build((ctx) => {
       ctx.ballistic([0, 70, 0], [40, 64, 0], {
         fuse: false,
-        shell: (s) => Tnt({ ...s, tags: ["shell"], blockState: Block.DIAMOND_BLOCK }),
+        shell: (s) =>
+          Tnt({ ...s, tags: ["shell"], blockState: Block.DIAMOND_BLOCK }),
       });
     });
     dp.report(); // populate dp.files

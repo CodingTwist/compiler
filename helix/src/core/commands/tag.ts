@@ -18,7 +18,12 @@ export class TagBuilder extends CommandBuilder<TreeCommandNode> {
   }
 
   remove(targets: Selector, name: string): this {
-    this.$set(litPart("tag"), argPart(targets), litPart("remove"), argPart(name));
+    this.$set(
+      litPart("tag"),
+      argPart(targets),
+      litPart("remove"),
+      argPart(name),
+    );
     return this;
   }
 }
@@ -31,7 +36,10 @@ declare module "../frontend/context" {
 }
 
 FunctionContext.prototype.tag = function (this: FunctionContext) {
-  const node = new TreeCommandNode("tag", { effect: Effect.EDITS, local: true });
+  const node = new TreeCommandNode("tag", {
+    effect: Effect.EDITS,
+    local: true,
+  });
   this.emit(node);
   const parts: CommandPart[] = [litPart("tag")];
   node.parts = parts;

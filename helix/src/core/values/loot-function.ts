@@ -40,7 +40,10 @@ export class LootFunction {
   }
 
   /** `minecraft:enchant_with_levels` - enchant as if at `levels` (optionally `treasure`). */
-  static enchantWithLevels(levels: NumberProvider, treasure = false): LootFunction {
+  static enchantWithLevels(
+    levels: NumberProvider,
+    treasure = false,
+  ): LootFunction {
     return new LootFunction(() => ({
       function: "minecraft:enchant_with_levels",
       levels,

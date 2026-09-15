@@ -14,7 +14,9 @@ export const SelectorBase = {
   RANDOM_PLAYER: "@r",
   SELF: "@s",
 } as const;
-export type SelectorBase = (typeof SelectorBase)[keyof typeof SelectorBase] | string;
+export type SelectorBase =
+  | (typeof SelectorBase)[keyof typeof SelectorBase]
+  | string;
 
 export class SelectorNode extends ASTNode {
   type = "selector" as const;
@@ -44,17 +46,26 @@ export class SelectorNode extends ASTNode {
   /** Whether it picks at most one entity. */
   picksOne(): boolean {
     if (this.limit !== undefined) return this.limit === 1;
-    return this.base !== SelectorBase.ALL_PLAYERS && this.base !== SelectorBase.ALL_ENTITIES;
+    return (
+      this.base !== SelectorBase.ALL_PLAYERS &&
+      this.base !== SelectorBase.ALL_ENTITIES
+    );
   }
 
   /** Whether it can pick a different entity each time it runs, all else equal. */
   picksRandomly(): boolean {
-    return this.base === SelectorBase.RANDOM_PLAYER || this.sort === Sort.RANDOM;
+    return (
+      this.base === SelectorBase.RANDOM_PLAYER || this.sort === Sort.RANDOM
+    );
   }
 
   /** Whether it tests scores, NBT or predicates. */
   readsState(): boolean {
-    return this.scores.size > 0 || this.nbt !== undefined || this.predicates.length > 0;
+    return (
+      this.scores.size > 0 ||
+      this.nbt !== undefined ||
+      this.predicates.length > 0
+    );
   }
 
   /** Whether it is plain `@s` with no filters, so it always picks the executor. */
@@ -83,7 +94,10 @@ export class SelectorNode extends ASTNode {
 
   /** Whether resolving it searches entities, rather than naming the executor, a player or a UUID. */
   scans(): boolean {
-    return Object.values(SelectorBase).some((b) => b === this.base) && this.base !== SelectorBase.SELF;
+    return (
+      Object.values(SelectorBase).some((b) => b === this.base) &&
+      this.base !== SelectorBase.SELF
+    );
   }
 }
 
@@ -107,13 +121,22 @@ export function renderSelector(
 
   if (node.volume && node.yBand) {
     // Both set `y`/`dy`; vanilla rejects a selector with a repeated key.
-    throw new Error("Selector has both a volume/span and a yBand - they both set y/dy, pick one.");
+    throw new Error(
+      "Selector has both a volume/span and a yBand - they both set y/dy, pick one.",
+    );
   }
 
   if (node.origin && (node.volume?.x !== undefined || node.yBand)) {
-    throw new Error("Selector has both near() and a volume/yBand - they both set x/y/z, pick one.");
+    throw new Error(
+      "Selector has both near() and a volume/yBand - they both set x/y/z, pick one.",
+    );
   }
-  if (node.origin) args.push(`x=${node.origin[0]}`, `y=${node.origin[1]}`, `z=${node.origin[2]}`);
+  if (node.origin)
+    args.push(
+      `x=${node.origin[0]}`,
+      `y=${node.origin[1]}`,
+      `z=${node.origin[2]}`,
+    );
 
   if (node.volume) {
     const v = node.volume;
@@ -139,7 +162,10 @@ export function renderSelector(
   if (node.sort !== undefined) args.push(`sort=${node.sort}`);
   if (node.nbt) {
     // nbt selectors need a version. Only the version-less `toString()` path gets here.
-    if (!version) throw new Error("Selector.nbt() requires a version to render; use it via a version-aware command (e.g. atEntity), not toString().");
+    if (!version)
+      throw new Error(
+        "Selector.nbt() requires a version to render; use it via a version-aware command (e.g. atEntity), not toString().",
+      );
     args.push(`nbt=${node.nbt.render(version)}`);
   }
   // Last only to satisfy Spyglass's key-order lint; vanilla applies `type` before any other filter.
@@ -158,7 +184,9 @@ export function renderExistence(
   sel: { build(): SelectorNode } | string,
   version?: VersionProfile,
 ): string {
-  return typeof sel === "string" ? sel : renderSelector(sel.build(), version, { existence: true });
+  return typeof sel === "string"
+    ? sel
+    : renderSelector(sel.build(), version, { existence: true });
 }
 
 export class SelectorCommand extends CommandHandler<SelectorNode> {

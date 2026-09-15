@@ -9,54 +9,120 @@ import { Selector } from "../frontend/nodes/selector";
 /** `advancement` */
 export class AdvancementBuilder extends CommandBuilder<TreeCommandNode> {
   grantEverything(targets: Selector): this {
-    this.$set(litPart("advancement"), litPart("grant"), argPart(targets), litPart("everything"));
+    this.$set(
+      litPart("advancement"),
+      litPart("grant"),
+      argPart(targets),
+      litPart("everything"),
+    );
     return this;
   }
 
   grantFrom(targets: Selector, advancement: Advancement): this {
-    this.$set(litPart("advancement"), litPart("grant"), argPart(targets), litPart("from"), argPart(advancement));
+    this.$set(
+      litPart("advancement"),
+      litPart("grant"),
+      argPart(targets),
+      litPart("from"),
+      argPart(advancement),
+    );
     return this;
   }
 
-  grantOnly(targets: Selector, advancement: Advancement, criterion?: string): this {
-    this.$set(litPart("advancement"), litPart("grant"), argPart(targets), litPart("only"), argPart(advancement));
+  grantOnly(
+    targets: Selector,
+    advancement: Advancement,
+    criterion?: string,
+  ): this {
+    this.$set(
+      litPart("advancement"),
+      litPart("grant"),
+      argPart(targets),
+      litPart("only"),
+      argPart(advancement),
+    );
     if (criterion !== undefined) this.$append(argPart(criterion));
     return this;
   }
 
   grantThrough(targets: Selector, advancement: Advancement): this {
-    this.$set(litPart("advancement"), litPart("grant"), argPart(targets), litPart("through"), argPart(advancement));
+    this.$set(
+      litPart("advancement"),
+      litPart("grant"),
+      argPart(targets),
+      litPart("through"),
+      argPart(advancement),
+    );
     return this;
   }
 
   grantUntil(targets: Selector, advancement: Advancement): this {
-    this.$set(litPart("advancement"), litPart("grant"), argPart(targets), litPart("until"), argPart(advancement));
+    this.$set(
+      litPart("advancement"),
+      litPart("grant"),
+      argPart(targets),
+      litPart("until"),
+      argPart(advancement),
+    );
     return this;
   }
 
   revokeEverything(targets: Selector): this {
-    this.$set(litPart("advancement"), litPart("revoke"), argPart(targets), litPart("everything"));
+    this.$set(
+      litPart("advancement"),
+      litPart("revoke"),
+      argPart(targets),
+      litPart("everything"),
+    );
     return this;
   }
 
   revokeFrom(targets: Selector, advancement: Advancement): this {
-    this.$set(litPart("advancement"), litPart("revoke"), argPart(targets), litPart("from"), argPart(advancement));
+    this.$set(
+      litPart("advancement"),
+      litPart("revoke"),
+      argPart(targets),
+      litPart("from"),
+      argPart(advancement),
+    );
     return this;
   }
 
-  revokeOnly(targets: Selector, advancement: Advancement, criterion?: string): this {
-    this.$set(litPart("advancement"), litPart("revoke"), argPart(targets), litPart("only"), argPart(advancement));
+  revokeOnly(
+    targets: Selector,
+    advancement: Advancement,
+    criterion?: string,
+  ): this {
+    this.$set(
+      litPart("advancement"),
+      litPart("revoke"),
+      argPart(targets),
+      litPart("only"),
+      argPart(advancement),
+    );
     if (criterion !== undefined) this.$append(argPart(criterion));
     return this;
   }
 
   revokeThrough(targets: Selector, advancement: Advancement): this {
-    this.$set(litPart("advancement"), litPart("revoke"), argPart(targets), litPart("through"), argPart(advancement));
+    this.$set(
+      litPart("advancement"),
+      litPart("revoke"),
+      argPart(targets),
+      litPart("through"),
+      argPart(advancement),
+    );
     return this;
   }
 
   revokeUntil(targets: Selector, advancement: Advancement): this {
-    this.$set(litPart("advancement"), litPart("revoke"), argPart(targets), litPart("until"), argPart(advancement));
+    this.$set(
+      litPart("advancement"),
+      litPart("revoke"),
+      argPart(targets),
+      litPart("until"),
+      argPart(advancement),
+    );
     return this;
   }
 }

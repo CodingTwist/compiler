@@ -1,7 +1,11 @@
 // `Selector`: the typed entity selector (`@a`, `@e[type=…,tag=…]`), rendered per version.
 import { FunctionNode } from "../../../ir/node";
 import { ExecuteAsNode } from "../../../commands/execute_as";
-import { SelectorBase, SelectorNode, renderSelector } from "../../../commands/selector";
+import {
+  SelectorBase,
+  SelectorNode,
+  renderSelector,
+} from "../../../commands/selector";
 import { FunctionContext } from "../../context";
 import { runInContext } from "../../context/ambient";
 import { VersionProfile } from "../../../../versions/profile";

@@ -22,7 +22,12 @@ export function enchantmentJson(ns: string): unknown {
     ["z", [0, 0, 1]],
   ];
   const effects: unknown[] = [
-    { effect: { type: "minecraft:run_function", function: `${ns}:internal/launch/reset` } },
+    {
+      effect: {
+        type: "minecraft:run_function",
+        function: `${ns}:internal/launch/reset`,
+      },
+    },
   ];
   for (const [axis, direction] of axes) {
     for (let bit = 31; bit >= 0; bit--) {
@@ -72,7 +77,10 @@ export function largeGlobalJson(): unknown {
       range: { min: -12398, max: 12398 },
     },
   });
-  return { condition: "minecraft:any_of", terms: [axisTerm("$x"), axisTerm("$y"), axisTerm("$z")] };
+  return {
+    condition: "minecraft:any_of",
+    terms: [axisTerm("$x"), axisTerm("$y"), axisTerm("$z")],
+  };
 }
 
 /** `internal/falling_creative_player` - a creative player that is falling. */

@@ -1,14 +1,24 @@
 // Shapes a biome's effects for a version: the old `effects` object, or 1.21.11+ `attributes`.
 import { VersionProfile } from "../../../versions/profile";
 import type { EffectsState, MusicEntry } from "./types";
-import { ATTRIBUTES_DATA_VERSION, DRY_FOLIAGE_DATA_VERSION, MUSIC_LIST_DATA_VERSION } from "./versions";
+import {
+  ATTRIBUTES_DATA_VERSION,
+  DRY_FOLIAGE_DATA_VERSION,
+  MUSIC_LIST_DATA_VERSION,
+} from "./versions";
 
 /** The colours that stay in `effects` on every version. */
-function tintJson(s: EffectsState, version: VersionProfile): Record<string, unknown> {
+function tintJson(
+  s: EffectsState,
+  version: VersionProfile,
+): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  if (s.colors.water_color !== undefined) out.water_color = s.colors.water_color;
-  if (s.colors.foliage_color !== undefined) out.foliage_color = s.colors.foliage_color;
-  if (s.colors.grass_color !== undefined) out.grass_color = s.colors.grass_color;
+  if (s.colors.water_color !== undefined)
+    out.water_color = s.colors.water_color;
+  if (s.colors.foliage_color !== undefined)
+    out.foliage_color = s.colors.foliage_color;
+  if (s.colors.grass_color !== undefined)
+    out.grass_color = s.colors.grass_color;
   if (
     s.colors.dry_foliage_color !== undefined &&
     version.dataVersion >= DRY_FOLIAGE_DATA_VERSION
@@ -29,7 +39,10 @@ function musicJson(entry: MusicEntry): Record<string, unknown> {
 }
 
 /** The `effects` object for `version` (pre-1.21.11 shape includes ambience). */
-export function effectsJson(s: EffectsState, version: VersionProfile): Record<string, unknown> {
+export function effectsJson(
+  s: EffectsState,
+  version: VersionProfile,
+): Record<string, unknown> {
   const out = tintJson(s, version);
   if (version.dataVersion >= ATTRIBUTES_DATA_VERSION) return out;
 
@@ -72,7 +85,10 @@ export function effectsJson(s: EffectsState, version: VersionProfile): Record<st
       out.music = musicJson(s.musicList[0]);
     }
   }
-  if (s.volume !== undefined && version.dataVersion >= MUSIC_LIST_DATA_VERSION) {
+  if (
+    s.volume !== undefined &&
+    version.dataVersion >= MUSIC_LIST_DATA_VERSION
+  ) {
     out.music_volume = s.volume;
   }
   return out;
@@ -82,7 +98,10 @@ export function effectsJson(s: EffectsState, version: VersionProfile): Record<st
  * The `attributes` entries for 1.21.11+; empty on older versions, where `effectsJson`
  * has them.
  */
-export function attributesJson(s: EffectsState, version: VersionProfile): Record<string, unknown> {
+export function attributesJson(
+  s: EffectsState,
+  version: VersionProfile,
+): Record<string, unknown> {
   if (version.dataVersion < ATTRIBUTES_DATA_VERSION) return {};
   const out: Record<string, unknown> = {};
   const visual = {
@@ -95,7 +114,10 @@ export function attributesJson(s: EffectsState, version: VersionProfile): Record
   }
   if (s.particleSpec) {
     out["minecraft:visual/ambient_particles"] = [
-      { particle: s.particleSpec.options, probability: s.particleSpec.probability },
+      {
+        particle: s.particleSpec.options,
+        probability: s.particleSpec.probability,
+      },
     ];
   }
   const sounds: Record<string, unknown> = {};
@@ -119,9 +141,12 @@ export function attributesJson(s: EffectsState, version: VersionProfile): Record
       tick_chance: s.additions.tickChance,
     };
   }
-  if (Object.keys(sounds).length) out["minecraft:audio/ambient_sounds"] = sounds;
+  if (Object.keys(sounds).length)
+    out["minecraft:audio/ambient_sounds"] = sounds;
   if (s.musicList.length) {
-    out["minecraft:audio/background_music"] = { default: musicJson(s.musicList[0]) };
+    out["minecraft:audio/background_music"] = {
+      default: musicJson(s.musicList[0]),
+    };
   }
   if (s.volume !== undefined) out["minecraft:audio/music_volume"] = s.volume;
   return out;
