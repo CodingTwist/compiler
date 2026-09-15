@@ -178,17 +178,6 @@ function test:api/launch_local_xyz
 scoreboard objectives add player_motion.api.launch dummy
 scoreboard objectives add player_motion.internal.dummy dummy
 scoreboard objectives add player_motion.internal.math dummy
-scoreboard objectives add player_motion.internal.const dummy
-scoreboard players set #constant.-1 player_motion.internal.const -1
-scoreboard players set #constant.2 player_motion.internal.const 2
-scoreboard players set #constant.10 player_motion.internal.const 10
-scoreboard players set #constant.12 player_motion.internal.const 12
-scoreboard players set #constant.100 player_motion.internal.const 100
-scoreboard players set #constant.1000 player_motion.internal.const 1000
-scoreboard players set #constant.2000 player_motion.internal.const 2000
-scoreboard players set #constant.8000 player_motion.internal.const 8000
-scoreboard players set #constant.100000 player_motion.internal.const 100000
-scoreboard players set #constant.1000000 player_motion.internal.const 1000000
 scoreboard objectives add player_motion.internal.gamemode dummy
 scoreboard objectives add player_motion.internal.previous_vec_k dummy
 scoreboard objectives add player_motion.internal.previous_x.in dummy
@@ -206,9 +195,9 @@ summon minecraft:marker 0.0 0.0 0.0 {UUID:[I;-725781337,1317161479,-2007965756,-
 === internal/launch/handle_polar/global
 execute if score #x player_motion.internal.dummy matches 0 if score #y player_motion.internal.dummy matches 0 run return run function test:internal/launch/main
 scoreboard players operation #y player_motion.internal.dummy >< #z player_motion.internal.dummy
-scoreboard players set #y_abs_within_90 player_motion.internal.dummy 0
-execute if entity @s[y_rotation=90..-90] store success score #y_abs_within_90 player_motion.internal.dummy run scoreboard players operation #x player_motion.internal.dummy *= #constant.-1 player_motion.internal.const
-execute if score #y_abs_within_90 player_motion.internal.dummy matches 0 run scoreboard players operation #y player_motion.internal.dummy *= #constant.-1 player_motion.internal.const
+execute store success score #y_abs_within_90 player_motion.internal.dummy if entity @s[y_rotation=90..-90]
+execute if score #y_abs_within_90 player_motion.internal.dummy matches 1 run function test:internal/zzz/launch/handle_polar/global/exec_1
+execute if score #y_abs_within_90 player_motion.internal.dummy matches 0 run function test:internal/zzz/launch/handle_polar/global/exec_2
 return run function test:internal/launch/main
 === internal/launch/main
 item replace entity @s saddle with minecraft:saddle[enchantments={"test:internal/apply_impulse":1},equippable={slot: "saddle", equip_sound: "intentionally_empty"}]
@@ -248,9 +237,10 @@ execute store result score #vec_k.x player_motion.internal.dummy run data get st
 execute store result score #vec_k.y player_motion.internal.dummy run data get storage test:internal/temp vec_k[1] 100000
 execute store result score #vec_k.z player_motion.internal.dummy run data get storage test:internal/temp vec_k[2] 100000
 execute store result score #z player_motion.internal.dummy run compute default integer {"type":"add","inputs":[{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#vec_k.x"},"score":"player_motion.internal.dummy"},{"type":"score","target":{"type":"fixed","name":"#_x"},"score":"player_motion.internal.dummy"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#vec_k.y"},"score":"player_motion.internal.dummy"},{"type":"score","target":{"type":"fixed","name":"#_y"},"score":"player_motion.internal.dummy"}]},{"type":"mul","inputs":[{"type":"score","target":{"type":"fixed","name":"#vec_k.z"},"score":"player_motion.internal.dummy"},{"type":"score","target":{"type":"fixed","name":"#_z"},"score":"player_motion.internal.dummy"}]}]}
-scoreboard players operation #x player_motion.internal.dummy /= #constant.100000 player_motion.internal.const
-scoreboard players operation #y player_motion.internal.dummy /= #constant.100000 player_motion.internal.const
-scoreboard players operation #z player_motion.internal.dummy /= #constant.100000 player_motion.internal.const
+scoreboard players set #_k player_motion.internal.dummy 100000
+scoreboard players operation #x player_motion.internal.dummy /= #_k player_motion.internal.dummy
+scoreboard players operation #y player_motion.internal.dummy /= #_k player_motion.internal.dummy
+scoreboard players operation #z player_motion.internal.dummy /= #_k player_motion.internal.dummy
 === internal/math/global/store_reference_vectors
 teleport @s ^1 ^ ^
 data modify storage test:internal/temp vec_i set from entity @s Pos
@@ -364,6 +354,12 @@ execute store success score #z.3 player_motion.internal.store if score #z player
 execute store success score #z.2 player_motion.internal.store if score #z player_motion.internal.dummy matches 4.. run scoreboard players remove #z player_motion.internal.dummy 4
 execute store success score #z.1 player_motion.internal.store if score #z player_motion.internal.dummy matches 2.. run scoreboard players remove #z player_motion.internal.dummy 2
 execute if score #z player_motion.internal.dummy matches 1.. run scoreboard players set #z.0 player_motion.internal.store 1
+=== internal/zzz/launch/handle_polar/global/exec_1
+scoreboard players set #_t0 player_motion.internal.dummy -1
+scoreboard players operation #x player_motion.internal.dummy *= #_t0 player_motion.internal.dummy
+=== internal/zzz/launch/handle_polar/global/exec_2
+scoreboard players set #_t0 player_motion.internal.dummy -1
+scoreboard players operation #y player_motion.internal.dummy *= #_t0 player_motion.internal.dummy
 === load
 function test:zzz/init_objectives
 === raycast/grapple/web

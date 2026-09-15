@@ -1,6 +1,7 @@
 // Per-axis arithmetic on three score slots.
 import { Score } from "../score";
-import { opE, scoreE, type ExprOp } from "../expr";
+import { ScoreTarget } from "../../../values/score_target";
+import { litE, opE, scoreE, type ExprOp } from "../expr";
 import { emitScoreExpr } from "../../../commands/score-expr";
 import { clampScore } from "../fixed";
 import type { FunctionContext } from "../../context";
@@ -38,6 +39,14 @@ export class ScoreVec3Ops {
     return this;
   }
 
+  /** `k` as a score: itself, or a literal set once into `#_k` rather than per axis. */
+  protected slot(k: Score | number, ctx?: FunctionContext): Score {
+    if (typeof k !== "number") return k;
+    const s = this.x.objective.score(ScoreTarget("#_k"));
+    emitScoreExpr(s, litE(k), ctx);
+    return s;
+  }
+
   /** `this += other`. */
   add(other: ScoreVec3Ops, ctx?: FunctionContext): this {
     return this.each("add", (axis) => other.components[axis], ctx);
@@ -48,14 +57,16 @@ export class ScoreVec3Ops {
     return this.each("sub", (axis) => other.components[axis], ctx);
   }
 
-  /** Scale every axis by the scalar score `k` (`*=`). */
-  scale(k: Score, ctx?: FunctionContext): this {
-    return this.each("mul", () => k, ctx);
+  /** Scale every axis by `k` (`*=`). */
+  scale(k: Score | number, ctx?: FunctionContext): this {
+    const s = this.slot(k, ctx);
+    return this.each("mul", () => s, ctx);
   }
 
-  /** Divide every axis by the scalar score `k` (`/=`, integer floor). */
-  divide(k: Score, ctx?: FunctionContext): this {
-    return this.each("div", () => k, ctx);
+  /** Divide every axis by `k` (`/=`, integer floor). */
+  divide(k: Score | number, ctx?: FunctionContext): this {
+    const s = this.slot(k, ctx);
+    return this.each("div", () => s, ctx);
   }
 
   /** Clamp every axis into `[lo, hi]` (`< hi` then `> lo`). */

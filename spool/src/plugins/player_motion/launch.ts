@@ -18,7 +18,6 @@ export function defineLaunch(I: PlayerMotionInternals): void {
     fStoreZ,
     gamemodeScore,
     dummyScore,
-    constant,
     work,
     sustain,
     prevLocal,
@@ -103,16 +102,22 @@ export function defineLaunch(I: PlayerMotionInternals): void {
       .ifScoreMatches(work.y, new Range(0, 0))
       .run((b) => b.returnRun((r) => r.call(fLaunchMain)));
     work.y.swap(work.z);
-    dummyScore("#y_abs_within_90").set(0);
+    // Stored on its own chain: a multi-command negation runs as a function, whose success
+    // `store success` can't rely on.
+    const within90 = dummyScore("#y_abs_within_90");
     ctx
       .execute()
+      .storeSuccessScore(within90)
       .ifEntity(self().yRotation(new Range(90, -90)))
-      .storeSuccessScore(dummyScore("#y_abs_within_90"))
-      .run(() => math`${work.x} * ${constant("#constant.-1")}`.into(work.x));
+      .done();
     ctx
       .execute()
-      .ifScoreMatches(dummyScore("#y_abs_within_90"), new Range(0, 0))
-      .run(() => math`${work.y} * ${constant("#constant.-1")}`.into(work.y));
+      .ifScoreMatches(within90, new Range(1, 1))
+      .run(() => math`-${work.x}`.into(work.x));
+    ctx
+      .execute()
+      .ifScoreMatches(within90, new Range(0, 0))
+      .run(() => math`-${work.y}`.into(work.y));
     ctx.returnRun((r) => r.call(fLaunchMain));
   });
 }

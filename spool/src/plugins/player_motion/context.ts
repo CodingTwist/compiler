@@ -24,21 +24,19 @@ export function createInternals(dp: Datapack) {
   const api = new Objective("player_motion.api.launch");
   const dummy = new Objective("player_motion.internal.dummy");
   const math = new Objective("player_motion.internal.math");
-  const konst = new Objective("player_motion.internal.const");
   const gm = new Objective("player_motion.internal.gamemode");
   const store = new Objective("player_motion.internal.store");
   const prevVecK = new Objective("player_motion.internal.previous_vec_k");
-  const prevXin = new Objective("player_motion.internal.previous_x.in");
-  const prevYin = new Objective("player_motion.internal.previous_y.in");
-  const prevZin = new Objective("player_motion.internal.previous_z.in");
-  const prevX = new Objective("player_motion.internal.previous_x");
-  const prevY = new Objective("player_motion.internal.previous_y");
-  const prevZ = new Objective("player_motion.internal.previous_z");
+  const prevIn = ["x", "y", "z"].map(
+    (a) => new Objective(`player_motion.internal.previous_${a}.in`),
+  );
+  const prevOut = ["x", "y", "z"].map(
+    (a) => new Objective(`player_motion.internal.previous_${a}`),
+  );
   const prevMethod = new Objective("player_motion.internal.previous_method");
 
   // Fake-player score helpers.
   const dummyScore = (name: string) => dummy.score(ScoreTarget(name));
-  const constant = (name: string) => konst.score(ScoreTarget(name));
   const storeBit = (name: string) => store.score(ScoreTarget(name));
   const gamemodeScore = (name: string) => gm.score(ScoreTarget(name));
 
@@ -50,12 +48,8 @@ export function createInternals(dp: Datapack) {
   const sustain = dummyScore("#sustain");
   const input = ScoreVec3.from((axis) => api.score(ScoreTarget(`$${axis}`)));
   // The last launch's input and resulting local vector, per player, for reuse.
-  const prevInput = ScoreVec3.from((_, i) =>
-    [prevXin, prevYin, prevZin][i].score(self()),
-  );
-  const prevLocal = ScoreVec3.from((_, i) =>
-    [prevX, prevY, prevZ][i].score(self()),
-  );
+  const prevInput = ScoreVec3.from((_, i) => prevIn[i].score(self()));
+  const prevLocal = ScoreVec3.from((_, i) => prevOut[i].score(self()));
 
   // --- Data resources --------------------------------------------------------
   dp.registryFile("enchantment", "internal/apply_impulse", enchantmentJson(ns));
@@ -97,20 +91,14 @@ export function createInternals(dp: Datapack) {
     api,
     dummy,
     math,
-    konst,
     gm,
     store,
     prevVecK,
-    prevXin,
-    prevYin,
-    prevZin,
-    prevX,
-    prevY,
-    prevZ,
+    prevIn,
+    prevOut,
     prevMethod,
     // score helpers
     dummyScore,
-    constant,
     storeBit,
     gamemodeScore,
     // working vector + public inputs

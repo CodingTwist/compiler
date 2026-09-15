@@ -49,6 +49,13 @@ describe("math`` as a scoreboard chain", () => {
     ]);
   });
 
+  it("negates in place without zeroing the operand first", () => {
+    expect(emit(() => math`-${sc("a")}`.into(sc("a")))).toEqual([
+      "scoreboard players set #_t0 work -1",
+      op("a", "*=", "_t0"),
+    ]);
+  });
+
   it("is a scoreboard chain on 1.21.4", () => {
     expect(emit(coef, v1_21_4)).toEqual([
       "scoreboard players set #coef work 0",

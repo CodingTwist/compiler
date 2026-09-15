@@ -30,7 +30,6 @@ export function defineMath(I: PlayerMotionInternals): void {
     fConvertToLocal,
     work,
     dummyScore,
-    constant,
   } = I;
 
   // --- internal/math/global/store_reference_vectors -------------------------
@@ -59,6 +58,6 @@ export function defineMath(I: PlayerMotionInternals): void {
     ref("i").dot(g, work.x);
     ref("j").dot(g, work.y);
     ref("k").dot(g, work.z);
-    work.divide(constant("#constant.100000"));
+    work.divide(100000);
   });
 }
