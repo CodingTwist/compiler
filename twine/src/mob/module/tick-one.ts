@@ -80,7 +80,8 @@ function face<S extends string>(
     m.dp.allowNbtRead(faceOne, "rig yaw copy, awake mobs only");
 
   const chain = ctx.execute();
-  if (m.faceByRotate) chain.rotated(Pos.rel(0, Pos.abs(0)));
+  // `rotated as @s` rereads the yaw: the `at @s` one is from before this tick's hooks turned it.
+  if (m.faceByRotate) chain.rotatedAs(Selector.self()).rotated(Pos.rel(0, Pos.abs(0)));
   chain.on(Relation.PASSENGERS).ifEntity(Selector.self().tag(`${m.rig}_0`));
   if (m.faceByRotate) chain.positionedAs(Selector.self());
   chain.run((b) => b.call(faceOne));

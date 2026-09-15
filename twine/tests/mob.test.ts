@@ -102,7 +102,7 @@ describe("defineMob", () => {
   it("turns the rig with rotate on 1.21.2+, reading no NBT", () => {
     const all = build(v26_2);
     expect(all).toContain(
-      "execute rotated ~ 0 on passengers if entity @s[tag=sentinel_rig_0] positioned as @s run function test:sentinel/zzz/face_one",
+      "execute rotated as @s rotated ~ 0 on passengers if entity @s[tag=sentinel_rig_0] positioned as @s run function test:sentinel/zzz/face_one",
     );
     expect(all).toContain(
       "rotate @s facing ^ ^ ^1\nexecute on passengers run rotate @s facing ^ ^ ^1",
