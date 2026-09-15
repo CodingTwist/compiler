@@ -4,6 +4,7 @@ import { currentContext } from "../../context/ambient";
 import type { FunctionContext } from "../../context";
 import type { Selector } from "../selector";
 import type { NbtPath } from "../../../values/nbt";
+import type { Id } from "../../../values/id";
 // Type-only, to avoid the import cycle (see CLAUDE.md).
 import type { StoreNumType } from "../../../commands/execute";
 import { ScoreVec3Ops } from "./ops";
@@ -61,6 +62,28 @@ export class ScoreVec3 extends ScoreVec3Ops {
       chain
         .storeResultScore(score)
         .run((c) => c.entity(who).get(path.index(axis), scale));
+    });
+    return this;
+  }
+
+  /**
+   * Reads a 3-element NBT list in `storage` into this vector, scaled to integers:
+   *
+   *   v.readStorage(Id("ns:temp"), NbtPath("vec_k"), 100000)
+   */
+  readStorage(
+    storage: Id,
+    path: NbtPath,
+    scale: number,
+    opts: ScoreVec3NbtOptions = {},
+  ): this {
+    const ctx = emitInto(opts.ctx);
+    this.components.forEach((score, axis) => {
+      const chain = ctx.execute();
+      if (opts.at) chain.at(opts.at);
+      chain
+        .storeResultScore(score)
+        .run((c) => c.storage(storage).get(path.index(axis), scale));
     });
     return this;
   }

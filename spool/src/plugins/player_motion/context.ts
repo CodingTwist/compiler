@@ -1,4 +1,4 @@
-import { Objective, ScoreTarget, Selector, Id } from "helix";
+import { Objective, ScoreTarget, ScoreVec3, Selector, Id } from "helix";
 import type { Datapack } from "helix";
 import {
   MARKER_UUID,
@@ -44,15 +44,18 @@ export function createInternals(dp: Datapack) {
 
   // The working `#x/#y/#z` vector, and the `$x/$y/$z` inputs callers set before an `api/*`
   // call.
-  const workX = dummyScore("#x");
-  const workY = dummyScore("#y");
-  const workZ = dummyScore("#z");
+  const work = ScoreVec3.from((axis) => dummyScore(`#${axis}`));
   // When 1, `launch/main` skips the gamemode swap and lets the player's own movement fire
   // the enchantment.
   const sustain = dummyScore("#sustain");
-  const inputX = api.score(ScoreTarget("$x"));
-  const inputY = api.score(ScoreTarget("$y"));
-  const inputZ = api.score(ScoreTarget("$z"));
+  const input = ScoreVec3.from((axis) => api.score(ScoreTarget(`$${axis}`)));
+  // The last launch's input and resulting local vector, per player, for reuse.
+  const prevInput = ScoreVec3.from((_, i) =>
+    [prevXin, prevYin, prevZin][i].score(self()),
+  );
+  const prevLocal = ScoreVec3.from((_, i) =>
+    [prevX, prevY, prevZ][i].score(self()),
+  );
 
   // --- Data resources --------------------------------------------------------
   dp.registryFile("enchantment", "internal/apply_impulse", enchantmentJson(ns));
@@ -111,13 +114,11 @@ export function createInternals(dp: Datapack) {
     storeBit,
     gamemodeScore,
     // working vector + public inputs
-    workX,
-    workY,
-    workZ,
+    work,
     sustain,
-    inputX,
-    inputY,
-    inputZ,
+    input,
+    prevInput,
+    prevLocal,
     // predicate refs
     largeGlobal,
     fallingCreative,

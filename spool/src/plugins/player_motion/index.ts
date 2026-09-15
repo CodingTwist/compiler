@@ -99,14 +99,14 @@ function definePlayerMotion(dp: Datapack): PlayerMotion {
   defineApi(I);
   // Write the three input scores from a local/global velocity (block/tick floats).
   const setLocal = (ctx: FunctionContext, v: LocalVelocity): void => {
-    I.inputX.set(toFixedPoint(v.sideways ?? 0));
-    I.inputY.set(toFixedPoint(v.up ?? 0));
-    I.inputZ.set(toFixedPoint(v.forward ?? 0));
+    I.input.x.set(toFixedPoint(v.sideways ?? 0));
+    I.input.y.set(toFixedPoint(v.up ?? 0));
+    I.input.z.set(toFixedPoint(v.forward ?? 0));
   };
   const setGlobal = (ctx: FunctionContext, v: GlobalVelocity): void => {
-    I.inputX.set(toFixedPoint(v.x ?? 0));
-    I.inputY.set(toFixedPoint(v.y ?? 0));
-    I.inputZ.set(toFixedPoint(v.z ?? 0));
+    I.input.x.set(toFixedPoint(v.x ?? 0));
+    I.input.y.set(toFixedPoint(v.y ?? 0));
+    I.input.z.set(toFixedPoint(v.z ?? 0));
   };
 
   return {
@@ -130,7 +130,7 @@ function definePlayerMotion(dp: Datapack): PlayerMotion {
     },
     launchLocalXyz: I.fLaunchLocal,
     launchGlobalXyz: I.fLaunchGlobal,
-    launchInput: { x: I.inputX, y: I.inputY, z: I.inputZ },
+    launchInput: I.input,
   };
 }
 

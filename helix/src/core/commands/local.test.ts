@@ -45,7 +45,8 @@ describe("ctx.let", () => {
       const dp = new Datapack("p", version);
       dp.createFunction("f").build((ctx) => {
         const x = ctx.let(3);
-        ctx.let(math`${x} * ${x}`);
+        // Three commands as a chain, so 26.3 takes /compute.
+        ctx.let(math`${x} * ${x} + ${x}`);
       });
       buildDatapack(dp);
       expect(dp.files.get("f")).toContain(expected);

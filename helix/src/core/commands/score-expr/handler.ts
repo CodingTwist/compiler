@@ -1,17 +1,23 @@
-// Lowers a score expression: one `/compute` on 26.3+, a scoreboard operation chain before.
-import { ASTNode } from "../../ir/node";
+// Lowers a score expression: a short scoreboard chain when one exists, else one `/compute` on 26.3+.
 import { CodegenContext, CommandHandler } from "../../ir/commandhandler";
 import { buildTokens, lit, arg, raw } from "../../ir/command-builder";
 import { hasCommandTree } from "../../ir/command-validator";
 import { supportsCommand } from "../../../versions/capabilities";
 import { VersionProfile } from "../../../versions/profile";
 import { BrigadierNode } from "../../commandtree/tree";
-import { Score } from "../../frontend/nodes/score";
-import { ExprNode } from "../../frontend/nodes/expr";
-import { scoreLitNode } from "../scoreboard";
+import { ExprNode, isComputeOnly } from "../../frontend/nodes/expr";
+import { unreadableHolder } from "../../values/context-provider/shared";
 import { ScoreExprNode } from "./node";
 import { toProvider } from "./provider";
 import { toScoreOps } from "./score-ops";
+
+/**
+ * Longest scoreboard chain used instead of `/compute` on 26.3+.
+ * Each `/compute` builds a loot context and goes through `execute store`, while an operation
+ * is two score lookups.
+ */
+// ponytail: limit read off the 26.3 bytecode, not measured; raise it if helix-profiler shows longer chains still win.
+const MAX_CHAIN = 2;
 
 /**
  * `/compute` exists and the profile has a command tree.
@@ -22,67 +28,56 @@ const hasCompute = (version: VersionProfile): boolean =>
   hasCommandTree(version.commands as BrigadierNode | undefined) &&
   supportsCommand(version, ["compute"]);
 
-/**
- * `dest = dest ± <literal>` (either operand order for `add`), the one shape
- * `scoreboard players operation` does for free. Caught before `/compute` so a compile-time
- * constant offset - the common case - never pays for a full expression tree, on any version.
- */
-function selfIncrement(
-  dest: Score,
-  expr: ExprNode,
-  version: VersionProfile,
-): ASTNode | undefined {
-  if (
-    expr.kind !== "op" ||
-    (expr.op !== "add" && expr.op !== "sub") ||
-    expr.args.length !== 2
-  )
-    return undefined;
-  const [a, b] = expr.args;
-  const key = (s: Score) =>
-    `${s.target.render(version)} ${s.objective.getName()}`;
-  const isDest = (n: ExprNode) =>
-    n.kind === "score" && key(n.score) === key(dest);
-  const litOf = (n: ExprNode) =>
-    n.kind === "lit" && Number.isInteger(n.value) ? n.value : undefined;
+/** Whether any node in `e` passes `test`. */
+const some = (e: ExprNode, test: (n: ExprNode) => boolean): boolean =>
+  test(e) || (e.kind === "op" && e.args.some((a) => some(a, test)));
 
-  let value: number | undefined;
-  if (isDest(a)) value = litOf(b);
-  else if (expr.op === "add" && isDest(b)) value = litOf(a);
-  if (value === undefined) return undefined;
+/** Whether `e` has something only `/compute` can express. */
+const needsCompute = (e: ExprNode): boolean =>
+  some(
+    e,
+    (n) =>
+      n.kind === "provider" ||
+      (n.kind === "lit" && !Number.isInteger(n.value)) ||
+      (n.kind === "op" && isComputeOnly(n.op)),
+  );
 
-  const v = expr.op === "add" ? value : -value;
-  return scoreLitNode(v < 0 ? "remove" : "add", dest, Math.abs(v));
-}
+/** Whether `e` reads a score through a selector `/compute` can't resolve. */
+const readsSelector = (e: ExprNode, version: VersionProfile): boolean =>
+  some(
+    e,
+    (n) =>
+      n.kind === "score" && unreadableHolder(n.score.target.render(version)),
+  );
 
 export class ScoreExprCommand extends CommandHandler<ScoreExprNode> {
   readonly type: ScoreExprNode["type"] = "score-expr";
 
   generate(node: ScoreExprNode, ctx: CodegenContext): void {
-    const peephole = selfIncrement(node.dest, node.expr, ctx.version);
-    if (peephole) {
-      ctx.dispatcher.dispatch(peephole, ctx);
-      return;
-    }
-    if (!hasCompute(ctx.version)) {
-      for (const n of toScoreOps(node.dest, node.expr, ctx.version))
-        ctx.dispatcher.dispatch(n, ctx);
+    const { dest, expr } = node;
+    const version = ctx.version;
+    // `toScoreOps` throws for compute-only ops, so it's only called when the chain is allowed.
+    const forced = !hasCompute(version) || readsSelector(expr, version);
+    const chain =
+      forced || !needsCompute(expr) ? toScoreOps(dest, expr, version) : undefined;
+    if (chain && (forced || chain.length <= MAX_CHAIN)) {
+      for (const n of chain) ctx.dispatcher.dispatch(n, ctx);
       return;
     }
     // `compute` is validated alone; the `execute store … run` head is raw because the
     // data's redirects drop it.
-    const compute = buildTokens(ctx.version, [
+    const compute = buildTokens(version, [
       lit("compute"),
       lit("default"),
       lit("integer"),
-      arg(toProvider(node.expr).render(ctx.version)),
+      arg(toProvider(expr).render(version)),
     ]);
     ctx.emit(
-      buildTokens(ctx.version, [
+      buildTokens(version, [
         lit("execute"),
         raw(
-          `store result score ${node.dest.target.render(ctx.version)} ` +
-            `${node.dest.objective.getName()} run ${compute}`,
+          `store result score ${dest.target.render(version)} ` +
+            `${dest.objective.getName()} run ${compute}`,
         ),
       ]),
     );

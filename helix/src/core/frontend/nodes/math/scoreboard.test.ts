@@ -34,6 +34,21 @@ describe("math`` as a scoreboard chain", () => {
     ).toEqual([op("a", "-=", "b")]);
   });
 
+  it("moves the destination first in a commutative op, so no temp is needed", () => {
+    expect(emit(() => math`${sc("b")} * ${sc("a")}`.into(sc("a")))).toEqual([
+      op("a", "*=", "b"),
+    ]);
+    expect(emit(() => math`min(${sc("b")}, ${sc("a")})`.into(sc("a")))).toEqual(
+      [op("a", "<", "b")],
+    );
+    // Not commutative: still goes through a temp.
+    expect(emit(() => math`${sc("b")} - ${sc("a")}`.into(sc("a")))).toEqual([
+      op("_t0", "=", "b"),
+      op("_t0", "-=", "a"),
+      op("a", "=", "_t0"),
+    ]);
+  });
+
   it("is a scoreboard chain on 1.21.4", () => {
     expect(emit(coef, v1_21_4)).toEqual([
       "scoreboard players set #coef work 0",
@@ -91,14 +106,6 @@ describe("math`` as a scoreboard chain", () => {
     expect(
       emit(() => math`${sc("a")} + ${sc("b")}`.into(sc("d")), stub),
     ).toEqual([op("d", "=", "a"), op("d", "+=", "b")]);
-  });
-
-  it("routes through a temp when the destination is an operand, not the leftmost leaf", () => {
-    expect(emit(() => math`${sc("a")} * ${sc("v")}`.into(sc("v")))).toEqual([
-      op("_t0", "=", "a"),
-      op("_t0", "*=", "v"),
-      op("v", "=", "_t0"),
-    ]);
   });
 
   it("charges a literal one `set` where the scoreboard needs a score operand", () => {

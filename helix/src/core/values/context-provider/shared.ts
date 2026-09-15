@@ -5,6 +5,21 @@ import { NbtPath } from "../nbt";
 import type { Score } from "../../frontend/nodes/score";
 import { jsonOf, type ProviderBase, type ProviderJson } from "./types";
 
+/** Whether a rendered score holder is a selector `/compute` can't read (anything but `@s`). */
+export const unreadableHolder = (holder: string): boolean =>
+  holder.startsWith("@") && holder !== "@s";
+
+/** The `score` provider's `target` for a rendered holder. */
+function scoreHolderJson(holder: string): unknown {
+  if (holder === "@s") return { type: "context", target: "this" };
+  if (unreadableHolder(holder))
+    throw new Error(
+      `/compute can't read the score of \`${holder}\`: it only reads fake players and @s. ` +
+        `Run it under \`execute as ${holder}\` and read @s, or copy the score to a fake player first.`,
+    );
+  return { type: "fixed", name: holder };
+}
+
 /** The ops both languages share, built once and specialised by `wrap`. */
 export function sharedOps<P extends ProviderBase, R extends number | P>(
   wrap: (json: ProviderJson) => P,
@@ -75,11 +90,15 @@ export function sharedOps<P extends ProviderBase, R extends number | P>(
         ...(onFalse === undefined ? {} : { on_false: jsonOf(onFalse)(v) }),
       })),
 
-    /** Reads a score into the expression. */
+    /**
+     * Reads a score into the expression. The holder must be a fake player or `@s`.
+     * A `fixed` name is taken literally, so `@s` has to go through `context` and other
+     * selectors can't be read at all.
+     */
     score: (score: Score, fallback?: R): P =>
       wrap((v) => ({
         type: "score",
-        target: { type: "fixed", name: score.target.render(v) },
+        target: scoreHolderJson(score.target.render(v)),
         score: score.objective.getName(),
         ...(fallback === undefined ? {} : { fallback: jsonOf(fallback)(v) }),
       })),

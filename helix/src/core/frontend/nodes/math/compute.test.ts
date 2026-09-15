@@ -140,14 +140,56 @@ describe("math`` on /compute (26.3+)", () => {
     expect(intOnly).not.toContain("from_float");
   });
 
-  it("skips /compute for a plain `dest ± literal`, even on 26.3", () => {
-    const [add] = emit(() => math`${sc("a")} + 5`.into(sc("a")), v26_3_rc_2);
-    expect(add).toBe("scoreboard players add #a work 5");
-    const [sub] = emit(() => math`${sc("a")} - 5`.into(sc("a")), v26_3_rc_2);
-    expect(sub).toBe("scoreboard players remove #a work 5");
-    // Not the destination on both sides, or not a bare literal: still /compute.
-    const [other] = emit(() => math`${sc("b")} + 5`.into(sc("a")), v26_3_rc_2);
-    expect(other).toContain("compute default integer");
+  it("uses a scoreboard chain of up to two commands, even on 26.3", () => {
+    const on26 = (build: () => void) => emit(build, v26_3_rc_2);
+    expect(on26(() => math`${sc("a")} + 5`.into(sc("a")))).toEqual([
+      "scoreboard players add #a work 5",
+    ]);
+    expect(on26(() => math`5 + ${sc("a")}`.into(sc("a")))).toEqual([
+      "scoreboard players add #a work 5",
+    ]);
+    expect(on26(() => math`${sc("a")} - 5`.into(sc("a")))).toEqual([
+      "scoreboard players remove #a work 5",
+    ]);
+    expect(on26(() => math`max(${sc("a")}, ${sc("b")})`.into(sc("a")))).toEqual(
+      ["scoreboard players operation #a work > #b work"],
+    );
+    expect(on26(() => math`max(${sc("b")}, ${sc("a")})`.into(sc("a")))).toEqual(
+      ["scoreboard players operation #a work > #b work"],
+    );
+    expect(on26(() => math`${sc("b")} + 5`.into(sc("a")))).toEqual([
+      "scoreboard players operation #a work = #b work",
+      "scoreboard players add #a work 5",
+    ]);
+    // Three commands, or an op only /compute has: /compute.
+    const [long, ...rest] = on26(() =>
+      math`${sc("b")} * ${sc("c")} + 5`.into(sc("a")),
+    );
+    expect(rest).toEqual([]);
+    expect(long).toContain("compute default integer");
+    expect(on26(() => math`sqrt(${sc("a")})`.into(sc("a")))[0]).toContain(
+      "compute default integer",
+    );
+  });
+
+  it("reads @s through the context, and other selectors via the chain", () => {
+    const self = work.score(Selector.self());
+    const [line] = emit(() => math`sqrt(${self})`.into(sc("a")), v26_3_rc_2);
+    expect(line).toContain('"target":{"type":"context","target":"this"}');
+
+    const near = work.score(Selector.nearest());
+    expect(
+      emit(
+        () => math`${near} * ${sc("b")} + ${sc("c")}`.into(sc("a")),
+        v26_3_rc_2,
+      ),
+    ).toEqual([
+      "scoreboard players operation #a work = @p work",
+      "scoreboard players operation #a work *= #b work",
+      "scoreboard players operation #a work += #c work",
+    ]);
+    expect(bad2(() => emit(() => math`sqrt(${near})`.into(sc("a")), v26_3_rc_2)))
+      .toContain("sqrt()");
   });
 
   it("hands a formula to a non-score destination as a provider", () => {

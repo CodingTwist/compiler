@@ -19,13 +19,9 @@ export function defineLaunch(I: PlayerMotionInternals): void {
     gamemodeScore,
     dummyScore,
     constant,
-    workX,
-    workY,
-    workZ,
+    work,
     sustain,
-    prevX,
-    prevY,
-    prevZ,
+    prevLocal,
     fallingCreative,
   } = I;
 
@@ -95,9 +91,7 @@ export function defineLaunch(I: PlayerMotionInternals): void {
 
   // --- internal/launch/use_previous (reuse cached local vector) -------------
   fUsePrevious.build((ctx) => {
-    workX.assign(prevX.score(self()));
-    workY.assign(prevY.score(self()));
-    workZ.assign(prevZ.score(self()));
+    work.assign(prevLocal);
     ctx.returnRun((r) => r.call(fLaunchMain));
   });
 
@@ -105,20 +99,20 @@ export function defineLaunch(I: PlayerMotionInternals): void {
   fPolarGlobal.build((ctx) => {
     ctx
       .execute()
-      .ifScoreMatches(workX, new Range(0, 0))
-      .ifScoreMatches(workY, new Range(0, 0))
+      .ifScoreMatches(work.x, new Range(0, 0))
+      .ifScoreMatches(work.y, new Range(0, 0))
       .run((b) => b.returnRun((r) => r.call(fLaunchMain)));
-    workY.swap(workZ);
+    work.y.swap(work.z);
     dummyScore("#y_abs_within_90").set(0);
     ctx
       .execute()
       .ifEntity(self().yRotation(new Range(90, -90)))
       .storeSuccessScore(dummyScore("#y_abs_within_90"))
-      .run(() => math`${workX} * ${constant("#constant.-1")}`.into(workX));
+      .run(() => math`${work.x} * ${constant("#constant.-1")}`.into(work.x));
     ctx
       .execute()
       .ifScoreMatches(dummyScore("#y_abs_within_90"), new Range(0, 0))
-      .run(() => math`${workY} * ${constant("#constant.-1")}`.into(workY));
+      .run(() => math`${work.y} * ${constant("#constant.-1")}`.into(work.y));
     ctx.returnRun((r) => r.call(fLaunchMain));
   });
 }

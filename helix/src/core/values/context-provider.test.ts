@@ -49,10 +49,16 @@ describe("context provider JSON", () => {
     );
   });
 
-  it("renders a selector holder through the Selector concept, not a literal", () => {
+  it("reads @s through the context, since a fixed name is taken literally", () => {
     expect(i.score(dummy.score(Selector.self())).render(v26_3_rc_2)).toContain(
-      '"name":"@s"',
+      '"target":{"type":"context","target":"this"}',
     );
+  });
+
+  it("rejects selectors other than @s", () => {
+    expect(() =>
+      i.score(dummy.score(Selector.nearest())).render(v26_3_rc_2),
+    ).toThrow("can't read the score of `@p`");
   });
 
   it("carries a fallback only when one is given", () => {

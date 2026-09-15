@@ -6,6 +6,8 @@ import { ScoreVec3 } from "./vec";
 import { ScoreTarget } from "../../../values/score_target";
 import { Selector } from "../selector";
 import { Path } from "../../../values/paths";
+import { Id } from "../../../values/id";
+import { NbtPath } from "../../../values/nbt";
 import "../../../commands";
 
 /** Build one function body and return its rendered command lines. */
@@ -91,6 +93,15 @@ describe("ScoreVec3", () => {
     expect(out).toContain("execute at @s run function test:zzz/f/group_0");
     expect(out).toContain(
       "execute store result score #q_y work run data get entity @p Pos[1] 100",
+    );
+  });
+
+  it("reads a 3-element storage list into the components", () => {
+    const out = emit((vec) => {
+      vec("k").readStorage(Id("test:temp"), NbtPath("vec_k"), 100000);
+    });
+    expect(out).toContain(
+      "execute store result score #k_y work run data get storage test:temp vec_k[1] 100000",
     );
   });
 
