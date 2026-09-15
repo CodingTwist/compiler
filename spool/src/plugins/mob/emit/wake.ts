@@ -1,7 +1,6 @@
-import { Range, Relation, ScoreTarget, Selector, privateName } from "helix";
+import { Range, ScoreTarget, Selector } from "helix";
 import type { FunctionContext } from "helix";
-import type { ModuleScope } from "../../core/module.interface";
-import { DIFFICULTY } from "../../core/difficulty";
+import { DIFFICULTY } from "../../difficulty";
 import type { MobParts } from "./parts";
 import { onDifficultyFn } from "./summon";
 
@@ -9,10 +8,8 @@ import { onDifficultyFn } from "./summon";
 export function wakeBody<S extends string>(
   m: MobParts<S>,
   ctx: FunctionContext,
-  scope: ModuleScope,
 ): void {
   const self = Selector.self();
-  const orphan = `${m.name}.orphan`;
   // Stay awake while a gesture's or state's clock runs, so walking away can't freeze it halfway.
   const clocks = m.def.gestures
     .filter((g) => g.cooldown !== 0)
@@ -26,14 +23,12 @@ export function wakeBody<S extends string>(
     : undefined;
   // Mark-and-sweep orphaned rigs: live mobs clear their rig's mark, and anything still marked is removed.
   // ponytail: runs once a second, so a dead mob's rig can linger up to a second.
-  ctx.tag().add(m.rigRoots, orphan);
+  m.rig.markOrphans(ctx);
   // One scan to reset every mob (and claim its rig), then one per player for the ones near it.
   const one = m.internal("wake_one", (c) => {
     c.tag().remove(self, m.awakeTag);
     c.tag().remove(self, m.finishingTag);
-    c.execute()
-      .on(Relation.PASSENGERS)
-      .run((b) => b.tag().remove(Selector.self(), orphan));
+    m.rig.claim(c);
     // ponytail: one line per clock - fine at a handful; a shared "busy" score if a mob grows many.
     for (const obj of clocks) {
       c.execute()
@@ -60,18 +55,8 @@ export function wakeBody<S extends string>(
     .storeResultScore(m.awakeObj.score(ScoreTarget("#awake")))
     .ifEntity(m.mobs.tag(m.awakeTag))
     .done();
-  // Rigs no mob claimed above lost their mob: kill them, passengers first, since killing a
-  // vehicle only dismounts its riders.
-  const killRig = scope.fn(privateName(`${m.name}/kill_rig`), (c) => {
-    c.execute()
-      .on(Relation.PASSENGERS)
-      .run((b) => b.kill(Selector.self()));
-    c.kill(Selector.self());
-  });
-  ctx
-    .execute()
-    .as(m.rigRoots.tag(orphan))
-    .run((b) => b.call(killRig));
+  // Rigs no mob claimed above lost their mob.
+  m.rig.sweep(ctx);
 }
 
 /** Reruns `on_difficulty` on every live mob when the pack's difficulty changed since last applied. */

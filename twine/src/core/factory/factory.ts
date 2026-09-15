@@ -1,10 +1,10 @@
 // `DatapackFactory`: builds a datapack from a root module.
 import "reflect-metadata";
 import path from "path";
-import { Datapack, Range, ignoreSourceFrames, v1_20_4 } from "helix";
+import { Datapack, ignoreSourceFrames, v1_20_4 } from "helix";
+import { difficulty } from "spool/plugins/difficulty";
 import type { BuildEnv, ModuleClass } from "../module.interface";
 import { buildEnv, setBuildEnv } from "../env";
-import { DIFFICULTY } from "../difficulty";
 import { ActiveFlags } from "../flags";
 import { EventLatches } from "../events";
 import { buildGraph, needsTickMemo, resolveDimensions } from "../graph";
@@ -51,16 +51,8 @@ export class DatapackFactory {
     const graph = buildGraph(root, env, opts.only);
     if (!graph.nodes.size) return dp; // `only` selected no modules
 
-    // Seeded from /difficulty only while unset, so a level the pack chose survives /reload.
     // ponytail: every twine pack gets this, used or not; gate on use if that ever matters.
-    dp.objective(DIFFICULTY.objective.getName());
-    dp.load((ctx) =>
-      ctx
-        .execute()
-        .unlessScoreMatches(DIFFICULTY, Range.atLeast(1))
-        .storeResultScore(DIFFICULTY)
-        .run((b) => b.difficulty()),
-    );
+    difficulty(dp);
 
     // Each module's dimension, so its lifecycle, ticks and functions run where the module is.
     const dims = resolveDimensions(graph);

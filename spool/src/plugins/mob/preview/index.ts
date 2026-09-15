@@ -2,7 +2,6 @@ import { execFileSync } from "child_process";
 import { mkdirSync, writeFileSync } from "fs";
 import { dirname } from "path";
 import { page } from "./page";
-import type { MobModuleRef } from "../types";
 import type { MobPreview } from "./rig";
 
 export interface MobPreviewOpts {
@@ -18,14 +17,14 @@ export interface MobPreviewOpts {
  */
 export function writeMobPreview(
   file: string,
-  mob: MobModuleRef,
+  mob: { readonly name: string; preview(): MobPreview },
   opts: MobPreviewOpts = {},
 ): void {
   const data = mob.preview();
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(
     file,
-    page(mob.metadata.name, data, textures(data, opts.clientJar)),
+    page(mob.name, data, textures(data, opts.clientJar)),
   );
 }
 

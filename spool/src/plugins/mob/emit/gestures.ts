@@ -1,6 +1,5 @@
 import { Range, Selector, privateName } from "helix";
 import type { Datapack, FunctionContext } from "helix";
-import type { ModuleScope } from "../../core/module.interface";
 import type { ResolvedGesture } from "../gesture";
 import type { MobParts } from "./parts";
 
@@ -8,7 +7,6 @@ import type { MobParts } from "./parts";
 export function registerGesture<S extends string>(
   m: MobParts<S>,
   dp: Datapack,
-  scope: ModuleScope,
   g: ResolvedGesture<S>,
 ): void {
   m.cooldowns.set(g.name, dp.objective(`${m.name}.${g.name}`));
@@ -16,7 +14,7 @@ export function registerGesture<S extends string>(
   if (g.fireAfter) {
     m.add(
       `${g.name}_hit`,
-      scope.fn(privateName(`${m.name}/${g.name}_hit`), (ctx) =>
+      m.fn(privateName(`${m.name}/${g.name}_hit`), (ctx) =>
         g.onFire?.(ctx, dp, m.handle),
       ),
     );
@@ -25,14 +23,14 @@ export function registerGesture<S extends string>(
     const body = g.onRecover;
     m.add(
       `${g.name}_recover`,
-      scope.fn(privateName(`${m.name}/${g.name}_recover`), (ctx) =>
+      m.fn(privateName(`${m.name}/${g.name}_recover`), (ctx) =>
         body(ctx, dp, m.handle),
       ),
     );
   }
   m.add(
     g.name,
-    scope.fn(`${m.name}/${g.name}`, (ctx) => {
+    m.fn(`${m.name}/${g.name}`, (ctx) => {
       ctx.tag().add(Selector.self(), m.gestureTag(g));
       if (g.cooldown !== 0) m.cooldown(g).set(g.cooldown);
       m.poseMembers(ctx, undefined, g, g.steps[0], g.rise);

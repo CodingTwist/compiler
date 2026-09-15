@@ -27,8 +27,8 @@ export {
   DIFFICULTY_IDS,
   defineDifficulty,
   setDifficulty,
-} from "./core/difficulty";
-export type { Difficulty } from "./core/difficulty";
+} from "spool/plugins/difficulty";
+export type { Difficulty } from "spool/plugins/difficulty";
 export { defineItem, ItemBuilder } from "./item/builder";
 export { defineBoss, BossBuilder } from "./boss/builder";
 export { defineMob, MobBuilder, writeMobPreview } from "./mob";

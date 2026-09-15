@@ -38,12 +38,8 @@ compiles to a **module** (the `DatapackModule` that emits commands).
     the factory publishes what it pruned by (`setBuildEnv`), and module bodies gate on `isDev()`,
     so "which modules survive" and "which commands they emit" can't disagree. Never re-read
     `process.env.TWINE_ENV` in a pack.
-- [src/mob/](src/mob/) - `defineMob`: custom mobs (see below). `index.ts` is the entry;
-  `builder.ts`, `types.ts` (public mob types), `gesture.ts` (gesture defaults and pose
-  timeline - pure, no commands), `module/` (`MobModule` wiring in `index.ts`, shared state in `parts.ts`, one file
-  per emitted job: `summon`, `states`, `gestures`, `wake`, `tick-one`) and `preview/`
-  (`writeMobPreview`, `rig.ts` preview data; the HTML rig viewer's script split into string
-  modules).
+- [src/mob/](src/mob/) - `defineMob(...).toModule(name)`: wraps spool's `mob` plugin as a module
+  (see below).
 - [src/boss/](src/boss/) - `defineBoss`: boss fights (see below).
 - [src/item/](src/item/) - `defineItem` behavioural items (`builder.ts`, `module.ts`), and
   `registry.ts`: dev-only `debug/give/<name>` functions for plain `ItemValue`s.
@@ -67,60 +63,17 @@ and cooldowns are scores on the boss's objective.
 
 ### Custom mobs (`src/mob/`)
 
-A real vanilla mob (AI, damage, death) wearing a helix `Display` rig, summoned separately and
-joined with `ride mount`. The module owns what riding doesn't give you:
+The mob itself is spool's `mob` plugin (rig, gestures, states, wake; see
+[spool/CLAUDE.md](../spool/CLAUDE.md)). twine's `MobBuilder` extends spool's and adds
+`toModule(name, opts)`, which only does the module part:
 
-- **Yaw:** every rig member keeps its own rotation, so each is turned from _its own_ mob, yaw
-  only (a copied pitch tilts the model). 1.21.2+ uses `rotate`; older versions copy
-  `Rotation[0]` through NBT.
-- **Hit relay:** hits on the model's `interaction` hitbox become damage on the mob, tested with
-  `if function <name>/attacked` (`on attacker`), not an NBT read.
-- **Orphans:** a killed vehicle only _dismounts_ its passengers and nothing can test "has a
-  vehicle", so rigs are found by mark-and-sweep in `wake`.
-- A riding rig sits at the mount point (`height * 0.75` up); `Display.offset(...)` cancels it.
+- `register` calls `mob.register(dp, scope.fn)`, so summon, gestures and wake run in the module's dimension.
+- `onTick` is `mob.tick(ctx)`, at the module's `tickEvery`.
+- `<name>/wake` runs through `every(module, 20)`, so each mob gets its own clock phase.
+- The returned `MobModuleRef` forwards `.summon`, `.spawn`, `.gestures.x`, `.states.x`, `.onTickFn` to the mob.
 
-**Idle cost is a score check.** `<name>/wake` runs once a second: it tags mobs within
-`wakeRange` (default 48) of a player `<name>.awake`, keeps mid-gesture or mid-state mobs awake
-as `<name>.finishing` (they finish, but no `when` fires), stores the count in `#awake`, and
-sweeps orphans. The per-tick poll is one `if score #awake` into `<name>/tick_one`, where
-everything is written against `@s`: the author's `.onTick`, the state dispatch, each gesture's
-fall and `<gesture>_clock`, the triggers, the yaw copy, and the hit relay.
-
-**Every check is written once, by the framework.** A rule for mob codegen, and for authors:
-
-- **wake:** one `as <mobs>` scan into `wake_one`, then one `at @a as <mobs>[distance]` scan into
-  `wake_near`.
-- **triggers:** all gesture triggers sit behind one `unless finishing` check (`<name>/triggers`).
-- **animation steps:** a sequence's steps are one `dispatchScore` on the clock (`<g>_pose` →
-  `<g>_step_<k>`), with no per-member `as @s[scores=…]`.
-- **states:** a multi-phase mob uses `.states({ name: { polls?, onEnter?, tick?, onDone?, then? } })`,
-  never hand-rolled tags that each line re-checks. The index lives in `<name>.state` and
-  `tick_one` checks it once; `<name>/state` dispatches on a `#<name>_state` copy so entering a
-  later state can't also run it this poll; a timed state counts `<name>.state_t` down
-  (`mob.clock`). Every body gets `mob.enter/leave`; state names are typed when `.states()` is
-  declared first.
-
-**Gestures** (`.gesture(name, {...})`) snap members to a rotation about a pivot and let the
-display's interpolation carry them back to rest, which comes from `model.members()` so a pose
-can't drift from what was summoned. An array `rotate` is a sequence stepped off the mob's own
-`<mob>.<gesture>` cooldown (so each mob animates independently). `tilt` turns orientation only.
-`onFire` is the author's hit (vanilla has no contact event); the trigger is the author's
-`Detector`. One cooldown **per gesture**, so an idle gesture can't gate the others.
-`resolveGesture` fills defaults and rejects timings that don't fit inside the cooldown.
-
-**Difficulty** is a pack-owned level, not vanilla's: `#level twine.difficulty` (1/2/3,
-`core/difficulty.ts`). `mount` seeds it from `/difficulty` on load only while unset; after that
-only the pack changes it (`setDifficulty("hard")`, or a raw scoreboard set). twine applies
-nothing by itself - scaling is author code reading an author config (`defineDifficulty`, every
-level required). The mechanism: `mob.byDifficulty(ctx, (c, level) => ...)` builds a body once
-per level behind a dispatch on the score (its own function, since the dispatch `return`s);
-`.onDifficulty((ctx, dp, level) => ...)` becomes `<name>/zzz/on_difficulty`, run at summon and,
-when `wake` sees `#level` differ from `#applied`, on every live mob. Gesture switches are the
-author's own `when` clause on `DIFFICULTY`.
-
-`toModule` returns the module **plus handles** (`.summon`, `.spawn`, `.gestures.x`,
-`.states.x`, `.onTickFn`), so a consumer never looks a function name up. twine
-`dp.allowNbtRead`s `face_one` and cooldown-capped gesture bodies so the report doesn't warn.
+The difficulty score (`DIFFICULTY`, `setDifficulty`, `defineDifficulty`) is spool's `difficulty`
+plugin, re-exported here; `mount` calls `difficulty(dp)` so every twine pack seeds it.
 
 ## The module lifecycle (the contract authors implement)
 

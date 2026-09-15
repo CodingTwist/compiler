@@ -1,8 +1,6 @@
 import {
   EntityType,
-  Relation,
   Selector,
-  displayPose,
   privateName,
 } from "helix";
 import type {
@@ -13,13 +11,16 @@ import type {
   Quat,
   Score,
 } from "helix";
+import type { Rig } from "../../rig";
 import type { MobStates } from "../types";
 import { memberPose, type ResolvedGesture } from "../gesture";
-import type { MobDef } from "./types";
+import type { MobDef, MobFn } from "./types";
 
 /** The state one mob's codegen shares: its definition, objectives, names and generated functions. */
 export class MobParts<S extends string> {
   dp!: Datapack;
+  /** Creates a function callable from outside the tick tree, e.g. wrapped in a dimension. */
+  fn!: MobFn;
   /** Each generated function by short name (`summon`, a gesture), once registered. */
   readonly fns = new Map<string, FunctionRef>();
   /** One cooldown per gesture, so one gesture's cooldown doesn't block the others. */
@@ -33,8 +34,8 @@ export class MobParts<S extends string> {
   handle!: MobStates<S>;
   /** Numbers the functions each {@link MobStates.byDifficulty} call emits. */
   byDifficultyCalls = 0;
-  /** `rotate` (1.21.2+) turns the rig without reading NBT. */
-  faceByRotate = false;
+  /** The model riding each mob. */
+  rig!: Rig;
 
   constructor(readonly def: MobDef<S>) {}
 
@@ -42,7 +43,7 @@ export class MobParts<S extends string> {
     const ref = this.fns.get(short);
     if (!ref) {
       throw new Error(
-        `Mob "${this.def.name}" has no "${short}" function yet - it registers after the module importing it, so read this from onLoad/onTick, not a constructor.`,
+        `Mob "${this.def.name}" has no "${short}" function yet - read it after the mob registers (in a twine module: from onLoad/onTick, not a constructor).`,
       );
     }
     return ref;
@@ -51,18 +52,10 @@ export class MobParts<S extends string> {
   get name(): string {
     return this.def.name;
   }
-  /** The rig's group name - every member is tagged with it (see `Display.named`). */
-  get rig(): string {
-    return `${this.name}_rig`;
-  }
   get mobs(): Selector {
     return Selector.allEntities()
       .type(EntityType(this.def.nbt.entity))
       .tag(this.name);
-  }
-  /** Member 0 is the group root: the entity that actually rides the mob. */
-  get rigRoots(): Selector {
-    return this.def.model.rootSelector();
   }
   get awakeTag(): string {
     return `${this.name}.awake`;
@@ -92,35 +85,14 @@ export class MobParts<S extends string> {
     return fn;
   }
 
-  /**
-   * Merges a pose onto each moving member. Run as the mob.
-   *
-   * Walks `passengers` so only this mob's rig is touched. Member 0 is the root (one hop);
-   * others ride the root (two hops).
-   */
+  /** Poses a gesture's members at `q`, or at rest when `q` is `undefined`. Run as the mob, or pass `self`. */
   poseMembers(
     ctx: FunctionContext,
-    /** Who to pose, or `undefined` for `@s` itself - no `as` hop. */
     self: Selector | undefined,
     g: ResolvedGesture<S>,
-    /** The rotation to hold, or `undefined` for the model's own rest pose. */
     q: Quat | undefined,
     duration: number,
   ): void {
-    for (const i of g.members) {
-      const chain = ctx.execute();
-      if (self) chain.as(self);
-      chain.on(Relation.PASSENGERS);
-      if (i !== 0) chain.on(Relation.PASSENGERS);
-      chain.run((b) =>
-        b
-          .data()
-          .merge()
-          .entity(
-            Selector.self().tag(`${this.rig}_${i}`),
-            displayPose(memberPose(this.def.model, g, i, q), duration),
-          ),
-      );
-    }
+    this.rig.pose(ctx, self, g.members, (i) => memberPose(this.def.model, g, i, q), duration);
   }
 }

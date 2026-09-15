@@ -48,8 +48,9 @@ is the helix prototype, and each plugin only ever writes its own slot on it.
 - [src/plugins/](src/plugins/) - **one directory per plugin**, each a self-contained
   `plugins/<name>/` folder whose `index.ts` is the plugin entry (the `KitPlugin` + its
   `declare module` augmentation). Current: `holding`, `clip`, `entity_set`, `native`,
-  `player_motion`. A plugin's whole implementation - engine code, concern files, its own
-  `*.test.ts` - lives inside its folder and nowhere else, so the folder is the unit you
+  `player_motion` and more. Plugins that are per-use values rather than methods (`locator`,
+  `rig`, `mob`, `difficulty`) skip the `KitPlugin` and export plain functions. A plugin's
+  whole implementation - engine code, concern files, its own `*.test.ts` - lives inside its folder and nowhere else, so the folder is the unit you
   read, move, or delete. There are **no flat files** under `plugins/` - a loose file
   would not resolve through the `./plugins/*` → `*/index.js` subpath mapping.
 
@@ -79,6 +80,70 @@ every helper reads, then one file per concern (`resources.ts`, `init.ts`, `store
 `launch.ts`, `math.ts`, `api.ts`). `clip` is the same shape - `index.ts` installs the
 plugin and the rest of the folder is its private animation engine. Consumers still import
 only the `<name>` subpath; the split is internal.
+
+### Custom mobs: `rig`, `mob`, `difficulty`
+
+A real vanilla mob (AI, damage, death) wearing a helix `Display` rig, summoned separately and
+joined with `ride mount`. `plugins/rig` owns what riding doesn't give you, and works for any
+vehicle, not just mobs:
+
+- **Yaw:** every rig member keeps its own rotation, so each is turned from _its own_ mob, yaw
+  only (a copied pitch tilts the model). 1.21.2+ uses `rotate`; older versions copy
+  `Rotation[0]` through NBT.
+- **Hit relay:** hits on the model's `interaction` hitbox become damage on the mob, tested with
+  `if function <name>/attacked` (`on attacker`), not an NBT read.
+- **Orphans:** a killed vehicle only _dismounts_ its passengers and nothing can test "has a
+  vehicle", so rigs are found by mark-and-sweep (`markOrphans`, `claim` as each live
+  vehicle, `sweep`), which the mob runs in `wake`.
+- A riding rig sits at the mount point (`height * 0.75` up); `Display.offset(...)` cancels it.
+
+`plugins/mob` builds on the rig: `defineMob(nbt, model)...build(name)` returns a `Mob` (`emit/`
+holds one file per emitted job). The caller runs `mob.register(dp, fn?)`, `mob.wake` once a second
+and `mob.tick(ctx)` every `tickEvery`; twine's `toModule` does all three.
+
+**Idle cost is a score check.** `<name>/wake` runs once a second: it tags mobs within
+`wakeRange` (default 48) of a player `<name>.awake`, keeps mid-gesture or mid-state mobs awake
+as `<name>.finishing` (they finish, but no `when` fires), stores the count in `#awake`, and
+sweeps orphans. The per-tick poll is one `if score #awake` into `<name>/tick_one`, where
+everything is written against `@s`: the author's `.onTick`, the state dispatch, each gesture's
+fall and `<gesture>_clock`, the triggers, the yaw copy, and the hit relay.
+
+**Every check is written once, by the plugin.** A rule for mob codegen, and for authors:
+
+- **wake:** one `as <mobs>` scan into `wake_one`, then one `at @a as <mobs>[distance]` scan into
+  `wake_near`.
+- **triggers:** all gesture triggers sit behind one `unless finishing` check (`<name>/triggers`).
+- **animation steps:** a sequence's steps are one `dispatchScore` on the clock (`<g>_pose` →
+  `<g>_step_<k>`), with no per-member `as @s[scores=…]`.
+- **states:** a multi-phase mob uses `.states({ name: { polls?, onEnter?, tick?, onDone?, then? } })`,
+  never hand-rolled tags that each line re-checks. The index lives in `<name>.state` and
+  `tick_one` checks it once; `<name>/state` dispatches on a `#<name>_state` copy so entering a
+  later state can't also run it this poll; a timed state counts `<name>.state_t` down
+  (`mob.clock`). Every body gets `mob.enter/leave`; state names are typed when `.states()` is
+  declared first.
+
+**Gestures** (`.gesture(name, {...})`) snap members to a rotation about a pivot and let the
+display's interpolation carry them back to rest, which comes from `model.members()` so a pose
+can't drift from what was summoned. An array `rotate` is a sequence stepped off the mob's own
+`<mob>.<gesture>` cooldown (so each mob animates independently). `tilt` turns orientation only.
+`onFire` is the author's hit (vanilla has no contact event); the trigger is the author's
+`Detector`. One cooldown **per gesture**, so an idle gesture can't gate the others.
+`resolveGesture` fills defaults and rejects timings that don't fit inside the cooldown.
+
+**Difficulty** (`plugins/difficulty`) is a pack-owned level, not vanilla's: `#level twine.difficulty`
+(1/2/3; the objective keeps its twine name so worlds keep their level). `difficulty(dp)` seeds it
+from `/difficulty` on load only while unset (twine's `mount` calls it); after that
+only the pack changes it (`setDifficulty("hard")`, or a raw scoreboard set). Nothing is applied
+by itself - scaling is author code reading an author config (`defineDifficulty`, every
+level required). The mechanism: `mob.byDifficulty(ctx, (c, level) => ...)` builds a body once
+per level behind a dispatch on the score (its own function, since the dispatch `return`s);
+`.onDifficulty((ctx, dp, level) => ...)` becomes `<name>/zzz/on_difficulty`, run at summon and,
+when `wake` sees `#level` differ from `#applied`, on every live mob. Gesture switches are the
+author's own `when` clause on `DIFFICULTY`.
+
+A `Mob` exposes **handles** (`.summon`, `.spawn`, `.wake`, `.gestures.x`, `.states.x`,
+`.onTickFn`), so a consumer never looks a function name up. The plugin
+`dp.allowNbtRead`s `face_one` and cooldown-capped gesture bodies so the report doesn't warn.
 
 ## Commands
 

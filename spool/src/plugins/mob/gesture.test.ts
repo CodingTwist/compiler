@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { quat } from "helix";
-import { resolveGesture } from "../src/mob/gesture";
+import { resolveGesture } from "./gesture";
 
 const TICK_EVERY = 1;
 

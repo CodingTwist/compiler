@@ -62,3 +62,12 @@ export {
 
 // Types for `ctx.particleRing()` options. Doesn't install the plugin.
 export type { RingOptions } from "./plugins/particles";
+
+// Types for `rig(dp, ...)` results; it needs no install.
+export type { Rig, RigOptions, Relay } from "./plugins/rig";
+
+// Types for `defineMob(...).build(name)` results; it needs no install.
+export type { Mob, MobBuilder, MobOptions, MobStates } from "./plugins/mob";
+
+// The level type for `difficulty(dp)`; it needs no install.
+export type { Difficulty } from "./plugins/difficulty";

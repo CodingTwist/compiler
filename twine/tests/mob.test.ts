@@ -17,7 +17,7 @@ import type { VersionProfile } from "helix";
 import { Module } from "../src/core/module.decorator";
 import { DatapackFactory } from "../src/core/factory";
 import { defineMob } from "../src/mob/builder";
-import { DIFFICULTY_IDS, setDifficulty } from "../src/core/difficulty";
+import { DIFFICULTY_IDS, setDifficulty } from "spool/plugins/difficulty";
 import type { Detector } from "helix";
 
 function build(version?: VersionProfile) {

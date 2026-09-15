@@ -23,6 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "helix": "file:../helix",
+    "spool": "file:../spool",
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {

@@ -1,10 +1,16 @@
-import type { DamageType, DisplayValue, IdentifiedEntityNbt } from "helix";
+import type { Relay } from "../../rig";
+import type { DisplayValue, FunctionContext, FunctionRef, IdentifiedEntityNbt } from "helix";
 import type { MobDifficulty, MobState, MobTick } from "../types";
 import type { ResolvedGesture } from "../gesture";
 
-export type Relay = { damage: number; type?: DamageType };
+export type { Relay };
 
-/** Everything a {@link MobBuilder} collected, handed to the module it compiles to. */
+/** Creates and builds a function; see {@link Mob.register}. */
+export type MobFn = (name: string, body: (ctx: FunctionContext) => void) => FunctionRef;
+
+
+
+/** Everything a {@link MobBuilder} collected, handed to the {@link Mob} it builds. */
 export interface MobDef<S extends string> {
   name: string;
   nbt: IdentifiedEntityNbt;
