@@ -14,15 +14,19 @@ import type { KitPlugin } from "../../plugin";
 import { createState, PROBE_UUID_INTS, SLOTS, VERTICES, type RigidState } from "./state";
 import { DEFAULT_TUNING, type RigidTuning } from "./tuning";
 import { integrate } from "./integrate";
-import { collideWorld, defineDetect, PASSTHROUGH } from "./world";
+import { collideWorld, defineDetect, halfExtents, PASSTHROUGH } from "./world";
 import { defineSolve } from "./solve";
 import { definePass, resolvePenetration } from "./passes";
 import { collidePairs, definePairs } from "./pairs";
 import { checkSleep, render, RENDER_INIT } from "./render";
 import { defineImpulse, spawnBody, type SpawnOptions } from "./body";
+import { defineRay, raycast } from "./ray";
+import type { Ray } from "../raycast";
+import { pointOnBody, spring, type LocalPoint, type SpringOptions } from "./spring";
 
 export type { RigidTuning } from "./tuning";
 export type { SpawnOptions } from "./body";
+export type { LocalPoint, SpringOptions } from "./spring";
 
 /** Options for {@link Datapack.rigidbody}. */
 export interface RigidOptions extends Partial<RigidTuning> {
@@ -38,6 +42,14 @@ export interface RigidBodies {
   impulse(ctx: FunctionContext): void;
   /** Where to write an impulse before {@link impulse}: world point and impulse vector, both mm. */
   readonly input: { readonly point: ScoreVec3; readonly impulse: ScoreVec3 };
+  /** Keeps the executing body within a rope's length of an anchor. Call it after the physics tick. */
+  spring(ctx: FunctionContext, opts: SpringOptions): void;
+  /** Writes the executing body's three half-edge vectors (mm) into scratch and returns them. */
+  halfAxes(): ScoreVec3[];
+  /** Writes where `local` on the executing body is in the world (mm). */
+  pointOnBody(ctx: FunctionContext, local: LocalPoint, into: ScoreVec3): void;
+  /** Runs `onHit` as the nearest body `ray` meets within `range` blocks, with the hit point (mm). */
+  raycast(ctx: FunctionContext, ray: Ray, range: number, onHit: (ctx: FunctionContext, point: ScoreVec3) => void): void;
   /** `@e[tag=rb.body]`. */
   bodies(): Selector;
   /** The executing body's state scores, for game code (position, velocity, …). */
@@ -94,10 +106,19 @@ function defineRigidBodies(dp: Datapack, opts: RigidOptions): RigidBodies {
   definePass(s, s.fn.pairPass, SLOTS);
   definePairs(s, t);
   defineImpulse(s, input);
+  defineRay(s);
 
   return {
     spawn: (ctx, o) => spawnBody(s, ctx, o),
     impulse: (ctx) => ctx.call(s.fn.impulse),
+    spring: (ctx, o) => spring(s, t.gravity, ctx, o, input),
+    halfAxes: () => {
+      const h = [0, 1, 2].map((k) => s.vector(`h${k}`));
+      halfExtents(s, h);
+      return h;
+    },
+    pointOnBody: (ctx, local, into) => pointOnBody(s, ctx, local, into),
+    raycast: (ctx, ray, range, onHit) => raycast(s, ctx, ray, range, onHit),
     input,
     bodies: s.bodies,
     body: s.body,

@@ -42,6 +42,24 @@ describe("buildGraph", () => {
     expect(graph.nodes.get(root)!.children).toEqual([]);
   });
 
+  it("with only, keeps the named module, its imports and its ancestors", () => {
+    const gc = defineModule({ name: "gc" }, leaf());
+    const picked = defineModule({ name: "picked", imports: [gc] }, leaf());
+    const other = defineModule({ name: "other" }, leaf());
+    const mid = defineModule({ name: "mid", imports: [picked, other] }, leaf());
+    const root = defineModule({ name: "root", imports: [mid, other] }, leaf());
+
+    const graph = buildGraph(root, "prod", ["picked"]);
+    expect([...graph.nodes.values()].map((n) => n.meta.name)).toEqual([
+      "gc",
+      "picked",
+      "mid",
+      "root",
+    ]);
+    expect(graph.nodes.get(root)!.children).toEqual([mid]);
+    expect(buildGraph(root, "prod", ["nope"]).nodes.size).toBe(0);
+  });
+
   it("keeps a module whose env includes the current build", () => {
     const child = defineModule({ name: "child", env: ["prod", "dev"] }, leaf());
     const root = defineModule({ name: "root", imports: [child] }, leaf());

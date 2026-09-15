@@ -4,7 +4,7 @@ import { Item } from "./item";
 import { Blaze, Tnt, Villager, Zombie } from "./entities.generated";
 import { Display } from "./display";
 import { Pos } from "./pos";
-import { v1_20_1, v1_21_4, v26_2 } from "../../versions/profiles";
+import { v1_20_1, v1_21_4, v26_2, v26_3_rc_2 } from "../../versions/profiles";
 import { Datapack } from "../ir/datapack";
 import { buildDatapack } from "../codegen/codegen";
 
@@ -20,6 +20,12 @@ describe("entity NBT schemas", () => {
     const tnt = Tnt({ blockState: Block.SAND });
     expect(tnt.render(v1_21_4)).toBe(`{block_state:{Name:"minecraft:sand"}}`);
     expect(tnt.render(v1_20_1)).toBe("{}");
+  });
+
+  it("writes block states as {id, properties} from 26.3", () => {
+    const tnt = Tnt({ blockState: Block.OAK_LOG.state({ axis: "x" }) });
+    expect(tnt.render(v26_2)).toBe(`{block_state:{Name:"minecraft:oak_log",Properties:{axis:"x"}}}`);
+    expect(tnt.render(v26_3_rc_2)).toBe(`{block_state:{id:"minecraft:oak_log",properties:{axis:"x"}}}`);
   });
 
   it("writes its own id when nested as a passenger", () => {

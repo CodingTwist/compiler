@@ -2,6 +2,7 @@
 import { CommandError, evalFloat, evalInt } from "./compute";
 import { execute } from "./execute";
 import { data } from "./data";
+import { scoreboard } from "./scoreboard";
 import { getPath, parseSnbt, type Compound } from "./nbt";
 import { select } from "./selector";
 import type { Sim } from "./sim";
@@ -13,7 +14,7 @@ export class Return {
   constructor(readonly value: number) {}
 }
 
-const fail = (why: string): never => {
+export const fail = (why: string): never => {
   throw new CommandError(why);
 };
 
@@ -76,8 +77,36 @@ export function runCommand(sim: Sim, line: string, src: SimSource): number {
       const v = evalFloat(JSON.parse(t[3]), source) * Math.fround(t[4] === undefined ? 1 : +t[4]);
       return Number.isFinite(v) ? Math.floor(Math.fround(v)) : fail(`not finite: ${v}`);
     }
+    case "teleport":
+    case "tp": {
+      // Rotation (`facing …`, yaw pitch) isn't tracked.
+      if (t.length === 3) throw new Error(`unsupported teleport to an entity: ${line}`);
+      const own = t.length === 4;
+      const targets = own ? (src.self ? [src.self] : []) : select(sim.entities, t[1], src);
+      const pos = parsePos(own ? t.slice(1, 4) : t.slice(2, 5), src.at);
+      for (const e of targets) e.nbt.Pos = [...pos];
+      return targets.length;
+    }
+    case "setblock":
+      if (t[5] && t[5] !== "replace") throw new Error(`unsupported: ${line}`);
+      sim.setBlock(parsePos(t.slice(1, 4), src.at), t[4]);
+      return 1;
+    case "fill": {
+      if (t[8] && t[8] !== "replace") throw new Error(`unsupported: ${line}`);
+      const [a, b] = [parsePos(t.slice(1, 4), src.at), parsePos(t.slice(4, 7), src.at)].map((p) => p.map(Math.floor));
+      const [lo, hi] = [a.map((v, i) => Math.min(v, b[i])), a.map((v, i) => Math.max(v, b[i]))];
+      const count = (hi[0] - lo[0] + 1) * (hi[1] - lo[1] + 1) * (hi[2] - lo[2] + 1);
+      if (count > 32768) fail(`too many blocks: ${count}`);
+      for (let x = lo[0]; x <= hi[0]; x++)
+        for (let y = lo[1]; y <= hi[1]; y++) for (let z = lo[2]; z <= hi[2]; z++) sim.setBlock([x, y, z], t[7]);
+      return count;
+    }
+    // Output only: nothing a pack can read back.
     case "say":
     case "tellraw":
+    case "particle":
+    case "playsound":
+    case "bossbar":
       return 1;
     default:
       throw new Error(`unsupported command: ${line}`);
@@ -92,53 +121,3 @@ const computeSource = (sim: Sim, src: SimSource) => ({
     return typeof v === "number" ? v : undefined;
   },
 });
-
-function scoreboard(sim: Sim, t: string[], src: SimSource): number {
-  if (t[1] === "objectives") return 0; // objectives aren't tracked: any name works
-  const [verb, holder, objective] = [t[2], t[3], t[4]];
-  const targets = holders(sim, holder, src);
-  const int = (v: number) => (v | 0);
-  let last = 0;
-  for (const h of targets) {
-    const cur = sim.score(h, objective) ?? 0;
-    switch (verb) {
-      case "set":
-        sim.setScore(h, objective, (last = +t[5]));
-        break;
-      case "add":
-        sim.setScore(h, objective, (last = int(cur + +t[5])));
-        break;
-      case "remove":
-        sim.setScore(h, objective, (last = int(cur - +t[5])));
-        break;
-      case "reset":
-        sim.resetScore(h, objective);
-        break;
-      case "get":
-        return sim.score(h, objective) ?? fail(`no score ${objective} for ${holder}`);
-      case "operation":
-        for (const s of holders(sim, t[6], src)) {
-          const a = sim.score(h, objective) ?? 0;
-          const b = sim.score(s, t[7]) ?? 0;
-          const ops: Record<string, () => number | undefined> = {
-            "=": () => b,
-            "+=": () => int(a + b),
-            "-=": () => int(a - b),
-            "*=": () => Math.imul(a, b),
-            "/=": () => (b === 0 ? undefined : int(Math.floor(a / b))),
-            "%=": () => (b === 0 ? undefined : a - Math.floor(a / b) * b),
-            "<": () => Math.min(a, b),
-            ">": () => Math.max(a, b),
-            "><": () => (sim.setScore(s, t[7], a), b),
-          };
-          if (!ops[t[5]]) throw new Error(`unsupported operation ${t[5]}`);
-          const r = ops[t[5]]() ?? a;
-          sim.setScore(h, objective, (last = r));
-        }
-        break;
-      default:
-        throw new Error(`unsupported: ${t.join(" ")}`);
-    }
-  }
-  return last;
-}

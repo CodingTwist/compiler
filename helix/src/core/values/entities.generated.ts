@@ -16,6 +16,7 @@ import {
 } from "./entity-nbt";
 import { Byte, Double, Float, IntArray, Long, Short, type NbtInput } from "./nbt";
 import type { BlockValue } from "./block";
+import type { VersionProfile } from "../../versions/profile";
 import type { Attribute, Dimension, EntityType, MobEffect } from "./resource.generated";
 
 /** `minecraft:fishing_bobber`, `minecraft:lightning_bolt` */
@@ -306,7 +307,7 @@ export interface BlockDisplayFields extends DisplayBaseFields {
 
 export const BLOCK_DISPLAY: EntityNbtSchema<BlockDisplayFields> = {
   ...DISPLAY_BASE,
-  blockState: field({ key: "block_state", encode: (b: BlockValue) => b.toBlockState() }),
+  blockState: field({ key: "block_state", encode: (b: BlockValue, v: VersionProfile) => b.toBlockState(v) }),
 };
 
 /** `minecraft:item_display` */
@@ -462,7 +463,7 @@ export interface FallingBlockFields extends EntityFields {
 export const FALLING_BLOCK: EntityNbtSchema<FallingBlockFields> = {
   ...ENTITY,
   tileEntityData: field({ key: "TileEntityData" }),
-  blockState: field({ key: "BlockState", encode: (b: BlockValue) => b.toBlockState() }),
+  blockState: field({ key: "BlockState", encode: (b: BlockValue, v: VersionProfile) => b.toBlockState(v) }),
   time: field({ key: "Time" }),
   dropItem: field({ key: "DropItem", encode: asByte }),
   hurtEntities: field({ key: "HurtEntities", encode: asByte }),
@@ -2995,7 +2996,7 @@ export const TNT: EntityNbtSchema<TntFields> = {
     atLeast(version, "1.20.3")
       ? { fuse: Short(v) }
       : { Fuse: Short(v) },
-  blockState: field({ key: "block_state", encode: (b: BlockValue) => b.toBlockState(), since: "1.20.3" }),
+  blockState: field({ key: "block_state", encode: (b: BlockValue, v: VersionProfile) => b.toBlockState(v), since: "1.20.3" }),
   explosionPower: field({ key: "explosion_power", encode: Float, since: "1.21.2" }),
   owner: field({ key: "owner", encode: IntArray, since: "1.21.6" }),
 };

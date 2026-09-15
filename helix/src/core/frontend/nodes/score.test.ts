@@ -22,6 +22,20 @@ describe("Score verbs", () => {
     ]);
   });
 
+  it("flips a negative add or remove, since the game only parses amounts ≥ 0", () => {
+    const dp = new Datapack("p", v26_2);
+    const x = new Objective("s").score(ScoreTarget("#x"));
+    dp.createFunction("f").build(() => {
+      x.add(-125);
+      x.remove(-3);
+    });
+    dp.report();
+    expect(dp.files.get("f")!.split("\n")).toEqual([
+      "scoreboard players remove #x s 125",
+      "scoreboard players add #x s 3",
+    ]);
+  });
+
   it("refuses to enable a non-trigger objective", () => {
     const dp = new Datapack("p", v26_2);
     const s = new Objective("s").score(ScoreTarget("#x"));

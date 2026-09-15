@@ -40,7 +40,7 @@ export class DatapackFactory {
   static mount(
     dp: Datapack,
     root: ModuleClass,
-    opts: { env?: BuildEnv } = {},
+    opts: { env?: BuildEnv; only?: string[] } = {},
   ): Datapack {
     const flags = new ActiveFlags(dp);
     const latches = new EventLatches(dp);
@@ -48,7 +48,8 @@ export class DatapackFactory {
     const env = opts.env ?? buildEnv();
     setBuildEnv(env);
 
-    const graph = buildGraph(root, env);
+    const graph = buildGraph(root, env, opts.only);
+    if (!graph.nodes.size) return dp; // `only` selected no modules
 
     // Seeded from /difficulty only while unset, so a level the pack chose survives /reload.
     // ponytail: every twine pack gets this, used or not; gate on use if that ever matters.

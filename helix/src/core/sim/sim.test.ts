@@ -65,7 +65,13 @@ describe("Sim", () => {
     sim.run("execute as @e[tag=a] at @s if block ~ ~-1 ~ #test:solid run scoreboard players set @s on_ground 1");
     sim.run("execute as @e[tag=far] at @s store result score @s on_ground if block ~ ~-1 ~ #test:solid");
     sim.run("execute positioned 0 64 0 as @e[distance=..2] store result storage test:s y double 0.5 run data get entity @s Pos[1] 10");
+    sim.run("execute as @e[tag=far] at @s run teleport @s ~ ~1 ~");
+    sim.run("fill 4 69 0 6 69 0 minecraft:stone");
+    sim.run("execute align xz positioned ~0.5 ~ ~0.5 run summon minecraft:marker", { at: [-0.2, 1.7, 3.9] });
+    expect(sim.entities.at(-1)!.nbt.Pos).toEqual([-0.5, 1.7, 3.5]);
+    expect(sim.run("execute as @e[tag=far] at @s if block ~ ~-1.5 ~ #test:solid")).toBe(1);
     const [near, far] = sim.entities;
+    expect(far.nbt.Pos).toEqual([5.5, 71, 0.5]);
     expect(sim.score(near.uuid, "on_ground")).toBe(1);
     expect(sim.score(far.uuid, "on_ground")).toBe(0);
     expect(far.tags.has("far")).toBe(true);

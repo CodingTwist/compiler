@@ -4,6 +4,9 @@ import type { KitPlugin } from "../../plugin";
 import { createRaycastState } from "./context";
 import type { RaycastState } from "./context";
 import { buildMarcher } from "./march";
+import { createLookRay, type LookRay } from "./look";
+
+export type { Ray, LookRay } from "./look";
 
 /**
  * Options for a block raycast that marches `^` through air and runs `onHit` at the first
@@ -66,6 +69,8 @@ function raycastState(dp: Datapack): RaycastState {
   return s;
 }
 
+const lookRays = new WeakMap<Datapack, LookRay>();
+
 function defineRaycast(dp: Datapack, opts: RaycastOptions): RaycastRef {
   const s = raycastState(dp);
   const fn = dp.createFunction(`raycast/${opts.name}`);
@@ -85,6 +90,8 @@ declare module "helix" {
   interface Datapack {
     /** Registers a block raycast as `raycast/<name>`. Not cached; call once per ray. */
     raycast(opts: RaycastOptions): RaycastRef;
+    /** The pack's shared {@link LookRay}, for math hit tests like `rb.raycast`. */
+    lookRay(): LookRay;
   }
 }
 
@@ -96,6 +103,11 @@ export const raycast: KitPlugin = {
       opts: RaycastOptions,
     ): RaycastRef {
       return defineRaycast(this, opts);
+    };
+    Datapack.prototype.lookRay = function (this: Datapack): LookRay {
+      let ray = lookRays.get(this);
+      if (!ray) lookRays.set(this, (ray = createLookRay(raycastState(this))));
+      return ray;
     };
   },
 };

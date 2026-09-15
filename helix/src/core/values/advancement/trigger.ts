@@ -79,6 +79,17 @@ export class Trigger {
   }
 
   /**
+   * `minecraft:player_hurt_entity`: fires when the player damages an entity matching `spec`.
+   * Attacking an `interaction` entity fires it too, with no damage dealt.
+   */
+  static playerHurtEntityMatching(spec: EntityPredicateSpec): Trigger {
+    return new Trigger((v) => ({
+      trigger: "minecraft:player_hurt_entity",
+      conditions: { entity: entityField(spec, v) },
+    }));
+  }
+
+  /**
    * `minecraft:location`: fires when the player is at a location matching `spec`.
    * Shares {@link LocationSpec} with predicates.
    */

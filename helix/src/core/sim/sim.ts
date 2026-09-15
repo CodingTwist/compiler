@@ -30,6 +30,8 @@ export class Sim {
   readonly errors: string[] = [];
   private readonly scores = new Map<string, number>();
   private readonly storages = new Map<string, Compound>();
+  /** Blocks placed by `setblock`/`fill`, over `options.block`. */
+  private readonly placed = new Map<string, string>();
   private nextUuid = 1;
 
   constructor(
@@ -122,8 +124,14 @@ export class Sim {
   /** Whether the block at `pos` is `id`, or in `#tag`. */
   blockIs(pos: V3, id: string): boolean {
     const [x, y, z] = pos.map(Math.floor);
-    const block = this.options.block?.(x, y, z) ?? "minecraft:air";
+    const block = this.placed.get(`${x} ${y} ${z}`) ?? this.options.block?.(x, y, z) ?? "minecraft:air";
     return this.tagMembers("block", id).has(block);
+  }
+
+  /** Places `id` (block states dropped) at a block position. */
+  setBlock(pos: V3, id: string): void {
+    const name = id.split(/[[{]/)[0];
+    this.placed.set(pos.map(Math.floor).join(" "), name.includes(":") ? name : `minecraft:${name}`);
   }
 
   private tagMembers(registry: string, id: string, seen = new Set<string>()): Set<string> {

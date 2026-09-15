@@ -36,25 +36,37 @@ function resolve(ref: ModuleRef): {
 /**
  * Builds the module graph depth-first. A shared import is built once; separate `Door(...)`
  * calls stay separate. Modules excluded by `env` are pruned with their subtree.
+ *
+ * With `only`, a module is kept if it is named, inside a named module, or an ancestor of
+ * one. Ancestors stay so area gating and dimensions still apply. No match leaves the graph
+ * empty, so `only` can also name things the pack builds outside twine.
  */
-export function buildGraph(root: ModuleRef, env: BuildEnv): Graph {
+export function buildGraph(
+  root: ModuleRef,
+  env: BuildEnv,
+  only?: string[],
+): Graph {
   const nodes = new Map<ModuleRef, Node>();
   const order: ModuleRef[] = [];
 
-  const visit = (ref: ModuleRef): boolean => {
+  const visit = (ref: ModuleRef, selected: boolean): boolean => {
     if (nodes.has(ref)) return true;
     const { instance, meta } = resolve(ref);
     if (meta.env && !meta.env.includes(env)) return false; // pruned for this build
+    const self = selected || Boolean(only?.includes(meta.name));
     const node: Node = { ref, instance, meta, children: [] };
-    nodes.set(ref, node);
     for (const childRef of meta.imports ?? []) {
-      if (visit(childRef)) node.children.push(childRef);
+      if (visit(childRef, self)) node.children.push(childRef);
     }
+    // ponytail: a shared import first kept as an ancestor is not re-walked when selected later.
+    if (!self && !node.children.length) return false; // nothing selected below
+    nodes.set(ref, node);
     order.push(ref);
     return true;
   };
 
-  visit(root);
+  if (!only?.length) only = undefined;
+  visit(root, !only);
   return { root, nodes, order };
 }
 

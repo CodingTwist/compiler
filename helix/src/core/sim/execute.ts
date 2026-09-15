@@ -43,6 +43,8 @@ export function execute(sim: Sim, t: string[], src: SimSource, stores: Store[] =
         return last;
       }
       return next(4, { ...src, at: parsePos(t.slice(1, 4), src.at) });
+    case "align":
+      return next(2, { ...src, at: src.at.map((v, i) => (t[1].includes("xyz"[i]) ? Math.floor(v) : v)) as typeof src.at });
     case "if":
     case "unless": {
       const [ok, used] = condition(sim, t, src);
@@ -66,6 +68,7 @@ export function execute(sim: Sim, t: string[], src: SimSource, stores: Store[] =
         };
         return execute(sim, t.slice(7), src, [...stores, store]);
       }
+      if (into === "bossbar") return execute(sim, t.slice(5), src, stores);
       throw new Error(`unsupported store ${into}`);
     }
     default:

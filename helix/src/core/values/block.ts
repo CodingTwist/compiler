@@ -5,6 +5,9 @@ import type { VersionProfile } from "../../versions/profile";
 import { withMembers } from "./members";
 import { BLOCK_IDS } from "../../versions/data/ids";
 
+/** 26.3: block state compounds use `id`/`properties`. ponytail: gated after 26.2; the exact 26.3 snapshot is unchecked. */
+export const BLOCK_STATE_ID_DATA_VERSION = 4904;
+
 /** Typed vanilla block tag ids for `Block.tag(...)`, e.g. `BLOCK_TAGS.AIR`. Generated. */
 export { BLOCK_TAGS } from "../../versions/data/ids";
 
@@ -58,18 +61,15 @@ export class BlockValue implements CommandValue {
   }
 
   /**
-   * The `{Name, Properties}` compound form, for `block_display` and `block_state` fields.
+   * The compound form for `block_display` and `block_state` fields: `{Name, Properties}`,
+   * or `{id, properties}` from 26.3, which rejects the old keys.
    */
-  toBlockState(): { Name: string; Properties?: Record<string, string> } {
+  toBlockState(version?: VersionProfile): Record<string, string | Record<string, string>> {
+    const [name, props] =
+      version && version.dataVersion >= BLOCK_STATE_ID_DATA_VERSION ? ["id", "properties"] : ["Name", "Properties"];
     const entries = Object.entries(this.states);
-    const state: { Name: string; Properties?: Record<string, string> } = {
-      Name: normalizeBlockId(this.id),
-    };
-    if (entries.length > 0) {
-      state.Properties = Object.fromEntries(
-        entries.map(([k, v]) => [k, String(v)]),
-      );
-    }
+    const state: Record<string, string | Record<string, string>> = { [name]: normalizeBlockId(this.id) };
+    if (entries.length > 0) state[props] = Object.fromEntries(entries.map(([k, v]) => [k, String(v)]));
     return state;
   }
 }

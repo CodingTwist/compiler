@@ -56,6 +56,8 @@ export function createState(dp: Datapack) {
     motion: onSelf("motion"),
     /** Upward-facing contacts last tick; a body resting on 3+ counts as ground for the one above. */
     support: onSelf("support"),
+    /** How far along the last ray this body was hit (mm); see `raycast`. */
+    ray: onSelf("ray"),
   };
 
   const work = new Objective("rb.work");
@@ -107,7 +109,7 @@ export function createState(dp: Datapack) {
     ...[body.pos, body.vel, body.spin, body.qv].flatMap((v) =>
       v.components.map((s) => s.objective),
     ),
-    ...[body.qw, body.half, body.invMass, body.invInertia, body.sleeping, body.motion, body.support].map(
+    ...[body.qw, body.half, body.invMass, body.invInertia, body.sleeping, body.motion, body.support, body.ray].map(
       (s) => s.objective,
     ),
   ];
@@ -121,6 +123,7 @@ export function createState(dp: Datapack) {
     pair: dp.createFunction("rb/pair/check"),
     pairSolve: dp.createFunction("rb/pair/solve"),
     pairPass: dp.createFunction("rb/pair/pass"),
+    ray: dp.createFunction("rb/ray"),
     /** One per separating axis: the other body's 3 face axes, then this body's. */
     pairAxes: Array.from({ length: 6 }, (_, m) => dp.createFunction(`rb/pair/axis_${m}`)),
     /** Builds world contacts; only world slots use it. */

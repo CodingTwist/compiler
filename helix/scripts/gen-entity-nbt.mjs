@@ -240,7 +240,7 @@ function parseFile(text) {
  * for - the author states the concept, not its NBT shape.
  */
 const OVERRIDES = {
-  blockState: { enc: "(b: BlockValue) => b.toBlockState()", ts: "BlockValue" },
+  blockState: { enc: "(b: BlockValue, v: VersionProfile) => b.toBlockState(v)", ts: "BlockValue" },
   // mcdoc spells this as a slot-keyed map, which the parser leaves opaque.
   equipment: { enc: "asEquipment", ts: "EquipmentInput" },
 };
@@ -536,6 +536,7 @@ import {
 } from "./entity-nbt";
 import { Byte, Double, Float, IntArray, Long, Short, type NbtInput } from "./nbt";
 import type { BlockValue } from "./block";
+import type { VersionProfile } from "../../versions/profile";
 ${
   usedConcepts.size
     ? `import type { ${[...usedConcepts].sort().join(", ")} } from "./resource.generated";\n`

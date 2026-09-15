@@ -38,6 +38,7 @@ const USAGE = `usage: helix <command> [options]
   versions                list known Minecraft versions (for --version)
 
   --target <t>            build only this runtime target
+  --only <name>           passed to the pack as build.only (twine: build only these modules); repeatable
   --prod                  prod mode (debug off, twine prunes dev modules)
   --version <id>          force a Minecraft version, e.g. "1.21.4" (overrides the config)
   --no-inline             disable the single-command inlining pass
@@ -55,6 +56,7 @@ export async function runCli(argv: string[]): Promise<number> {
       strict: { type: "boolean" },
       json: { type: "boolean" },
       target: { type: "string" },
+      only: { type: "string", multiple: true },
       version: { type: "string" },
       "no-inline": { type: "boolean" },
       "no-group": { type: "boolean" },
@@ -89,7 +91,9 @@ export async function runCli(argv: string[]): Promise<number> {
     : values["no-comments"]
       ? { sources: false, comments: false }
       : undefined;
-  const load = () => loadPack({ mode, target, version, optimize, debug });
+  const only = values.only;
+  const load = () =>
+    loadPack({ mode, target, version, optimize, debug, only });
   // Source tracking is forced on so every finding carries its TS line.
   const reportJson = async (strict?: boolean) => {
     // Pack code that logs must not corrupt the JSON on stdout.
@@ -103,6 +107,7 @@ export async function runCli(argv: string[]): Promise<number> {
         target,
         version,
         optimize,
+        only,
         debug: { sources: true },
       });
       result = {

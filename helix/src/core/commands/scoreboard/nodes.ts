@@ -49,17 +49,22 @@ export const scoreOpNode = (
     sourceObjective: b.objective.getName(),
   });
 
-/** `scoreboard players set|add|remove <target> <objective> <value>` - literal arithmetic. */
+/**
+ * `scoreboard players set|add|remove <target> <objective> <value>` - literal arithmetic.
+ * A negative add or remove flips to the other verb, since both only parse amounts ≥ 0.
+ */
 export const scoreLitNode = (
   verb: "set" | "add" | "remove",
   score: Score,
   value: number,
-): ScoreboardNode =>
-  new ScoreboardNode(["players", verb], {
+): ScoreboardNode => {
+  const flip = verb !== "set" && value < 0;
+  return new ScoreboardNode(["players", flip ? (verb === "add" ? "remove" : "add") : verb], {
     targets: score.target,
     objective: score.objective.getName(),
-    score: value,
+    score: flip ? -value : value,
   });
+};
 
 /**
  * `scoreboard players get|reset|enable <target> <objective>`. The holder arg is `targets`,

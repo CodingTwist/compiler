@@ -43,6 +43,8 @@ export async function loadPack(opts: {
   version?: VersionProfile;
   /** Merged over `config.optimize`, e.g. from `--no-inline`/`--no-group`. */
   optimize?: OptimizeOptions;
+  /** Passed to the entry as `build.only`, e.g. from `--only`. */
+  only?: string[];
 }): Promise<LoadResult> {
   const root = path.resolve(opts.root ?? process.cwd());
   const configFile = path.join(root, CONFIG_FILE);
@@ -80,7 +82,7 @@ export async function loadPack(opts: {
       debug: opts.debug ?? (opts.mode === "dev" ? config.debug : undefined),
       optimize: { ...config.optimize, ...opts.optimize },
     });
-    await entry(dp, { mode: opts.mode, target });
+    await entry(dp, { mode: opts.mode, target, only: opts.only });
     packs.push({
       target,
       dp,

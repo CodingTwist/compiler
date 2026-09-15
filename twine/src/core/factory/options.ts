@@ -9,6 +9,8 @@ export interface FactoryOptions {
   version?: VersionProfile;
   /** Build environment. Modules for other envs are pruned. Default: {@link buildEnv}. */
   env?: BuildEnv;
+  /** Module names to build, with their imports and ancestors. Omit to build all. */
+  only?: string[];
   /**
    * Runtime target (`"vanilla"` | `"paper"`), for `ctx.native(...)`. Default `"vanilla"`.
    */

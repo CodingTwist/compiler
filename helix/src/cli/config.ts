@@ -35,6 +35,8 @@ export interface HelixConfig {
 export interface BuildInfo {
   mode: BuildMode;
   target: RuntimeTarget;
+  /** Names from `--only`. helix ignores them; the pack decides what they select. */
+  only?: string[];
 }
 
 /** A pack's authoring body: fill `dp`, which helix created from the config. */

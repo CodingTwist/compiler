@@ -1,4 +1,4 @@
-import { Objective, ScoreTarget } from "helix";
+import { Objective, ScoreTarget, ScoreVec3 } from "helix";
 import type { Datapack, FunctionRef } from "helix";
 
 /** A bound scoreboard slot - what `Objective.score(...)` yields. */
@@ -19,7 +19,10 @@ export function createRaycastState(dp: Datapack) {
   const init: FunctionRef = dp.createFunction("raycast/init", "load");
   init.build(() => work.init());
 
-  return { dp, work, steps };
+  const vector = (name: string) =>
+    ScoreVec3.from((axis) => work.score(ScoreTarget(`#${name}_${axis}`)));
+
+  return { dp, work, steps, vector };
 }
 
 /** The shape threaded to the marcher builder - whatever {@link createRaycastState} returns. */

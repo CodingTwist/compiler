@@ -24,7 +24,7 @@ export { PaperOps } from "./plugins/native";
 export type { PlayerMotion } from "./plugins/player_motion";
 
 // Types for `dp.raycast()` results. Doesn't install the plugin.
-export type { RaycastRef, RaycastOptions } from "./plugins/raycast";
+export type { RaycastRef, RaycastOptions, Ray, LookRay } from "./plugins/raycast";
 
 // Types for `dp.grapple()` results. Doesn't install the plugin.
 export type { Grapple, GrappleOptions } from "./plugins/grapple";

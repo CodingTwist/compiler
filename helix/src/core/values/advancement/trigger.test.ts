@@ -26,6 +26,19 @@ describe("Trigger", () => {
       mainhand: wand.toPredicate(v1_21_4),
     });
   });
+
+  it("renders player_hurt_entity gated by the attacked entity", () => {
+    expect(Trigger.playerHurtEntityMatching({ type: "minecraft:interaction" }).toJson(v26_3_rc_2)).toEqual({
+      trigger: "minecraft:player_hurt_entity",
+      conditions: {
+        entity: {
+          type: "minecraft:entity_properties",
+          entity: "this",
+          predicate: { entity_type: "minecraft:interaction" },
+        },
+      },
+    });
+  });
 });
 
 describe("Trigger location/entity/block helpers", () => {
