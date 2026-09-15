@@ -35,7 +35,7 @@ jsep.addBinaryOp("·", 10);
  * fine
  * here because arithmetic doesn't change between versions.
  *
- * Everywhere: `+ - * / %`, unary `-`, `min`, `max`, `abs`, `dot`, `len2`, `vec`. `/` and
+ * Everywhere: `+ - * / %`, unary `-`, `min`, `max`, `abs`, `dot`, `cross`, `len2`, `vec`. `/` and
  * `%` floor
  * like the scoreboard. Vector holes apply per axis.
  *
@@ -66,6 +66,11 @@ export function math(
   return new MathExpr(convert(tree, src, holes));
 }
 
+/** Whether `e` reads the score slot `s` (by instance). */
+const reads = (e: ExprNode, s: Score): boolean =>
+  (e.kind === "score" && e.score === s) ||
+  (e.kind === "op" && e.args.some((a) => reads(a, s)));
+
 /** A parsed {@link math} formula, waiting for a destination. */
 export class MathExpr {
   /** @internal */
@@ -78,8 +83,16 @@ export class MathExpr {
         throw new Error(
           "math``: this formula is a vector - `into()` needs a ScoreVec3 destination (use `· ` or `len2()` to reduce it to a scalar).",
         );
+      const axes = this.val.e;
+      // Axes are written one at a time, so a later axis must not read an earlier written slot.
+      dest.components.forEach((slot, i) => {
+        if (axes.some((e, j) => j > i && reads(e, slot)))
+          throw new Error(
+            "math``: this vector formula reads its own destination across axes (e.g. `cross(a, b)` into `a`) - write it into a scratch vector first.",
+          );
+      });
       dest.components.forEach((slot, axis) =>
-        emitScoreExpr(slot, (this.val as { e: ExprNode[] }).e[axis], ctx),
+        emitScoreExpr(slot, axes[axis], ctx),
       );
       return;
     }

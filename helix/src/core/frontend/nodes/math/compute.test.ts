@@ -91,6 +91,24 @@ describe("math`` on /compute (26.3+)", () => {
     expect(line).not.toContain("from_float");
   });
 
+  it("crosses two vectors per axis, one /compute each", () => {
+    const lines = emit(
+      () => math`cross(${vec("a")}, ${vec("b")})`.into(vec("c")),
+      v26_3_rc_2,
+    );
+    expect(lines).toHaveLength(3);
+    // x = a.y·b.z − a.z·b.y
+    expect(lines[0]).toContain("store result score #c_x work");
+    expect(lines[0]).toMatch(/"name":"#a_y".*"name":"#b_z".*"name":"#a_z".*"name":"#b_y"/);
+    expect(bad2(() => math`cross(${vec("a")}, ${sc("k")})`)).toContain(
+      "vector on both sides",
+    );
+    const a = vec("a");
+    expect(bad2(() => emit(() => math`cross(${a}, ${vec("b")})`.into(a)))).toContain(
+      "reads its own destination",
+    );
+  });
+
   it("lowers len(v) to one `length` node", () => {
     const [line] = emit(() => math`len(${vec("v")})`.into(sc("d")), v26_3_rc_2);
     expect(line).toContain('{"type":"length","inputs":[{"type":"from_int"');

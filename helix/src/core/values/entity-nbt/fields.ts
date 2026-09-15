@@ -8,8 +8,13 @@ import { DV } from "../entity-versions.generated";
 
 export type McVersion = keyof typeof DV;
 
+/**
+ * Whether `version` is `at` or newer, counting `at`'s pre-releases.
+ * Unreleased versions have a placeholder dataVersion in DV, so pre-releases match by id.
+ */
 export const atLeast = (version: VersionProfile, at: McVersion): boolean =>
-  version.dataVersion >= DV[at];
+  // ponytail: early snapshots of `at` match too; gate by dataVersion once one needs the old format
+  version.dataVersion >= DV[at] || version.id.startsWith(`${at}-`);
 
 /**
  * How one field becomes SNBT keys on a version. Returns a record so a field can be absent

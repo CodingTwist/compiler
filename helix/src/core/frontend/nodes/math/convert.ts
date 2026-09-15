@@ -3,7 +3,7 @@ import jsep from "jsep";
 import { ExprNode, opE, litE } from "../expr";
 import { fail, show } from "./errors";
 import type { Operand, Val } from "./types";
-import { dot, map, nary, operand, scalar, zip } from "./vals";
+import { cross, dot, map, nary, operand, scalar, zip } from "./vals";
 
 const BIN: Record<string, "add" | "sub" | "mul" | "div" | "mod"> = {
   "+": "add",
@@ -106,6 +106,9 @@ export function convert(
           case "dot":
             arity(2);
             return dot(args[0], args[1], src);
+          case "cross":
+            arity(2);
+            return cross(args[0], args[1], src);
           case "len2":
             arity(1);
             return dot(args[0], args[0], src);
@@ -125,7 +128,7 @@ export function convert(
           default:
             return fail(
               `unknown function \`${name}()\` - available: min, max, abs, avg, pow, sqrt, ` +
-                `sin, cos, round, floor, ceil, len, dot, len2, vec`,
+                `sin, cos, round, floor, ceil, len, dot, cross, len2, vec`,
               src,
             );
         }

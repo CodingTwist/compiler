@@ -3,11 +3,28 @@
  * `ns`.
  */
 
+import { atLeast, conditionKey, type VersionProfile } from "helix";
+
 /** The dummy marker entity's fixed UUID (`d4bd74a7-4e82-4a07-8850-dfc4d89f9e2f`). */
 export const MARKER_UUID = "d4bd74a7-4e82-4a07-8850-dfc4d89f9e2f";
 
 /** The shared store objective every enchantment effect reads its bit from. */
 const STORE = "player_motion.internal.store";
+
+/** A `value_check` of fixed score `name` on `score`; 26.3 renamed it `int_value_check` with `test`. */
+function scoreCheck(
+  v: VersionProfile,
+  name: string,
+  score: string,
+  range: unknown,
+): Record<string, unknown> {
+  const since26_3 = atLeast(v, "26.3");
+  return {
+    ...conditionKey(v, since26_3 ? "int_value_check" : "value_check"),
+    value: { type: "minecraft:score", target: { type: "minecraft:fixed", name }, score },
+    [since26_3 ? "test" : "range"]: range,
+  };
+}
 
 /** `0.0001 * 2^bit` as an exact decimal, bit 31 negative (the sign bit). */
 export function magnitude(bit: number): number {
@@ -15,7 +32,7 @@ export function magnitude(bit: number): number {
 }
 
 /** The data-driven `apply_impulse` enchantment: one effect per axis per bit. */
-export function enchantmentJson(ns: string): unknown {
+export function enchantmentJson(ns: string, v: VersionProfile): unknown {
   const axes: [string, [number, number, number]][] = [
     ["x", [1, 0, 0]],
     ["y", [0, 1, 0]],
@@ -32,15 +49,7 @@ export function enchantmentJson(ns: string): unknown {
   for (const [axis, direction] of axes) {
     for (let bit = 31; bit >= 0; bit--) {
       effects.push({
-        requirements: {
-          condition: "minecraft:value_check",
-          value: {
-            type: "minecraft:score",
-            target: { type: "minecraft:fixed", name: `#${axis}.${bit}` },
-            score: STORE,
-          },
-          range: 1,
-        },
+        requirements: scoreCheck(v, `#${axis}.${bit}`, STORE, 1),
         effect: {
           type: "minecraft:apply_impulse",
           direction,
@@ -64,29 +73,24 @@ export function enchantmentJson(ns: string): unknown {
 }
 
 /** `internal/large_global` - true when any input axis is outside [-12398, 12398]. */
-export function largeGlobalJson(): unknown {
+export function largeGlobalJson(v: VersionProfile): unknown {
   const axisTerm = (name: string) => ({
-    condition: "minecraft:inverted",
-    term: {
-      condition: "minecraft:value_check",
-      value: {
-        type: "minecraft:score",
-        target: { type: "minecraft:fixed", name },
-        score: "player_motion.api.launch",
-      },
-      range: { min: -12398, max: 12398 },
-    },
+    ...conditionKey(v, "inverted"),
+    term: scoreCheck(v, name, "player_motion.api.launch", {
+      min: -12398,
+      max: 12398,
+    }),
   });
   return {
-    condition: "minecraft:any_of",
+    ...conditionKey(v, "any_of"),
     terms: [axisTerm("$x"), axisTerm("$y"), axisTerm("$z")],
   };
 }
 
 /** `internal/falling_creative_player` - a creative player that is falling. */
-export function fallingCreativeJson(): unknown {
+export function fallingCreativeJson(v: VersionProfile): unknown {
   return {
-    condition: "minecraft:entity_properties",
+    ...conditionKey(v, "entity_properties"),
     entity: "this",
     predicate: { flags: { is_on_ground: false, is_flying: false } },
   };

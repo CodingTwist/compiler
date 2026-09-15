@@ -6,10 +6,32 @@ import type { PlayerMotionInternals } from "./context";
  * summons the dummy marker.
  */
 export function defineInit(I: PlayerMotionInternals): void {
-  const { fInit, marker, api, dummy, math, gm, store, prevVecK, prevIn, prevOut, prevMethod } = I;
+  const {
+    fInit,
+    marker,
+    api,
+    dummy,
+    math,
+    gm,
+    store,
+    prevVecK,
+    prevIn,
+    prevOut,
+    prevMethod,
+  } = I;
 
   fInit.build((ctx) => {
-    for (const o of [api, dummy, math, gm, prevVecK, ...prevIn, ...prevOut, prevMethod, store])
+    for (const o of [
+      api,
+      dummy,
+      math,
+      gm,
+      prevVecK,
+      ...prevIn,
+      ...prevOut,
+      prevMethod,
+      store,
+    ])
       o.init();
 
     ctx.forceload().remove(Pos(0, 0));

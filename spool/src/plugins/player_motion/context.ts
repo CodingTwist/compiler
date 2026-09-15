@@ -52,13 +52,21 @@ export function createInternals(dp: Datapack) {
   const prevLocal = ScoreVec3.from((_, i) => prevOut[i].score(self()));
 
   // --- Data resources --------------------------------------------------------
-  dp.registryFile("enchantment", "internal/apply_impulse", enchantmentJson(ns));
+  dp.registryFile(
+    "enchantment",
+    "internal/apply_impulse",
+    enchantmentJson(ns, dp.version),
+  );
   const predicateFolder = dp.version.paths.predicate;
-  dp.registryFile(predicateFolder, "internal/large_global", largeGlobalJson());
+  dp.registryFile(
+    predicateFolder,
+    "internal/large_global",
+    largeGlobalJson(dp.version),
+  );
   dp.registryFile(
     predicateFolder,
     "internal/falling_creative_player",
-    fallingCreativeJson(),
+    fallingCreativeJson(dp.version),
   );
   const largeGlobal = `${ns}:internal/large_global`;
   const fallingCreative = `${ns}:internal/falling_creative_player`;

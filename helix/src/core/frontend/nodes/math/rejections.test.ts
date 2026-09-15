@@ -33,7 +33,7 @@ describe("math`` rejections", () => {
 
   it("names an unknown function and lists the real ones", () => {
     expect(bad(() => math`atan2(${sc("a")}, 2)`)).toContain(
-      "min, max, abs, avg, pow, sqrt, sin, cos, round, floor, ceil, len, dot, len2, vec",
+      "min, max, abs, avg, pow, sqrt, sin, cos, round, floor, ceil, len, dot, cross, len2, vec",
     );
   });
 

@@ -2,7 +2,13 @@ import type { VersionProfile } from "../../../versions/profile";
 import { Id } from "../id";
 import type { BlockValue } from "../block";
 import type { ItemValue } from "../item";
-import { idStr, renderEntitySpec, renderLocation } from "./render";
+import { atLeast } from "../entity-nbt/fields";
+import {
+  conditionKey,
+  idStr,
+  renderEntitySpec,
+  renderLocation,
+} from "./render";
 import { PredicateRef } from "./ref";
 import {
   SLOTS,
@@ -44,7 +50,7 @@ export class Predicate {
     who: EntityTarget = "this",
   ): Predicate {
     return new Predicate((v) => ({
-      condition: "minecraft:entity_properties",
+      ...conditionKey(v, "entity_properties"),
       entity: who,
       predicate: renderEntitySpec(spec, v),
     }));
@@ -55,12 +61,12 @@ export class Predicate {
     scores: Record<string, ScoreBound>,
     who: EntityTarget = "this",
   ): Predicate {
-    return new Predicate(() => {
+    return new Predicate((v) => {
       const out: PredicateJson = {};
       for (const [obj, b] of Object.entries(scores)) {
         out[obj] = typeof b === "number" ? b : { min: b.min, max: b.max };
       }
-      return { condition: "minecraft:entity_scores", entity: who, scores: out };
+      return { ...conditionKey(v, "entity_scores"), entity: who, scores: out };
     });
   }
 
@@ -69,13 +75,21 @@ export class Predicate {
     block: string | BlockValue,
     properties?: Record<string, string>,
   ): Predicate {
-    return new Predicate((_v) => {
+    return new Predicate((v) => {
+      const id = typeof block === "string" ? idStr(block) : block.render();
+      const hasProps = properties && Object.keys(properties).length;
+      if (atLeast(v, "26.3")) {
+        return {
+          ...conditionKey(v, "match_block"),
+          blocks: id,
+          ...(hasProps ? { state: properties } : {}),
+        };
+      }
       const out: PredicateJson = {
-        condition: "minecraft:block_state_property",
-        block: typeof block === "string" ? idStr(block) : block.render(),
+        ...conditionKey(v, "block_state_property"),
+        block: id,
       };
-      if (properties && Object.keys(properties).length)
-        out.properties = properties;
+      if (hasProps) out.properties = properties;
       return out;
     });
   }
@@ -83,7 +97,7 @@ export class Predicate {
   /** `location_check` - facts about the location being evaluated. */
   static location(spec: LocationSpec): Predicate {
     return new Predicate((v) => ({
-      condition: "minecraft:location_check",
+      ...conditionKey(v, "location_check"),
       predicate: renderLocation(spec, v),
     }));
   }
@@ -94,7 +108,7 @@ export class Predicate {
    */
   static matchTool(item: ItemValue): Predicate {
     return new Predicate((v) => ({
-      condition: "minecraft:match_tool",
+      ...conditionKey(v, "match_tool"),
       predicate: item.toPredicate(v),
     }));
   }
@@ -124,8 +138,8 @@ export class Predicate {
 
   /** `weather_check`. */
   static weather(spec: { raining?: boolean; thundering?: boolean }): Predicate {
-    return new Predicate(() => {
-      const out: PredicateJson = { condition: "minecraft:weather_check" };
+    return new Predicate((v) => {
+      const out: PredicateJson = { ...conditionKey(v, "weather_check") };
       if (spec.raining !== undefined) out.raining = spec.raining;
       if (spec.thundering !== undefined) out.thundering = spec.thundering;
       return out;
@@ -134,8 +148,8 @@ export class Predicate {
 
   /** `random_chance` - passes with probability `chance` (0..1). */
   static randomChance(chance: number): Predicate {
-    return new Predicate(() => ({
-      condition: "minecraft:random_chance",
+    return new Predicate((v) => ({
+      ...conditionKey(v, "random_chance"),
       chance,
     }));
   }
@@ -148,7 +162,12 @@ export class Predicate {
         : typeof ref === "string"
           ? Id(ref).render()
           : ref.render();
-    return new Predicate(() => ({ condition: "minecraft:reference", name }));
+    // 26.3 dropped `reference`; an id string is a valid term instead.
+    return new Predicate((v) =>
+      atLeast(v, "26.3")
+        ? { ...conditionKey(v, "all_of"), terms: [name] }
+        : { ...conditionKey(v, "reference"), name },
+    );
   }
 
   // ---- combinators ---------------------------------------------------------
@@ -156,7 +175,7 @@ export class Predicate {
   /** `all_of` - passes only if every term passes (logical AND). */
   static all(...terms: Predicate[]): Predicate {
     return new Predicate((v) => ({
-      condition: "minecraft:all_of",
+      ...conditionKey(v, "all_of"),
       terms: terms.map((t) => t.toJson(v)),
     }));
   }
@@ -164,7 +183,7 @@ export class Predicate {
   /** `any_of` - passes if any term passes (logical OR). */
   static any(...terms: Predicate[]): Predicate {
     return new Predicate((v) => ({
-      condition: "minecraft:any_of",
+      ...conditionKey(v, "any_of"),
       terms: terms.map((t) => t.toJson(v)),
     }));
   }
@@ -172,7 +191,7 @@ export class Predicate {
   /** `inverted` - passes iff `term` fails (logical NOT). */
   static not(term: Predicate): Predicate {
     return new Predicate((v) => ({
-      condition: "minecraft:inverted",
+      ...conditionKey(v, "inverted"),
       term: term.toJson(v),
     }));
   }

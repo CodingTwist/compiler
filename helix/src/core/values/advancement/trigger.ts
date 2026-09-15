@@ -4,6 +4,7 @@ import { BlockValue } from "../block";
 import { Id } from "../id";
 import { ItemValue } from "../item";
 import { EntityPredicateSpec, LocationSpec, Predicate } from "../predicate";
+import { atLeast } from "../entity-nbt/fields";
 
 /** JSON object Minecraft reads as one advancement criterion (`{ trigger, conditions? }`). */
 export type CriterionJson = {
@@ -20,17 +21,23 @@ function blockStr(x: string | BlockValue): string {
 }
 
 /**
- * The `entity_properties` body for `spec`, reusing {@link Predicate.entity} so triggers
- * match predicate files.
+ * An advancement entity field (`player`, `entity`) matching `spec`.
+ * Before 26.3 it takes the bare entity predicate; since, one condition.
  */
-function entityPredicateJson(
+function entityField(
   spec: EntityPredicateSpec,
   version: VersionProfile,
 ): Record<string, unknown> {
-  const json = Predicate.entity(spec, "this").toJson(version) as {
-    predicate: Record<string, unknown>;
-  };
-  return json.predicate;
+  const json = Predicate.entity(spec, "this").toJson(version);
+  return atLeast(version, "26.3")
+    ? json
+    : (json.predicate as Record<string, unknown>);
+}
+
+/** An advancement condition-list field: a list before 26.3, one condition since. */
+function conditionField(p: Predicate, version: VersionProfile): unknown {
+  const json = p.toJson(version);
+  return atLeast(version, "26.3") ? json : [json];
 }
 
 /**
@@ -67,7 +74,7 @@ export class Trigger {
   ): Trigger {
     return new Trigger((v) => ({
       trigger: "minecraft:player_hurt_entity",
-      conditions: { player: [Predicate.holding(item, slot).toJson(v)] },
+      conditions: { player: conditionField(Predicate.holding(item, slot), v) },
     }));
   }
 
@@ -78,15 +85,17 @@ export class Trigger {
   static location(spec: LocationSpec): Trigger {
     return new Trigger((v) => ({
       trigger: "minecraft:location",
-      conditions: { player: entityPredicateJson({ location: spec }, v) },
+      conditions: { player: entityField({ location: spec }, v) },
     }));
   }
 
   /** `minecraft:enter_block` - fires when the player steps into `block`. */
   static enterBlock(block: string | BlockValue): Trigger {
-    return new Trigger(() => ({
+    return new Trigger((v) => ({
       trigger: "minecraft:enter_block",
-      conditions: { block: blockStr(block) },
+      conditions: {
+        [atLeast(v, "26.3") ? "blocks" : "block"]: blockStr(block),
+      },
     }));
   }
 
@@ -105,7 +114,7 @@ export class Trigger {
   static playerKilledEntity(spec?: EntityPredicateSpec): Trigger {
     return new Trigger((v) => ({
       trigger: "minecraft:player_killed_entity",
-      ...(spec ? { conditions: { entity: entityPredicateJson(spec, v) } } : {}),
+      ...(spec ? { conditions: { entity: entityField(spec, v) } } : {}),
     }));
   }
 
@@ -118,7 +127,7 @@ export class Trigger {
       const conditions: Record<string, unknown> = {
         block: typeof block === "string" ? idStr(block) : block.render(),
       };
-      if (at) conditions.location = [Predicate.location(at).toJson(v)];
+      if (at) conditions.location = conditionField(Predicate.location(at), v);
       return { trigger: "minecraft:placed_block", conditions };
     });
   }

@@ -23,14 +23,7 @@ export const VEC = {
 const POS = NbtPath("Pos");
 
 export function defineMath(I: PlayerMotionInternals): void {
-  const {
-    self,
-    temp,
-    fStoreRefVectors,
-    fConvertToLocal,
-    work,
-    dummyScore,
-  } = I;
+  const { self, temp, fStoreRefVectors, fConvertToLocal, work, dummyScore } = I;
 
   // --- internal/math/global/store_reference_vectors -------------------------
   fStoreRefVectors.build((ctx) => {

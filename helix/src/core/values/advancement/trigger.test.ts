@@ -4,7 +4,7 @@ import { Item } from "../item";
 import { Block } from "../block";
 import { Dimension } from "../resource.generated";
 import { Predicate } from "../predicate";
-import { v1_21_4 } from "../../../versions/profiles";
+import { v1_21_4, v26_3_rc_2 } from "../../../versions/profiles";
 
 describe("Trigger", () => {
   it("renders using_item with the item's predicate form", () => {
@@ -112,6 +112,21 @@ describe("Trigger location/entity/block helpers", () => {
     });
     expect(Trigger.impossible().toJson(v1_21_4)).toEqual({
       trigger: "minecraft:impossible",
+    });
+  });
+});
+
+describe("Trigger on 26.3", () => {
+  it("location takes one entity_properties condition keyed by type", () => {
+    expect(Trigger.location({ position: { x: 1 } }).toJson(v26_3_rc_2)).toEqual({
+      trigger: "minecraft:location",
+      conditions: {
+        player: {
+          type: "minecraft:entity_properties",
+          entity: "this",
+          predicate: { location: { position: { x: 1 } } },
+        },
+      },
     });
   });
 });

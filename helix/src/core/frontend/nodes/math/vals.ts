@@ -52,6 +52,13 @@ export function dot(l: Val, r: Val, src: string): Val {
   return scalar(opE("add", ...axes((i) => opE("mul", l.e[i], r.e[i]))));
 }
 
+export function cross(l: Val, r: Val, src: string): Val {
+  if (!l.vec || !r.vec) fail("`cross()` needs a vector on both sides", src);
+  const term = (a: number, b: number) =>
+    opE("sub", opE("mul", l.e[a], r.e[b]), opE("mul", l.e[b], r.e[a]));
+  return { vec: true, e: [term(1, 2), term(2, 0), term(0, 1)] };
+}
+
 export const axes = (
   f: (i: number) => ExprNode,
 ): [ExprNode, ExprNode, ExprNode] => [f(0), f(1), f(2)];
