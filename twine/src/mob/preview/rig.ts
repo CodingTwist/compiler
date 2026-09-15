@@ -37,7 +37,7 @@ export function mobPreview(
     id:
       content.kind === "item"
         ? content.item.baseId()
-        : content.block.toBlockState().Name,
+        : content.block.baseId(),
     transform,
   }));
   return {

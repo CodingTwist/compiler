@@ -36,6 +36,7 @@ export type {
   MobModuleOpts,
   MobModuleRef,
   MobPreview,
+  MobStates,
   MobPreviewOpts,
 } from "./mob";
 export type {

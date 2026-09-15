@@ -4,6 +4,7 @@ import { NbtValue } from "./nbt";
 import type { VersionProfile } from "../../versions/profile";
 import { withMembers } from "./members";
 import { BLOCK_IDS } from "../../versions/data/ids";
+import { DV } from "./entity-versions.generated";
 
 /** 26.3: block state compounds use `id`/`properties`. ponytail: gated after 26.2; the exact 26.3 snapshot is unchecked. */
 export const BLOCK_STATE_ID_DATA_VERSION = 4904;
@@ -56,6 +57,30 @@ export class BlockValue implements CommandValue {
         typeof this.nbt === "string"
           ? this.nbt
           : this.nbt.render(version as VersionProfile);
+    }
+    return out;
+  }
+
+  /** The namespaced id or tag, without state or data. */
+  baseId(): string {
+    return normalizeBlockId(this.id);
+  }
+
+  /** This block as `block_predicate` JSON: id or tag, state values and block-entity data. */
+  toPredicate(version: VersionProfile): Record<string, unknown> {
+    const id = normalizeBlockId(this.id);
+    const tag = id.startsWith("#");
+    let out: Record<string, unknown>;
+    if (version.dataVersion >= DV["1.20.5"]) out = { blocks: id };
+    else if (tag) out = { tag: id.slice(1) };
+    else if (version.dataVersion >= DV["1.17"]) out = { blocks: [id] };
+    else out = { block: id };
+    const entries = Object.entries(this.states);
+    if (entries.length > 0) {
+      out.state = Object.fromEntries(entries.map(([k, v]) => [k, String(v)]));
+    }
+    if (this.nbt !== undefined) {
+      out.nbt = typeof this.nbt === "string" ? this.nbt : this.nbt.render(version);
     }
     return out;
   }
