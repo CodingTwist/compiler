@@ -1,14 +1,12 @@
 // Cube-vs-world contacts: each vertex inside a solid block becomes a contact on that block's face.
-import { Block, Detect, NbtPath, Path, Pos, math, and } from "helix";
+import { Block, Detect, Pos, math, and } from "helix";
 import type { FunctionContext, Score, ScoreVec3 } from "helix";
-import { Q, VERTICES, type RigidState } from "./state";
+import { VERTICES, type RigidState } from "./state";
 import { prepareContact } from "./solve";
 import type { RigidTuning } from "./tuning";
 
 /** The block tag bodies pass through; everything else is solid. */
 export const PASSTHROUGH = "rb/passthrough";
-
-const PROBE = NbtPath("probe");
 
 /**
  * Finds this tick's world contacts for the executing body, filling one slot per vertex.
@@ -18,7 +16,7 @@ const PROBE = NbtPath("probe");
  */
 export function collideWorld(s: RigidState, ctx: FunctionContext): void {
   const { pos } = s.body;
-  s.scalar("hits").set(0);
+  s.count("hits").set(0);
   const h = [0, 1, 2].map((i) => s.vector(`h${i}`));
   halfExtents(s, h);
 
@@ -27,38 +25,22 @@ export function collideWorld(s: RigidState, ctx: FunctionContext): void {
     const [sx, sy, sz] = [i & 1, i & 2, i & 4].map((b) => (b ? 1 : -1));
     c.hit.set(0);
     math`${pos} + ${sx} * ${h[0]} + ${sy} * ${h[1]} + ${sz} * ${h[2]}`.into(c.point);
-    moveProbe(s, ctx, c.point);
+    s.locator.moveTo(ctx, c.point);
     ctx
       .execute()
-      .at(s.probe())
+      .at(s.locator.selector())
       .unlessBlock(Pos.here(), Block.tag(`${s.dp.name}:${PASSTHROUGH}`))
       .run((b) => b.call(s.fn.detect[i]));
   }
 }
 
-/**
- * The cube's three half-edge vectors in world space (mm): the rotation matrix's columns × half.
- * Products are scaled back on the float side, since `half × q²` overflows an int.
- */
+/** The cube's three half-edge vectors in world space: the rotation matrix's columns × half. */
 export function halfExtents(s: RigidState, [h0, h1, h2]: ScoreVec3[]): void {
   const { half, qw: w } = s.body;
   const { x: i, y: j, z: k } = s.body.qv;
-  const QQ = Q * Q;
-  const k8 = 1 / QQ;
-  math`vec((${QQ} - 2 * (${j} * ${j} + ${k} * ${k})), 2 * (${i} * ${j} + ${k} * ${w}), 2 * (${i} * ${k} - ${j} * ${w})) * ${k8} * ${half}`.into(h0);
-  math`vec(2 * (${i} * ${j} - ${k} * ${w}), (${QQ} - 2 * (${i} * ${i} + ${k} * ${k})), 2 * (${j} * ${k} + ${i} * ${w})) * ${k8} * ${half}`.into(h1);
-  math`vec(2 * (${i} * ${k} + ${j} * ${w}), 2 * (${j} * ${k} - ${i} * ${w}), (${QQ} - 2 * (${i} * ${i} + ${j} * ${j}))) * ${k8} * ${half}`.into(h2);
-}
-
-/** Moves the probe marker to `point` (mm) through storage: three cheap stores and one entity write. */
-function moveProbe(s: RigidState, ctx: FunctionContext, point: ScoreVec3): void {
-  point.components.forEach((score, axis) =>
-    ctx
-      .execute()
-      .storeResultStorage(s.render, PROBE.index(axis), "double", 0.001)
-      .run((c) => score.get(c)),
-  );
-  ctx.entity(s.probe()).set(Path.Entity.Pos, ctx.storage(s.render).at(PROBE));
+  math`vec(1 - 2 * (${j} * ${j} + ${k} * ${k}), 2 * (${i} * ${j} + ${k} * ${w}), 2 * (${i} * ${k} - ${j} * ${w})) * ${half}`.into(h0);
+  math`vec(2 * (${i} * ${j} - ${k} * ${w}), 1 - 2 * (${i} * ${i} + ${k} * ${k}), 2 * (${j} * ${k} + ${i} * ${w})) * ${half}`.into(h1);
+  math`vec(2 * (${i} * ${k} + ${j} * ${w}), 2 * (${j} * ${k} - ${i} * ${w}), 1 - 2 * (${i} * ${i} + ${j} * ${j})) * ${half}`.into(h2);
 }
 
 /** The six block faces: probe offset to the neighbour, and normal axis/sign. */
@@ -85,8 +67,8 @@ export function defineDetect(s: RigidState, t: RigidTuning, i: number): void {
     const frac = s.vector("frac");
     const depth = s.scalar("face_d");
     const best = c.depth;
-    // Distance from the block's low corner, 0..999 (`%` floors, so negatives work).
-    math`${c.point} % 1000`.into(frac);
+    // Distance from the block's low corner, 0 to 1.
+    math`${c.point} - vec(floor(${c.point.x}), floor(${c.point.y}), floor(${c.point.z}))`.into(frac);
     best.set(NONE);
 
     const tryFaces = (b: FunctionContext, movingIn: boolean) => {
@@ -94,11 +76,11 @@ export function defineDetect(s: RigidState, t: RigidTuning, i: number): void {
         const along: Score = frac.components[f.axis];
         const v = s.body.vel.components[f.axis];
         b.if(and(Detect.block(Pos.rel(...f.off), open), ...(movingIn ? [f.sign > 0 ? v.lessThan(0) : v.greaterThan(0)] : [])), (d) => {
-          if (f.sign > 0) math`1000 - ${along}`.into(depth);
+          if (f.sign > 0) math`1 - ${along}`.into(depth);
           else depth.assign(along);
           d.if(depth.lessThan(best), (e) => {
             best.assign(depth, e);
-            c.normal.components.forEach((n, axis) => n.set(axis === f.axis ? f.sign * 1000 : 0, e));
+            c.normal.components.forEach((n, axis) => n.set(axis === f.axis ? f.sign : 0, e));
           });
         });
       }
@@ -106,14 +88,14 @@ export function defineDetect(s: RigidState, t: RigidTuning, i: number): void {
     tryFaces(ctx, true);
     ctx.if(best.equal(NONE), (b) => tryFaces(b, false));
     ctx.if(best.equal(NONE), (b) => {
-      math`1000 - ${frac.y}`.into(best);
-      c.normal.components.forEach((n, axis) => n.set(axis === 1 ? 1000 : 0, b));
+      math`1 - ${frac.y}`.into(best);
+      c.normal.components.forEach((n, axis) => n.set(axis === 1 ? 1 : 0, b));
     });
     c.hit.set(1);
-    s.scalar("hits").add(1);
+    s.count("hits").add(1);
     prepareContact(s, t, ctx, i);
   });
 }
 
-/** Depth sentinel: no face chosen yet. */
-const NONE = 1001;
+/** Depth sentinel: deeper than any face, so no face is chosen yet. */
+const NONE = 1.001;

@@ -37,6 +37,9 @@ export type {
   ProjectileProfile,
 } from "./plugins/ballistics";
 
+// Type for `locator(dp)` results; it needs no install.
+export type { Locator } from "./plugins/locator";
+
 // Types for `dp.probe()` results. Doesn't install the plugin.
 export type { Suite, ProbeCase, ProbeOptions } from "./plugins/probe";
 

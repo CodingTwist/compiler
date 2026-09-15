@@ -9,8 +9,8 @@ import type { RigidTuning } from "./tuning";
  * still change. Run as the body with `#pass` counting down.
  */
 export function definePass(s: RigidState, fn: FunctionRef, slots: number): void {
-  const applied = s.scalar("applied");
-  const pass = s.scalar("pass");
+  const applied = s.count("applied");
+  const pass = s.count("pass");
   fn.build((ctx) => {
     applied.set(0);
     for (let i = 0; i < slots; i++) {
@@ -66,8 +66,8 @@ export function resolvePairPenetration(s: RigidState, t: RigidTuning, ctx: Funct
   }
   const { pos, invMass: im } = s.body;
   ctx.if(depth.greaterThan(t.slop), () => {
-    // Left unstored: an int would truncate the share to zero before it's scaled back up.
-    const push = math`${n} * (${depth} - ${t.slop}) * 0.001 / (${im} + ${oim})`;
+    // Left unstored: storing it would round the share before it's split.
+    const push = math`${n} * (${depth} - ${t.slop}) / (${im} + ${oim})`;
     math`${pos} + ${push} * ${im}`.into(pos);
     math`${s.other.pos} - ${push} * ${oim}`.into(s.other.pos);
   });

@@ -19,8 +19,41 @@ export class Score extends TellrawPart implements ExpressionNode {
   constructor(
     public objective: Objective,
     public target: ScoreTarget,
+    /**
+     * Stored units per real unit: at 1000 the score holds thousandths. `math` formulas, literals
+     * and comparisons use real values and convert at the slot.
+     */
+    public readonly scale = 1,
   ) {
     super();
+  }
+
+  /** This slot holding `scale` units per real unit, e.g. `.scaled(1000)` for millimetres. */
+  scaled(scale: number): Score {
+    return new Score(this.objective, this.target, scale);
+  }
+
+  /** This slot read as a raw integer. */
+  unscaled(): Score {
+    return this.scale === 1 ? this : new Score(this.objective, this.target);
+  }
+
+  /** Whether `other` is the same scoreboard slot, whatever its scale. */
+  sameSlot(other: Score): boolean {
+    return this.objective === other.objective && this.target === other.target;
+  }
+
+  /** A real `value` in stored units, rounded to the nearest one. */
+  private stored(value: number): number {
+    return Math.round(value * this.scale);
+  }
+
+  /** Throws when `other` stores a different scale, since mixing them silently mixes units. */
+  private sameScale(other: Score): void {
+    if (other.scale !== this.scale)
+      throw new Error(
+        `Score: can't combine scale ${this.scale} with scale ${other.scale} in one scoreboard operation - use math\`\` to convert.`,
+      );
   }
 
   /** `matches <range>`: true when the score is in `range`. */
@@ -58,7 +91,8 @@ export class Score extends TellrawPart implements ExpressionNode {
     op: ScoreCompareNode["operator"],
     input: number | Score,
   ): ExpressionNode {
-    if (input instanceof Score)
+    if (input instanceof Score) {
+      this.sameScale(input);
       return new ScoreCompareNode(
         this.target,
         this.objective,
@@ -66,11 +100,15 @@ export class Score extends TellrawPart implements ExpressionNode {
         input.target,
         input.objective,
       );
-    // Scores are integers, so strict bounds are one step in.
-    const min =
-      op === ">" ? input + 1 : op === "=" || op === ">=" ? input : undefined;
-    const max =
-      op === "<" ? input - 1 : op === "=" || op === "<=" ? input : undefined;
+    }
+    // Scores are integers, so bounds round inward and strict bounds are one step in.
+    // Snap float error first, so 0.049 at scale 1000 is 49, not 49.00000000000001.
+    const raw = input * this.scale;
+    const v = Math.abs(raw - Math.round(raw)) < 1e-9 ? Math.round(raw) : raw;
+    if (op === "=" && !Number.isInteger(v))
+      throw new Error(`Score: ${input} isn't a whole unit at scale ${this.scale}, so it can never be equal - compare a range instead.`);
+    const min = op === ">" ? Math.floor(v) + 1 : op === "=" || op === ">=" ? Math.ceil(v) : undefined;
+    const max = op === "<" ? Math.ceil(v) - 1 : op === "=" || op === "<=" ? Math.floor(v) : undefined;
     return new ScoreRangeNode(this.target, this.objective, new Range(min, max));
   }
 
@@ -86,19 +124,22 @@ export class Score extends TellrawPart implements ExpressionNode {
 
   /** `scoreboard players set <this> <value>`. */
   set(value: number, ctx?: FunctionContext): this {
-    this.emitter(ctx).emit(scoreLitNode("set", this, value));
+    const stored = this.stored(value);
+    this.emitter(ctx).emit(scoreLitNode("set", this, stored));
     return this;
   }
 
   /** `scoreboard players add <this> <value>`. */
   add(value: number, ctx?: FunctionContext): this {
-    this.emitter(ctx).emit(scoreLitNode("add", this, value));
+    const stored = this.stored(value);
+    this.emitter(ctx).emit(scoreLitNode("add", this, stored));
     return this;
   }
 
   /** `scoreboard players remove <this> <value>`. */
   remove(value: number, ctx?: FunctionContext): this {
-    this.emitter(ctx).emit(scoreLitNode("remove", this, value));
+    const stored = this.stored(value);
+    this.emitter(ctx).emit(scoreLitNode("remove", this, stored));
     return this;
   }
 
@@ -131,6 +172,7 @@ export class Score extends TellrawPart implements ExpressionNode {
    * Emits into the ambient context; pass `ctx` to override. See {@link currentContext}.
    */
   operation(op: ScoreOperator, other: Score, ctx?: FunctionContext): this {
+    this.sameScale(other);
     this.emitter(ctx).emit(scoreOpNode(this, op, other));
     return this;
   }

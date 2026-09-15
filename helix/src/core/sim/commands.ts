@@ -18,12 +18,19 @@ export const fail = (why: string): never => {
   throw new CommandError(why);
 };
 
-/** Reads `~ ~1 5` relative to the source position. Local `^` coordinates aren't supported. */
-export function parsePos(t: string[], at: V3): V3 {
-  return [0, 1, 2].map((i) => {
-    if (t[i].startsWith("^")) throw new Error(`unsupported local coordinates ${t.join(" ")}`);
-    return t[i].startsWith("~") ? at[i] + +(t[i].slice(1) || 0) : +t[i];
-  }) as V3;
+/** Reads `~ ~1 5` relative to the source position, or `^ ^ ^2` along the source's rotation. */
+export function parsePos(t: string[], at: V3, src?: Pick<SimSource, "rot" | "eyes">): V3 {
+  if (t[0].startsWith("^")) {
+    const [left, up, forward] = t.map((c) => +(c.slice(1) || 0));
+    const [yaw, pitch] = (src?.rot ?? [0, 0]).map((d) => (d * Math.PI) / 180);
+    const f = [-Math.sin(yaw) * Math.cos(pitch), -Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)];
+    const u = [-Math.sin(yaw) * Math.sin(pitch), Math.cos(pitch), Math.cos(yaw) * Math.sin(pitch)];
+    const l = [Math.cos(yaw), 0, Math.sin(yaw)];
+    // Players' eyes; other entities' eye heights aren't modelled.
+    const base = src?.eyes ? [at[0], at[1] + 1.62, at[2]] : at;
+    return [0, 1, 2].map((i) => base[i] + l[i] * left + u[i] * up + f[i] * forward) as V3;
+  }
+  return [0, 1, 2].map((i) => (t[i].startsWith("~") ? at[i] + +(t[i].slice(1) || 0) : +t[i])) as V3;
 }
 
 /** The score holders a holder argument names: `@s`, a selector, or a fake player. */
@@ -107,6 +114,7 @@ export function runCommand(sim: Sim, line: string, src: SimSource): number {
     case "particle":
     case "playsound":
     case "bossbar":
+    case "advancement":
       return 1;
     default:
       throw new Error(`unsupported command: ${line}`);

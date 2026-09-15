@@ -4,6 +4,7 @@ import { Score } from "../../frontend/nodes/score";
 import { ExprNode } from "../../frontend/nodes/expr";
 import { currentContext } from "../../frontend/context/ambient";
 import type { FunctionContext } from "../../frontend/context";
+import { toStoredUnits } from "./units";
 
 export class ScoreExprNode extends ASTNode {
   readonly type = "score-expr";
@@ -28,5 +29,5 @@ export function emitScoreExpr(
     throw new Error(
       "Score arithmetic has no active context: call it inside a build()/run()/if() callback, or pass ctx explicitly.",
     );
-  target.emit(new ScoreExprNode(dest, expr));
+  target.emit(new ScoreExprNode(dest, toStoredUnits(dest, expr)));
 }

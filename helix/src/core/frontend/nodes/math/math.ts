@@ -50,6 +50,11 @@ jsep.addBinaryOp("·", 10);
  * These are float and truncate once at the destination, so `sqrt(${x}) / 2` halves the real
  * root.
  * Careful: `%` is truncated on the float side, so `-5 % 2` is `1` as int but `-1` as float.
+ *
+ * Scaled slots (`score.scaled(1000)`) are read and written as real values, and literals are
+ * real too: `math\`${vel} * 0.995 - 0.049\`.into(vel)`. Same-scale `+ - min max abs` stays
+ * integer; anything else goes through floats and rounds at the destination, so it needs 26.3.
+ * Float32 keeps millimetres exact to about 4,000 blocks from 0.
  */
 export function math(
   strings: TemplateStringsArray,
@@ -66,9 +71,9 @@ export function math(
   return new MathExpr(convert(tree, src, holes));
 }
 
-/** Whether `e` reads the score slot `s` (by instance). */
+/** Whether `e` reads the score slot `s`, whatever the scale. */
 const reads = (e: ExprNode, s: Score): boolean =>
-  (e.kind === "score" && e.score === s) ||
+  (e.kind === "score" && e.score.sameSlot(s)) ||
   (e.kind === "op" && e.args.some((a) => reads(a, s)));
 
 /** A parsed {@link math} formula, waiting for a destination. */

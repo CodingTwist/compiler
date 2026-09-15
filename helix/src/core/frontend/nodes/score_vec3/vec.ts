@@ -44,6 +44,11 @@ export class ScoreVec3 extends ScoreVec3Ops {
     return new ScoreVec3(of("x", 0), of("y", 1), of("z", 2));
   }
 
+  /** This vector holding `scale` units per real unit; see {@link Score.scaled}. */
+  scaled(scale: number): ScoreVec3 {
+    return new ScoreVec3(this.x.scaled(scale), this.y.scaled(scale), this.z.scaled(scale));
+  }
+
   /**
    * Reads a 3-element NBT list on `who` into this vector, scaled to integers:
    *
@@ -52,9 +57,10 @@ export class ScoreVec3 extends ScoreVec3Ops {
   readEntity(
     who: Selector,
     path: NbtPath,
-    scale: number,
-    opts: ScoreVec3NbtOptions = {},
+    scaleOrOpts?: number | ScoreVec3NbtOptions,
+    maybeOpts?: ScoreVec3NbtOptions,
   ): this {
+    const [scale, opts] = split(scaleOrOpts, maybeOpts, this.x.scale);
     const ctx = emitInto(opts.ctx);
     this.components.forEach((score, axis) => {
       const chain = ctx.execute();
@@ -74,9 +80,10 @@ export class ScoreVec3 extends ScoreVec3Ops {
   readStorage(
     storage: Id,
     path: NbtPath,
-    scale: number,
-    opts: ScoreVec3NbtOptions = {},
+    scaleOrOpts?: number | ScoreVec3NbtOptions,
+    maybeOpts?: ScoreVec3NbtOptions,
   ): this {
+    const [scale, opts] = split(scaleOrOpts, maybeOpts, this.x.scale);
     const ctx = emitInto(opts.ctx);
     this.components.forEach((score, axis) => {
       const chain = ctx.execute();
@@ -97,9 +104,10 @@ export class ScoreVec3 extends ScoreVec3Ops {
     who: Selector,
     path: NbtPath,
     type: StoreNumType,
-    scale: number,
-    opts: ScoreVec3NbtOptions = {},
+    scaleOrOpts?: number | ScoreVec3NbtOptions,
+    maybeOpts?: ScoreVec3NbtOptions,
   ): this {
+    const [scale, opts] = split(scaleOrOpts, maybeOpts, 1 / this.x.scale);
     const ctx = emitInto(opts.ctx);
     this.components.forEach((score, axis) => {
       const chain = ctx.execute();
@@ -110,6 +118,15 @@ export class ScoreVec3 extends ScoreVec3Ops {
     });
     return this;
   }
+}
+
+/** An NBT read/write's scale and options, the scale defaulting to the vector's own. */
+function split(
+  scaleOrOpts: number | ScoreVec3NbtOptions | undefined,
+  opts: ScoreVec3NbtOptions | undefined,
+  fallback: number,
+): [number, ScoreVec3NbtOptions] {
+  return typeof scaleOrOpts === "number" ? [scaleOrOpts, opts ?? {}] : [fallback, scaleOrOpts ?? {}];
 }
 
 /**

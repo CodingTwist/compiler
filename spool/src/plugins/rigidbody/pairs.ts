@@ -35,7 +35,7 @@ export function collidePairs(s: RigidState, t: RigidTuning, ctx: FunctionContext
  */
 export function definePairs(s: RigidState, t: RigidTuning): void {
   const o = s.other;
-  const hits = s.scalar("pair_hits");
+  const hits = s.count("pair_hits");
   defineAxes(s, t);
 
   s.fn.pair.build((ctx) => {
@@ -77,7 +77,7 @@ export function definePairs(s: RigidState, t: RigidTuning): void {
     for (let i = VERTICES; i < 3 * VERTICES; i++) {
       ctx.if(s.contact(i).hit.equal(1), (b) => prepareContact(s, t, b, i));
     }
-    s.scalar("pass").set(t.passes);
+    s.count("pass").set(t.passes);
     ctx.call(s.fn.pairPass);
     resolvePairPenetration(s, t, ctx);
   });

@@ -119,6 +119,10 @@ exactly as before and a float one truncates once, at the destination (`toFloatPr
 variant that skips that last truncation, behind`MathExpr.provider`/`.floatProvider`for a
 non-score`/compute`destination).`Fixed`and`ScoreVec3.dot`route through it, so every pack gets`/compute`on 26.3 without opting in.
 Temps are`#\_t<depth>` fake players on the destination's own objective - a **reserved prefix**.
+  **Scaled slots:** `score.scaled(k)` / `ScoreVec3.scaled(k)` store `k` units per real unit;
+  `emitScoreExpr` rewrites through `score-expr/units.ts` so formulas, literals, `set` and
+  compares use real values. Same-scale `+ - min max abs` stays integer; anything else goes
+  float and rounds at the destination. Scoreboard ops across scales throw.
 - **Function macros.** `Macro<T>("name")` (`values/macro.ts`) is a `CommandValue` rendering
   `$(name)`; `CodegenContext.emit` prefixes any line containing `$(` with `$`, so every
   handler gets macro lines right without knowing about them (`generateRunTarget` strips the

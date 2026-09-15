@@ -1,13 +1,12 @@
 // Draws the executing body: position and orientation onto its item_display.
 import { Byte, Double, Float, Nbt, NbtPath, and, math } from "helix";
 import type { FunctionContext } from "helix";
-import { MM, Q, type RigidState } from "./state";
+import { type RigidState } from "./state";
 
 const FRAME = NbtPath("frame");
 
 /** The render buffer's initial value, written once at load so the stores keep their types. */
 export const RENDER_INIT = Nbt({
-  probe: [Double(0), Double(0), Double(0)],
   frame: {
     Pos: [Double(0), Double(0), Double(0)],
     transformation: { left_rotation: [Float(0), Float(0), Float(0), Float(1)] },
@@ -21,7 +20,7 @@ export function render(s: RigidState, ctx: FunctionContext): void {
   pos.components.forEach((score, axis) =>
     ctx
       .execute()
-      .storeResultStorage(s.render, NbtPath(`frame.Pos[${axis}]`), "double", 1 / MM)
+      .storeResultStorage(s.render, NbtPath(`frame.Pos[${axis}]`), "double", 1 / score.scale)
       .run((c) => score.get(c)),
   );
   // `left_rotation` is [x, y, z, w].
@@ -32,7 +31,7 @@ export function render(s: RigidState, ctx: FunctionContext): void {
         s.render,
         NbtPath(`frame.transformation.left_rotation[${axis}]`),
         "float",
-        1 / Q,
+        1 / score.scale,
       )
       .run((c) => score.get(c)),
   );
@@ -45,9 +44,9 @@ export function render(s: RigidState, ctx: FunctionContext): void {
  */
 export function checkSleep(s: RigidState, sleepBelow: number, ctx: FunctionContext): void {
   const { motion, vel, spin, sleeping, support } = s.body;
-  support.assign(s.scalar("hits"));
-  math`(${motion} * 9 + len2(${vel}) + len2(${spin} / 100)) / 10`.into(motion);
-  ctx.if(and(motion.lessThan(sleepBelow), s.scalar("hits").atLeast(3)), () => {
+  support.assign(s.count("hits"));
+  math`(${motion} * 9 + len2(${vel}) + len2(${spin})) / 10`.into(motion);
+  ctx.if(and(motion.lessThan(sleepBelow), s.count("hits").atLeast(3)), () => {
     sleeping.set(1);
     vel.components.forEach((c) => c.set(0));
     spin.components.forEach((c) => c.set(0));

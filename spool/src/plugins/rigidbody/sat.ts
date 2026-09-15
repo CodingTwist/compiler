@@ -5,7 +5,7 @@ import type { Condition, FunctionContext, Score, ScoreVec3 } from "helix";
 import { VERTICES, type RigidState } from "./state";
 import type { RigidTuning } from "./tuning";
 
-/** An oriented box in scratch: centre and half-edge vectors (mm), and the half edge length. */
+/** An oriented box in scratch: centre and half-edge vectors, and the half edge length. */
 interface Box {
   readonly centre: ScoreVec3;
   readonly axes: readonly ScoreVec3[];
@@ -33,7 +33,8 @@ export const otherBox = (s: RigidState): Box => ({
 /** Axis `m`: the other body's face axes are 0-2, this body's 3-5. */
 const axisOf = (s: RigidState, m: number) => {
   const [ref, inc] = m < 3 ? [otherBox(s), ownBox(s)] : [ownBox(s), otherBox(s)];
-  return { ref, inc, k: m % 3, dot: s.scalar(`sat_d${m}`), overlap: s.scalar(`sat_o${m}`) };
+  // `dot` is a centre offset times a half edge, so it's in blocks².
+  return { ref, inc, k: m % 3, dot: s.scalar(`sat_d${m}`, 1e6), overlap: s.scalar(`sat_o${m}`) };
 };
 
 /**
@@ -46,7 +47,7 @@ const axisOf = (s: RigidState, m: number) => {
 export function findContacts(s: RigidState, ctx: FunctionContext): void {
   const d = math`${ownBox(s).centre} - ${otherBox(s).centre}`;
   const best = s.scalar("sat_best");
-  const chosen = s.scalar("sat_axis");
+  const chosen = s.count("sat_axis");
   for (let m = 0; m < 6; m++) {
     const { ref, inc, k, dot, overlap } = axisOf(s, m);
     const u = ref.axes[k];
@@ -73,17 +74,17 @@ export function findContacts(s: RigidState, ctx: FunctionContext): void {
  * the edges, so boxes stacked edge to edge still touch.
  */
 export function defineAxes(s: RigidState, t: RigidTuning): void {
-  const hits = s.scalar("pair_hits");
+  const hits = s.count("pair_hits");
   s.fn.pairAxes.forEach((fn, m) =>
     fn.build((ctx) => {
       const { ref, inc, k, dot } = axisOf(s, m);
       const n = s.vector("sat_n");
-      const sign = s.scalar("sat_sign");
+      const sign = s.count("sat_sign");
       const local = s.vector("sat_l");
       const depth = s.scalar("sat_depth");
       // The normal points from the other body toward this one, whichever box is the reference.
-      sign.set(1000);
-      ctx.if(dot.lessThan(0), () => sign.set(-1000));
+      sign.set(1);
+      ctx.if(dot.lessThan(0), () => sign.set(-1));
       math`${ref.axes[k]} * ${sign} / ${ref.half}`.into(n);
 
       const hit = (i: number, deep: Score, extra: Condition[]) =>
@@ -107,7 +108,7 @@ export function defineAxes(s: RigidState, t: RigidTuning): void {
         const p = s.contact(i).point;
         math`vec((${p} - ${ref.centre}) · ${ref.axes[0]}, (${p} - ${ref.centre}) · ${ref.axes[1]}, (${p} - ${ref.centre}) · ${ref.axes[2]}) / ${ref.half}`.into(local);
         // This body lies along +n from the other, so its vertices cross the other's face going -n.
-        const facing = m < 3 ? math`${ref.half} - ${local.components[k]} * ${sign} / 1000` : math`${ref.half} + ${local.components[k]} * ${sign} / 1000`;
+        const facing = m < 3 ? math`${ref.half} - ${local.components[k]} * ${sign}` : math`${ref.half} + ${local.components[k]} * ${sign}`;
         facing.into(depth);
         within(ref).into(room);
         hit(i, depth, [0, 1, 2].filter((a) => a !== k).map((a) => room.components[a].atLeast(0)));

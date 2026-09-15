@@ -2,17 +2,17 @@
 import { and, math } from "helix";
 import type { FunctionContext, ScoreVec3 } from "helix";
 import type { Ray } from "../raycast";
-import { MM, type RigidState } from "./state";
+import { type RigidState } from "./state";
 import { halfExtents } from "./world";
 
-/** No hit: bigger than any range. */
-const MISS = 1 << 30;
+/** No hit: further than any range, in blocks. */
+const MISS = 1e6;
 
 const rayOf = (s: RigidState): Ray => ({ origin: s.vector("ray_o"), dir: s.vector("ray_d") });
 
 /**
  * Runs `onHit` as the nearest body the ray meets within `range` blocks, with the hit point
- * (mm) in `point`. `dp.lookRay()` gives a ray along a player's view.
+ * in `point`. `dp.lookRay()` gives a ray along a player's view.
  */
 export function raycast(
   s: RigidState,
@@ -26,18 +26,18 @@ export function raycast(
   origin.assign(ray.origin, ctx);
   dir.assign(ray.dir, ctx);
   const best = s.scalar("ray_best");
-  best.set(range * MM);
+  best.set(range);
   ctx.execute().as(s.bodies()).run((b) => b.call(s.fn.ray));
   ctx.execute().as(s.bodies()).ifScore(s.body.ray, "=", best).run((b) => {
     const point = s.vector("ray_hit");
-    math`${origin} + ${dir} * ${best} / 1000`.into(point, b);
+    math`${origin} + ${dir} * ${best}`.into(point, b);
     onHit(b, point);
   });
 }
 
 /**
  * Builds `rb/ray`: the slab test in the executing body's own frame. Writes the entry distance
- * (mm) to its `rb.ray` score, or {@link MISS}, and lowers `#ray_best` on a nearer hit.
+ * to its `rb.ray` score, or {@link MISS}, and lowers `#ray_best` on a nearer hit.
  */
 export function defineRay(s: RigidState): void {
   const { pos, half, ray } = s.body;
@@ -52,11 +52,11 @@ export function defineRay(s: RigidState): void {
     for (let k = 0; k < 3; k++) {
       math`${rel} · ${h[k]} / ${half}`.into(lo[k]);
       math`${dir} · ${h[k]} / ${half}`.into(ld[k]);
-      // A zero would divide by zero; 1 is a thousandth of a degree off parallel.
-      ctx.if(ld[k].equal(0), (b) => ld[k].set(1, b));
+      // A zero would divide by zero; 0.001 is a twentieth of a degree off parallel.
+      ctx.if(ld[k].equal(0), (b) => ld[k].set(0.001, b));
     }
     const slab = (k: number, near: boolean) => {
-      const [a, b] = [math`(-${half} - ${lo[k]}) * 1000 / ${ld[k]}`, math`(${half} - ${lo[k]}) * 1000 / ${ld[k]}`];
+      const [a, b] = [math`(-${half} - ${lo[k]}) / ${ld[k]}`, math`(${half} - ${lo[k]}) / ${ld[k]}`];
       return near ? math`min(${a}, ${b})` : math`max(${a}, ${b})`;
     };
     const enter = s.scalar("ray_in");

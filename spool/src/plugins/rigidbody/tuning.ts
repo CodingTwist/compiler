@@ -1,18 +1,18 @@
 // Engine tuning knobs, baked into the commands as literals.
 
-/** Physics constants. Defaults are SethBling's tetherblock values. */
+/** Physics constants, in blocks and ticks. Defaults are SethBling's tetherblock values. */
 export interface RigidTuning {
-  /** Downward acceleration, mm/tick². */
+  /** Downward acceleration, blocks/tick². */
   gravity: number;
-  /** Velocity kept per tick, ×1000. */
+  /** Share of velocity kept per tick. */
   damping: number;
-  /** Bounciness ×1000, for impacts faster than {@link bounceBelow}. */
+  /** Bounciness, for impacts faster than {@link bounceBelow}. */
   restitution: number;
-  /** Impacts slower than this (mm/tick) don't bounce, so resting bodies don't jitter. */
+  /** Impacts slower than this (blocks/tick) don't bounce, so resting bodies don't jitter. */
   bounceBelow: number;
-  /** Coulomb friction coefficient ×1000. */
+  /** Coulomb friction coefficient. */
   friction: number;
-  /** Penetration left unresolved (mm), so resting contacts stay touching. */
+  /** Penetration left unresolved (blocks), so resting contacts stay touching. */
   slop: number;
   /** Most velocity-solver passes per tick. */
   passes: number;
@@ -23,13 +23,13 @@ export interface RigidTuning {
 }
 
 export const DEFAULT_TUNING: RigidTuning = {
-  gravity: 49,
-  damping: 995,
-  restitution: 600,
-  bounceBelow: 100,
-  friction: 800,
-  slop: 20,
+  gravity: 0.049,
+  damping: 0.995,
+  restitution: 0.6,
+  bounceBelow: 0.1,
+  friction: 0.8,
+  slop: 0.02,
   passes: 10,
-  sleepBelow: 2500,
+  sleepBelow: 0.0025,
   maxSize: 1,
 };

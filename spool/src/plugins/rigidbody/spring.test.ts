@@ -6,18 +6,18 @@ import { rigidbody } from ".";
 
 installKit([rigidbody]);
 
-/** A cube centred at y = 70.5 on a spring from 9 blocks above its top face; returns its velocity (mm/tick). */
+/** A cube centred at y = 70.5 on a spring from 9 blocks above its top face; returns its stored velocity (mm/tick). */
 function pull(rest: number) {
   const dp = new Datapack("test", v26_3_rc_2);
   const rb = dp.rigidbody();
   const work = new Objective("rb.work");
-  const anchor = ScoreVec3.from((a) => work.score(ScoreTarget(`#anchor_${a}`)));
-  const restScore = work.score(ScoreTarget("#rest"));
+  const anchor = ScoreVec3.from((a) => work.score(ScoreTarget(`#anchor_${a}`))).scaled(1000);
+  const restScore = work.score(ScoreTarget("#rest")).scaled(1000);
   dp.createFunction("spawn").build((ctx) => rb.spawn(ctx, { item: Item.STONE }));
   dp.createFunction("pull").build((ctx) => {
-    math`vec(500, 80000, 500)`.into(anchor);
+    math`vec(0.5, 80, 0.5)`.into(anchor);
     restScore.set(rest);
-    ctx.execute().as(rb.bodies()).run((b) => rb.spring(b, { anchor, rest: restScore, stiffness: 100, attach: [0, 1, 0] }));
+    ctx.execute().as(rb.bodies()).run((b) => rb.spring(b, { anchor, rest: restScore, stiffness: 0.1, attach: [0, 1, 0] }));
   });
   const sim = new Sim(buildDatapack(dp), { block: () => "minecraft:air", blockTags: { "minecraft:air": ["minecraft:air"] } });
   sim.load();
@@ -30,11 +30,11 @@ function pull(rest: number) {
 
 describe("rb.spring", () => {
   it("pulls a stretched spring's body toward the anchor", () => {
-    // 4000 mm past rest: reels in at the 100 mm/tick cap, plus the 49 gravity will add next tick.
-    expect(pull(5000)).toEqual([0, 148, 0]);
+    // 4 blocks past rest: reels in at the 0.1 blocks/tick cap, plus the 0.049 gravity will add next tick.
+    expect(pull(5)).toEqual([0, 149, 0]);
   });
 
   it("does nothing while slack", () => {
-    expect(pull(10000)).toEqual([0, 0, 0]);
+    expect(pull(10)).toEqual([0, 0, 0]);
   });
 });

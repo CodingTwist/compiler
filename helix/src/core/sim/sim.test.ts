@@ -23,6 +23,15 @@ function tickOnce(version: VersionProfile, a: number, b: number, formula: (a: Sc
 }
 
 describe("Sim", () => {
+  it("reads ^ coordinates along the executing entity's rotation, from its eyes when anchored", () => {
+    const sim = new Sim(buildDatapack(new Datapack("test", v26_3_rc_2)));
+    const player = sim.summon("minecraft:player", [0, 70, 0], { Rotation: [90, 0] });
+    sim.run("execute at @s anchored eyes positioned ^1 ^ ^2 run summon minecraft:marker ~ ~ ~", { self: player });
+    const [x, y, z] = sim.entities[1].nbt.Pos as number[];
+    // Yaw 90 faces -x, so left is +z.
+    expect([x, y, z].map((v) => +v.toFixed(6))).toEqual([-2, 71.62, 1]);
+  });
+
   it("agrees on math`` between /compute and scoreboard operations", () => {
     const cases: [number, number, (a: Score, b: Score) => ReturnType<typeof math>, number][] = [
       [7, -3, (a, b) => math`${a} * ${b} + 2`, -19],

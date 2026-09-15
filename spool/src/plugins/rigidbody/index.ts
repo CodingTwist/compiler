@@ -8,10 +8,10 @@
  * Needs 26.3+ (`/compute`). Bodies collide with world blocks and each other; spawn
  * bodies bigger than 1 block with `maxSize` set.
  */
-import { Datapack, Marker, Range, Selector } from "helix";
+import { Datapack, Range, Selector } from "helix";
 import type { FunctionContext, ScoreVec3 } from "helix";
 import type { KitPlugin } from "../../plugin";
-import { createState, PROBE_UUID_INTS, SLOTS, VERTICES, type RigidState } from "./state";
+import { createState, SLOTS, VERTICES, type RigidState } from "./state";
 import { DEFAULT_TUNING, type RigidTuning } from "./tuning";
 import { integrate } from "./integrate";
 import { collideWorld, defineDetect, halfExtents, PASSTHROUGH } from "./world";
@@ -40,15 +40,15 @@ export interface RigidBodies {
   spawn(ctx: FunctionContext, opts: SpawnOptions): void;
   /** Applies {@link input} to the executing body. */
   impulse(ctx: FunctionContext): void;
-  /** Where to write an impulse before {@link impulse}: world point and impulse vector, both mm. */
+  /** Where to write an impulse before {@link impulse}: world point and impulse vector. */
   readonly input: { readonly point: ScoreVec3; readonly impulse: ScoreVec3 };
   /** Keeps the executing body within a rope's length of an anchor. Call it after the physics tick. */
   spring(ctx: FunctionContext, opts: SpringOptions): void;
-  /** Writes the executing body's three half-edge vectors (mm) into scratch and returns them. */
+  /** Writes the executing body's three half-edge vectors into scratch and returns them. */
   halfAxes(): ScoreVec3[];
-  /** Writes where `local` on the executing body is in the world (mm). */
+  /** Writes where `local` on the executing body is in the world. */
   pointOnBody(ctx: FunctionContext, local: LocalPoint, into: ScoreVec3): void;
-  /** Runs `onHit` as the nearest body `ray` meets within `range` blocks, with the hit point (mm). */
+  /** Runs `onHit` as the nearest body `ray` meets within `range` blocks, with the hit point. */
   raycast(ctx: FunctionContext, ray: Ray, range: number, onHit: (ctx: FunctionContext, point: ScoreVec3) => void): void;
   /** `@e[tag=rb.body]`. */
   bodies(): Selector;
@@ -73,13 +73,12 @@ function defineRigidBodies(dp: Datapack, opts: RigidOptions): RigidBodies {
   });
 
   s.fn.tick.build((ctx) => {
-    // The probe follows the bodies; summon it next to one if it's missing.
+    // The locator follows the bodies; summon it next to one if it's missing.
     ctx
       .execute()
-      .unlessEntity(s.probe())
       .as(s.bodies().limit(1))
       .at(Selector.self())
-      .run((b) => b.summon(Marker({ uuid: PROBE_UUID_INTS })));
+      .run((b) => s.locator.ensure(b));
     ctx
       .execute()
       .as(s.bodies().score(s.body.sleeping.objective, new Range(0, 0)))
@@ -89,7 +88,7 @@ function defineRigidBodies(dp: Datapack, opts: RigidOptions): RigidBodies {
   s.fn.step.build((ctx) => {
     integrate(s, t);
     collideWorld(s, ctx);
-    s.scalar("pass").set(t.passes);
+    s.count("pass").set(t.passes);
     ctx.call(s.fn.solvePass);
     collidePairs(s, t, ctx);
     resolvePenetration(s, t, ctx);
@@ -98,7 +97,7 @@ function defineRigidBodies(dp: Datapack, opts: RigidOptions): RigidBodies {
   });
 
   // No command moves an entity to score coordinates or sets a display's rotation.
-  dp.allow("nbt-write", s.fn.step, "probe move and render merge: one entity write each, no command form");
+  dp.allow("nbt-write", s.fn.step, "locator move and render merge: one entity write each, no command form");
 
   for (let i = 0; i < VERTICES; i++) defineDetect(s, t, i);
   for (let i = 0; i < SLOTS; i++) defineSolve(s, t, i);

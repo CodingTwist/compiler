@@ -33,16 +33,19 @@ export function execute(sim: Sim, t: string[], src: SimSource, stores: Store[] =
     }
     case "at": {
       let last = 0;
-      for (const e of select(sim.entities, t[1], src)) last = next(2, { ...src, at: [...(e.nbt.Pos as [number, number, number])] });
+      for (const e of select(sim.entities, t[1], src))
+        last = next(2, { ...src, at: [...(e.nbt.Pos as [number, number, number])], rot: e.nbt.Rotation as [number, number] | undefined });
       return last;
     }
+    case "anchored":
+      return next(2, { ...src, eyes: t[1] === "eyes" });
     case "positioned":
       if (t[1] === "as") {
         let last = 0;
         for (const e of select(sim.entities, t[2], src)) last = next(3, { ...src, at: [...(e.nbt.Pos as [number, number, number])] });
         return last;
       }
-      return next(4, { ...src, at: parsePos(t.slice(1, 4), src.at) });
+      return next(4, { ...src, at: parsePos(t.slice(1, 4), src.at, src), eyes: false });
     case "align":
       return next(2, { ...src, at: src.at.map((v, i) => (t[1].includes("xyz"[i]) ? Math.floor(v) : v)) as typeof src.at });
     case "if":

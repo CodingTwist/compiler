@@ -17,4 +17,8 @@ export interface SimSource {
   readonly sim: Sim;
   readonly self: SimEntity | null;
   readonly at: V3;
+  /** Yaw and pitch in degrees, for `^` coordinates: set by `execute at`. */
+  readonly rot?: readonly [number, number];
+  /** Whether `^` coordinates start at the eyes: `execute anchored eyes`. */
+  readonly eyes?: boolean;
 }

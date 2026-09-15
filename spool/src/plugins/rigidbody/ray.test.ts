@@ -15,9 +15,10 @@ function cast(bodies: { x: number; rotation?: Quat }[], range = 10) {
   const rb = dp.rigidbody();
   bodies.forEach((b, n) => dp.createFunction(`spawn_${n}`).build((ctx) => rb.spawn(ctx, { item: Item.STONE, rotation: b.rotation })));
   dp.createFunction("cast").build((ctx) => {
-    const ray = { origin: ScoreVec3.from((a) => work.score(ScoreTarget(`#o_${a}`))), dir: ScoreVec3.from((a) => work.score(ScoreTarget(`#d_${a}`))) };
-    math`vec(-5000, 70500, 500)`.into(ray.origin);
-    math`vec(1000, 0, 0)`.into(ray.dir);
+    const vec = (n: string) => ScoreVec3.from((a) => work.score(ScoreTarget(`#${n}_${a}`))).scaled(1000);
+    const ray = { origin: vec("o"), dir: vec("d") };
+    math`vec(-5, 70.5, 0.5)`.into(ray.origin);
+    math`vec(1, 0, 0)`.into(ray.dir);
     rb.raycast(ctx, ray, range, (b) => b.tag().add(Selector.self(), "hit"));
   });
   const sim = new Sim(buildDatapack(dp), { block: () => "minecraft:air", blockTags: { "minecraft:air": ["minecraft:air"] } });

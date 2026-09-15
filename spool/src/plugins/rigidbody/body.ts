@@ -1,7 +1,7 @@
 // Spawning bodies and pushing them.
 import { EntityType, Float, ItemDisplay, Nbt, Path, Pos, Selector, math } from "helix";
 import type { FunctionContext, ItemValue, Quat, ScoreVec3 } from "helix";
-import { MM, Q, SPIN_PER_TORQUE, type RigidState } from "./state";
+import { type RigidState } from "./state";
 
 /** What {@link spawnBody} summons. */
 export interface SpawnOptions {
@@ -9,9 +9,9 @@ export interface SpawnOptions {
   readonly item: ItemValue;
   /** Edge length in blocks. Defaults to 1. */
   readonly size?: number;
-  /** Inverse mass ×1000: bigger is lighter. Defaults to 800. */
+  /** Inverse mass: bigger is lighter, 0 never moves. Defaults to 0.8. */
   readonly invMass?: number;
-  /** Inverse rotational inertia ×1000: bigger spins easier. Defaults to 200. */
+  /** Inverse rotational inertia: bigger spins easier. Defaults to 0.2. */
   readonly invInertia?: number;
   /** Starting orientation as [x, y, z, w], e.g. helix `quat("x", 30)`. */
   readonly rotation?: Quat;
@@ -42,20 +42,20 @@ export function spawnBody(s: RigidState, ctx: FunctionContext, o: SpawnOptions):
   const fresh = Selector.allEntities().type(EntityType.ITEM_DISPLAY).tag("rb.new").limit(1);
   ctx.execute().as(fresh).run((b) => {
     const { body } = s;
-    body.pos.readEntity(Selector.self(), Path.Entity.Pos, MM, { ctx: b });
+    body.pos.readEntity(Selector.self(), Path.Entity.Pos, { ctx: b });
     for (const v of [body.vel, body.spin]) v.components.forEach((c) => c.set(0, b));
-    body.qw.set(Math.round(w * Q), b);
-    [x, y, z].forEach((q, i) => body.qv.components[i].set(Math.round(q * Q), b));
-    body.half.set(Math.round((size * MM) / 2), b);
-    body.invMass.set(o.invMass ?? 800, b);
-    body.invInertia.set(o.invInertia ?? 200, b);
+    body.qw.set(w, b);
+    [x, y, z].forEach((q, i) => body.qv.components[i].set(q, b));
+    body.half.set(size / 2, b);
+    body.invMass.set(o.invMass ?? 0.8, b);
+    body.invInertia.set(o.invInertia ?? 0.2, b);
     wake(s, b);
     b.tag().remove(Selector.self(), "rb.new");
   });
 }
 
 /**
- * Builds `rb/impulse`: applies `input.impulse` at world point `input.point` (mm) to the
+ * Builds `rb/impulse`: applies `input.impulse` at world point `input.point` to the
  * executing body and wakes it.
  */
 export function defineImpulse(s: RigidState, input: { point: ScoreVec3; impulse: ScoreVec3 }): void {
@@ -63,8 +63,8 @@ export function defineImpulse(s: RigidState, input: { point: ScoreVec3; impulse:
   s.fn.impulse.build((ctx) => {
     const r = s.vector("ir");
     math`${input.point} - ${pos}`.into(r);
-    math`${vel} + ${input.impulse} * ${im} / 1000`.into(vel);
-    math`${spin} + cross(${r}, ${input.impulse}) * ${SPIN_PER_TORQUE} * ${ii}`.into(spin);
+    math`${vel} + ${input.impulse} * ${im}`.into(vel);
+    math`${spin} + cross(${r}, ${input.impulse}) * ${ii}`.into(spin);
     wake(s, ctx);
   });
 }
@@ -72,5 +72,5 @@ export function defineImpulse(s: RigidState, input: { point: ScoreVec3; impulse:
 /** Clears the sleep flag and primes the motion sum so the body can't fall straight back asleep. */
 export function wake(s: RigidState, ctx: FunctionContext): void {
   s.body.sleeping.set(0, ctx);
-  s.body.motion.set(10000, ctx);
+  s.body.motion.set(0.01, ctx);
 }

@@ -1,9 +1,10 @@
 // A ray held in scores: where an entity looks from and which way, for math-based hit tests.
-import { EntityAnchor, Marker, Path, Pos, Selector, math } from "helix";
+import { Path, ScoreTarget, Selector, math } from "helix";
 import type { FunctionContext, ScoreVec3 } from "helix";
 import type { RaycastState } from "./context";
+import { locator } from "../locator";
 
-/** A ray in scores: origin (mm) and direction (length 1000). */
+/** A ray in scores, in blocks: origin, and a direction of length 1. */
 export interface Ray {
   readonly origin: ScoreVec3;
   readonly dir: ScoreVec3;
@@ -15,25 +16,26 @@ export interface LookRay extends Ray {
   fill(ctx: FunctionContext): void;
 }
 
-const PROBE_UUID_INTS: [number, number, number, number] = [0x7261, 0, 0, 1];
-const probe = () => Selector.uuid("7261-0-0-0-1");
+const DEG = Math.PI / 180;
 
 /** Builds the pack's look ray on the `raycast.work` objective. */
 export function createLookRay(s: RaycastState): LookRay {
-  const origin = s.vector("look_o");
-  const dir = s.vector("look_d");
-  const ahead = s.vector("look_a");
+  const origin = s.vector("look_o").scaled(1000);
+  const dir = s.vector("look_d").scaled(1000);
+  const [yaw, pitch] = ["yaw", "pitch"].map((n) => s.work.score(ScoreTarget(`#look_${n}`)).scaled(1000));
+  const loc = locator(s.dp);
   return {
     origin,
     dir,
     fill(ctx) {
-      // Summoned per fill and killed after, so a stale probe in an unloaded chunk can't block it.
-      ctx.execute().anchored(EntityAnchor.EYES).positioned(Pos.local(0, 0, 0)).run((b) => b.summon(Marker({ uuid: PROBE_UUID_INTS })));
-      origin.readEntity(probe(), Path.Entity.Pos, 1000, { ctx });
-      ctx.execute().anchored(EntityAnchor.EYES).positioned(Pos.local(0, 0, 1)).run((b) => b.teleport(probe(), Pos.here()));
-      ahead.readEntity(probe(), Path.Entity.Pos, 1000, { ctx });
-      ctx.kill(probe());
-      math`${ahead} - ${origin}`.into(dir, ctx);
+      // Eye height changes with sneaking and swimming, so the locator finds it.
+      loc.ensure(ctx);
+      loc.toEyes(ctx);
+      loc.read(ctx, origin);
+      [yaw, pitch].forEach((angle, i) =>
+        ctx.execute().storeResultScore(angle).run((b) => b.entity(Selector.self()).get(Path.Entity.Rotation.index(i), angle.scale)),
+      );
+      math`vec(-sin(${yaw} * ${DEG}) * cos(${pitch} * ${DEG}), -sin(${pitch} * ${DEG}), cos(${yaw} * ${DEG}) * cos(${pitch} * ${DEG}))`.into(dir, ctx);
     },
   };
 }

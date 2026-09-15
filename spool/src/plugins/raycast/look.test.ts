@@ -7,14 +7,16 @@ import { raycast } from ".";
 installKit([raycast]);
 
 describe("dp.lookRay", () => {
-  it("summons a probe at the eyes, reads it there and a block ahead, then kills it", () => {
+  it("reads the eyes through the locator and turns Rotation into a direction", () => {
     const dp = new Datapack("test", v26_3_rc_2);
     expect(dp.lookRay()).toBe(dp.lookRay());
     dp.createFunction("look").build((ctx) => dp.lookRay().fill(ctx));
     dp.report();
     const lines = dp.files.get("look")!;
-    expect(lines).toMatch(/^execute anchored eyes positioned \^ \^ \^ run summon minecraft:marker/);
-    expect(lines).toContain("execute anchored eyes positioned ^ ^ ^1 run teleport 7261-0-0-0-1 ~ ~ ~");
-    expect(lines).toMatch(/kill 7261-0-0-0-1/);
+    expect(lines).toContain("execute anchored eyes positioned ^ ^ ^ run teleport 6c6f63-0-0-0-1 ~ ~ ~");
+    expect(lines).toContain("data get entity 6c6f63-0-0-0-1 Pos[1] 1000");
+    expect(lines).toContain("data get entity @s Rotation[1] 1000");
+    expect(lines).toContain('"type":"sin"');
+    expect(lines).not.toContain("kill");
   });
 });
