@@ -1,5 +1,5 @@
 // The two math functions player_motion emits: store reference vectors and convert to local axes.
-import { Pos, NbtPath, math } from "helix";
+import { Pos, NbtPath, ScoreVec3 } from "helix";
 import type { PlayerMotionInternals } from "./context";
 
 /**
@@ -9,9 +9,8 @@ import type { PlayerMotionInternals } from "./context";
  * `store_reference_vectors`: teleport one unit along each local axis and read the world
  * position, giving vectors i (left), j (up), k (forward).
  *
- * `convert_to_local`: dot the world vector with i, j and k. Values are scaled by 100000
- * because
- * scores are integers.
+ * `convert_to_local`: dot the world vector with i, j and k. Reference vectors are scaled by
+ * 100000 because scores are integers.
  */
 /** The three reference vectors in `temp` storage. */
 export const VEC = {
@@ -29,9 +28,7 @@ export function defineMath(I: PlayerMotionInternals): void {
     temp,
     fStoreRefVectors,
     fConvertToLocal,
-    workX,
-    workY,
-    workZ,
+    work,
     dummyScore,
     constant,
   } = I;
@@ -49,46 +46,19 @@ export function defineMath(I: PlayerMotionInternals): void {
 
   // --- internal/math/global/convert_to_local (no-tp approximation) ----------
   fConvertToLocal.build((ctx) => {
-    const getInto = (dest: typeof workX, path: NbtPath) =>
-      ctx
-        .execute()
-        .storeResultScore(dest)
-        .run((b) => b.storage(temp).get(path, 100000));
-
-    // Save the world vector, because the work slots are reused for the reference vectors
-    // below.
-    const g = {
-      x: dummyScore("#_x"),
-      y: dummyScore("#_y"),
-      z: dummyScore("#_z"),
-    };
-    g.x.assign(workX);
-    g.y.assign(workY);
-    g.z.assign(workZ);
-
-    // Only the components that can be non-zero: i (left) is horizontal, so no y.
-    const iZ = dummyScore("#vec_i.z");
-    const jY = dummyScore("#vec_j.y");
-    const jZ = dummyScore("#vec_j.z");
-    const kY = dummyScore("#vec_k.y");
-    const kZ = dummyScore("#vec_k.z");
-    getInto(workX, VEC.i.index(0));
-    getInto(iZ, VEC.i.index(2));
-    getInto(workY, VEC.j.index(0));
-    getInto(jY, VEC.j.index(1));
-    getInto(jZ, VEC.j.index(2));
-    getInto(workZ, VEC.k.index(0));
-    getInto(kY, VEC.k.index(1));
-    getInto(kZ, VEC.k.index(2));
+    // Save the world vector, because the work slots receive the result.
+    const g = ScoreVec3.from((axis) => dummyScore(`#_${axis}`)).assign(work);
+    const ref = (name: keyof typeof VEC) =>
+      ScoreVec3.from((axis) => dummyScore(`#vec_${name}.${axis}`)).readStorage(
+        temp,
+        VEC[name],
+        100000,
+      );
 
     // local = (g·i, g·j, g·k) / 100000
-    const S = constant("#constant.100000");
-    math`(${workX} * ${g.x} + ${iZ} * ${g.z}) / ${S}`.into(workX);
-    math`(${workY} * ${g.x} + ${jY} * ${g.y} + ${jZ} * ${g.z}) / ${S}`.into(
-      workY,
-    );
-    math`(${workZ} * ${g.x} + ${kY} * ${g.y} + ${kZ} * ${g.z}) / ${S}`.into(
-      workZ,
-    );
+    ref("i").dot(g, work.x);
+    ref("j").dot(g, work.y);
+    ref("k").dot(g, work.z);
+    work.divide(constant("#constant.100000"));
   });
 }
