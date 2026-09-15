@@ -4,7 +4,7 @@ import { BlockValue } from "../block";
 import { Id } from "../id";
 import { ItemValue } from "../item";
 import { EntityPredicateSpec, LocationSpec, Predicate } from "../predicate";
-import { atLeast } from "../entity-nbt/fields";
+import { PREDICATE_FIELDS_DATA_VERSION } from "./versions";
 
 /** JSON object Minecraft reads as one advancement criterion (`{ trigger, conditions? }`). */
 export type CriterionJson = {
@@ -29,7 +29,7 @@ function entityField(
   version: VersionProfile,
 ): Record<string, unknown> {
   const json = Predicate.entity(spec, "this").toJson(version);
-  return atLeast(version, "26.3")
+  return version.dataVersion >= PREDICATE_FIELDS_DATA_VERSION
     ? json
     : (json.predicate as Record<string, unknown>);
 }
@@ -37,7 +37,7 @@ function entityField(
 /** An advancement condition-list field: a list before 26.3, one condition since. */
 function conditionField(p: Predicate, version: VersionProfile): unknown {
   const json = p.toJson(version);
-  return atLeast(version, "26.3") ? json : [json];
+  return version.dataVersion >= PREDICATE_FIELDS_DATA_VERSION ? json : [json];
 }
 
 /**
@@ -94,7 +94,7 @@ export class Trigger {
     return new Trigger((v) => ({
       trigger: "minecraft:enter_block",
       conditions: {
-        [atLeast(v, "26.3") ? "blocks" : "block"]: blockStr(block),
+        [v.dataVersion >= PREDICATE_FIELDS_DATA_VERSION ? "blocks" : "block"]: blockStr(block),
       },
     }));
   }

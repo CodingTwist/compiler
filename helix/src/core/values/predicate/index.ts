@@ -3,4 +3,3 @@
 export * from "./types";
 export * from "./predicate";
 export * from "./ref";
-export { conditionKey } from "./render";

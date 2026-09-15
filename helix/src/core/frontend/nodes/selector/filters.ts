@@ -41,6 +41,12 @@ export class SelectorFilters {
     return this;
   }
 
+  /** Excludes entities with a tag (`tag=!name`). Repeat to exclude several. */
+  notTag(name: string): this {
+    this.tags.push(`!${name}`);
+    return this;
+  }
+
   limit(n: number): this {
     this.limitValue = n;
     return this;

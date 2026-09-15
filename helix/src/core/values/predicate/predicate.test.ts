@@ -11,9 +11,15 @@ import { IfElseNode, predicateCheck } from "../../commands/if";
 import { FunctionNode } from "../../ir/node";
 import { FunctionContext } from "../../frontend/context";
 import { v1_21_4 } from "../../../versions/profiles";
-import { v1_20_1 } from "../../../versions/profiles";
+import { v1_20_1, v26_3_rc_2 } from "../../../versions/profiles";
 
 describe("Predicate builder", () => {
+  it("renders scoreValue as value_check before 26.3 and int_value_check since", () => {
+    const p = Predicate.scoreValue("#x", "obj", 1);
+    expect(p.toJson(v1_21_4)).toMatchObject({ condition: "minecraft:value_check", range: 1 });
+    expect(p.toJson(v26_3_rc_2)).toMatchObject({ type: "minecraft:int_value_check", test: 1 });
+  });
+
   it("renders an entity_properties check with an embedded NBT match", () => {
     const p = Predicate.entity({
       type: "zombie",

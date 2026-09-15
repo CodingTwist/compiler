@@ -2,7 +2,10 @@ import type { VersionProfile } from "../../../versions/profile";
 import { Id } from "../id";
 import type { BlockValue } from "../block";
 import type { ItemValue } from "../item";
-import { atLeast } from "../entity-nbt/fields";
+import {
+  CONDITION_TYPE_DATA_VERSION,
+  INT_VALUE_CHECK_DATA_VERSION,
+} from "./versions";
 import {
   conditionKey,
   idStr,
@@ -70,6 +73,28 @@ export class Predicate {
     });
   }
 
+  /**
+   * `value_check` - passes when fixed score holder `name`'s `objective` score is in `range`.
+   */
+  static scoreValue(
+    name: string,
+    objective: string,
+    range: ScoreBound,
+  ): Predicate {
+    return new Predicate((v) => {
+      const since = v.dataVersion >= INT_VALUE_CHECK_DATA_VERSION;
+      return {
+        ...conditionKey(v, since ? "int_value_check" : "value_check"),
+        value: {
+          type: "minecraft:score",
+          target: { type: "minecraft:fixed", name },
+          score: objective,
+        },
+        [since ? "test" : "range"]: range,
+      };
+    });
+  }
+
   /** `block_state_property` - the block being checked plus optional blockstate values. */
   static blockState(
     block: string | BlockValue,
@@ -78,7 +103,7 @@ export class Predicate {
     return new Predicate((v) => {
       const id = typeof block === "string" ? idStr(block) : block.render();
       const hasProps = properties && Object.keys(properties).length;
-      if (atLeast(v, "26.3")) {
+      if (v.dataVersion >= CONDITION_TYPE_DATA_VERSION) {
         return {
           ...conditionKey(v, "match_block"),
           blocks: id,
@@ -164,7 +189,7 @@ export class Predicate {
           : ref.render();
     // 26.3 dropped `reference`; an id string is a valid term instead.
     return new Predicate((v) =>
-      atLeast(v, "26.3")
+      v.dataVersion >= CONDITION_TYPE_DATA_VERSION
         ? { ...conditionKey(v, "all_of"), terms: [name] }
         : { ...conditionKey(v, "reference"), name },
     );

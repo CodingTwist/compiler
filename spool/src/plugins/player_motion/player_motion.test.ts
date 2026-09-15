@@ -86,14 +86,8 @@ describe("dp.playerMotion (kit)", () => {
 
   it("registers both predicates and the load-tagged init", () => {
     const { dp } = build();
-    expect(
-      dp.registryFileDefs.has(`${v26_2.paths.predicate}/internal/large_global`),
-    ).toBe(true);
-    expect(
-      dp.registryFileDefs.has(
-        `${v26_2.paths.predicate}/internal/falling_creative_player`,
-      ),
-    ).toBe(true);
+    expect(dp.predicateDefs.has("internal/large_global")).toBe(true);
+    expect(dp.predicateDefs.has("internal/falling_creative_player")).toBe(true);
     expect(dp.tags.get("load")?.has("internal/init")).toBe(true);
     expect(dp.files.get("internal/init")).toContain(
       "summon minecraft:marker 0.0 0.0 0.0",

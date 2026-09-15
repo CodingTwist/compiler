@@ -3,8 +3,8 @@ import type { Datapack } from "helix";
 import {
   MARKER_UUID,
   enchantmentJson,
-  largeGlobalJson,
-  fallingCreativeJson,
+  largeGlobal as largeGlobalDef,
+  fallingCreative as fallingCreativeDef,
 } from "./resources";
 
 /**
@@ -57,19 +57,11 @@ export function createInternals(dp: Datapack) {
     "internal/apply_impulse",
     enchantmentJson(ns, dp.version),
   );
-  const predicateFolder = dp.version.paths.predicate;
-  dp.registryFile(
-    predicateFolder,
-    "internal/large_global",
-    largeGlobalJson(dp.version),
-  );
-  dp.registryFile(
-    predicateFolder,
+  const largeGlobal = dp.predicate("internal/large_global", largeGlobalDef);
+  const fallingCreative = dp.predicate(
     "internal/falling_creative_player",
-    fallingCreativeJson(dp.version),
+    fallingCreativeDef,
   );
-  const largeGlobal = `${ns}:internal/large_global`;
-  const fallingCreative = `${ns}:internal/falling_creative_player`;
 
   // --- Function refs (created up front so bodies can cross-reference) ---------
   const fInit = dp.createFunction("internal/init", "load");

@@ -1,30 +1,15 @@
 /**
- * Enchantment and predicate JSON for `player_motion`, under the consuming pack's namespace
- * `ns`.
+ * The `apply_impulse` enchantment JSON and the predicates for `player_motion`, under the
+ * consuming pack's namespace `ns`.
  */
 
-import { atLeast, conditionKey, type VersionProfile } from "helix";
+import { Predicate, type VersionProfile } from "helix";
 
 /** The dummy marker entity's fixed UUID (`d4bd74a7-4e82-4a07-8850-dfc4d89f9e2f`). */
 export const MARKER_UUID = "d4bd74a7-4e82-4a07-8850-dfc4d89f9e2f";
 
 /** The shared store objective every enchantment effect reads its bit from. */
 const STORE = "player_motion.internal.store";
-
-/** A `value_check` of fixed score `name` on `score`; 26.3 renamed it `int_value_check` with `test`. */
-function scoreCheck(
-  v: VersionProfile,
-  name: string,
-  score: string,
-  range: unknown,
-): Record<string, unknown> {
-  const since26_3 = atLeast(v, "26.3");
-  return {
-    ...conditionKey(v, since26_3 ? "int_value_check" : "value_check"),
-    value: { type: "minecraft:score", target: { type: "minecraft:fixed", name }, score },
-    [since26_3 ? "test" : "range"]: range,
-  };
-}
 
 /** `0.0001 * 2^bit` as an exact decimal, bit 31 negative (the sign bit). */
 export function magnitude(bit: number): number {
@@ -49,7 +34,7 @@ export function enchantmentJson(ns: string, v: VersionProfile): unknown {
   for (const [axis, direction] of axes) {
     for (let bit = 31; bit >= 0; bit--) {
       effects.push({
-        requirements: scoreCheck(v, `#${axis}.${bit}`, STORE, 1),
+        requirements: Predicate.scoreValue(`#${axis}.${bit}`, STORE, 1).toJson(v),
         effect: {
           type: "minecraft:apply_impulse",
           direction,
@@ -73,25 +58,16 @@ export function enchantmentJson(ns: string, v: VersionProfile): unknown {
 }
 
 /** `internal/large_global` - true when any input axis is outside [-12398, 12398]. */
-export function largeGlobalJson(v: VersionProfile): unknown {
-  const axisTerm = (name: string) => ({
-    ...conditionKey(v, "inverted"),
-    term: scoreCheck(v, name, "player_motion.api.launch", {
+export const largeGlobal = Predicate.any(
+  ...["$x", "$y", "$z"].map((name) =>
+    Predicate.scoreValue(name, "player_motion.api.launch", {
       min: -12398,
       max: 12398,
-    }),
-  });
-  return {
-    ...conditionKey(v, "any_of"),
-    terms: [axisTerm("$x"), axisTerm("$y"), axisTerm("$z")],
-  };
-}
+    }).not(),
+  ),
+);
 
 /** `internal/falling_creative_player` - a creative player that is falling. */
-export function fallingCreativeJson(v: VersionProfile): unknown {
-  return {
-    ...conditionKey(v, "entity_properties"),
-    entity: "this",
-    predicate: { flags: { is_on_ground: false, is_flying: false } },
-  };
-}
+export const fallingCreative = Predicate.entity({
+  flags: { is_on_ground: false, is_flying: false },
+});

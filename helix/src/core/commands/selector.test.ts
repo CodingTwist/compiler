@@ -18,6 +18,11 @@ describe("Selector rendering", () => {
     expect(sel.toString()).toBe("@e[x=10.5,y=64,z=40.5,distance=..1,tag=d]");
   });
 
+  it("renders notTag() as a negated tag", () => {
+    const sel = Selector.allEntities().tag("body").notTag("self");
+    expect(sel.toString()).toBe("@e[tag=body,tag=!self]");
+  });
+
   it("renders a volume box as x/y/z/dx/dy/dz", () => {
     const sel = Selector.allPlayers().volume([4, 66, 4], [0, 64, 0]);
     expect(renderSelector(sel.build())).toBe("@a[x=0,y=64,z=0,dx=4,dy=2,dz=4]");

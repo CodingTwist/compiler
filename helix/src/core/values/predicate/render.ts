@@ -1,7 +1,10 @@
 import type { VersionProfile } from "../../../versions/profile";
 import { DV } from "../entity-versions.generated";
-import { atLeast } from "../entity-nbt/fields";
 import { Id } from "../id";
+import {
+  CONDITION_TYPE_DATA_VERSION,
+  ENTITY_TYPE_KEY_DATA_VERSION,
+} from "./versions";
 import type {
   Bound,
   EntityFlags,
@@ -27,8 +30,9 @@ export function conditionKey(
   version: VersionProfile,
   id: string,
 ): PredicateJson {
-  if (!atLeast(version, "26.3")) return { condition: `minecraft:${id}` };
-  return { type: `minecraft:${id}` };
+  return version.dataVersion >= CONDITION_TYPE_DATA_VERSION
+    ? { type: `minecraft:${id}` }
+    : { condition: `minecraft:${id}` };
 }
 
 export function idStr(x: string | Id): string {
@@ -65,7 +69,7 @@ export function renderEntitySpec(
 ): PredicateJson {
   const out: PredicateJson = {};
   if (spec.type !== undefined)
-    out[atLeast(version, "26.2") ? "entity_type" : "type"] = idStr(spec.type);
+    out[version.dataVersion >= ENTITY_TYPE_KEY_DATA_VERSION ? "entity_type" : "type"] = idStr(spec.type);
   if (spec.nbt !== undefined) out.nbt = spec.nbt.render(version);
   if (spec.team !== undefined) out.team = spec.team;
   if (spec.flags) {
