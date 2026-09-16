@@ -79,18 +79,15 @@ export function toSnbt(value: NbtInput, version: VersionProfile): string {
 }
 
 /**
- * SNBT, either a raw string or a JS value serialized at codegen:
+ * SNBT, serialized from a JS value at codegen:
  *
- *   Nbt('{NoAI:1b}')                 -> "{NoAI:1b}"
  *   Nbt({ NoAI: Byte(1) })           -> "{NoAI:1b}"
  *   Nbt({ Pos: [Float(0.5), ...] })  -> "{Pos:[0.5f,...]}"
  */
 export class NbtValue implements CommandValue {
-  constructor(private readonly value: string | NbtInput) {}
+  constructor(private readonly value: NbtInput) {}
   render(version: VersionProfile): string {
-    return typeof this.value === "string"
-      ? this.value
-      : toSnbt(this.value, version);
+    return toSnbt(this.value, version);
   }
 
   /** The top-level keys of a compound, or `undefined` for raw SNBT or anything else. */
@@ -111,4 +108,4 @@ export class NbtValue implements CommandValue {
 }
 
 export type Nbt = NbtValue;
-export const Nbt = (value: string | NbtInput): NbtValue => new NbtValue(value);
+export const Nbt = (value: NbtInput): NbtValue => new NbtValue(value);

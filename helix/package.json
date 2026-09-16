@@ -33,7 +33,8 @@
     "test": "vitest",
     "pretest": "node scripts/versions.mjs sync",
     "docs": "typedoc",
-    "gen:entity-nbt": "node scripts/gen-entity-nbt.mjs"
+    "gen:entity-nbt": "node scripts/gen-entity-nbt.mjs",
+    "gen:block-entity-nbt": "node scripts/gen-block-entity-nbt.mjs"
   },
   "keywords": [],
   "author": "Sam Hardy",

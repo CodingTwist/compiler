@@ -4,16 +4,16 @@ import { textJson as tellrawJson } from "../text-json";
 import { TellrawPart } from "../../frontend/nodes/tellraw_part";
 
 /**
- * Text for item names and lore: a string or a styled text component object.
+ * Text for item names and lore: a string or a styled `text(...)` part.
  *
  *   item.named("Excalibur")
- *   item.named({ text: "Time Lantern", color: "aqua", italic: false })
+ *   item.named(text("Time Lantern").color("aqua"))
  */
-export type TextComponent = string | Record<string, unknown>;
+export type TextComponent = string | TellrawPart;
 
 /** Normalize either form to a text-component object. */
 function textObj(value: TextComponent): Record<string, unknown> {
-  return typeof value === "string" ? { text: value } : value;
+  return typeof value === "string" ? { text: value } : tellrawJson(value);
 }
 
 /** Pre-1.20.5 text: a quoted JSON string, e.g. `'{"text":"Excalibur"}'`. */

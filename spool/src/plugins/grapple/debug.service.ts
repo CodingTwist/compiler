@@ -1,5 +1,5 @@
-import { Component, Path } from "helix";
-import type { FunctionContext } from "helix";
+import { Component, Path, TellrawText, text } from "helix";
+import type { FunctionContext, TellrawPart } from "helix";
 import type {
   GrappleSelectors,
   Scratch,
@@ -40,42 +40,27 @@ export function createDebugService(d: DebugDeps) {
      * The rope is taut when dist² ≥ rope²; if dist² never gets there, you're free-falling.
      */
     readout(scratch: SwingScratch, ctx: FunctionContext): void {
-      const v = ctx.version;
       const { yaw, pitch } = readFacing(ctx);
+      const toPart = (p: string | TellrawPart): TellrawPart =>
+        typeof p === "string" ? text(p) : p;
       ctx.title().actionbar(
         d.selectors.self(),
-        Component([
-          "grapple  dist²=",
-          {
-            score: {
-              name: scratch.distSq.target.render(v),
-              objective: scratch.distSq.objective.getName(),
-            },
-          },
-          "  rope²=",
-          { score: { name: "@s", objective: d.repo.ropeLenSq.getName() } },
-          "  dot=",
-          {
-            score: {
-              name: scratch.dot.target.render(v),
-              objective: scratch.dot.objective.getName(),
-            },
-          },
-          "  facing=",
-          {
-            score: {
-              name: yaw.target.render(v),
-              objective: yaw.objective.getName(),
-            },
-          },
-          "/",
-          {
-            score: {
-              name: pitch.target.render(v),
-              objective: pitch.objective.getName(),
-            },
-          },
-        ]),
+        Component(
+          new TellrawText(
+            [
+              "grapple  dist²=",
+              scratch.distSq,
+              "  rope²=",
+              d.repo.ropeLenSqOf(),
+              "  dot=",
+              scratch.dot,
+              "  facing=",
+              yaw,
+              "/",
+              pitch,
+            ].map(toPart),
+          ),
+        ),
       );
     },
 

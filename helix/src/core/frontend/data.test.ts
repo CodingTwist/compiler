@@ -20,7 +20,7 @@ describe("data facade (code-first NBT holders)", () => {
       ctx.entity(Selector.self()).get("Health");
       ctx.block({ render: () => "~ ~ ~" } as never).get();
       ctx.block({ render: () => "1 2 3" } as never).remove("Items[0]");
-      ctx.storage("example:state").mergeAll(Nbt("{wins:0}"));
+      ctx.storage("example:state").mergeAll(Nbt({ wins: 0 }));
     });
     expect(out).toEqual([
       "data get storage example:state players",
@@ -36,7 +36,7 @@ describe("data facade (code-first NBT holders)", () => {
     const out = render((ctx) => {
       const state = ctx.storage("example:state");
       const self = ctx.entity(Selector.self());
-      state.set("wins", Nbt("0"));
+      state.set("wins", Nbt(0));
       state.merge("players", self.at("SelectedItem"));
       state.append("log", self.at("CustomName").slice(0, 10));
       state.insert(0, "queue", self.at("Held"));

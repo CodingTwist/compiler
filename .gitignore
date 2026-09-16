@@ -17,3 +17,5 @@ unravel/
 .DS_Store
 *.log
 helix/scripts/.cache/*
+.build/*
+proof/.build/*
