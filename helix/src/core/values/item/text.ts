@@ -7,13 +7,17 @@ import { TellrawPart } from "../../frontend/nodes/tellraw_part";
  * Text for item names and lore: a string or a styled text component object.
  *
  *   item.named("Excalibur")
+ *   item.named(text("Time Lantern").color(Color.AQUA).italic(false))
  *   item.named({ text: "Time Lantern", color: "aqua", italic: false })
  */
-export type TextComponent = string | Record<string, unknown>;
+export type TextComponent = string | TellrawPart | Record<string, unknown>;
 
-/** Normalize either form to a text-component object. */
+/** Normalize every form to a text-component object. */
 function textObj(value: TextComponent): Record<string, unknown> {
-  return typeof value === "string" ? { text: value } : value;
+  if (typeof value === "string") return { text: value };
+  // No codegen context here, so a span referencing a selector/score/NBT throws by design.
+  if (value instanceof TellrawPart) return tellrawJson(value);
+  return value;
 }
 
 /** Pre-1.20.5 text: a quoted JSON string, e.g. `'{"text":"Excalibur"}'`. */

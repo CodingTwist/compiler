@@ -68,8 +68,9 @@ export function parseReport(xml: string): Result[] {
   }));
 }
 
+// The boundary matters: without it `name` also matches the `classname` attribute.
 const attr = (attrs: string, name: string) =>
-  attrs.match(new RegExp(`${name}="([^"]*)"`))?.[1] ?? "";
+  attrs.match(new RegExp(`\\b${name}="([^"]*)"`))?.[1] ?? "";
 
 function pick(body: string, tag: "failure" | "skipped"): Partial<Result> {
   const found = body.match(new RegExp(`<${tag}[^>]*message="([^"]*)"`));

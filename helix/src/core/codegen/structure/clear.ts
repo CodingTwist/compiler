@@ -10,8 +10,21 @@ const AIR_NAMES = new Set([
   "minecraft:void_air",
 ]);
 
-/** The author-chosen fill for a `_clear` variant (see `Clip.clearWith`). */
-export type ClearFill = { Name: string; Properties?: Record<string, string> };
+/**
+ * The author-chosen fill for a `_clear` variant (see `Clip.clearWith`), as
+ * `Block.toBlockState()` renders it - either key spelling (see `paletteKeys`).
+ */
+export type ClearFill = Record<string, string | Record<string, string>>;
+
+/** The fill's block id and properties, whichever spelling it was rendered with. */
+function fillParts(fill: ClearFill) {
+  return {
+    name: (fill.Name ?? fill.id) as string,
+    props: (fill.Properties ?? fill.properties) as
+      | Record<string, string>
+      | undefined,
+  };
+}
 
 // 26.3 renamed the palette keys `Name`/`Properties` to `id`/`properties`; the derived
 // structure has to keep whichever spelling the source used or the game reads no blocks.
@@ -41,14 +54,15 @@ export function deriveClearStructure(gz: Buffer, fill: ClearFill): Buffer {
   });
 
   // New single-entry palette: just the chosen fill block (+ its properties).
+  const chosen = fillParts(fill);
   const fillEntry = new Map<string, Tag>([
-    [keys.name, { id: STRING, v: fill.Name }],
+    [keys.name, { id: STRING, v: chosen.name }],
   ]);
-  if (fill.Properties && Object.keys(fill.Properties).length > 0) {
+  if (chosen.props && Object.keys(chosen.props).length > 0) {
     fillEntry.set(keys.props, {
       id: COMPOUND,
       v: new Map(
-        Object.entries(fill.Properties).map(([k, val]) => [
+        Object.entries(chosen.props).map(([k, val]) => [
           k,
           { id: STRING, v: val } as Tag,
         ]),

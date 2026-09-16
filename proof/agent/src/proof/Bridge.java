@@ -49,7 +49,7 @@ final class Bridge {
     o.addProperty("type", "minecraft:function");
     o.addProperty("environment", "minecraft:default");
     o.addProperty("function", Agent.LIVE_NAMESPACE + ":" + NAME);
-    o.addProperty("structure", "minecraft:empty");
+    o.addProperty("structure", Area.ID);
     o.addProperty("max_ticks", TICK_BUDGET);
     o.addProperty("setup_ticks", 0);
     o.addProperty("required", true);
@@ -123,7 +123,7 @@ final class Bridge {
     MinecraftServer server = helper.getLevel().getServer();
     return switch (req.op()) {
       case "cmd" -> command(helper, req.strArg("text"));
-      case "fn" -> function(helper, req.strArg("id"), pos(req));
+      case "fn" -> function(helper, req.strArg("function"), pos(req));
       case "entities" -> entities(helper, req.strArg("type"), req.strArg("tag"));
       case "block" -> Snapshots.block(helper, BlockPos.containing(pos(req)));
       case "score" -> score(server, req.strArg("holder"), req.strArg("objective"));

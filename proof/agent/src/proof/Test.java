@@ -23,8 +23,8 @@ public @interface Test {
   /** A false test is reported but does not fail the run. */
   boolean required() default true;
 
-  /** The structure placed for the test. The default is an empty area. */
-  String structure() default "minecraft:empty";
+  /** The structure placed for the test. The default is {@link Area}, an empty room. */
+  String structure() default Area.ID;
 
   /** Blocks of empty space around the structure. */
   int padding() default 4;

@@ -1,6 +1,7 @@
 package proof;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.io.BufferedReader;
@@ -38,7 +39,8 @@ final class Link {
     }
   }
 
-  private static final Gson GSON = new Gson();
+  /** Nulls are written out, because a null reply value is an answer ("no such score"). */
+  private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
   /**
    * Binds an ephemeral port, announces it on stdout and serves one client.

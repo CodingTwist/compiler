@@ -7,20 +7,23 @@ import path from "path";
 import { classpath } from "./classpath";
 import { compile } from "./compile";
 
+/** The proof package itself, so a run works from any directory - vitest starts in the repo root. */
+const HERE = path.resolve(__dirname, "..");
+
 /** Everything proof builds, under one directory so a clean is one `rm -rf`. */
 export const build = {
-  root: ".build",
-  server: ".build/server",
-  agent: ".build/agent",
-  tests: ".build/tests",
-  packs: ".build/packs",
-  universe: ".build/universe",
-  report: ".build/report.xml",
+  root: path.join(HERE, ".build"),
+  server: path.join(HERE, ".build/server"),
+  agent: path.join(HERE, ".build/agent"),
+  tests: path.join(HERE, ".build/tests"),
+  packs: path.join(HERE, ".build/packs"),
+  universe: path.join(HERE, ".build/universe"),
+  report: path.join(HERE, ".build/report.xml"),
 } as const;
 
 /** Where the agent's own sources and the Java tests live. */
-const AGENT_SRC = "agent/src";
-const TEST_SRC = "agent/tests";
+const AGENT_SRC = path.join(HERE, "agent/src");
+const TEST_SRC = path.join(HERE, "agent/tests");
 
 export interface LaunchOptions {
   /** Minecraft version, matching the pack under test. */

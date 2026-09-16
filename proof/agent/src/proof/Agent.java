@@ -33,6 +33,7 @@ public final class Agent {
 
     List<Discovery.Case> cases = Discovery.scan(Path.of(System.getProperty("proof.classes")));
     Path data = Path.of(System.getProperty("proof.instances"));
+    Area.write(data);
     Discovery.writeInstances(cases, data);
     Bridge.writeInstance(data);
 

@@ -12,13 +12,6 @@ export {
   v26_3_rc_2,
 } from "./versions/profiles";
 
-// Structure (`.nbt`) codec, for tools that generate or inspect templates. Node-only.
-export { Reader as NbtReader, Writer as NbtWriter } from "./core/codegen/structure";
-export * as NbtTags from "./core/codegen/structure/tags";
-
-// SNBT text -> plain data, for reading `/data get` output back out of a game or log.
-export { parseSnbt, type Tag as NbtTag, type Compound as NbtCompound } from "./core/sim/nbt";
-
 // Template names a build will ship, for validating references. Node-only.
 export { shippedStructureNames } from "./core/codegen/write";
 

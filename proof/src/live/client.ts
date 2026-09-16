@@ -7,6 +7,9 @@ export interface Client {
   close(): void;
 }
 
+/** How long a single request may go unanswered before it reports instead of hanging. */
+const STALL = 60_000;
+
 interface Reply {
   id: number;
   ok: boolean;
@@ -48,10 +51,18 @@ export async function connect(port: number): Promise<Client> {
       const run = () =>
         new Promise<unknown>((resolve, reject) => {
           const mine = ++id;
-          waiting.set(mine, (r) =>
-            r.ok ? resolve(r.value) : reject(new Error(`${op}: ${r.error}`)),
+          // A reply is matched by id, so the envelope has to win over an argument of the same name.
+          const line = JSON.stringify({ ...args, id: mine, op });
+          const stall = setTimeout(
+            () => reject(new Error(`${op}: the proof agent did not answer in ${STALL / 1000}s`)),
+            STALL,
           );
-          socket.write(`${JSON.stringify({ id: mine, op, ...args })}\n`);
+          waiting.set(mine, (r) => {
+            clearTimeout(stall);
+            if (r.ok) resolve(r.value);
+            else reject(new Error(`${op}: ${r.error}`));
+          });
+          socket.write(`${line}\n`);
         });
       chain = chain.then(run, run);
       return chain;

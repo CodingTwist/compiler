@@ -79,10 +79,11 @@ ln -s "$PWD" ~/.vscode/extensions/helix-report   # then reload the window
 ## Real-server tests (`proof/`)
 
 Runs a pack in a headless vanilla server so game behaviour is checked against the real game.
-Prefer its **live mode**: the test is plain TypeScript/vitest driving the server console
-(`useServer(dp)` → `mc.cmd/tick/data/score/count`), no Java mod and no test code in the pack.
-Gametest mode (`defineTest`, compiled into the pack) stays for cases that must run the way a
-shipped pack does. See [proof/CLAUDE.md](proof/CLAUDE.md).
+No assertion goes through a command: a small Java agent compiled against the (deobfuscated)
+26.3 server jar reads live objects, and both modes run under vanilla's own `GameTestServer`.
+Write tests in TypeScript (`useServer(dp)` → `mc.tick/cmd/fn/entities/block/score`, `npm test`)
+or in Java as `@Test` methods on `GameTestHelper` (`npm run test:mc`).
+See [proof/CLAUDE.md](proof/CLAUDE.md).
 
 ## Docs site
 

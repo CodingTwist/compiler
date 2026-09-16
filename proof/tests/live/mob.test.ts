@@ -6,12 +6,13 @@ import { dp, golem } from "../pack";
 let mc: Mc;
 beforeAll(async () => void (mc = await useServer(dp)), 300_000);
 
-/** One block above the floor the test lays down, so the mob lands immediately. */
-const SPAWN: Vec3 = [2, 2, 2];
+/** One block above the middle of the floor the test lays down, so the mob lands immediately. */
+const SPAWN: Vec3 = [4, 2, 4];
 
 beforeEach(async () => {
   await mc.reset();
-  await mc.cmd("fill ~ ~1 ~ ~4 ~1 ~4 stone");
+  // Wide enough that the mob cannot wander off an edge and fall while a test is watching.
+  await mc.cmd("fill ~ ~1 ~ ~8 ~1 ~8 stone");
   await mc.fn(`proof:${golem.summon.getName()}`, SPAWN);
   await mc.fn("proof:wake");
 });

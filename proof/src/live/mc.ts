@@ -65,8 +65,8 @@ export function mc(client: Client): Mc {
   return {
     tick: async (n = 1) => void (await send("tick", { n })),
     cmd: (text) => send("cmd", { text }) as Promise<CommandResult>,
-    fn: async (id, pos = [0, 0, 0]) => void (await send("fn", { id, pos })),
-    entities: (filter = {}) => send("entities", filter) as Promise<EntityView[]>,
+    fn: async (id, pos = [0, 0, 0]) => void (await send("fn", { function: id, pos })),
+    entities: ({ type, tag } = {}) => send("entities", { type, tag }) as Promise<EntityView[]>,
     async entity(filter = {}) {
       const found = await this.entities(filter);
       if (found.length !== 1)
