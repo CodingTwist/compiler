@@ -9,7 +9,7 @@ import {
   Pos,
   Range,
   Block,
-  Nbt,
+  Jukebox,
   Item,
   Relation,
 } from "../../../index";
@@ -35,9 +35,7 @@ describe("ctx.execute() chain builder", () => {
         .execute()
         .ifBlock(
           Pos(1, 2, 3),
-          Block.JUKEBOX.data(
-            Nbt({ RecordItem: Item.MUSIC_DISC_11.count(1).stackNbt() }),
-          ),
+          Block.JUKEBOX.data(Jukebox({ recordItem: Item.MUSIC_DISC_11.count(1) })),
         )
         .run((b: any) => b.say("x")),
     );

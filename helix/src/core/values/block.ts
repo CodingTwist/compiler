@@ -5,6 +5,8 @@ import type { VersionProfile } from "../../versions/profile";
 import { withMembers } from "./members";
 import { BLOCK_IDS } from "../../versions/data/ids";
 import { DV } from "./entity-versions.generated";
+import { warnRawBlockEntityNbt } from "./block-entities";
+import type { BlockEntityDataByBlockId } from "./block-entities.generated";
 
 /** 26.3: block state compounds use `id`/`properties`. ponytail: gated after 26.2; the exact 26.3 snapshot is unchecked. */
 export const BLOCK_STATE_ID_DATA_VERSION = 4904;
@@ -24,12 +26,12 @@ export { BLOCK_TAGS } from "../../versions/data/ids";
  */
 export type BlockStates = Record<string, string | number | boolean>;
 
-export class BlockValue implements CommandValue {
+export class BlockValue<Id extends string = string> implements CommandValue {
   private states: BlockStates = {};
   private nbt?: string | NbtValue;
 
   constructor(
-    private readonly id: string,
+    private readonly id: Id,
     states?: BlockStates,
   ) {
     if (states) Object.assign(this.states, states);
@@ -40,9 +42,20 @@ export class BlockValue implements CommandValue {
     return this;
   }
 
-  /** Block-entity NBT, as an {@link Nbt} value or a raw SNBT string. */
-  data(nbt: string | NbtValue): this {
-    this.nbt = nbt;
+  /**
+   * Block-entity NBT. A block with a typed factory (`Chest`, `DecoratedPot`, ... - see
+   * `block-entities.generated.ts`) only accepts that factory's output; a bare `Nbt(...)` or
+   * raw SNBT string is a compile error there, so fix it at the call site. A dynamic/unknown
+   * block id keeps the permissive `string | Nbt` form, with a runtime warning instead (the
+   * type can't see which block it is).
+   */
+  data(
+    nbt: Id extends keyof BlockEntityDataByBlockId
+      ? BlockEntityDataByBlockId[Id]
+      : string | NbtValue,
+  ): this {
+    warnRawBlockEntityNbt(nbt as string | NbtValue, this.baseId());
+    this.nbt = nbt as string | NbtValue;
     return this;
   }
 
@@ -119,6 +132,19 @@ function blockTag(id: string): BlockValue {
 }
 
 /**
+ * `withMembers` types every member (and the callable form) as one plain `BlockValue`,
+ * discarding the per-key literal id `BLOCK_IDS`'s `as const` already has - this re-derives
+ * it as a type-only overlay (no runtime change) so `Block.CHEST` and `Block("minecraft:chest")`
+ * keep their literal id, which is what lets `.data()` above hard-check a known block's NBT.
+ */
+type BlockFactory = (<const Id extends string>(
+  id: Id,
+  states?: BlockStates,
+) => BlockValue<Id>) & {
+  readonly [K in keyof typeof BLOCK_IDS]: BlockValue<(typeof BLOCK_IDS)[K]>;
+} & { tag: typeof blockTag };
+
+/**
  * A block from any id, or a generated member like `Block.GRASS_BLOCK`. Prefer
  * `Block.tag(...)` for tags.
  */
@@ -130,4 +156,4 @@ export const Block = Object.assign(
     (id) => new BlockValue(id),
   ),
   { tag: blockTag },
-);
+) as BlockFactory;
