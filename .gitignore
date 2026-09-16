@@ -16,4 +16,11 @@ unravel/
 # OS / editor
 .DS_Store
 *.log
+*.log.gz
 helix/scripts/.cache/*
+
+# proof/ real-server test scratch: downloaded server jars, world saves, compiled
+# gametest classes, session logs - regenerated per run, never source.
+.build/
+proof/.build/
+proof/logs/

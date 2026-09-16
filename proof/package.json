@@ -1,0 +1,39 @@
+{
+  "name": "proof",
+  "version": "1.0.0",
+  "description": "Runs helix-compiled datapacks in a real Minecraft server, with a Java agent compiled against the server jar so tests read live game state instead of command output",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "proof": "bin/proof.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "bin",
+    "agent/src"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "watch": "tsc -w",
+    "test": "vitest run",
+    "test:mc": "node bin/proof.mjs test"
+  },
+  "author": "Sam Hardy",
+  "license": "MIT",
+  "dependencies": {
+    "helix": "file:../helix",
+    "spool": "file:../spool",
+    "tsx": "^4.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.1",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.9"
+  }
+}

@@ -28,6 +28,8 @@ export class Sim {
   readonly entities: SimEntity[] = [];
   /** Commands that failed as they would in game (int overflow, missing score…), with why. */
   readonly errors: string[] = [];
+  /** Text every `say` has printed, so a pack can report to its test runner. */
+  readonly said: string[] = [];
   private readonly scores = new Map<string, number>();
   private readonly storages = new Map<string, Compound>();
   /** Blocks placed by `setblock`/`fill`, over `options.block`. */

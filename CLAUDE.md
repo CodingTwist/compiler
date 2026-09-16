@@ -76,6 +76,14 @@ cd vscode && npm install && npm run build
 ln -s "$PWD" ~/.vscode/extensions/helix-report   # then reload the window
 ```
 
+## Real-server tests (`proof/`)
+
+Runs a pack in a headless vanilla server so game behaviour is checked against the real game.
+Prefer its **live mode**: the test is plain TypeScript/vitest driving the server console
+(`useServer(dp)` → `mc.cmd/tick/data/score/count`), no Java mod and no test code in the pack.
+Gametest mode (`defineTest`, compiled into the pack) stays for cases that must run the way a
+shipped pack does. See [proof/CLAUDE.md](proof/CLAUDE.md).
+
 ## Docs site
 
 `docs/` is a VitePress site (guide + curated examples + a TypeDoc-generated API

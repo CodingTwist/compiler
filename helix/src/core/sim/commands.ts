@@ -108,8 +108,10 @@ export function runCommand(sim: Sim, line: string, src: SimSource): number {
         for (let y = lo[1]; y <= hi[1]; y++) for (let z = lo[2]; z <= hi[2]; z++) sim.setBlock([x, y, z], t[7]);
       return count;
     }
-    // Output only: nothing a pack can read back.
     case "say":
+      sim.said.push(line.slice(4));
+      return 1;
+    // Output only: nothing a pack can read back.
     case "tellraw":
     case "particle":
     case "playsound":

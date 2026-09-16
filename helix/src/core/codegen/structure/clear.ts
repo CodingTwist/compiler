@@ -13,6 +13,15 @@ const AIR_NAMES = new Set([
 /** The author-chosen fill for a `_clear` variant (see `Clip.clearWith`). */
 export type ClearFill = { Name: string; Properties?: Record<string, string> };
 
+// 26.3 renamed the palette keys `Name`/`Properties` to `id`/`properties`; the derived
+// structure has to keep whichever spelling the source used or the game reads no blocks.
+function paletteKeys(palette: Tag[]): { name: string; props: string } {
+  const modern = palette.some((e) => comp(e).has("id"));
+  return modern
+    ? { name: "id", props: "properties" }
+    : { name: "Name", props: "Properties" };
+}
+
 /**
  * Builds the gzipped `_clear` variant of a structure: solid cells become `fill`, air cells
  * are
@@ -24,18 +33,19 @@ export function deriveClearStructure(gz: Buffer, fill: ClearFill): Buffer {
 
   // Which palette indices name an air block?
   const palette = list(root.get("palette")!);
+  const keys = paletteKeys(palette);
   const airIndex = new Set<number>();
   palette.forEach((entry, idx) => {
-    const nm = comp(entry).get("Name");
+    const nm = comp(entry).get(keys.name);
     if (nm && nm.id === STRING && AIR_NAMES.has(nm.v)) airIndex.add(idx);
   });
 
   // New single-entry palette: just the chosen fill block (+ its properties).
   const fillEntry = new Map<string, Tag>([
-    ["Name", { id: STRING, v: fill.Name }],
+    [keys.name, { id: STRING, v: fill.Name }],
   ]);
   if (fill.Properties && Object.keys(fill.Properties).length > 0) {
-    fillEntry.set("Properties", {
+    fillEntry.set(keys.props, {
       id: COMPOUND,
       v: new Map(
         Object.entries(fill.Properties).map(([k, val]) => [
