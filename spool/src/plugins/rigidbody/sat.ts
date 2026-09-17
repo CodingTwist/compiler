@@ -69,7 +69,7 @@ export function findContacts(s: RigidState, ctx: FunctionContext): void {
 }
 
 /**
- * Builds `rb/pair/axis_<m>`: contacts along axis `m`. Vertices of the other box that crossed the
+ * Builds `pair/axis_<m>`: contacts along axis `m`. Vertices of the other box that crossed the
  * reference face, and vertices of the reference box inside the other box, both within `slop` of
  * the edges, so boxes stacked edge to edge still touch.
  */

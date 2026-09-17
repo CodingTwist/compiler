@@ -25,7 +25,7 @@ const POS = NbtPath("Pos");
 export function defineMath(I: PlayerMotionInternals): void {
   const { self, temp, fStoreRefVectors, fConvertToLocal, work, dummyScore } = I;
 
-  // --- internal/math/global/store_reference_vectors -------------------------
+  // --- math/global/store_reference_vectors -------------------------
   fStoreRefVectors.build((ctx) => {
     ctx.teleport(self(), Pos.local(1, 0, 0));
     ctx.storage(temp).set(VEC.i, ctx.entity(self()).at(POS));
@@ -36,7 +36,7 @@ export function defineMath(I: PlayerMotionInternals): void {
     ctx.teleport(self(), Pos.exact(0, 0, 0), Pos.exact(0, 0));
   });
 
-  // --- internal/math/global/convert_to_local (no-tp approximation) ----------
+  // --- math/global/convert_to_local (no-tp approximation) ----------
   fConvertToLocal.build((ctx) => {
     // Save the world vector, because the work slots receive the result.
     const g = ScoreVec3.from((axis) => dummyScore(`#_${axis}`)).assign(work);

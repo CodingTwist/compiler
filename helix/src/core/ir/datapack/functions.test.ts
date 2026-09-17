@@ -6,7 +6,7 @@ describe("dp.variable", () => {
   it("names the holder and declares its objective once", () => {
     const dp = new Datapack("p", v1_21_4);
     const a = dp.variable("door.open");
-    dp.createFunction("f").build(() => {
+    dp.public("f").build(() => {
       a.set(1);
       dp.variable("door.open").add(2);
     });
@@ -18,53 +18,54 @@ describe("dp.variable", () => {
   });
 });
 
-describe("nameless functions", () => {
-  it("nests under the function being built, else goes in root zzz/", () => {
+describe("function groups", () => {
+  it("names private functions under zzzprivate/ and public ones in place", () => {
     const dp = new Datapack("p", v1_21_4);
-    const top = dp.createFunction();
-    let inner = "";
-    let second = "";
-    dp.createFunction("mace/tick").build(() => {
-      inner = dp.createFunction().getName();
-      second = dp.createFunction().getName();
+    const door = dp.group("door");
+    expect(door.createFunction("slide").getName()).toBe(
+      "zzzprivate/door/slide",
+    );
+    expect(door.public("open").getName()).toBe("door/open");
+    expect(door.group("lobby").public("open").getName()).toBe(
+      "door/lobby/open",
+    );
+    expect(dp.createFunction("tick").getName()).toBe("tick");
+  });
+
+  it("puts private functions beside their owner in the beside layout", () => {
+    const dp = new Datapack("p", v1_21_4, undefined, { layout: "beside" });
+    expect(dp.group("door").createFunction("slide").getName()).toBe(
+      "door/zzz/slide",
+    );
+    let child = "";
+    dp.public("door/open").build((ctx) => {
+      child = ctx.createChildFunction("if").name;
     });
-    expect(top.getName()).toBe("zzz/fn_0");
-    expect(inner).toBe("mace/zzz/tick/fn_0");
-    expect(second).toBe("mace/zzz/tick/fn_1");
+    expect(child).toBe("door/zzz/open/if_0");
   });
 
-  it("doesn't reuse a name when the same parent is built twice", () => {
+  it("returns one view per path, writing through to the pack", () => {
     const dp = new Datapack("p", v1_21_4);
-    const parent = dp.getOrCreateFunction("a");
-    const names: string[] = [];
-    parent.build(() => void names.push(dp.createFunction().getName()));
-    parent.build(() => void names.push(dp.createFunction().getName()));
-    expect(names).toEqual(["zzz/a/fn_0", "zzz/a/fn_1"]);
+    const view = dp.group("a").group("b");
+    expect(dp.group("a/b")).toBe(view);
+    expect(view.root).toBe(dp);
+    view.public("f");
+    expect(dp.functions.has("a/b/f")).toBe(true);
+    view.useTarget("paper");
+    expect(dp.target).toBe("paper");
   });
 
-  it("dp.group places register-time nameless functions under the group", () => {
+  it("nests prototype methods called on a view", () => {
     const dp = new Datapack("p", v1_21_4);
-    const names = dp.group("stage1", () => [
-      dp.createFunction().getName(),
-      dp.group("ladder", () => dp.createFunction().getName()),
-    ]);
-    expect(names).toEqual(["stage1/zzz/fn_0", "stage1/zzz/ladder/fn_0"]);
-    expect(dp.createFunction().getName()).toBe("zzz/fn_0");
-  });
-
-  it("a group opened inside a build names that build's helpers", () => {
-    const dp = new Datapack("p", v1_21_4);
-    const names: string[] = [];
-    dp.createFunction("a/tick").build(() => {
-      names.push(dp.group("s4", () => dp.createFunction().getName()));
-      names.push(dp.createFunction().getName());
-    });
-    expect(names).toEqual(["s4/zzz/fn_0", "a/zzz/tick/fn_0"]);
-  });
-
-  it("dp.fn takes just a body", () => {
-    const dp = new Datapack("p", v1_21_4);
-    const f = dp.fn((ctx) => ctx.say("hi"));
-    expect(f.getName()).toBe("zzz/fn_0");
+    const proto = Datapack.prototype as unknown as Record<string, unknown>;
+    proto.helper = function (this: Datapack) {
+      return this.createFunction("helper").getName();
+    };
+    try {
+      const view = dp.group("mob") as unknown as { helper(): string };
+      expect(view.helper()).toBe("zzzprivate/mob/helper");
+    } finally {
+      delete proto.helper;
+    }
   });
 });

@@ -21,7 +21,7 @@ describe("dp.entitySet (kit)", () => {
 
   it("add() tags entities via the vanilla tag command", () => {
     const dp = new Datapack("test", v1_21_4);
-    const ref = dp.createFunction("mark");
+    const ref = dp.public("mark");
     ref.build((ctx) => dp.entitySet("guard").add(ctx, Selector.self()));
     // Render the function and assert the emitted tag-add line.
     dp.report();

@@ -114,15 +114,15 @@ describe("tick consolidation", () => {
 
   it("reparents self-tagged tick functions through the root tick body, idempotently", () => {
     const dp = new Datapack("test", v1_20_4);
-    dp.createFunction("foo", "tick").build((c) => c.say("foo"));
-    dp.createFunction("bar", "tick").build((c) => c.say("bar"));
+    dp.public("foo", "tick").build((c) => c.say("foo"));
+    dp.public("bar", "tick").build((c) => c.say("bar"));
 
     consolidateTick(dp);
     expect([...(dp.tags.get("tick") ?? [])]).toEqual(["tick"]);
 
     // Re-running after a late addition sweeps only the newcomer; foo/bar, already
     // reparented, are gone from the tag so they aren't dispatched twice.
-    dp.createFunction("baz", "tick").build((c) => c.say("baz"));
+    dp.public("baz", "tick").build((c) => c.say("baz"));
     consolidateTick(dp);
     expect([...(dp.tags.get("tick") ?? [])]).toEqual(["tick"]);
 
@@ -151,18 +151,18 @@ describe("triggers", () => {
     // Entry is a location advancement, not a per-tick poll: the tick only disarms.
     expect(tick).not.toContain("if score #vaultlike active matches 0");
     const adv = [...files].find(([p]) =>
-      p.endsWith("vaultlike/zzz/enter_0.json"),
+      p.endsWith("zzzprivate/vaultlike/enter_0.json"),
     )![1];
     expect(JSON.parse(adv).criteria.trigger.trigger).toBe("minecraft:location");
     expect(adv).toContain('"min": -11');
     const reward = [...files].find(([p]) =>
-      p.endsWith("vaultlike/zzz/enter_0.mcfunction"),
+      p.endsWith("zzzprivate/vaultlike/enter_0.mcfunction"),
     )![1];
     expect(reward).toContain(
-      "if score #vaultlike active matches 0 positioned 1 2 3 if entity @s[distance=..12] run function test:vaultlike/activate",
+      "if score #vaultlike active matches 0 positioned 1 2 3 if entity @s[distance=..12] run scoreboard players set #vaultlike active 1",
     );
     expect(reward).toContain(
-      "advancement revoke @s only test:vaultlike/zzz/enter_0",
+      "advancement revoke @s only test:zzzprivate/vaultlike/enter_0",
     );
   });
 
@@ -185,7 +185,7 @@ describe("triggers", () => {
 
     expect(tick).toContain("if score #scored active matches 0");
     expect(tick).toContain("if score #game phase matches 2");
-    expect(tick).toContain("function test:scored/activate");
+    expect(tick).toContain("scoreboard players set #scored active 1");
   });
 
   it("activates a score area across a band of values, not just one", () => {
@@ -206,7 +206,7 @@ describe("triggers", () => {
     const { tick } = compileRoot(Root);
 
     expect(tick).toContain("if score CurrentLevel Tunnel matches 110..161");
-    expect(tick).toContain("function test:stage/activate");
+    expect(tick).toContain("scoreboard players set #stage active 1");
   });
 
   it("latches a score area by default (no deactivate side)", () => {
@@ -226,7 +226,7 @@ describe("triggers", () => {
 
     const { tick } = compileRoot(Root);
 
-    expect(tick).not.toContain("test:latched/deactivate");
+    expect(tick).not.toContain("set #latched active 0");
   });
 
   it("latch: false tracks a score area both ways", () => {
@@ -248,7 +248,7 @@ describe("triggers", () => {
     const { tick } = compileRoot(Root);
 
     expect(tick).toContain("unless score CurrentLevel Tunnel matches 210..261");
-    expect(tick).toContain("function test:tracked/deactivate");
+    expect(tick).toContain("scoreboard players set #tracked active 0");
   });
 
   it("a players area tracks set membership both ways by default", () => {
@@ -269,10 +269,10 @@ describe("triggers", () => {
     // Armed only while inactive, disarmed once the set empties.
     expect(tick).toContain("if score #occupied active matches 0");
     expect(tick).toContain(
-      "if entity @a[tag=Inside,limit=1] run function test:occupied/activate",
+      "if entity @a[tag=Inside,limit=1] run scoreboard players set #occupied active 1",
     );
     expect(tick).toContain(
-      "unless entity @a[tag=Inside,limit=1] run function test:occupied/deactivate",
+      "unless entity @a[tag=Inside,limit=1] run scoreboard players set #occupied active 0",
     );
   });
 
@@ -292,8 +292,8 @@ describe("triggers", () => {
 
     const { tick } = compileRoot(Root);
 
-    expect(tick).toContain("function test:sticky/activate");
-    expect(tick).not.toContain("test:sticky/deactivate");
+    expect(tick).toContain("scoreboard players set #sticky active 1");
+    expect(tick).not.toContain("set #sticky active 0");
   });
 
   it("rejects a score trigger with neither equals nor matches", () => {
@@ -325,7 +325,7 @@ describe("triggers", () => {
     expect(all).toContain("scoreboard players set #vaultlike.in active 0");
     expect(all).toContain("scoreboard players set #vaultlike.in active 1");
     expect(all).toContain("if score #vaultlike.in active matches 0");
-    expect(all).toContain("function test:vaultlike/deactivate");
+    expect(all).toContain("scoreboard players set #vaultlike active 0");
   });
 
   it("emits a volume selector for a cuboid trigger", () => {
@@ -342,8 +342,8 @@ describe("triggers", () => {
 
     // Lower corner + span, order-independent: from (0,64,0) span (4,2,4).
     expect(all).toContain("if entity @a[x=0,y=64,z=0,dx=4,dy=2,dz=4,limit=1]");
-    expect(all).toContain("function test:arena/activate");
-    expect(all).toContain("function test:arena/deactivate");
+    expect(all).toContain("scoreboard players set #arena active 1");
+    expect(all).toContain("scoreboard players set #arena active 0");
   });
 
   it("gates a nested area's trigger behind its parent's flag (no global check)", () => {
@@ -369,11 +369,11 @@ describe("triggers", () => {
     expect(tick).not.toContain("distance=..3");
     expect(tick).not.toContain("if score #inner active");
     expect(tick).toContain(
-      "if score #outer active matches 1 run function test:outer/tick",
+      "if score #outer active matches 1 run function test:zzzprivate/outer/tick",
     );
     // The inner area's entry advancement re-checks the parent flag before activating.
     expect(all).toContain(
-      "if score #outer active matches 1 if score #inner active matches 0 positioned 9 9 9 if entity @s[distance=..3] run function test:inner/activate",
+      "if score #outer active matches 1 if score #inner active matches 0 positioned 9 9 9 if entity @s[distance=..3] run scoreboard players set #inner active 1",
     );
   });
 
@@ -446,7 +446,7 @@ describe("triggers", () => {
       "positioned 200 64 200 if entity @a[distance=..5,limit=1]",
     );
     expect(
-      all.match(/function test:yard\/activate/g)?.length,
+      all.match(/scoreboard players set #yard active 1/g)?.length,
     ).toBeGreaterThanOrEqual(2);
   });
 
@@ -543,7 +543,7 @@ describe("configured modules (forFeature pattern)", () => {
     class WidgetFeature {
       private ref: any;
       register(dp: any) {
-        this.ref = dp.createFunction(`widget/${config.id}/run`);
+        this.ref = dp.public(`widget/${config.id}/run`);
         this.ref.build((ctx: any) =>
           ctx.tellraw(Selector.allPlayers(), config.id),
         );
@@ -616,15 +616,13 @@ describe("root areas", () => {
       }
     }
 
-    const { root: tick, all, files } = compileRoot(Tunnel);
+    const { root: tick, all } = compileRoot(Tunnel);
 
     // Same shape a child area gets: arm while off, work while on, disarm empty.
     expect(tick).toContain("if score #tunnel active matches 0");
     expect(tick).toContain("if score #tunnel active matches 1");
-    expect(all).toContain("function test:tunnel/deactivate");
-    expect(
-      [...files.keys()].some((p) => p.endsWith("tunnel/activate.mcfunction")),
-    ).toBe(true);
+    expect(all).toContain("scoreboard players set #tunnel active 0");
+    expect(all).toContain("scoreboard players set #tunnel active 1");
     // The tick body itself is behind the flag, not emitted alongside it.
     expect(tick).not.toContain("inside");
   });

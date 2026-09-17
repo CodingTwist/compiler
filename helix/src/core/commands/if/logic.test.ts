@@ -15,7 +15,7 @@ function build(
 ) {
   const dp = new Datapack("testpack", version);
   const s = scores(dp);
-  dp.createFunction("f").build((ctx) => body(ctx, s));
+  dp.public("f").build((ctx) => body(ctx, s));
   buildDatapack(dp);
   const f = dp.files.get("f")!;
   const called = /^function testpack:(\S+)$/.exec(f)?.[1];

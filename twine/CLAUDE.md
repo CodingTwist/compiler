@@ -91,9 +91,16 @@ A `DatapackModule` may implement any of:
   for free when dormant. Put per-tick work here.
 - `onActivate(ctx)` / `onDeactivate(ctx)` - edge functions for an `area` module
   (`<name>/activate` / `<name>/deactivate`), e.g. summon / despawn a level's entities.
-- `defineFunction(dp, name, body)` - optional: how an `@On({ name })` body becomes a
-  function, so a pack can apply its own conventions (trace line, tag, naming). Defaults
-  to a plain `dp.createFunction`.
+- `defineFunction(group, name, body)` - optional: how an `@On({ own })` body becomes a
+  function, so a pack can apply its own conventions (trace line, tag). Defaults to
+  `group.createFunction(name)`.
+
+`register(dp)` receives the module's group (`dp.root.group(name)`), so its functions land
+under `<name>/`. Functions are private (`zzzprivate/<name>/...`) unless created with
+`dp.public` / `scope.fn(n, body, { public: true })`. Framework plumbing (tick, rearm,
+enter_N, dispatch, and activate/deactivate of triggered areas) is private; an area with no
+trigger gets public `activate`/`deactivate`, and item give / `debug/*` commands are public.
+Private one-command functions get inlined, so tests should expect the inlined line.
 
 `@Module({ name, area?, activeByDefault?, imports?, env? })` declares the module; an
 `area: true` module gates its subtree's tick cost behind a presence/region check. The
@@ -121,8 +128,9 @@ are where per-tick cost comes from:
 - **The cadence.** `opts.every` (default: the module's `tickEvery`) and `opts.phase`.
   Handlers sharing a period share one throttle gate.
 
-`opts.once: false` drops the latch for a body meant to repeat; `opts.name` puts the body
-in its own function (via `defineFunction`). `rearmEvents(ctx, dp, moduleName, instance,
+`opts.once: false` drops the latch for a body meant to repeat; `opts.own` puts the body
+in its own private function (via `defineFunction`), named by the handler key or by `own`'s
+string for an unkeyed handler. `rearmEvents(ctx, dp, moduleName, instance,
 methods?)` clears latches - nothing re-arms itself. Latches are scoreboard values, so
 they **survive a `/reload` and a server restart**: a pack's `reset`/`restart` should call
 the generated `<name>/rearm` (emitted for every module with latched handlers, clearing

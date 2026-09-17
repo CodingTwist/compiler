@@ -29,7 +29,7 @@ export type { FunctionRef } from "./core/function_ref";
 // Builds a `Datapack` into a path → contents map, without writing to disk.
 export { buildDatapack } from "./core/codegen/codegen";
 // Where generated helper functions live.
-export { PRIVATE_ROOT, privateChild, privateName } from "./core/private-fn";
+export { type FunctionLayout } from "./core/private-fn";
 // Per-tick cost analysis (`dp.report()` / `dp.printReport()`).
 export {
   analyzeCost,

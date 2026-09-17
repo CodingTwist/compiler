@@ -17,7 +17,7 @@ function compile(root: new () => object): { tick: string; clock: string } {
     .filter(([p]) => p.endsWith("/tick.mcfunction"))
     .map(([, b]) => b)
     .join("\n");
-  return { tick, clock: find("zzz/clock.mcfunction") };
+  return { tick, clock: find("zzzprivate/helix/clock.mcfunction") };
 }
 
 describe("tick throttling + staggering", () => {

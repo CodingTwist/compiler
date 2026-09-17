@@ -47,7 +47,7 @@ export function createAttachService(d: AttachDeps) {
       // Tag the player, then clear the temporary summon tag. The swing service draws the
       // rope.
       ctx.tag().add(d.selectors.self(), "grappling");
-      // Zero gravity while swinging (removed in `grapple/stop`). See `tuning.ts`.
+      // Zero gravity while swinging (removed in `stop`). See `tuning.ts`.
       if (ZERO_GRAVITY) {
         ctx
           .attribute()

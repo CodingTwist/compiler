@@ -13,7 +13,7 @@ describe("ScoreboardTiming.everyTicks phase staggering", () => {
     expect(b.getName()).toContain("_p5");
 
     buildDatapack(dp);
-    const clock = dp.files.get("zzz/clock")!;
+    const clock = dp.files.get("zzzprivate/helix/clock")!;
     // One shared cycle counter for the period…
     expect(clock).toContain("scoreboard players add t20 clock 1");
     // …and two distinct fire checks, one per phase.
@@ -28,7 +28,7 @@ describe("ScoreboardTiming.everyTicks phase staggering", () => {
     expect(first.getName()).toBe(second.getName());
 
     buildDatapack(dp);
-    const clock = dp.files.get("zzz/clock")!;
+    const clock = dp.files.get("zzzprivate/helix/clock")!;
     // The period-3 fire check appears exactly once despite two calls.
     const matches3 = clock.match(/matches 3\b/g) ?? [];
     expect(matches3).toHaveLength(1);

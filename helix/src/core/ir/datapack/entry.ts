@@ -4,7 +4,6 @@ import { scoreInitNode } from "../../commands/scoreboard";
 import { LOCALS_OBJECTIVE } from "../../commands/local";
 import { FunctionRef } from "../../function_ref";
 import type { FunctionContext } from "../../frontend/context";
-import { privateName } from "../../private-fn";
 import { Time } from "../../values/time";
 import { DatapackAssets } from "./assets";
 
@@ -33,7 +32,7 @@ export class DatapackEntry extends DatapackAssets {
     build: (ctx: FunctionContext) => void,
     append = false,
   ): FunctionRef {
-    const ref = this.getOrCreateFunction(ctx.createChildFunction("after").name);
+    const ref = this.functionAt(ctx.createChildFunction("after").name);
     ref.build(build);
     const id = this.idOf(ref);
     const schedule = ctx.schedule();
@@ -71,12 +70,11 @@ export class DatapackEntry extends DatapackAssets {
     }
 
     // Ensure objective init function exists
-    const initName = privateName("init_objectives");
+    const initName = this.root.group("helix").functionName("init_objectives");
 
     let initFn = this.functions.get(initName);
     if (!initFn) {
-      initFn = new FunctionNode(initName);
-      this.functions.set(initName, initFn);
+      initFn = this.functionAt(initName).node;
     }
 
     if ([...this.functions.values()].some((fn) => fn.locals > 0))

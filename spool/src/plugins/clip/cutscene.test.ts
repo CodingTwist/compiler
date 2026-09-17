@@ -34,22 +34,22 @@ describe("Cutscene: compose clips + camera + events on one timeline", () => {
       { tick: 4, value: [8, 100, 0] },
     ])
     .at(3, (c) => c.say("boom"));
-  dp2.createFunction("go").build((ctx) => cs.play(ctx));
+  dp2.public("go").build((ctx) => cs.play(ctx));
   const files = buildDatapack(dp2);
 
   it("master play kicks the smooth sub-clip and fans the camera frames", () => {
-    const play = fn(files, "zzz/intro/play");
-    expect(play).toContain("function anim:zzz/door/play"); // smooth clip kicked at 0
+    const play = fn(files, "zzzprivate/intro/play");
+    expect(play).toContain("function anim:zzzprivate/door/play"); // smooth clip kicked at 0
     expect(play).toContain("execute as @a run teleport 0 100 0"); // frame 0 inlined
     expect(play).toContain(
-      "schedule function anim:zzz/intro/cam_0/frame_1 1 append",
+      "schedule function anim:zzzprivate/intro/cam_0/frame_1 1 append",
     );
-    expect(play).toContain("schedule function anim:zzz/intro/event_3 3");
+    expect(play).toContain("schedule function anim:zzzprivate/intro/event_3 3");
   });
 
   it("camera interpolates the dolly via execute-as teleport", () => {
     // tick 2 of a 0..4 path [0,100,0]->[8,100,0] => x = 4
-    expect(fn(files, "zzz/intro/cam_0/frame_2")).toContain(
+    expect(fn(files, "zzzprivate/intro/cam_0/frame_2")).toContain(
       "execute as @a run teleport 4 100 0",
     );
   });

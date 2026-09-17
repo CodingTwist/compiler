@@ -1,7 +1,7 @@
 /**
  * The `rig` plugin: a `Display` model riding an entity, kept facing its way and cleaned up when it dies.
  *
- *   const r = rig(dp, { name: "sentinel", model });
+ *   const r = rig(dp.group("sentinel"), { name: "sentinel", model });
  *   r.summonOn(ctx, () => Selector.allEntities().tag("fresh").limit(1));  // at the vehicle
  *   // each poll, as the vehicle:
  *   r.face(ctx);
@@ -11,7 +11,7 @@
  * Every member keeps its own rotation and a killed vehicle only dismounts its riders, which is
  * why facing and cleanup need commands at all.
  */
-import { NbtPath, Pos, Range, Relation, Selector, atLeast, displayPose, privateName } from "helix";
+import { NbtPath, Pos, Range, Relation, Selector, atLeast, displayPose } from "helix";
 import type { Datapack, FunctionContext, FunctionRef } from "helix";
 import type { Rig, RigFn, RigOptions } from "./types";
 
@@ -27,8 +27,8 @@ export function rig(dp: Datapack, opts: RigOptions): Rig {
   model.named(group);
   const fn: RigFn =
     opts.fn ??
-    ((n, body) => {
-      const ref = dp.createFunction(n);
+    ((n, body, o) => {
+      const ref = o?.public ? dp.public(n) : dp.createFunction(n);
       ref.build(body);
       return ref;
     });
@@ -40,7 +40,7 @@ export function rig(dp: Datapack, opts: RigOptions): Rig {
   };
   const internal = (short: string, body: (ctx: FunctionContext) => void) =>
     once(short, () => {
-      const ref = dp.createFunction(privateName(`${name}/${short}`));
+      const ref = dp.createFunction(short);
       ref.build(body);
       return ref;
     });
@@ -51,7 +51,7 @@ export function rig(dp: Datapack, opts: RigOptions): Rig {
 
   const faceOne = () =>
     once("face_one", () => {
-      const ref = fn(privateName(`${name}/face_one`), (c) => {
+      const ref = fn("face_one", (c) => {
         if (byRotate) {
           // Facing a point straight ahead copies the yaw without reading NBT.
           const turn = (b: FunctionContext) => b.rotate().facing(Selector.self(), Pos.local(0, 0, 1));
@@ -130,7 +130,7 @@ export function rig(dp: Datapack, opts: RigOptions): Rig {
     sweep(ctx) {
       // Passengers first, since killing a vehicle only dismounts its riders.
       const kill = once("kill_rig", () =>
-        fn(privateName(`${name}/kill_rig`), (c) => {
+        fn("kill_rig", (c) => {
           c.execute().on(Relation.PASSENGERS).run((b) => b.kill(Selector.self()));
           c.kill(Selector.self());
         }),

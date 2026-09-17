@@ -1,5 +1,5 @@
 // An area's activation check: score/players polls, or location advancements.
-import { Pos, privateName, Range, Selector, Trigger } from "helix";
+import { Pos, Range, Selector, Trigger } from "helix";
 import type { FunctionContext, Id, Score } from "helix";
 import type { ModuleRef } from "../module.interface";
 import type { Zone } from "../area";
@@ -58,8 +58,8 @@ function armByAdvancement(
   const activate = w.activateOf.get(ref)!;
   const self = w.flags.score(meta.name);
   zones.forEach((zone, i) => {
-    const name = privateName(`${meta.name}/enter_${i}`);
-    if (w.dp.functionRef(name)) return; // area reached from a second parent: already armed
+    const name = `${meta.name}/enter_${i}`;
+    if (w.dp.functionRef(w.dp.functionName(name))) return; // area reached from a second parent: already armed
     const [from, to] =
       zone.shape === "sphere"
         ? [

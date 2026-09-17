@@ -61,10 +61,10 @@ export interface RaycastRef {
 const state = new WeakMap<Datapack, RaycastState>();
 
 function raycastState(dp: Datapack): RaycastState {
-  let s = state.get(dp);
+  let s = state.get(dp.root);
   if (!s) {
-    s = createRaycastState(dp);
-    state.set(dp, s);
+    s = createRaycastState(dp.root.plugin("raycast"));
+    state.set(dp.root, s);
   }
   return s;
 }
@@ -73,10 +73,11 @@ const lookRays = new WeakMap<Datapack, LookRay>();
 
 function defineRaycast(dp: Datapack, opts: RaycastOptions): RaycastRef {
   const s = raycastState(dp);
-  const fn = dp.createFunction(`raycast/${opts.name}`);
-  buildMarcher(s, fn, opts);
+  const fn = dp.createFunction(opts.name);
+  // Keyed by group too, so same-named rays in two groups keep separate budgets.
+  const steps = s.steps(dp.path ? `${dp.path}/${opts.name}` : opts.name);
+  buildMarcher(dp, fn, steps, opts);
 
-  const steps = s.steps(opts.name);
   return {
     cast: fn,
     fire(ctx: FunctionContext): void {
@@ -88,7 +89,7 @@ function defineRaycast(dp: Datapack, opts: RaycastOptions): RaycastRef {
 
 declare module "helix" {
   interface Datapack {
-    /** Registers a block raycast as `raycast/<name>`. Not cached; call once per ray. */
+    /** Registers a block raycast as `<name>` in this group. Not cached; call once per ray. */
     raycast(opts: RaycastOptions): RaycastRef;
     /** The pack's shared {@link LookRay}, for math hit tests like `rb.raycast`. */
     lookRay(): LookRay;
@@ -105,8 +106,9 @@ export const raycast: KitPlugin = {
       return defineRaycast(this, opts);
     };
     Datapack.prototype.lookRay = function (this: Datapack): LookRay {
-      let ray = lookRays.get(this);
-      if (!ray) lookRays.set(this, (ray = createLookRay(raycastState(this))));
+      let ray = lookRays.get(this.root);
+      if (!ray)
+        lookRays.set(this.root, (ray = createLookRay(raycastState(this))));
       return ray;
     };
   },

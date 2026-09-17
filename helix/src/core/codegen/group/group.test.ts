@@ -22,7 +22,7 @@ function build(
   body: (c: FunctionContext) => void,
   dp = new Datapack("p", v1_21_4),
 ): Map<string, string> {
-  dp.createFunction("f").build(body);
+  dp.public("f").build(body);
   buildDatapack(dp);
   return dp.files;
 }
@@ -63,11 +63,11 @@ test("repeated `at @s` lines become one call", () => {
 
   expect(Object.fromEntries(files)).toMatchInlineSnapshot(`
     {
-      "f": "execute at @s run function p:zzz/f/group_0
+      "f": "execute at @s run function p:zzzprivate/f/group_0
     say done",
-      "zzz/f/exec_0": "tag @s add tracked
+      "zzzprivate/f/exec_0": "tag @s add tracked
     say enrolled",
-      "zzz/f/group_0": "execute as @e[tag=aim,limit=1] run function p:zzz/f/exec_0
+      "zzzprivate/f/group_0": "execute as @e[tag=aim,limit=1] run function p:zzzprivate/f/exec_0
     execute store result score #n o run data get entity @e[tag=aim,limit=1] Pos[0] 100
     say c",
     }
@@ -90,8 +90,8 @@ test("a single-entity scan groups at two lines when every line but the last chan
   });
   expect(Object.fromEntries(files)).toMatchInlineSnapshot(`
     {
-      "f": "execute as @e[tag=aim,limit=1] run function p:zzz/f/group_0",
-      "zzz/f/group_0": "scoreboard players add #n o 1
+      "f": "execute as @e[tag=aim,limit=1] run function p:zzzprivate/f/group_0",
+      "zzzprivate/f/group_0": "scoreboard players add #n o 1
     tag @s remove aim",
     }
   `);
@@ -117,10 +117,10 @@ test("a fork groups when every line only touches `@s`", () => {
   });
   expect(Object.fromEntries(files)).toMatchInlineSnapshot(`
     {
-      "f": "execute on passengers run function p:zzz/f/group_0
+      "f": "execute on passengers run function p:zzzprivate/f/group_0
     execute on passengers run tag @e add x
     execute on passengers run tag @s add y",
-      "zzz/f/group_0": "tag @s[tag=rig] add posed
+      "zzzprivate/f/group_0": "tag @s[tag=rig] add posed
     item replace entity @s contents with minecraft:crossbow",
     }
   `);
@@ -197,16 +197,16 @@ test("lines that could change what the prefix picks are left apart", () => {
     },
   };
   // Calls are followed: `mover` teleports through `deep`.
-  const deep = mover.createFunction("zzz/deep");
+  const deep = mover.public("zzzprivate/deep");
   deep.build((c) => c.teleport(self(), Pos(0, 0, 0)));
-  const callsMover = mover.createFunction("zzz/mover");
+  const callsMover = mover.public("zzzprivate/mover");
   callsMover.build((c) => {
     c.say("hi");
     c.execute()
       .as(Selector.allPlayers())
       .run((b) => b.call(deep));
   });
-  mover.createFunction("call").build((c) => {
+  mover.public("call").build((c) => {
     c.execute()
       .at(self())
       .run((b) => b.say("a"));
@@ -219,7 +219,7 @@ test("lines that could change what the prefix picks are left apart", () => {
   });
   const withNative = new Datapack("p", v1_21_4, "paper");
   for (const [name, body] of Object.entries(cases))
-    (name === "native" ? withNative : mover).createFunction(name).build(body);
+    (name === "native" ? withNative : mover).public(name).build(body);
   buildDatapack(mover);
   buildDatapack(withNative);
 
@@ -232,7 +232,7 @@ test("lines that could change what the prefix picks are left apart", () => {
   expect(out).toMatchInlineSnapshot(`
     {
       "call": "execute at @s run say a
-    execute at @s run function p:zzz/mover
+    execute at @s run function p:zzzprivate/mover
     execute at @s run say c",
       "cond": "execute if score #n o matches 1 run say a
     execute if score #n o matches 1 run say b
@@ -285,7 +285,7 @@ test("a blocking line ends one group and the rest still groups", () => {
   expect(files.get("f")).toMatchInlineSnapshot(`
     "execute at @s run say a
     execute at @s run teleport @s ~ ~1 ~
-    execute at @s run function p:zzz/f/group_0"
+    execute at @s run function p:zzzprivate/f/group_0"
   `);
 });
 
@@ -295,7 +295,7 @@ test("`optimize.group: false` leaves repeated prefixes alone", () => {
       says((c) => c.execute().at(self())),
       new Datapack("p", v1_21_4, undefined, { optimize: { group } }),
     ).get("f");
-  expect(lines()).toBe("execute at @s run function p:zzz/f/group_0");
+  expect(lines()).toBe("execute at @s run function p:zzzprivate/f/group_0");
   expect(lines(false)).toBe(
     ["a", "b", "c"].map((s) => `execute at @s run say ${s}`).join("\n"),
   );

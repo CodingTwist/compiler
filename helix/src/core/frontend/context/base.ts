@@ -43,15 +43,13 @@ export class ContextBase {
   /**
    * Creates a uniquely named child function for control-flow bodies.
    *
-   * Lives under `PRIVATE_ROOT` so it sorts away from authored functions, nested by parent
-   * path:
-   * `mace/tick` → `mace/zzz/tick/if_0`.
+   * Private and nested under the parent's path: `mace/tick` → `zzzprivate/mace/tick/if_0`.
    */
   createChildFunction(suffix: string): FunctionNode {
     const count = this.suffixCounters.get(suffix) ?? 0;
     this.suffixCounters.set(suffix, count + 1);
     const child = new FunctionNode(
-      privateChild(this.fn.name, `${suffix}_${count}`),
+      privateChild(this.fn.name, `${suffix}_${count}`, this.fn.root.layout),
     );
     child.root = this.fn.root;
     return child;

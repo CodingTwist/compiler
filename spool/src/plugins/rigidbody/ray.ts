@@ -22,7 +22,7 @@ export function raycast(
   onHit: (ctx: FunctionContext, point: ScoreVec3) => void,
 ): void {
   const { origin, dir } = rayOf(s);
-  // Copied into scratch so the one `rb/ray` function serves every caller's ray.
+  // Copied into scratch so the one `ray` function serves every caller's ray.
   origin.assign(ray.origin, ctx);
   dir.assign(ray.dir, ctx);
   const best = s.scalar("ray_best");
@@ -36,7 +36,7 @@ export function raycast(
 }
 
 /**
- * Builds `rb/ray`: the slab test in the executing body's own frame. Writes the entry distance
+ * Builds `ray`: the slab test in the executing body's own frame. Writes the entry distance
  * to its `rb.ray` score, or {@link MISS}, and lowers `#ray_best` on a nearer hit.
  */
 export function defineRay(s: RigidState): void {

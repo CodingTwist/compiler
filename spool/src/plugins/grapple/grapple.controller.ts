@@ -18,12 +18,12 @@ interface ControllerDeps {
 /**
  * The plugin's entry functions, each delegating to a service:
  *
- * - `grapple/start` (public): fire the web and latch on a hit.
- * - `grapple/tick` (tick): drive every grappling player.
- * - `grapple/stop` (public): release the executing player.
+ * - `start` (public): fire the web and latch on a hit.
+ * - `tick` (tick): drive every grappling player.
+ * - `stop` (public): release the executing player.
  */
 export function defineController(d: ControllerDeps): void {
-  // grapple/start, run as and at the player: cast from the eyes, latch on a hit, else
+  // start, run as and at the player: cast from the eyes, latch on a hit, else
   // report a miss.
   d.fn.start.build((ctx) => {
     // Root the web at the eye position and fire the ray (seeds its reach + marches).
@@ -48,9 +48,9 @@ export function defineController(d: ControllerDeps): void {
     }
   });
 
-  // grapple/tick - fan the drive out over every grappling player.
+  // tick - fan the drive out over every grappling player.
   d.fn.tick.build((ctx) => d.swing.driveAll(ctx));
 
-  // grapple/stop - release the executing player.
+  // stop - release the executing player.
   d.fn.stop.build((ctx) => d.release.release(ctx));
 }

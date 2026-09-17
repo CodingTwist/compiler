@@ -122,7 +122,7 @@ describe("entity NBT schemas", () => {
       .named("rig")
       .hitbox(1, 1);
     const dp = new Datapack("p", v26_2);
-    dp.createFunction("clear").build((c) => d.killAll(c));
+    dp.public("clear").build((c) => d.killAll(c));
     expect(buildDatapack(dp).get("data/p/function/clear.mcfunction")).toBe(
       [
         "kill @e[tag=rig,type=minecraft:item_display]",
@@ -156,14 +156,14 @@ describe("entity NBT schemas", () => {
 
   it("Display.kill: one typed scan for the root, members killed as its passengers", () => {
     const dp = new Datapack("test", v1_21_4);
-    dp.createFunction("f").build((ctx) =>
+    dp.public("f").build((ctx) =>
       Display(Block.STONE).named("cog").kill(ctx),
     );
     dp.report();
     expect(dp.files.get("f")).toBe(
-      "execute as @e[tag=cog_0,type=minecraft:block_display] run function test:zzz/f/exec_0",
+      "execute as @e[tag=cog_0,type=minecraft:block_display] run function test:zzzprivate/f/exec_0",
     );
-    expect(dp.files.get("zzz/f/exec_0")).toBe(
+    expect(dp.files.get("zzzprivate/f/exec_0")).toBe(
       "execute on passengers run kill @s\nkill @s",
     );
   });

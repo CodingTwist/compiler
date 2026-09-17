@@ -10,7 +10,7 @@ describe("dp.lookRay", () => {
   it("reads the eyes through the locator and turns Rotation into a direction", () => {
     const dp = new Datapack("test", v26_3_rc_2);
     expect(dp.lookRay()).toBe(dp.lookRay());
-    dp.createFunction("look").build((ctx) => dp.lookRay().fill(ctx));
+    dp.public("look").build((ctx) => dp.lookRay().fill(ctx));
     dp.report();
     const lines = dp.files.get("look")!;
     expect(lines).toContain("execute anchored eyes positioned ^ ^ ^ run teleport 6c6f63-0-0-0-1 ~ ~ ~");

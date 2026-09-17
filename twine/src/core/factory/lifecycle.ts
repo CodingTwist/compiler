@@ -39,14 +39,18 @@ export function buildLifecycle({
   };
   for (const ref of areas) {
     const { instance, meta } = graph.nodes.get(ref)!;
-    const activate = dp.createFunction(`${meta.name}/activate`);
+    // An area with no trigger is switched by hand, so its switches are public.
+    const group = dp.root.group(meta.name);
+    const make = (name: string) =>
+      meta.trigger ? group.createFunction(name) : group.public(name);
+    const activate = make("activate");
     activate.build((ctx) => {
       flags.score(meta.name).set(1);
       if (instance.onActivate)
         inDimension(ref, ctx, (c) => instance.onActivate!(c));
     });
     activateOf.set(ref, activate);
-    const deactivate = dp.createFunction(`${meta.name}/deactivate`);
+    const deactivate = make("deactivate");
     deactivate.build((ctx) => {
       if (instance.onDeactivate)
         inDimension(ref, ctx, (c) => instance.onDeactivate!(c));

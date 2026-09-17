@@ -1,7 +1,6 @@
 import {
   EntityType,
   Selector,
-  privateName,
 } from "helix";
 import type {
   Datapack,
@@ -80,7 +79,7 @@ export class MobParts<S extends string> {
 
   /** A function only this mob's own tick tree calls: no dimension wrap, since it inherits the caller's. */
   internal(short: string, body: (ctx: FunctionContext) => void): FunctionRef {
-    const fn = this.dp.createFunction(privateName(`${this.name}/${short}`));
+    const fn = this.dp.createFunction(short);
     fn.build(body);
     return fn;
   }

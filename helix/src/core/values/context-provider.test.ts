@@ -16,7 +16,7 @@ const D = (n: string) => dummy.score(ScoreTarget(n));
 
 function render(build: (ctx: any) => void, version = v26_3_rc_2): string[] {
   const dp = new Datapack("t", version);
-  dp.createFunction("fn").build(build);
+  dp.public("fn").build(build);
   buildDatapack(dp);
   return dp.files.get("fn")!.split("\n");
 }

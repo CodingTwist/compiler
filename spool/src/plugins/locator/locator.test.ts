@@ -9,7 +9,7 @@ describe("locator", () => {
     const loc = locator(dp);
     expect(locator(dp)).toBe(loc);
     const point = ScoreVec3.from((a) => new Objective("work").score(ScoreTarget(`#p_${a}`))).scaled(1000);
-    dp.createFunction("go").build((ctx) => {
+    dp.public("go").build((ctx) => {
       math`vec(1.25, 70.5, -3)`.into(point);
       loc.ensure(ctx);
       loc.ensure(ctx);

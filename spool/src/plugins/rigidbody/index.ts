@@ -3,7 +3,7 @@
  *
  *   installKit([rigidbody]);
  *   const rb = dp.rigidbody();
- *   dp.createFunction("drop").build((ctx) => rb.spawn(ctx, { item: Item.TARGET, rotation: quat("x", 30) }));
+ *   dp.public("drop").build((ctx) => rb.spawn(ctx, { item: Item.TARGET, rotation: quat("x", 30) }));
  *
  * Needs 26.3+ (`/compute`). Bodies collide with world blocks and each other; spawn
  * bodies bigger than 1 block with `maxSize` set.
@@ -135,10 +135,10 @@ export const rigidbody: KitPlugin = {
   name: "rigidbody",
   install() {
     Datapack.prototype.rigidbody = function (this: Datapack, opts: RigidOptions = {}) {
-      const existing = installed.get(this);
+      const existing = installed.get(this.root);
       if (existing) return existing;
-      const rb = defineRigidBodies(this, opts);
-      installed.set(this, rb);
+      const rb = defineRigidBodies(this.root.plugin("rigidbody"), opts);
+      installed.set(this.root, rb);
       return rb;
     };
   },

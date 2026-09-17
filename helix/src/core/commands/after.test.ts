@@ -13,9 +13,9 @@ describe("dp.after", () => {
 
     const files = buildDatapack(dp);
     expect(files.get("data/mypack/function/tick.mcfunction")).toBe(
-      "schedule function mypack:zzz/tick/after_0 3s",
+      "schedule function mypack:zzzprivate/tick/after_0 3s",
     );
-    expect(files.get("data/mypack/function/zzz/tick/after_0.mcfunction")).toBe(
+    expect(files.get("data/mypack/function/zzzprivate/tick/after_0.mcfunction")).toBe(
       "say done",
     );
   });
@@ -26,7 +26,7 @@ describe("dp.after", () => {
       dp.after(ctx, Time(20), (c) => c.say("later"), true);
     });
     expect(buildDatapack(dp).get("data/mypack/function/tick.mcfunction")).toBe(
-      "schedule function mypack:zzz/tick/after_0 20 append",
+      "schedule function mypack:zzzprivate/tick/after_0 20 append",
     );
   });
 });

@@ -1,4 +1,4 @@
-import { Pos, Range, privateName } from "helix";
+import { Pos, Range } from "helix";
 import type { FunctionContext, FunctionRef } from "helix";
 import { byDifficulty as dispatchDifficulty, type Difficulty } from "../../difficulty";
 import type { MobParts } from "./parts";
@@ -10,14 +10,18 @@ export function registerSummon<S extends string>(
   const fresh = `${m.name}.new`;
   m.add(
     "summon",
-    m.fn(`${m.name}/summon`, (ctx) => {
+    m.fn(
+      "summon",
+      (ctx) => {
       // Summoned separately and mounted, so the same rig can ride any mob.
       ctx.summon(m.def.nbt.tagged(m.name, fresh), Pos.rel(0, 0, 0));
       // Just summoned here, so `..1` keeps the scans to nearby chunks.
       const here = Range.atMost(1);
       m.rig.summonOn(ctx, () => m.mobs.tag(fresh).distance(here).limit(1), onDifficultyFn(m));
       ctx.tag().remove(m.mobs.tag(fresh).distance(here), fresh);
-    }),
+      },
+      { public: true },
+    ),
   );
 }
 
@@ -35,11 +39,11 @@ export function onDifficultyFn<S extends string>(
   return m.fns.get("on_difficulty");
 }
 
-/** `<mob>/zzz/<short>`: runs `body` for the pack's difficulty level, built once per level. */
+/** `<short>` in the mob's group: runs `body` for the pack's difficulty level, built once per level. */
 export function byDifficulty<S extends string>(
   m: MobParts<S>,
   short: string,
   body: (ctx: FunctionContext, level: Difficulty) => void,
 ): FunctionRef {
-  return dispatchDifficulty(m.dp, privateName(`${m.name}/${short}`), body);
+  return dispatchDifficulty(m.dp, short, body);
 }

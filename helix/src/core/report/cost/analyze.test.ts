@@ -6,7 +6,7 @@ import { v1_21_4 } from "../../../versions/profiles";
 describe("cost report", () => {
   it("counts worst-case commands reachable from tick across called functions", () => {
     const dp = new Datapack("testpack", v1_21_4);
-    const helper = dp.createFunction("helper");
+    const helper = dp.public("helper");
     helper.build((ctx) => {
       ctx.say("a");
       ctx.say("b");
@@ -27,9 +27,9 @@ describe("cost report", () => {
 
   it("partitions a tick root's cost across its direct call sites, with guards", () => {
     const dp = new Datapack("testpack", v1_21_4);
-    const cheap = dp.createFunction("cheap");
+    const cheap = dp.public("cheap");
     cheap.build((ctx) => ctx.say("a"));
-    const heavy = dp.createFunction("heavy");
+    const heavy = dp.public("heavy");
     heavy.build((ctx) => {
       ctx.say("a");
       ctx.say("b");

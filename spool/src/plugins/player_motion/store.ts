@@ -3,7 +3,7 @@ import type { FunctionRef } from "helix";
 import type { PlayerMotionInternals } from "./context";
 
 /**
- * `internal/store/{x,y,z}`: writes each axis as 32 bit flags (`#x.0` .. `#x.31`).
+ * `store/{x,y,z}`: writes each axis as 32 bit flags (`#x.0` .. `#x.31`).
  *
  * The enchantment can only test "is this score 1" and apply a fixed push, so each bit gets
  * a

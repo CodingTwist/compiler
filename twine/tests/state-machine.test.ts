@@ -66,7 +66,7 @@ describe("StateMachine", () => {
     const sm = new StateMachine(dp, "quest");
     sm.state("a").state("b");
     const cond = sm.is("b");
-    const ref = dp.createFunction("probe");
+    const ref = dp.public("probe");
     ref.build((ctx) => ctx.if(cond, (c) => c.say("in b")));
     buildDatapack(dp);
     expect(dp.files.get("probe")).toContain("if score #quest quest matches 2");
@@ -91,7 +91,7 @@ describe("StateMachine", () => {
     sm.state("a", { onExit: () => seen.push("exit-a") }).state("b", {
       onEnter: () => seen.push("enter-b"),
     });
-    dp.createFunction("jump").build((ctx) => sm.go(ctx, "b"));
+    dp.public("jump").build((ctx) => sm.go(ctx, "b"));
     buildDatapack(dp);
     expect(seen).toEqual(["exit-a", "enter-b"]);
   });

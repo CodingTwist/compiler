@@ -60,7 +60,7 @@ describe("IfHandler - ScoreRangeNode", () => {
   it("keeps a forking or returning body in its own function under return run", () => {
     const dp = new Datapack("testpack", v1_21_4);
     const flag = dp.objective("flag").score("@s");
-    dp.createFunction("f").build((ctx) => {
+    dp.public("f").build((ctx) => {
       ctx
         .if(flag.equal(1), (c) => void c.return_(1))
         .elif(flag.equal(2), (c) =>

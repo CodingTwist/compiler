@@ -13,8 +13,8 @@ installKit([rigidbody]);
 function cast(bodies: { x: number; rotation?: Quat }[], range = 10) {
   const dp = new Datapack("test", v26_3_rc_2);
   const rb = dp.rigidbody();
-  bodies.forEach((b, n) => dp.createFunction(`spawn_${n}`).build((ctx) => rb.spawn(ctx, { item: Item.STONE, rotation: b.rotation })));
-  dp.createFunction("cast").build((ctx) => {
+  bodies.forEach((b, n) => dp.public(`spawn_${n}`).build((ctx) => rb.spawn(ctx, { item: Item.STONE, rotation: b.rotation })));
+  dp.public("cast").build((ctx) => {
     const vec = (n: string) => ScoreVec3.from((a) => work.score(ScoreTarget(`#${n}_${a}`))).scaled(1000);
     const ray = { origin: vec("o"), dir: vec("d") };
     math`vec(-5, 70.5, 0.5)`.into(ray.origin);

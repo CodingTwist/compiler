@@ -5,6 +5,7 @@ import type { RuntimeTarget } from "../core/ir/target";
 import type { DebugOptions } from "../core/debug/sources";
 import type { OptimizeOptions } from "../core/ir/datapack";
 import type { VersionProfile } from "../versions/profile";
+import type { FunctionLayout } from "../core/private-fn";
 
 export type BuildMode = "dev" | "prod";
 
@@ -30,6 +31,8 @@ export interface HelixConfig {
   debug?: DebugOptions;
   /** Output optimization passes, applied in every mode. Turn one off to debug its output. */
   optimize?: OptimizeOptions;
+  /** Where private functions go: one `zzzprivate/` tree (`split`, default) or `<owner>/zzz/` (`beside`). */
+  layout?: FunctionLayout;
 }
 
 export interface BuildInfo {

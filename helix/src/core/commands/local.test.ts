@@ -14,11 +14,11 @@ describe("ctx.let", () => {
   it("names holders per root function, shared by its bodies", () => {
     const dp = new Datapack("p", v1_21_4);
     const hp = dp.objective("hp").score("@s");
-    dp.createFunction("a").build((ctx) => {
+    dp.public("a").build((ctx) => {
       const x = ctx.let(5);
       ctx.if(x.equal(5), (c) => void c.let(hp));
     });
-    dp.createFunction("b").build((ctx) => void ctx.let());
+    dp.public("b").build((ctx) => void ctx.let());
     const out = output(dp);
     expect(out).toContain("scoreboard players set #a.0 helix.var 5");
     expect(out).toContain(
@@ -30,7 +30,7 @@ describe("ctx.let", () => {
 
   it("declares the objective only when a local is used", () => {
     const dp = new Datapack("p", v1_21_4);
-    dp.createFunction("a").build((ctx) => ctx.say("hi"));
+    dp.public("a").build((ctx) => ctx.say("hi"));
     expect(output(dp)).not.toContain("helix.var");
   });
 
@@ -43,7 +43,7 @@ describe("ctx.let", () => {
       [v26_3_rc_2, "execute store result score #f.1 helix.var run compute"],
     ] as const) {
       const dp = new Datapack("p", version);
-      dp.createFunction("f").build((ctx) => {
+      dp.public("f").build((ctx) => {
         const x = ctx.let(3);
         // Three commands as a chain, so 26.3 takes /compute.
         ctx.let(math`${x} * ${x} + ${x}`);
@@ -56,7 +56,7 @@ describe("ctx.let", () => {
   it("records the branch taken on versions without return run", () => {
     const dp = new Datapack("p", v1_20_1);
     const s = dp.objective("s").score("#s");
-    dp.createFunction("f").build((ctx) => {
+    dp.public("f").build((ctx) => {
       ctx
         .if(s.equal(1), (c) => void c.say("one"))
         .elif(s.equal(2), (c) => void c.say("two"))

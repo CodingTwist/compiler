@@ -64,9 +64,9 @@ export interface PlayerMotion {
   applyGlobal(ctx: FunctionContext, velocity?: GlobalVelocity): void;
 
   // --- Lower-level handles (for manual control / cross-referencing) -----------
-  /** `api/launch_local_xyz` - the raw function, to `ctx.call` yourself after setting {@link launchInput}. */
+  /** `launch_local_xyz` - the raw function, to `ctx.call` yourself after setting {@link launchInput}. */
   readonly launchLocalXyz: FunctionRef;
-  /** `api/launch_global_xyz` - the raw function, to `ctx.call` yourself after setting {@link launchInput}. */
+  /** `launch_global_xyz` - the raw function, to `ctx.call` yourself after setting {@link launchInput}. */
   readonly launchGlobalXyz: FunctionRef;
   /**
    * The `$x/$y/$z player_motion.api.launch` input scores, in fixed-point (10000 = 1
@@ -145,10 +145,10 @@ export const playerMotion: KitPlugin = {
   name: "player_motion",
   install() {
     Datapack.prototype.playerMotion = function (this: Datapack): PlayerMotion {
-      const existing = installed.get(this);
+      const existing = installed.get(this.root);
       if (existing) return existing;
-      const pm = definePlayerMotion(this);
-      installed.set(this, pm);
+      const pm = definePlayerMotion(this.root.plugin("player_motion"));
+      installed.set(this.root, pm);
       return pm;
     };
   },

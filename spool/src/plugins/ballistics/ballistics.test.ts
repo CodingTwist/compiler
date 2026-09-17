@@ -11,7 +11,7 @@ describe("ctx.ballistic", () => {
   it("emits a summon whose Motion is the solved velocity, fused to airburst", () => {
     const dp = new Datapack("cannon", v1_21_4);
     let shot!: ReturnType<typeof solveLaunch>;
-    dp.createFunction("fire").build((ctx) => {
+    dp.public("fire").build((ctx) => {
       shot = ctx.ballistic([0.5, 70, 0.5], [80.5, 64, 20.5], { maxSpeed: 3 });
     });
     dp.report(); // populate dp.files
@@ -25,7 +25,7 @@ describe("ctx.ballistic", () => {
 
   it("takes the shell's own nbt and can leave the fuse alone", () => {
     const dp = new Datapack("cannon", v1_21_4);
-    dp.createFunction("fire").build((ctx) => {
+    dp.public("fire").build((ctx) => {
       ctx.ballistic([0, 70, 0], [40, 64, 0], {
         fuse: false,
         shell: (s) =>
@@ -41,7 +41,7 @@ describe("ctx.ballistic", () => {
 
   it("throws something that isn't TNT at all", () => {
     const dp = new Datapack("cannon", v1_21_4);
-    dp.createFunction("fire").build((ctx) => {
+    dp.public("fire").build((ctx) => {
       ctx.ballistic([0, 70, 0], [40, 64, 0], {
         projectile: PROJECTILES.falling_block,
         shell: (s) => FallingBlock({ ...s, blockState: Block.ANVIL }),

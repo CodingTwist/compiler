@@ -5,28 +5,28 @@ import { buildDatapack } from "./codegen";
 
 test("single-command private functions are inlined and dropped", () => {
   const dp = new Datapack("p", v1_21_4);
-  const one = dp.createFunction("m/zzz/one");
+  const one = dp.public("m/zzz/one");
   one.build((c: any) => c.say("one"));
-  const two = dp.createFunction("m/zzz/two");
+  const two = dp.public("m/zzz/two");
   two.build((c: any) => {
     c.say("a");
     c.say("b");
   });
-  const fork = dp.createFunction("m/zzz/fork");
+  const fork = dp.public("m/zzz/fork");
   fork.build((c: any) =>
     c
       .execute()
       .as(Selector.allPlayers())
       .run((b: any) => b.say("hi")),
   );
-  const kept = dp.createFunction("m/zzz/kept");
+  const kept = dp.public("m/zzz/kept");
   kept.build((c: any) => c.say("kept"));
-  const uncalled = dp.createFunction("m/zzz/uncalled");
+  const uncalled = dp.public("m/zzz/uncalled");
   uncalled.build((c: any) => c.say("by hand"));
-  const pub = dp.createFunction("m/pub");
+  const pub = dp.public("m/pub");
   pub.build((c: any) => c.say("pub"));
   const score = dp.objective("o").score(ScoreTarget("#s"));
-  dp.createFunction("f").build((c: any) => {
+  dp.public("f").build((c: any) => {
     c.call(one);
     c.call(pub);
     c.dispatchScore(score, [
@@ -58,7 +58,7 @@ test("single-command private functions are inlined and dropped", () => {
   expect(dp.files.get("m/zzz/kept")).toBe("say kept");
   expect(dp.files.has("m/zzz/uncalled")).toBe(true);
   expect(dp.files.has("m/pub")).toBe(true);
-  expect([...files.keys()].some((k) => k.endsWith("zzz/one.mcfunction"))).toBe(
+  expect([...files.keys()].some((k) => k.endsWith("zzzprivate/one.mcfunction"))).toBe(
     false,
   );
   // Rebuilding must not bring the dropped file back.

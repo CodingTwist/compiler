@@ -109,9 +109,9 @@ describe("@On", () => {
 
     const { files, all } = compile(Root);
     expect(
-      files.get("data/test/functions/named/zzz/fn_0.mcfunction"),
+      files.get("data/test/functions/zzzprivate/named/water.mcfunction"),
     ).toContain("say two");
-    expect(all).toContain("function test:named/zzz/fn_0");
+    expect(all).toContain("function test:zzzprivate/named/water");
   });
 
   it("rearmEvents clears every once-latch on the module", () => {
@@ -130,7 +130,7 @@ describe("@On", () => {
         ctx.say("c");
       }
       register(dp: Datapack) {
-        dp.createFunction("reset").build((ctx) =>
+        dp.public("reset").build((ctx) =>
           rearmEvents(ctx, dp, "puzzle", this),
         );
       }
@@ -189,7 +189,7 @@ describe("handler groups", () => {
     expect(all.indexOf("alpha")).toBeLessThan(all.indexOf("beta"));
   });
 
-  it("puts a keyless `own` handler's body in the group's folder", () => {
+  it("names a keyless `own` handler's body by its own string, in the group's folder", () => {
     class Hum extends HandlerGroup {
       readonly ns = "hum";
       registerHandlers() {
@@ -198,7 +198,7 @@ describe("handler groups", () => {
           c.say("hmm");
           c.say("mm");
         };
-        this.every(20, hum, { own: true });
+        this.every(20, hum, { own: "hum" });
       }
     }
     @Module({ name: "mod" })
@@ -209,10 +209,10 @@ describe("handler groups", () => {
     class Root {}
 
     const { files, all } = compile(Root);
-    expect(files.get("data/test/functions/hum/zzz/fn_0.mcfunction")).toContain(
-      "say hmm",
-    );
-    expect(all).toContain("function test:hum/zzz/fn_0");
+    expect(
+      files.get("data/test/functions/zzzprivate/hum/hum.mcfunction"),
+    ).toContain("say hmm");
+    expect(all).toContain("function test:zzzprivate/hum/hum");
   });
 });
 

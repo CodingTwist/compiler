@@ -1,39 +1,49 @@
-=== api/launch_global_xyz
+=== load
+function test:zzzprivate/helix/init_objectives
+=== plugin/grapple/start
+execute at @s anchored eyes positioned ^ ^ ^ run function test:zzzprivate/plugin/grapple/start/exec_0
+execute if entity @e[tag=grapple._new,limit=1,type=minecraft:marker] run function test:zzzprivate/plugin/grapple/start/exec_1
+=== plugin/grapple/stop
+execute at @s run function test:zzzprivate/plugin/grapple/stop/exec_0
+tag @s remove grappling
+scoreboard players operation #stop_id grapple.work = @s grapple.id
+execute as @e[tag=grapple.anchor,type=minecraft:marker] if score @s grapple.id = #stop_id grapple.work run kill @s
+=== plugin/player_motion/launch_global_xyz
 execute if score $x player_motion.api.launch matches 0 if score $y player_motion.api.launch matches 0 if score $z player_motion.api.launch matches 0 run return 0
 scoreboard players operation #x player_motion.internal.dummy = $x player_motion.api.launch
 scoreboard players operation #y player_motion.internal.dummy = $y player_motion.api.launch
 scoreboard players operation #z player_motion.internal.dummy = $z player_motion.api.launch
-execute if entity @s[x_rotation=-90] run return run function test:internal/launch/handle_polar/global
-execute as d4bd74a7-4e82-4a07-8850-dfc4d89f9e2f in minecraft:overworld positioned 0.0 0.0 0.0 run function test:internal/math/global/store_reference_vectors
+execute if entity @s[x_rotation=-90] run return run function test:zzzprivate/plugin/player_motion/launch/handle_polar/global
+execute as d4bd74a7-4e82-4a07-8850-dfc4d89f9e2f in minecraft:overworld positioned 0.0 0.0 0.0 run function test:zzzprivate/plugin/player_motion/math/global/store_reference_vectors
 execute store result score #vec_k.x player_motion.internal.dummy run data get storage test:internal/temp vec_k[0] 10000
 execute store result score #vec_k.y player_motion.internal.dummy run data get storage test:internal/temp vec_k[1] 10000
 execute store result score #vec_k.z player_motion.internal.dummy run data get storage test:internal/temp vec_k[2] 10000
 scoreboard players operation #vec_k_combined player_motion.internal.dummy = #vec_k.x player_motion.internal.dummy
 scoreboard players operation #vec_k_combined player_motion.internal.dummy += #vec_k.y player_motion.internal.dummy
 scoreboard players operation #vec_k_combined player_motion.internal.dummy += #vec_k.z player_motion.internal.dummy
-execute if score @s player_motion.internal.previous_method matches 0 if score @s player_motion.internal.previous_vec_k = #vec_k_combined player_motion.internal.dummy if score @s player_motion.internal.previous_x.in = $x player_motion.api.launch if score @s player_motion.internal.previous_y.in = $y player_motion.api.launch if score @s player_motion.internal.previous_z.in = $z player_motion.api.launch run return run function test:internal/launch/use_previous
+execute if score @s player_motion.internal.previous_method matches 0 if score @s player_motion.internal.previous_vec_k = #vec_k_combined player_motion.internal.dummy if score @s player_motion.internal.previous_x.in = $x player_motion.api.launch if score @s player_motion.internal.previous_y.in = $y player_motion.api.launch if score @s player_motion.internal.previous_z.in = $z player_motion.api.launch run return run function test:zzzprivate/plugin/player_motion/launch/use_previous
 scoreboard players operation @s player_motion.internal.previous_vec_k = #vec_k_combined player_motion.internal.dummy
 scoreboard players set @s player_motion.internal.previous_method 0
 execute if predicate test:internal/large_global run return fail
-function test:internal/math/global/convert_to_local
+function test:zzzprivate/plugin/player_motion/math/global/convert_to_local
 scoreboard players operation @s player_motion.internal.previous_x.in = $x player_motion.api.launch
 scoreboard players operation @s player_motion.internal.previous_y.in = $y player_motion.api.launch
 scoreboard players operation @s player_motion.internal.previous_z.in = $z player_motion.api.launch
 scoreboard players operation @s player_motion.internal.previous_x = #x player_motion.internal.dummy
 scoreboard players operation @s player_motion.internal.previous_y = #y player_motion.internal.dummy
 scoreboard players operation @s player_motion.internal.previous_z = #z player_motion.internal.dummy
-return run function test:internal/launch/main
-=== api/launch_local_xyz
+return run function test:zzzprivate/plugin/player_motion/launch/main
+=== plugin/player_motion/launch_local_xyz
 execute if score $x player_motion.api.launch matches 0 if score $y player_motion.api.launch matches 0 if score $z player_motion.api.launch matches 0 run return 0
 scoreboard players operation #x player_motion.internal.dummy = $x player_motion.api.launch
 scoreboard players operation #y player_motion.internal.dummy = $y player_motion.api.launch
 scoreboard players operation #z player_motion.internal.dummy = $z player_motion.api.launch
 scoreboard players set #equal_context player_motion.internal.dummy 0
 execute positioned ^ ^ ^1 rotated as @s positioned ^ ^ ^-1 if entity @s[distance=..0.00001] run scoreboard players set #equal_context player_motion.internal.dummy 1
-execute if score #equal_context player_motion.internal.dummy matches 1 unless entity @s[x_rotation=-90] run return run function test:internal/launch/main
+execute if score #equal_context player_motion.internal.dummy matches 1 unless entity @s[x_rotation=-90] run return run function test:zzzprivate/plugin/player_motion/launch/main
 return fail
-=== fire
-execute at @s run function test:zzz/fire/group_0
+=== zzzprivate/fire
+execute at @s run function test:zzzprivate/fire/group_0
 execute store result score #px ballistics run data get entity @s Pos[0] 100
 execute store result score #py ballistics run data get entity @s Pos[1] 100
 execute store result score #pz ballistics run data get entity @s Pos[2] 100
@@ -74,7 +84,49 @@ execute store result entity @e[tag=test.shot,limit=1,type=minecraft:tnt] Motion[
 execute store result entity @e[tag=test.shot,limit=1,type=minecraft:tnt] Motion[2] double 0.0001 run scoreboard players get #vz ballistics
 tag @e[tag=test.shot,limit=1,type=minecraft:tnt] remove test.shot
 return 1
-=== grapple/constrain
+=== zzzprivate/fire/group_0
+execute as @p run function test:zzzprivate/plugin/ballistics/track_enroll
+execute store result score #vx ballistics run data get entity @p Pos[0] 100
+execute store result score #vy ballistics run data get entity @p Pos[1] 100
+execute store result score #vz ballistics run data get entity @p Pos[2] 100
+scoreboard players operation #lx ballistics = @p ballistics.vx
+scoreboard players operation #ly ballistics = @p ballistics.vy
+scoreboard players operation #lz ballistics = @p ballistics.vz
+=== zzzprivate/helix/init_objectives
+scoreboard objectives add ballistics dummy
+scoreboard objectives add ballistics.vx dummy
+scoreboard objectives add ballistics.vy dummy
+scoreboard objectives add ballistics.vz dummy
+scoreboard objectives add ballistics.px dummy
+scoreboard objectives add ballistics.py dummy
+scoreboard objectives add ballistics.pz dummy
+scoreboard objectives add ballistics.ttl dummy
+=== zzzprivate/plugin/ballistics/tick
+execute as @a[tag=ballistics.tracked] run function test:zzzprivate/plugin/ballistics/track_targets
+=== zzzprivate/plugin/ballistics/track_enroll
+execute unless entity @s[tag=ballistics.tracked] run function test:zzzprivate/plugin/ballistics/track_init
+tag @s add ballistics.tracked
+scoreboard players set @s ballistics.ttl 200
+=== zzzprivate/plugin/ballistics/track_init
+execute store result score @s ballistics.px run data get entity @s Pos[0] 100
+execute store result score @s ballistics.py run data get entity @s Pos[1] 100
+execute store result score @s ballistics.pz run data get entity @s Pos[2] 100
+scoreboard players set @s ballistics.vx 0
+scoreboard players set @s ballistics.vy 0
+scoreboard players set @s ballistics.vz 0
+=== zzzprivate/plugin/ballistics/track_targets
+execute store result score @s ballistics.vx run data get entity @s Pos[0] 100
+execute store result score @s ballistics.vy run data get entity @s Pos[1] 100
+execute store result score @s ballistics.vz run data get entity @s Pos[2] 100
+scoreboard players operation @s ballistics.vx -= @s ballistics.px
+scoreboard players operation @s ballistics.vy -= @s ballistics.py
+scoreboard players operation @s ballistics.vz -= @s ballistics.pz
+execute store result score @s ballistics.px run data get entity @s Pos[0] 100
+execute store result score @s ballistics.py run data get entity @s Pos[1] 100
+execute store result score @s ballistics.pz run data get entity @s Pos[2] 100
+scoreboard players remove @s ballistics.ttl 1
+execute if score @s ballistics.ttl matches ..0 run tag @s remove ballistics.tracked
+=== zzzprivate/plugin/grapple/constrain
 scoreboard players set #coef grapple.work 0
 scoreboard players operation #coef grapple.work -= #dot grapple.work
 scoreboard players operation #_t0 grapple.work = #dist_sq grapple.work
@@ -115,7 +167,7 @@ scoreboard players operation #_t0 player_motion.api.launch *= #frac_scale grappl
 scoreboard players operation #_t0 player_motion.api.launch -= #rad_z grapple.work
 scoreboard players operation #_t0 player_motion.api.launch /= #sustain_div grapple.const
 scoreboard players operation $z player_motion.api.launch += #_t0 player_motion.api.launch
-=== grapple/drive
+=== zzzprivate/plugin/grapple/drive
 execute store result score #pos_x grapple.work run data get entity @s Pos[0] 10
 execute store result score #pos_y grapple.work run data get entity @s Pos[1] 10
 execute store result score #pos_z grapple.work run data get entity @s Pos[2] 10
@@ -156,7 +208,7 @@ scoreboard players operation #dot grapple.work += #_t0 grapple.work
 scoreboard players set $x player_motion.api.launch 0
 scoreboard players set $y player_motion.api.launch 0
 scoreboard players set $z player_motion.api.launch 0
-execute if score #dist_sq grapple.work >= @s grapple.rope_len_sq run function test:grapple/constrain
+execute if score #dist_sq grapple.work >= @s grapple.rope_len_sq run function test:zzzprivate/plugin/grapple/constrain
 scoreboard players operation $x player_motion.api.launch < #impulse_max grapple.const
 scoreboard players operation $x player_motion.api.launch > #impulse_min grapple.const
 scoreboard players operation $y player_motion.api.launch < #impulse_max grapple.const
@@ -164,13 +216,13 @@ scoreboard players operation $y player_motion.api.launch > #impulse_min grapple.
 scoreboard players operation $z player_motion.api.launch < #impulse_max grapple.const
 scoreboard players operation $z player_motion.api.launch > #impulse_min grapple.const
 scoreboard players set #sustain player_motion.internal.dummy 1
-function test:api/launch_global_xyz
+function test:plugin/player_motion/launch_global_xyz
 scoreboard players operation #rope_id grapple.work = @s grapple.id
 execute as @e[tag=grapple.anchor,type=minecraft:marker] if score @s grapple.id = #rope_id grapple.work run tag @s add grapple._aim
 scoreboard players set #rope_step grapple.work 100
-execute anchored eyes positioned ^-0.4 ^-0.4 ^1 facing entity @e[tag=grapple._aim,limit=1,type=minecraft:marker] feet run function test:grapple/rope
+execute anchored eyes positioned ^-0.4 ^-0.4 ^1 facing entity @e[tag=grapple._aim,limit=1,type=minecraft:marker] feet run function test:zzzprivate/plugin/grapple/rope
 tag @e[tag=grapple._aim,limit=1,type=minecraft:marker] remove grapple._aim
-=== grapple/init
+=== zzzprivate/plugin/grapple/init
 scoreboard objectives add grapple.work dummy
 scoreboard objectives add grapple.const dummy
 scoreboard objectives add grapple.anchor_x dummy
@@ -194,24 +246,14 @@ scoreboard players set #release_kick_max grapple.const 16000
 scoreboard players set #impulse_max grapple.const 8000
 scoreboard players set #impulse_min grapple.const -8000
 execute unless score #next_id grapple.const = #next_id grapple.const run scoreboard players set #next_id grapple.const 0
-=== grapple/rope
+=== zzzprivate/plugin/grapple/rope
 scoreboard players remove #rope_step grapple.work 1
 particle minecraft:electric_spark ~ ~ ~ 0 0 0 0 1
-execute if score #rope_step grapple.work matches 1.. unless entity @e[distance=..0.6,tag=grapple._aim,limit=1,type=minecraft:marker] positioned ^ ^ ^1 run return run function test:grapple/rope
-=== grapple/start
-execute at @s anchored eyes positioned ^ ^ ^ run function test:grapple/zzz/start/exec_0
-execute if entity @e[tag=grapple._new,limit=1,type=minecraft:marker] run function test:grapple/zzz/start/exec_1
-=== grapple/stop
-execute at @s run function test:grapple/zzz/stop/exec_0
-tag @s remove grappling
-scoreboard players operation #stop_id grapple.work = @s grapple.id
-execute as @e[tag=grapple.anchor,type=minecraft:marker] if score @s grapple.id = #stop_id grapple.work run kill @s
-=== grapple/tick
-execute as @a[tag=grappling] at @s run function test:grapple/drive
-=== grapple/zzz/start/exec_0
-scoreboard players set #grapple_web_steps raycast.work 100
-function test:raycast/grapple/web
-=== grapple/zzz/start/exec_1
+execute if score #rope_step grapple.work matches 1.. unless entity @e[distance=..0.6,tag=grapple._aim,limit=1,type=minecraft:marker] positioned ^ ^ ^1 run return run function test:zzzprivate/plugin/grapple/rope
+=== zzzprivate/plugin/grapple/start/exec_0
+scoreboard players set #plugin_grapple_web_steps raycast.work 100
+function test:zzzprivate/plugin/grapple/web
+=== zzzprivate/plugin/grapple/start/exec_1
 execute store result score #pos_x grapple.work run data get entity @s Pos[0] 10
 execute store result score #pos_y grapple.work run data get entity @s Pos[1] 10
 execute store result score #pos_z grapple.work run data get entity @s Pos[2] 10
@@ -237,7 +279,7 @@ scoreboard players operation @s grapple.id = #next_id grapple.const
 execute as @e[tag=grapple._new,type=minecraft:marker] run scoreboard players operation @s grapple.id = #next_id grapple.const
 tag @s add grappling
 tag @e[tag=grapple._new,type=minecraft:marker] remove grapple._new
-=== grapple/zzz/stop/exec_0
+=== zzzprivate/plugin/grapple/stop/exec_0
 scoreboard players operation #frac grapple.work = @s grapple.vel_x
 scoreboard players operation #frac grapple.work *= @s grapple.vel_x
 scoreboard players operation #_t0 grapple.work = @s grapple.vel_y
@@ -252,8 +294,23 @@ scoreboard players operation $z player_motion.api.launch = #frac grapple.work
 scoreboard players operation $z player_motion.api.launch *= #release_kick grapple.const
 scoreboard players operation $z player_motion.api.launch < #release_kick_max grapple.const
 scoreboard players set #sustain player_motion.internal.dummy 1
-function test:api/launch_local_xyz
-=== internal/init
+function test:plugin/player_motion/launch_local_xyz
+=== zzzprivate/plugin/grapple/tick
+execute as @a[tag=grappling] at @s run function test:zzzprivate/plugin/grapple/drive
+=== zzzprivate/plugin/grapple/web
+return run function test:zzzprivate/plugin/grapple/web/return_0/while_0
+=== zzzprivate/plugin/grapple/web/return_0/while_0
+execute if block ~ ~ ~ #minecraft:air if score #plugin_grapple_web_steps raycast.work matches 1.. run return run function test:zzzprivate/plugin/grapple/web/return_0/while_0/pass_0
+return run function test:zzzprivate/plugin/grapple/web/return_0/while_0/else_0
+=== zzzprivate/plugin/grapple/web/return_0/while_0/else_0
+summon minecraft:marker ~ ~ ~ {Tags:["grapple.anchor","grapple._new"]}
+execute store result score @s grapple.anchor_x run data get entity @e[distance=..1,tag=grapple._new,limit=1,type=minecraft:marker] Pos[0] 10
+execute store result score @s grapple.anchor_y run data get entity @e[distance=..1,tag=grapple._new,limit=1,type=minecraft:marker] Pos[1] 10
+execute store result score @s grapple.anchor_z run data get entity @e[distance=..1,tag=grapple._new,limit=1,type=minecraft:marker] Pos[2] 10
+=== zzzprivate/plugin/grapple/web/return_0/while_0/pass_0
+scoreboard players remove #plugin_grapple_web_steps raycast.work 1
+execute positioned ^ ^ ^0.5 run return run function test:zzzprivate/plugin/grapple/web/return_0/while_0
+=== zzzprivate/plugin/player_motion/init
 scoreboard objectives add player_motion.api.launch dummy
 scoreboard objectives add player_motion.internal.dummy dummy
 scoreboard objectives add player_motion.internal.math dummy
@@ -271,18 +328,24 @@ forceload remove 0 0
 forceload add 0 0
 kill d4bd74a7-4e82-4a07-8850-dfc4d89f9e2f
 summon minecraft:marker 0.0 0.0 0.0 {UUID:[I;-725781337,1317161479,-2007965756,-660627921],Tags:["smithed.strict","smithed.entity"]}
-=== internal/launch/handle_polar/global
-execute if score #x player_motion.internal.dummy matches 0 if score #y player_motion.internal.dummy matches 0 run return run function test:internal/launch/main
+=== zzzprivate/plugin/player_motion/launch/handle_polar/global
+execute if score #x player_motion.internal.dummy matches 0 if score #y player_motion.internal.dummy matches 0 run return run function test:zzzprivate/plugin/player_motion/launch/main
 scoreboard players operation #y player_motion.internal.dummy >< #z player_motion.internal.dummy
 execute store success score #y_abs_within_90 player_motion.internal.dummy if entity @s[y_rotation=90..-90]
-execute if score #y_abs_within_90 player_motion.internal.dummy matches 1 run function test:internal/zzz/launch/handle_polar/global/exec_1
-execute if score #y_abs_within_90 player_motion.internal.dummy matches 0 run function test:internal/zzz/launch/handle_polar/global/exec_2
-return run function test:internal/launch/main
-=== internal/launch/main
+execute if score #y_abs_within_90 player_motion.internal.dummy matches 1 run function test:zzzprivate/plugin/player_motion/launch/handle_polar/global/exec_1
+execute if score #y_abs_within_90 player_motion.internal.dummy matches 0 run function test:zzzprivate/plugin/player_motion/launch/handle_polar/global/exec_2
+return run function test:zzzprivate/plugin/player_motion/launch/main
+=== zzzprivate/plugin/player_motion/launch/handle_polar/global/exec_1
+scoreboard players set #_t0 player_motion.internal.dummy -1
+scoreboard players operation #x player_motion.internal.dummy *= #_t0 player_motion.internal.dummy
+=== zzzprivate/plugin/player_motion/launch/handle_polar/global/exec_2
+scoreboard players set #_t0 player_motion.internal.dummy -1
+scoreboard players operation #y player_motion.internal.dummy *= #_t0 player_motion.internal.dummy
+=== zzzprivate/plugin/player_motion/launch/main
 item replace entity @s saddle with minecraft:saddle[enchantments={"test:internal/apply_impulse":1},equippable={slot: "saddle", equip_sound: "intentionally_empty"}]
-function test:internal/store/x
-function test:internal/store/y
-function test:internal/store/z
+function test:zzzprivate/plugin/player_motion/store/x
+function test:zzzprivate/plugin/player_motion/store/y
+function test:zzzprivate/plugin/player_motion/store/z
 execute if score #sustain player_motion.internal.dummy matches 1 run return run scoreboard players set #sustain player_motion.internal.dummy 0
 execute if entity @s[gamemode=survival] run scoreboard players set #mode player_motion.internal.gamemode 2
 execute if entity @s[gamemode=adventure] run scoreboard players set #mode player_motion.internal.gamemode 3
@@ -293,14 +356,14 @@ scoreboard players set #falling player_motion.internal.gamemode 0
 execute if predicate test:internal/falling_creative_player store success score #falling player_motion.internal.gamemode run gamemode adventure
 execute if score #falling player_motion.internal.gamemode matches 0 run gamemode spectator
 return run gamemode creative
-=== internal/launch/reset
+=== zzzprivate/plugin/player_motion/launch/reset
 item replace entity @s saddle with minecraft:air
-=== internal/launch/use_previous
+=== zzzprivate/plugin/player_motion/launch/use_previous
 scoreboard players operation #x player_motion.internal.dummy = @s player_motion.internal.previous_x
 scoreboard players operation #y player_motion.internal.dummy = @s player_motion.internal.previous_y
 scoreboard players operation #z player_motion.internal.dummy = @s player_motion.internal.previous_z
-return run function test:internal/launch/main
-=== internal/math/global/convert_to_local
+return run function test:zzzprivate/plugin/player_motion/launch/main
+=== zzzprivate/plugin/player_motion/math/global/convert_to_local
 scoreboard players operation #_x player_motion.internal.dummy = #x player_motion.internal.dummy
 scoreboard players operation #_y player_motion.internal.dummy = #y player_motion.internal.dummy
 scoreboard players operation #_z player_motion.internal.dummy = #z player_motion.internal.dummy
@@ -341,7 +404,7 @@ scoreboard players set #_k player_motion.internal.dummy 100000
 scoreboard players operation #x player_motion.internal.dummy /= #_k player_motion.internal.dummy
 scoreboard players operation #y player_motion.internal.dummy /= #_k player_motion.internal.dummy
 scoreboard players operation #z player_motion.internal.dummy /= #_k player_motion.internal.dummy
-=== internal/math/global/store_reference_vectors
+=== zzzprivate/plugin/player_motion/math/global/store_reference_vectors
 teleport @s ^1 ^ ^
 data modify storage test:internal/temp vec_i set from entity @s Pos
 teleport @s ^ ^1 ^
@@ -349,7 +412,7 @@ data modify storage test:internal/temp vec_j set from entity @s Pos
 teleport @s ^ ^ ^1
 data modify storage test:internal/temp vec_k set from entity @s Pos
 teleport @s 0.0 0.0 0.0 0.0 0.0
-=== internal/store/x
+=== zzzprivate/plugin/player_motion/store/x
 execute store result score #x.0 player_motion.internal.store store result score #x.1 player_motion.internal.store store result score #x.2 player_motion.internal.store store result score #x.3 player_motion.internal.store store result score #x.4 player_motion.internal.store store result score #x.5 player_motion.internal.store store result score #x.6 player_motion.internal.store store result score #x.7 player_motion.internal.store store result score #x.8 player_motion.internal.store store result score #x.9 player_motion.internal.store store result score #x.10 player_motion.internal.store store result score #x.11 player_motion.internal.store store result score #x.12 player_motion.internal.store store result score #x.13 player_motion.internal.store store result score #x.14 player_motion.internal.store store result score #x.15 player_motion.internal.store store result score #x.16 player_motion.internal.store store result score #x.17 player_motion.internal.store store result score #x.18 player_motion.internal.store store result score #x.19 player_motion.internal.store store result score #x.20 player_motion.internal.store store result score #x.21 player_motion.internal.store store result score #x.22 player_motion.internal.store store result score #x.23 player_motion.internal.store store result score #x.24 player_motion.internal.store store result score #x.25 player_motion.internal.store store result score #x.26 player_motion.internal.store store result score #x.27 player_motion.internal.store store result score #x.28 player_motion.internal.store store result score #x.29 player_motion.internal.store store result score #x.30 player_motion.internal.store run scoreboard players set #x.31 player_motion.internal.store 0
 execute if score #x player_motion.internal.dummy matches 0 run return 1
 execute store success score #x.31 player_motion.internal.store if score #x player_motion.internal.dummy matches ..-1 run scoreboard players add #x player_motion.internal.dummy 2147483647
@@ -384,7 +447,7 @@ execute store success score #x.3 player_motion.internal.store if score #x player
 execute store success score #x.2 player_motion.internal.store if score #x player_motion.internal.dummy matches 4.. run scoreboard players remove #x player_motion.internal.dummy 4
 execute store success score #x.1 player_motion.internal.store if score #x player_motion.internal.dummy matches 2.. run scoreboard players remove #x player_motion.internal.dummy 2
 execute if score #x player_motion.internal.dummy matches 1.. run scoreboard players set #x.0 player_motion.internal.store 1
-=== internal/store/y
+=== zzzprivate/plugin/player_motion/store/y
 execute store result score #y.0 player_motion.internal.store store result score #y.1 player_motion.internal.store store result score #y.2 player_motion.internal.store store result score #y.3 player_motion.internal.store store result score #y.4 player_motion.internal.store store result score #y.5 player_motion.internal.store store result score #y.6 player_motion.internal.store store result score #y.7 player_motion.internal.store store result score #y.8 player_motion.internal.store store result score #y.9 player_motion.internal.store store result score #y.10 player_motion.internal.store store result score #y.11 player_motion.internal.store store result score #y.12 player_motion.internal.store store result score #y.13 player_motion.internal.store store result score #y.14 player_motion.internal.store store result score #y.15 player_motion.internal.store store result score #y.16 player_motion.internal.store store result score #y.17 player_motion.internal.store store result score #y.18 player_motion.internal.store store result score #y.19 player_motion.internal.store store result score #y.20 player_motion.internal.store store result score #y.21 player_motion.internal.store store result score #y.22 player_motion.internal.store store result score #y.23 player_motion.internal.store store result score #y.24 player_motion.internal.store store result score #y.25 player_motion.internal.store store result score #y.26 player_motion.internal.store store result score #y.27 player_motion.internal.store store result score #y.28 player_motion.internal.store store result score #y.29 player_motion.internal.store store result score #y.30 player_motion.internal.store run scoreboard players set #y.31 player_motion.internal.store 0
 execute if score #y player_motion.internal.dummy matches 0 run return 1
 execute store success score #y.31 player_motion.internal.store if score #y player_motion.internal.dummy matches ..-1 run scoreboard players add #y player_motion.internal.dummy 2147483647
@@ -419,7 +482,7 @@ execute store success score #y.3 player_motion.internal.store if score #y player
 execute store success score #y.2 player_motion.internal.store if score #y player_motion.internal.dummy matches 4.. run scoreboard players remove #y player_motion.internal.dummy 4
 execute store success score #y.1 player_motion.internal.store if score #y player_motion.internal.dummy matches 2.. run scoreboard players remove #y player_motion.internal.dummy 2
 execute if score #y player_motion.internal.dummy matches 1.. run scoreboard players set #y.0 player_motion.internal.store 1
-=== internal/store/z
+=== zzzprivate/plugin/player_motion/store/z
 execute store result score #z.0 player_motion.internal.store store result score #z.1 player_motion.internal.store store result score #z.2 player_motion.internal.store store result score #z.3 player_motion.internal.store store result score #z.4 player_motion.internal.store store result score #z.5 player_motion.internal.store store result score #z.6 player_motion.internal.store store result score #z.7 player_motion.internal.store store result score #z.8 player_motion.internal.store store result score #z.9 player_motion.internal.store store result score #z.10 player_motion.internal.store store result score #z.11 player_motion.internal.store store result score #z.12 player_motion.internal.store store result score #z.13 player_motion.internal.store store result score #z.14 player_motion.internal.store store result score #z.15 player_motion.internal.store store result score #z.16 player_motion.internal.store store result score #z.17 player_motion.internal.store store result score #z.18 player_motion.internal.store store result score #z.19 player_motion.internal.store store result score #z.20 player_motion.internal.store store result score #z.21 player_motion.internal.store store result score #z.22 player_motion.internal.store store result score #z.23 player_motion.internal.store store result score #z.24 player_motion.internal.store store result score #z.25 player_motion.internal.store store result score #z.26 player_motion.internal.store store result score #z.27 player_motion.internal.store store result score #z.28 player_motion.internal.store store result score #z.29 player_motion.internal.store store result score #z.30 player_motion.internal.store run scoreboard players set #z.31 player_motion.internal.store 0
 execute if score #z player_motion.internal.dummy matches 0 run return 1
 execute store success score #z.31 player_motion.internal.store if score #z player_motion.internal.dummy matches ..-1 run scoreboard players add #z player_motion.internal.dummy 2147483647
@@ -454,68 +517,5 @@ execute store success score #z.3 player_motion.internal.store if score #z player
 execute store success score #z.2 player_motion.internal.store if score #z player_motion.internal.dummy matches 4.. run scoreboard players remove #z player_motion.internal.dummy 4
 execute store success score #z.1 player_motion.internal.store if score #z player_motion.internal.dummy matches 2.. run scoreboard players remove #z player_motion.internal.dummy 2
 execute if score #z player_motion.internal.dummy matches 1.. run scoreboard players set #z.0 player_motion.internal.store 1
-=== internal/zzz/launch/handle_polar/global/exec_1
-scoreboard players set #_t0 player_motion.internal.dummy -1
-scoreboard players operation #x player_motion.internal.dummy *= #_t0 player_motion.internal.dummy
-=== internal/zzz/launch/handle_polar/global/exec_2
-scoreboard players set #_t0 player_motion.internal.dummy -1
-scoreboard players operation #y player_motion.internal.dummy *= #_t0 player_motion.internal.dummy
-=== load
-function test:zzz/init_objectives
-=== raycast/grapple/web
-return run function test:raycast/zzz/grapple/web/return_0/while_0
-=== raycast/init
+=== zzzprivate/plugin/raycast/init
 scoreboard objectives add raycast.work dummy
-=== raycast/zzz/grapple/web/return_0/while_0
-execute if block ~ ~ ~ #minecraft:air if score #grapple_web_steps raycast.work matches 1.. run return run function test:raycast/zzz/grapple/web/return_0/while_0/pass_0
-return run function test:raycast/zzz/grapple/web/return_0/while_0/else_0
-=== raycast/zzz/grapple/web/return_0/while_0/else_0
-summon minecraft:marker ~ ~ ~ {Tags:["grapple.anchor","grapple._new"]}
-execute store result score @s grapple.anchor_x run data get entity @e[distance=..1,tag=grapple._new,limit=1,type=minecraft:marker] Pos[0] 10
-execute store result score @s grapple.anchor_y run data get entity @e[distance=..1,tag=grapple._new,limit=1,type=minecraft:marker] Pos[1] 10
-execute store result score @s grapple.anchor_z run data get entity @e[distance=..1,tag=grapple._new,limit=1,type=minecraft:marker] Pos[2] 10
-=== raycast/zzz/grapple/web/return_0/while_0/pass_0
-scoreboard players remove #grapple_web_steps raycast.work 1
-execute positioned ^ ^ ^0.5 run return run function test:raycast/zzz/grapple/web/return_0/while_0
-=== tick
-execute as @a[tag=ballistics.tracked] run function test:zzz/track_targets
-=== zzz/fire/group_0
-execute as @p run function test:zzz/track_enroll
-execute store result score #vx ballistics run data get entity @p Pos[0] 100
-execute store result score #vy ballistics run data get entity @p Pos[1] 100
-execute store result score #vz ballistics run data get entity @p Pos[2] 100
-scoreboard players operation #lx ballistics = @p ballistics.vx
-scoreboard players operation #ly ballistics = @p ballistics.vy
-scoreboard players operation #lz ballistics = @p ballistics.vz
-=== zzz/init_objectives
-scoreboard objectives add ballistics dummy
-scoreboard objectives add ballistics.vx dummy
-scoreboard objectives add ballistics.vy dummy
-scoreboard objectives add ballistics.vz dummy
-scoreboard objectives add ballistics.px dummy
-scoreboard objectives add ballistics.py dummy
-scoreboard objectives add ballistics.pz dummy
-scoreboard objectives add ballistics.ttl dummy
-=== zzz/track_enroll
-execute unless entity @s[tag=ballistics.tracked] run function test:zzz/track_init
-tag @s add ballistics.tracked
-scoreboard players set @s ballistics.ttl 200
-=== zzz/track_init
-execute store result score @s ballistics.px run data get entity @s Pos[0] 100
-execute store result score @s ballistics.py run data get entity @s Pos[1] 100
-execute store result score @s ballistics.pz run data get entity @s Pos[2] 100
-scoreboard players set @s ballistics.vx 0
-scoreboard players set @s ballistics.vy 0
-scoreboard players set @s ballistics.vz 0
-=== zzz/track_targets
-execute store result score @s ballistics.vx run data get entity @s Pos[0] 100
-execute store result score @s ballistics.vy run data get entity @s Pos[1] 100
-execute store result score @s ballistics.vz run data get entity @s Pos[2] 100
-scoreboard players operation @s ballistics.vx -= @s ballistics.px
-scoreboard players operation @s ballistics.vy -= @s ballistics.py
-scoreboard players operation @s ballistics.vz -= @s ballistics.pz
-execute store result score @s ballistics.px run data get entity @s Pos[0] 100
-execute store result score @s ballistics.py run data get entity @s Pos[1] 100
-execute store result score @s ballistics.pz run data get entity @s Pos[2] 100
-scoreboard players remove @s ballistics.ttl 1
-execute if score @s ballistics.ttl matches ..0 run tag @s remove ballistics.tracked

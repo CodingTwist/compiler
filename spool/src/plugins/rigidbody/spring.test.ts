@@ -13,8 +13,8 @@ function pull(rest: number) {
   const work = new Objective("rb.work");
   const anchor = ScoreVec3.from((a) => work.score(ScoreTarget(`#anchor_${a}`))).scaled(1000);
   const restScore = work.score(ScoreTarget("#rest")).scaled(1000);
-  dp.createFunction("spawn").build((ctx) => rb.spawn(ctx, { item: Item.STONE }));
-  dp.createFunction("pull").build((ctx) => {
+  dp.public("spawn").build((ctx) => rb.spawn(ctx, { item: Item.STONE }));
+  dp.public("pull").build((ctx) => {
     math`vec(0.5, 80, 0.5)`.into(anchor);
     restScore.set(rest);
     ctx.execute().as(rb.bodies()).run((b) => rb.spring(b, { anchor, rest: restScore, stiffness: 0.1, attach: [0, 1, 0] }));

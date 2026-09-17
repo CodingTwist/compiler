@@ -26,7 +26,7 @@ export class MobBuilder<S extends string = never> extends SpoolMobBuilder<S> {
   toModule(name: string, opts: MobModuleOpts = {}): MobModuleRef {
     const mob = this.build(name, opts);
     const module: DatapackModule = {
-      register: (dp, scope) => mob.register(dp, (n, body) => scope.fn(n, body)),
+      register: (dp, scope) => mob.register(dp, (n, body, o) => scope.fn(n, body, o)),
       onTick: (ctx: FunctionContext) => mob.tick(ctx),
     };
     // On the shared clock, so each mob's scans get their own phase instead of all firing on one tick.

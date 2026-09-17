@@ -72,7 +72,7 @@ export function prepareContact(s: RigidState, t: RigidTuning, ctx: FunctionConte
 }
 
 /**
- * Builds `rb/contact/solve_<i>`: one sequential-impulse step for contact `i`.
+ * Builds `contact/solve_<i>`: one sequential-impulse step for contact `i`.
  *
  * The normal impulse accumulates and is clamped at zero (contacts push, never pull), and
  * friction accumulates and is clamped to μ·that, so repeated passes converge on the answer

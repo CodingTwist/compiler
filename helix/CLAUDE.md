@@ -152,10 +152,17 @@ run`. Versions without `return run` (1.20.1) record the branch number in a local
   the else under `return run`): `if cond run return run function pass`, then the exit. `pass` is
   the body plus `execute <advance> run return run function <loop>`, so a `return` in the body or
   exit reaches the loop's caller. Needs `return run`; throws on 1.20.1.
-- **Nameless functions** (`ir/datapack/functions.ts`): `dp.createFunction()` / `dp.fn(body)`
-  with no name get a private one - `privateChild(<function being built>, "fn_N")`, or
-  `<group>/zzz/fn_N` inside `dp.group(name, body)`, else `zzz/fn_N` - so authors only name
-  functions whose id is used outside the code, and the output still groups by feature.
+- **Function names and groups** (`ir/datapack/functions.ts`, `core.ts`, `group.ts`, `private-fn.ts`):
+  every function has a name. `dp.createFunction(name)` is private, `dp.public(name)` is public
+  (run by hand). `dp.group("door")` returns a Proxy view of the pack whose functions go under
+  `door/`; reads see the view's `path`, writes land on the root, and `dp.group` caches one view per
+  path. Prototype methods (spool plugins) run with the view as `this`, so their output nests under
+  the caller. Plugin state caches must key on `dp.root`. `layout` (`split` default:
+  `zzzprivate/door/slide`; `beside`: `door/zzz/slide`) decides where private names go, fixed at
+  creation. Top-level `load`/`tick` are always public. Control-flow children
+  (`if_0`/`exec_0`/`group_0`) nest under their parent's resolved name. helix's own helpers live in
+  `dp.root.group("helix")` (`clock`, `init_objectives`). `functionAt(name)` / `functionRef(name)`
+  take an already-resolved output name.
 - **Score functions** (`dp.fn` in `ir/datapack/functions.ts`, `ctx.invoke` in
   `commands/function.ts`): params are the callee's first locals, counted from `body.length`; a
   returned score becomes `return run scoreboard players get`, stored by the caller with
@@ -167,7 +174,7 @@ run`. Versions without `return run` (1.20.1) record the branch number in a local
   function, one `return run` line per chain, so the body runs once. `and` puts a chain that moves
   position last so it can't shift the other guards.
 - **Single-command inlining** (`codegen/inline.ts`, end of `buildDatapack`): a _private_
-  (`zzz/`) function with one command is spliced into its `function` / `execute … run function`
+  (`zzzprivate/` or `zzz/`) function with one command is spliced into its `function` / `execute … run function`
   / `return run function` call sites, and dropped if nothing else names it (tags, JSON,
   `schedule`, `if function`). Skipped: macro or `return` bodies, `store` callers, functions
   with a `dp.allow`, and forking bodies (`as`/`at`/`on`/`summon`) under `return run`, which

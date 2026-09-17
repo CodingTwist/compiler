@@ -30,7 +30,7 @@ function fixture(versionIn: "config" | "entry" | "both" = "config"): string {
   fs.mkdirSync(path.join(root, "src"));
   fs.writeFileSync(
     path.join(root, "src/pack.ts"),
-    `export default Object.assign((dp: any, build: any) => dp.createFunction("hi").build((c: any) => c.say(build.mode + " " + build.target)),
+    `export default Object.assign((dp: any, build: any) => dp.public("hi").build((c: any) => c.say(build.mode + " " + build.target)),
   ${versionIn === "config" ? "{}" : "{ version: (globalThis as any).__fixtureVersion }"});`,
   );
   return root;
@@ -80,7 +80,7 @@ describe("helix report --json", () => {
     (globalThis as Record<string, unknown>).__fixtureSelector = Selector;
     fs.writeFileSync(
       path.join(root, "src/pack.ts"),
-      `export default (dp: any) => dp.createFunction("scan").build((c: any) => {
+      `export default (dp: any) => dp.public("scan").build((c: any) => {
   console.log("pack noise");
   c.kill((globalThis as any).__fixtureSelector.allEntities().tag("x"));
 });`,

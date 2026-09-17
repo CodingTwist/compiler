@@ -54,7 +54,7 @@ const FACES = [
 ] as const;
 
 /**
- * Builds `rb/contact/detect_<i>`: picks the exit face for a vertex inside a solid block.
+ * Builds `contact/detect_<i>`: picks the exit face for a vertex inside a solid block.
  *
  * Prefers open faces the body is moving into (so a cube landing near a ledge isn't shoved
  * sideways off it), then any open face, then straight up. Shallowest wins. Run as the body, at

@@ -12,7 +12,7 @@ function emit(build: (sc: (n: string) => any) => void): string {
   const dp = new Datapack("test", v1_21_4);
   const work = new Objective("work");
   const sc = (n: string) => work.score(ScoreTarget(`#${n}`));
-  dp.createFunction("f").build(() => build(sc));
+  dp.public("f").build(() => build(sc));
   dp.report();
   return dp.files.get("f")!;
 }

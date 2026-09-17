@@ -9,7 +9,7 @@ describe("Score verbs", () => {
   it("emits get, enable and init into the ambient context", () => {
     const dp = new Datapack("p", v26_2);
     const home = new Objective("home", "trigger");
-    dp.createFunction("f").build(() => {
+    dp.public("f").build(() => {
       home.init();
       home.score(Selector.allPlayers()).enable();
       home.score(ScoreTarget("#x")).get();
@@ -25,7 +25,7 @@ describe("Score verbs", () => {
   it("flips a negative add or remove, since the game only parses amounts ≥ 0", () => {
     const dp = new Datapack("p", v26_2);
     const x = new Objective("s").score(ScoreTarget("#x"));
-    dp.createFunction("f").build(() => {
+    dp.public("f").build(() => {
       x.add(-125);
       x.remove(-3);
     });
@@ -39,7 +39,7 @@ describe("Score verbs", () => {
   it("refuses to enable a non-trigger objective", () => {
     const dp = new Datapack("p", v26_2);
     const s = new Objective("s").score(ScoreTarget("#x"));
-    expect(() => dp.createFunction("f").build(() => void s.enable())).toThrow(
+    expect(() => dp.public("f").build(() => void s.enable())).toThrow(
       /trigger/,
     );
   });

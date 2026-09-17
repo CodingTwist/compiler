@@ -77,12 +77,12 @@ export function defineRuntimeShot(
     const build = opts.shellFunction;
     spawnShell = (c) => build(c, shellSpec);
   } else if (opts.shellFunction) {
-    if (dp.functionRef(opts.shellFunction))
+    if (dp.functionRef(dp.functionName(opts.shellFunction, { public: true })))
       throw new Error(
         `ballistics: shellFunction "${opts.shellFunction}" already exists - ` +
           `each shot needs its own (the fuse baked into it is that shot's flight time).`,
       );
-    const shellFn = dp.createFunction(opts.shellFunction);
+    const shellFn = dp.public(opts.shellFunction);
     shellFn.build(spawnShell);
     spawnShell = (c) => c.call(shellFn);
   }

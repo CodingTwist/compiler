@@ -3,14 +3,14 @@ import type { PlayerMotionInternals } from "./context";
 import { globalConversionTail } from "./global-conversion";
 
 /**
- * The public entry points `api/launch_local_xyz` and `api/launch_global_xyz`, reading
+ * The public entry points `launch_local_xyz` and `launch_global_xyz`, reading
  * `$x/$y/$z player_motion.api.launch`. Unsupported macro branches `return fail`.
  */
 export function defineApi(I: PlayerMotionInternals): void {
   const { self, fLaunchMain, fPolarGlobal, dummyScore, input, work } = I;
   const { fLaunchLocal, fLaunchGlobal } = I;
 
-  // --- api/launch_global_xyz ------------------------------------------------
+  // --- launch_global_xyz ------------------------------------------------
   fLaunchGlobal.build((ctx) => {
     ctx
       .execute()
@@ -30,7 +30,7 @@ export function defineApi(I: PlayerMotionInternals): void {
     globalConversionTail(I, ctx, 0);
   });
 
-  // --- api/launch_local_xyz -------------------------------------------------
+  // --- launch_local_xyz -------------------------------------------------
   fLaunchLocal.build((ctx) => {
     ctx
       .execute()

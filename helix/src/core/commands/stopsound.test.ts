@@ -6,7 +6,7 @@ import { buildDatapack } from "../codegen/codegen";
 describe("ctx.stopsound().any()", () => {
   it("renders the `*` (every category) source wildcard", () => {
     const dp = new Datapack("t", v26_2);
-    dp.createFunction("f").build((ctx) => {
+    dp.public("f").build((ctx) => {
       ctx.stopsound().any(Selector.self(), Id("minecraft:music.dragon"));
     });
     const files = buildDatapack(dp);

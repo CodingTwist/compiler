@@ -5,7 +5,7 @@ import { buildDatapack } from "../../codegen/codegen";
 
 function render(build: (ctx: any) => void): string {
   const dp = new Datapack("t", v26_2);
-  dp.createFunction("f").build(build);
+  dp.public("f").build(build);
   const files = buildDatapack(dp);
   return files.get("data/t/function/f.mcfunction")!.trim();
 }

@@ -35,7 +35,7 @@ export function groupExecutePrefixes(dp: Datapack): void {
       const body = part.lines.slice(lead);
       const clauses = part.shared.map((c) => c.text);
       let child: string;
-      do child = privateChild(name, `group_${n++}`);
+      do child = privateChild(name, `group_${n++}`, dp.layout);
       while (dp.files.has(child) || dp.inlined.has(child));
 
       dp.files.set(

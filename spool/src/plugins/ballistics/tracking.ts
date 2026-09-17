@@ -25,9 +25,10 @@ export interface Tracker {
 /** One tracker per datapack, whatever asks for it. */
 const trackers = new WeakMap<Datapack, Tracker>();
 
-export function targetVelocity(dp: Datapack): Tracker {
-  const existing = trackers.get(dp);
+export function targetVelocity(caller: Datapack): Tracker {
+  const existing = trackers.get(caller.root);
   if (existing) return existing;
+  const dp = caller.root.plugin("ballistics");
 
   const vel = AXES.map((a) => dp.objective(`${OBJECTIVE}.v${a}`));
   const prev = AXES.map((a) => dp.objective(`${OBJECTIVE}.p${a}`));
@@ -37,13 +38,13 @@ export function targetVelocity(dp: Datapack): Tracker {
   const vec = (o: Objective[]) => ScoreVec3.from((_, i) => o[i].score(me()));
 
   // Seed the previous position on enrol, or a returning player's first diff would be huge.
-  const init = dp.createFunction("zzz/track_init");
+  const init = dp.createFunction("track_init");
   init.build((ctx) => {
     vec(prev).readEntity(me(), Path.Entity.Pos, POS_SCALE, { ctx });
     for (const axis of vec(vel).components) axis.set(0);
   });
 
-  const enroll = dp.createFunction("zzz/track_enroll");
+  const enroll = dp.createFunction("track_enroll");
   enroll.build((ctx) => {
     ctx
       .execute()
@@ -53,7 +54,7 @@ export function targetVelocity(dp: Datapack): Tracker {
     ttl.score(me()).set(TRACK_TTL);
   });
 
-  const track = dp.createFunction("zzz/track_targets");
+  const track = dp.createFunction("track_targets");
   track.build((ctx) => {
     // Subtract before overwriting the previous position.
     const v = vec(vel);
@@ -76,6 +77,6 @@ export function targetVelocity(dp: Datapack): Tracker {
   );
 
   const tracker: Tracker = { vel, enroll };
-  trackers.set(dp, tracker);
+  trackers.set(caller.root, tracker);
   return tracker;
 }

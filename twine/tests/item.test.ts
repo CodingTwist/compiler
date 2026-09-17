@@ -40,7 +40,7 @@ describe("defineItem", () => {
     class Root {}
 
     const { files, all } = compile(Root);
-    expect([...files.keys()].some((p) => p.includes("zzz/item/stick"))).toBe(
+    expect([...files.keys()].some((p) => p.includes("zzzprivate/item/stick"))).toBe(
       false,
     );
     expect(all).not.toContain("advancement");
@@ -54,7 +54,7 @@ describe("defineItem", () => {
     class Root {}
 
     const { file } = compile(Root);
-    const give = file("zzz/item/stick/give.mcfunction");
+    const give = file("item/stick/give.mcfunction");
     expect(give).toBeDefined();
     expect(give).toContain("give @s minecraft:stick");
     expect(give).toContain("Frost Wand");
@@ -73,17 +73,17 @@ describe("defineItem", () => {
 
     const { files, file } = compile(Root);
 
-    const adv = file("zzz/item/stick/on_attack.json");
+    const adv = file("zzzprivate/item/stick/on_attack.json");
     expect(adv).toBeDefined();
     const json = JSON.parse(adv!);
     expect(json.criteria.trigger.trigger).toBe("minecraft:player_hurt_entity");
-    expect(json.rewards.function).toBe("test:zzz/item/stick/on_attack");
+    expect(json.rewards.function).toBe("test:zzzprivate/item/stick/on_attack");
 
-    const reward = file("zzz/item/stick/on_attack.mcfunction");
+    const reward = file("zzzprivate/item/stick/on_attack.mcfunction");
     expect(reward).toBeDefined();
     expect(reward).toContain("zap");
     expect(reward).toContain(
-      "advancement revoke @s only test:zzz/item/stick/on_attack",
+      "advancement revoke @s only test:zzzprivate/item/stick/on_attack",
     );
   });
 
@@ -99,7 +99,7 @@ describe("defineItem", () => {
     class Root {}
 
     const { file } = compile(Root);
-    const adv = file("zzz/item/stick/on_use.json");
+    const adv = file("zzzprivate/item/stick/on_use.json");
     expect(adv).toBeDefined();
     expect(JSON.parse(adv!).criteria.trigger.trigger).toBe(
       "minecraft:using_item",
@@ -123,14 +123,14 @@ describe("defineItem", () => {
     const { file } = compile(Root);
 
     // A per-item statistic objective with the dotted-id criterion.
-    const load = file("zzz/item/carrot_on_a_stick/rc_load.mcfunction");
+    const load = file("zzzprivate/item/carrot_on_a_stick/rc_load.mcfunction");
     expect(load).toBe(
       "scoreboard objectives add rc_carrot_on_a_stick minecraft.used:minecraft.carrot_on_a_stick",
     );
 
     // The tick scan: as every holder whose count went >=1, gated by the holding
     // predicate, then a blanket reset so a use can't linger.
-    const rcTick = file("zzz/item/carrot_on_a_stick/rc_tick.mcfunction");
+    const rcTick = file("zzzprivate/item/carrot_on_a_stick/rc_tick.mcfunction");
     expect(rcTick).toContain(
       "execute as @a[scores={rc_carrot_on_a_stick=1..},predicate=test:zzz/holding/carrot_on_a_stick] at @s run function",
     );
@@ -139,7 +139,7 @@ describe("defineItem", () => {
     );
 
     // The body runs in the scan's child function.
-    const exec = file("zzz/item/carrot_on_a_stick/rc_tick/exec_0.mcfunction");
+    const exec = file("zzzprivate/item/carrot_on_a_stick/rc_tick/exec_0.mcfunction");
     expect(exec).toContain("click");
   });
 

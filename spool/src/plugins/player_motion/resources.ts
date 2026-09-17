@@ -17,7 +17,7 @@ export function magnitude(bit: number): number {
 }
 
 /** The data-driven `apply_impulse` enchantment: one effect per axis per bit. */
-export function enchantmentJson(ns: string, v: VersionProfile): unknown {
+export function enchantmentJson(resetFn: string, v: VersionProfile): unknown {
   const axes: [string, [number, number, number]][] = [
     ["x", [1, 0, 0]],
     ["y", [0, 1, 0]],
@@ -27,7 +27,7 @@ export function enchantmentJson(ns: string, v: VersionProfile): unknown {
     {
       effect: {
         type: "minecraft:run_function",
-        function: `${ns}:internal/launch/reset`,
+        function: resetFn,
       },
     },
   ];

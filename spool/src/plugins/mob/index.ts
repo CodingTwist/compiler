@@ -3,7 +3,7 @@
  *
  *   difficulty(dp);                              // only if it uses onDifficulty/byDifficulty
  *   const mob = defineMob(Husk({ ... }), model).gesture("swing", { ... }).build("sentinel");
- *   mob.register(dp);
+ *   mob.register(dp.group("sentinel"));
  *   // then call mob.wake once a second, and mob.tick(ctx) every `tickEvery` (default 2) ticks
  *   writeMobPreview("out/sentinel.html", mob);     // renders the rig and gestures to a page
  *

@@ -19,7 +19,7 @@ const WALL = 3;
 function world(...bodies: BodyInit[]) {
   const dp = new Datapack("test", v26_3_rc_2);
   const rb = dp.rigidbody();
-  bodies.forEach((b, n) => dp.createFunction(`spawn_${n}`).build((ctx) => rb.spawn(ctx, { item: Item.STONE, rotation: b.rotation })));
+  bodies.forEach((b, n) => dp.public(`spawn_${n}`).build((ctx) => rb.spawn(ctx, { item: Item.STONE, rotation: b.rotation })));
   const sim = new Sim(buildDatapack(dp), {
     block: (x, y) => (y < FLOOR || x >= WALL ? "minecraft:stone" : "minecraft:air"),
     blockTags: { "minecraft:air": ["minecraft:air"] },

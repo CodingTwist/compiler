@@ -22,7 +22,7 @@ describe("raw entity NBT warning", () => {
   it("names the factory and the offending line, once per call site", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const dp = new Datapack("testpack", v1_21_4);
-    dp.createFunction("t").build((ctx) => {
+    dp.public("t").build((ctx) => {
       ctx.summon(EntityType.TNT, Pos.here(), Tnt({ fuse: 40 }));
       expect(warn).not.toHaveBeenCalled();
 

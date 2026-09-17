@@ -7,9 +7,9 @@
  *     .add(camPan,   { at: 0 })
  *     .at(40, (c) => c.playsound(...))
  *     .add(doorClose, { at: 200 });
- *   dp.createFunction("start_intro").build((ctx) => intro.play(ctx));
+ *   dp.public("start_intro").build((ctx) => intro.play(ctx));
  */
-import { FunctionId, FunctionNode, Time, privateName } from "helix";
+import { FunctionId, FunctionNode, Time } from "helix";
 import type { Datapack, FunctionContext, Selector, Vec3 } from "helix";
 import { Clip } from "./clip";
 import type { Keyframe } from "./value";
@@ -20,14 +20,14 @@ export class Cutscene {
   private readonly entries: { clip: Clip; at: number }[] = [];
   private readonly events = new Map<number, Emit[]>();
   private camSeq = 0;
-  // Generated functions live under the private root.
+  // Resolved function path, in the caller's group.
   private readonly name: string;
 
   constructor(
     private readonly dp: Datapack,
-    name: string,
+    private readonly label: string,
   ) {
-    this.name = privateName(name);
+    this.name = dp.functionName(label);
   }
 
   /** Place `clip` on the master timeline starting at tick `at` (default 0). */
@@ -53,7 +53,7 @@ export class Cutscene {
     keys: readonly Keyframe<Vec3>[],
     opts: { at?: number } = {},
   ): this {
-    const cam = new Clip(this.dp, `${this.name}/cam_${this.camSeq++}`).tp(
+    const cam = new Clip(this.dp, `${this.label}/cam_${this.camSeq++}`).tp(
       viewer,
       keys,
     );
@@ -62,14 +62,14 @@ export class Cutscene {
 
   /** Emit the master schedule that drives the whole sequence. */
   play(ctx: FunctionContext): void {
-    this.dp.createFunction(`${this.name}/play`).build((c) => {
+    this.dp.functionAt(`${this.name}/play`).build((c) => {
       this.entries.forEach((e) => e.clip.scheduleInto(c, e.at));
       for (const [tick, cbs] of this.events) {
         if (tick === 0) {
           cbs.forEach((cb) => cb(c));
         } else {
           const id = `${this.name}/event_${tick}`;
-          this.dp.createFunction(id).build((ec) => cbs.forEach((cb) => cb(ec)));
+          this.dp.functionAt(id).build((ec) => cbs.forEach((cb) => cb(ec)));
           c.schedule().function_(
             FunctionId(`${this.dp.name}:${id}`),
             Time(tick),

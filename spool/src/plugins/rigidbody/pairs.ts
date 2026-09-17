@@ -31,7 +31,7 @@ export function collidePairs(s: RigidState, t: RigidTuning, ctx: FunctionContext
 }
 
 /**
- * Builds `rb/pair/check` (run as the other body) and `rb/pair/solve` (run back as this body).
+ * Builds `pair/check` (run as the other body) and `pair/solve` (run back as this body).
  */
 export function definePairs(s: RigidState, t: RigidTuning): void {
   const o = s.other;

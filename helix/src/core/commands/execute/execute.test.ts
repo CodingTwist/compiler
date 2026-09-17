@@ -18,7 +18,7 @@ import { buildDatapack } from "../../codegen/codegen";
 
 function render(build: (ctx: any) => void): string[] {
   const dp = new Datapack("t", v26_2);
-  dp.createFunction("f").build(build);
+  dp.public("f").build(build);
   buildDatapack(dp);
   return dp.files.get("f")!.split("\n");
 }
@@ -59,9 +59,9 @@ describe("ctx.execute() chain builder", () => {
 
   it("renders as/in/positioned context shifts with a function run target", () => {
     const dp = new Datapack("t", v26_2);
-    const fn = dp.createFunction("target");
+    const fn = dp.public("target");
     fn.build(() => {});
-    dp.createFunction("f").build((ctx) =>
+    dp.public("f").build((ctx) =>
       ctx
         .execute()
         .as(Selector.uuid("d4bd74a7-4e82-4a07-8850-dfc4d89f9e2f"))
@@ -129,9 +129,9 @@ describe("ctx.execute() chain builder", () => {
 
   it("returnRun renders `return run <command>` and nests under execute", () => {
     const dp = new Datapack("t", v26_2);
-    const fn = dp.createFunction("m");
+    const fn = dp.public("m");
     fn.build(() => {});
-    dp.createFunction("f").build((ctx) =>
+    dp.public("f").build((ctx) =>
       ctx
         .execute()
         .ifEntity(Selector.self().xRotation(new Range(-90, -90)))
@@ -145,9 +145,9 @@ describe("ctx.execute() chain builder", () => {
 
   it("ifFunction branches on a function's return value", () => {
     const dp = new Datapack("t", v26_2);
-    const probe = dp.createFunction("probe");
+    const probe = dp.public("probe");
     probe.build((ctx) => ctx.return_(1));
-    dp.createFunction("f").build((ctx) =>
+    dp.public("f").build((ctx) =>
       ctx
         .execute()
         .ifFunction(probe)

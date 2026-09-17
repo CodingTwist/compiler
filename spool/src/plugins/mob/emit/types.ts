@@ -5,8 +5,12 @@ import type { ResolvedGesture } from "../gesture";
 
 export type { Relay };
 
-/** Creates and builds a function; see {@link Mob.register}. */
-export type MobFn = (name: string, body: (ctx: FunctionContext) => void) => FunctionRef;
+/** Creates and builds a function, public if `opts.public`; see {@link Mob.register}. */
+export type MobFn = (
+  name: string,
+  body: (ctx: FunctionContext) => void,
+  opts?: { public?: boolean },
+) => FunctionRef;
 
 
 

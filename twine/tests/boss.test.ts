@@ -76,9 +76,12 @@ describe("defineBoss", () => {
   it("enters each phase at its health threshold", () => {
     const { all } = build();
     expect(all).toContain("if score #king.hp king matches ..50");
-    // No `initial()` seeding: the fight is entered only via activate, which is
-    // what makes it repeatable.
-    expect(all).toContain("king/enter_first");
+    // No `initial()` seeding: the fight is entered only via activate (enter_first, inlined
+    // there), which is what makes it repeatable.
+    expect(all).toContain(
+      "execute as @e[tag=king,limit=1,type=minecraft:wither] at @s run scoreboard players set #king king 1",
+    );
+    expect(all).not.toMatch(/^scoreboard players set #king king 1$/m);
   });
 
   it("sums only the off-cooldown abilities' weights before rolling", () => {
@@ -114,13 +117,13 @@ describe("defineBoss", () => {
     expect(pick).toContain("scoreboard players set #king.pick king 0");
     // Only an unpicked, off-cooldown ability is even tried.
     expect(pick).toContain(
-      "if score #king.pick king matches 0 if score #king.cd.two.slam king matches ..0 run function test:king/two/try_slam",
+      "if score #king.pick king matches 0 if score #king.cd.two.slam king matches ..0 run function test:zzzprivate/king/two/try_slam",
     );
 
     const trySlam = build().file("king/two/try_slam.mcfunction")!;
     expect(trySlam).toContain("scoreboard players remove #king.roll king 3");
     expect(trySlam).toContain(
-      "if score #king.roll king matches ..0 run function test:king/two/slam",
+      "if score #king.roll king matches ..0 run function test:zzzprivate/king/two/slam",
     );
 
     const slam = build().file("king/two/slam.mcfunction")!;
@@ -131,14 +134,14 @@ describe("defineBoss", () => {
 
   it("declares abilities per phase, so phase one cannot fire phase two's beam", () => {
     const { all } = build();
-    expect(all).toContain("test:king/one/try_slam");
-    expect(all).not.toContain("test:king/one/try_beam");
+    expect(all).toContain("test:zzzprivate/king/one/try_slam");
+    expect(all).not.toContain("test:zzzprivate/king/one/try_beam");
   });
 
   it("treats the entity being gone as death, and cleans up so the fight repeats", () => {
     const { all, file } = build();
     expect(all).toContain(
-      "unless entity @e[tag=king,limit=1,type=minecraft:wither] run function test:king/victory",
+      "unless entity @e[tag=king,limit=1,type=minecraft:wither] run function test:zzzprivate/king/victory",
     );
 
     const cleanup = file("king/cleanup.mcfunction")!;
@@ -153,7 +156,7 @@ describe("defineBoss", () => {
     // Victory rewards each participant, then resets.
     const victory = file("king/victory.mcfunction")!;
     expect(victory).toContain("as @a[tag=king.p]");
-    expect(victory).toContain("function test:king/cleanup");
+    expect(victory).toContain("function test:zzzprivate/king/cleanup");
   });
 
   it("pays for the boss entity scan once per poll, not once per command", () => {
@@ -179,7 +182,7 @@ describe("defineBoss", () => {
   it("only mourns a defeat while the boss is still alive", () => {
     const deactivate = build().file("king/deactivate.mcfunction")!;
     expect(deactivate).toContain("if score #king.live king matches 1");
-    expect(deactivate).toContain("function test:king/defeat");
+    expect(deactivate).toContain("function test:zzzprivate/king/defeat");
   });
 
   it("rejects a boss whose arena has no geometry to find participants in", () => {

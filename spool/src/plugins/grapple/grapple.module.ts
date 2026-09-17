@@ -65,7 +65,7 @@ export function defineGrapple(dp: Datapack, opts: GrappleOptions): Grapple {
   });
 
   const ray = dp.raycast({
-    name: "grapple/web",
+    name: "web",
     maxSteps: config.maxSteps,
     hitOn: config.anchorOn,
     onHit: (ctx) => anchor.place(ctx),

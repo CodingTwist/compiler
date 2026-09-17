@@ -47,7 +47,8 @@ export function inlineSingleCommandFunctions(
     changed = false;
     bodies.clear();
     for (const [name, text] of dp.files) {
-      if (!isPrivate(name) || allowed.has(name)) continue;
+      if (!isPrivate(name) || dp.publicNames.has(name) || allowed.has(name))
+        continue;
       const sole = soleCommand(text);
       if (
         sole === undefined ||

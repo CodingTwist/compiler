@@ -13,8 +13,8 @@ describe("function tags", () => {
 
   it("emits the tag JSON with member ids derived from the refs", () => {
     const files = build((dp) => {
-      const a = dp.createFunction("area/a");
-      const b = dp.createFunction("area/b");
+      const a = dp.public("area/a");
+      const b = dp.public("area/b");
       dp.functionTag("entrance", { values: [a, b] });
     });
     expect(
@@ -24,8 +24,8 @@ describe("function tags", () => {
 
   it("appends members when the same tag is declared again", () => {
     const files = build((dp) => {
-      dp.functionTag("entrance", { values: [dp.createFunction("a")] });
-      dp.functionTag("entrance", { values: [dp.createFunction("b")] });
+      dp.functionTag("entrance", { values: [dp.public("a")] });
+      dp.functionTag("entrance", { values: [dp.public("b")] });
     });
     expect(
       JSON.parse(files.get("data/pack/tags/function/entrance.json")!).values,
@@ -35,9 +35,9 @@ describe("function tags", () => {
   it("ctx.callTag renders `function #<ns>:<name>`", () => {
     const files = build((dp) => {
       const tag = dp.functionTag("entrance", {
-        values: [dp.createFunction("a")],
+        values: [dp.public("a")],
       });
-      dp.createFunction("caller").build((ctx) => ctx.callTag(tag));
+      dp.public("caller").build((ctx) => ctx.callTag(tag));
     });
     expect(files.get("data/pack/function/caller.mcfunction")!.trim()).toBe(
       "function #pack:entrance",
@@ -46,8 +46,8 @@ describe("function tags", () => {
 
   it("dp.idOf gives schedule a typed id instead of a hand-written string", () => {
     const files = build((dp) => {
-      const target = dp.createFunction("later");
-      dp.createFunction("caller").build((ctx) => {
+      const target = dp.public("later");
+      dp.public("caller").build((ctx) => {
         ctx.schedule().function_(dp.idOf(target), Time(20));
       });
     });

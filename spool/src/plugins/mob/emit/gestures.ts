@@ -1,4 +1,4 @@
-import { Range, Selector, privateName } from "helix";
+import { Range, Selector } from "helix";
 import type { Datapack, FunctionContext } from "helix";
 import type { ResolvedGesture } from "../gesture";
 import type { MobParts } from "./parts";
@@ -14,7 +14,7 @@ export function registerGesture<S extends string>(
   if (g.fireAfter) {
     m.add(
       `${g.name}_hit`,
-      m.fn(privateName(`${m.name}/${g.name}_hit`), (ctx) =>
+      m.fn(`${g.name}_hit`, (ctx) =>
         g.onFire?.(ctx, dp, m.handle),
       ),
     );
@@ -23,19 +23,23 @@ export function registerGesture<S extends string>(
     const body = g.onRecover;
     m.add(
       `${g.name}_recover`,
-      m.fn(privateName(`${m.name}/${g.name}_recover`), (ctx) =>
+      m.fn(`${g.name}_recover`, (ctx) =>
         body(ctx, dp, m.handle),
       ),
     );
   }
   m.add(
     g.name,
-    m.fn(`${m.name}/${g.name}`, (ctx) => {
-      ctx.tag().add(Selector.self(), m.gestureTag(g));
-      if (g.cooldown !== 0) m.cooldown(g).set(g.cooldown);
-      m.poseMembers(ctx, undefined, g, g.steps[0], g.rise);
-      if (!g.fireAfter) g.onFire?.(ctx, dp, m.handle);
-    }),
+    m.fn(
+      g.name,
+      (ctx) => {
+        ctx.tag().add(Selector.self(), m.gestureTag(g));
+        if (g.cooldown !== 0) m.cooldown(g).set(g.cooldown);
+        m.poseMembers(ctx, undefined, g, g.steps[0], g.rise);
+        if (!g.fireAfter) g.onFire?.(ctx, dp, m.handle);
+      },
+      { public: true },
+    ),
   );
   // Cooldowns cap how often the gesture's bodies run, which the report can't see.
   if (g.when && g.cooldown >= 5) {
@@ -51,7 +55,7 @@ export function registerGesture<S extends string>(
   if (g.cooldown !== 0) {
     const clock = m.add(
       `${g.name}_clock`,
-      dp.createFunction(privateName(`${m.name}/${g.name}_clock`)),
+      dp.createFunction(`${g.name}_clock`),
     );
     clock.build((ctx) => clockGesture(m, ctx, g));
   }

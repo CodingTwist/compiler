@@ -1,5 +1,4 @@
 // A clip's tracks, duration, snap and events: the chainable half of {@link Clip}.
-import { privateName } from "helix";
 import type { Datapack, DisplayValue, Vec3, Quat, Axis, Selector } from "helix";
 import { modelTarget } from "./targets";
 import { NbtTrack, TpTrack, TransformTrack, type NbtValue } from "./track";
@@ -18,9 +17,8 @@ export class ClipTimeline {
     this.s = {
       dp,
       label,
-      // Generated functions live under the private root; the entity is still found by its
-      // model tag.
-      name: privateName(label),
+      // Functions go in the caller's group; the entity is still found by its model tag.
+      name: dp.functionName(label),
       tracks: [],
       events: new Map(),
       usedPlay: false,

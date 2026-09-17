@@ -1,6 +1,5 @@
-import { Pos, Block, BLOCK_TAGS, Detect, and, not, privateName } from "helix";
-import type { FunctionRef } from "helix";
-import type { RaycastState } from "./context";
+import { Pos, Block, BLOCK_TAGS, Detect, and, not } from "helix";
+import type { Datapack, FunctionRef, Score } from "helix";
 import type { RaycastOptions } from "./index";
 
 /** Air is the "keep going" block: the march steps forward while the cell ahead is air. */
@@ -11,16 +10,16 @@ const AIR = Block.tag(BLOCK_TAGS.AIR);
  * remain and `stopAt` isn't here, then runs `onReach` (returning its result) or `onHit`.
  */
 export function buildMarcher(
-  state: RaycastState,
+  dp: Datapack,
   fn: FunctionRef,
+  steps: Score,
   opts: RaycastOptions,
 ): void {
-  const steps = state.steps(opts.name);
   const stepBlocks = opts.stepBlocks ?? 0.5;
 
   // Its own function so the exit can `return run` it and return its result.
   const reach = opts.stopAt
-    ? state.dp.createFunction(privateName(`raycast/${opts.name}_reach`))
+    ? dp.createFunction(`${opts.name}_reach`)
     : undefined;
   reach?.build((ctx) => opts.onReach?.(ctx));
 

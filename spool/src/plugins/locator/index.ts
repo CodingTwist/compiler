@@ -33,11 +33,11 @@ const locators = new WeakMap<Datapack, Locator>();
 
 /** The pack's locator marker. */
 export function locator(dp: Datapack): Locator {
-  const existing = locators.get(dp);
+  const existing = locators.get(dp.root);
   if (existing) return existing;
   const storage = Id(`${dp.name}:locator`);
   // Indexed stores only write into a list that already exists.
-  dp.createFunction("locator/init", "load").build((ctx) =>
+  dp.root.plugin("locator").createFunction("init", "load").build((ctx) =>
     ctx.storage(storage).mergeAll(Nbt({ pos: [Double(0), Double(0), Double(0)] })),
   );
   const selector = () => Selector.uuid(UUID);
@@ -57,6 +57,6 @@ export function locator(dp: Datapack): Locator {
     toEyes: (ctx) => ctx.execute().anchored(EntityAnchor.EYES).positioned(Pos.local(0, 0, 0)).run((b) => b.teleport(selector(), Pos.here())),
     read: (ctx, into) => into.readEntity(selector(), Path.Entity.Pos, { ctx }),
   };
-  locators.set(dp, loc);
+  locators.set(dp.root, loc);
   return loc;
 }

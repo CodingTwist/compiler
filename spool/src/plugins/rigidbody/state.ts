@@ -116,20 +116,20 @@ export function createState(dp: Datapack) {
   ];
 
   const fn = {
-    init: dp.createFunction("rb/init", "load"),
-    tick: dp.createFunction("rb/tick", "tick"),
-    step: dp.createFunction("rb/step"),
-    impulse: dp.createFunction("rb/impulse"),
-    solvePass: dp.createFunction("rb/solve/pass"),
-    pair: dp.createFunction("rb/pair/check"),
-    pairSolve: dp.createFunction("rb/pair/solve"),
-    pairPass: dp.createFunction("rb/pair/pass"),
-    ray: dp.createFunction("rb/ray"),
+    init: dp.createFunction("init", "load"),
+    tick: dp.createFunction("tick", "tick"),
+    step: dp.createFunction("step"),
+    impulse: dp.createFunction("impulse"),
+    solvePass: dp.createFunction("solve/pass"),
+    pair: dp.createFunction("pair/check"),
+    pairSolve: dp.createFunction("pair/solve"),
+    pairPass: dp.createFunction("pair/pass"),
+    ray: dp.createFunction("ray"),
     /** One per separating axis: the other body's 3 face axes, then this body's. */
-    pairAxes: Array.from({ length: 6 }, (_, m) => dp.createFunction(`rb/pair/axis_${m}`)),
+    pairAxes: Array.from({ length: 6 }, (_, m) => dp.createFunction(`pair/axis_${m}`)),
     /** Builds world contacts; only world slots use it. */
-    detect: Array.from({ length: VERTICES }, (_, i) => dp.createFunction(`rb/contact/detect_${i}`)),
-    solve: Array.from({ length: SLOTS }, (_, i) => dp.createFunction(`rb/contact/solve_${i}`)),
+    detect: Array.from({ length: VERTICES }, (_, i) => dp.createFunction(`contact/detect_${i}`)),
+    solve: Array.from({ length: SLOTS }, (_, i) => dp.createFunction(`contact/solve_${i}`)),
   };
 
   return {

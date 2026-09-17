@@ -7,7 +7,7 @@ import { v1_21_4 } from "../../versions/profiles";
 
 function render(build: (ctx: FunctionContext) => void): string {
   const dp = new Datapack("testpack", v1_21_4);
-  dp.createFunction("m").build(build);
+  dp.public("m").build(build);
   return buildDatapack(dp).get("data/testpack/function/m.mcfunction")!;
 }
 
@@ -40,7 +40,7 @@ describe("setblock (concept arguments)", () => {
   it("exposes mode as a typed field on the node", () => {
     const dp = new Datapack("testpack", v1_21_4);
     let captured: { mode?: string } | undefined;
-    dp.createFunction("m").build((ctx) => {
+    dp.public("m").build((ctx) => {
       const b = ctx.setblock(Pos(1, 2, 3), Block("stone")).strict();
       // The node carries typed args, not a flat token list.
       captured = (b as unknown as { node: { args: { mode?: string } } }).node

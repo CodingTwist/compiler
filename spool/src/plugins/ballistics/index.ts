@@ -40,7 +40,7 @@ export type { LaunchOptions, LaunchSolution } from "./launch";
  * ```ts
  * installKit([ballistics]);
  *
- * dp.createFunction("fire").build((ctx) => {
+ * dp.public("fire").build((ctx) => {
  *   const shot = ctx.ballistic([0, 70, 0], [120, 64, 40], { maxSpeed: 3 });
  *   // summon minecraft:tnt 0 70 0 {fuse:41s,Motion:[2.4...d,1.7...d,0.8...d]}
  *   console.log(shot.pitch, shot.speed, shot.error);

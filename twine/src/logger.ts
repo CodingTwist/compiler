@@ -81,12 +81,12 @@ export class Logger {
     if (!this.objective) return;
     const set = (level: LogLevel) =>
       dp
-        .createFunction(`${path}/${level}`)
+        .root.public(`${path}/${level}`)
         .build((ctx) => this.setLevel(ctx, level));
     set("debug");
     set("info");
     set("warn");
-    dp.createFunction(`${path}/off`).build((ctx) => this.setLevel(ctx, "off"));
+    dp.root.public(`${path}/off`).build((ctx) => this.setLevel(ctx, "off"));
   }
 
   private setLevel(ctx: FunctionContext, level: LogLevel | "off") {

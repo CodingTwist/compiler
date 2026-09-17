@@ -40,10 +40,10 @@ describe("probe", () => {
 
   it("chains the cases and ends at the report", () => {
     const all = text(build(true));
-    expect(all).toContain("schedule function art:probe/tnt_exists/check 40");
-    expect(all).toContain("schedule function art:probe/second/setup 1");
-    expect(all).toContain("schedule function art:probe/report 1");
-    expect(all).toContain("function art:probe/tnt_exists/setup"); // probe/run entry
+    expect(all).toContain("schedule function art:zzzprivate/probe/tnt_exists/check 40");
+    expect(all).toContain("schedule function art:zzzprivate/probe/second/setup 1");
+    expect(all).toContain("schedule function art:zzzprivate/probe/report 1");
+    expect(all).toContain("function art:zzzprivate/probe/tnt_exists/setup"); // probe/run entry
   });
 
   it("reports both branches", () => {

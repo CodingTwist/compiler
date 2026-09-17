@@ -88,45 +88,27 @@ describe("Datapack.advancement registration", () => {
 
   it("event emits the advancement, the reward function, and the re-arming revoke", () => {
     const dp = new Datapack("mypack", v1_21_4);
-    const { advancement, fn } = dp.event(
-      "exit/eat_chorus",
-      Trigger.consumeItem(Item("chorus_fruit")),
-      (ctx) => {
+    const { advancement, fn } = dp
+      .group("exit")
+      .event("eat_chorus", Trigger.consumeItem(Item("chorus_fruit")), (ctx) => {
         ctx.say("out you go");
-      },
-    );
-    expect(advancement.render()).toBe("mypack:exit/eat_chorus");
-    expect(dp.idOf(fn).render()).toBe("mypack:exit/eat_chorus");
+      });
+    const id = "mypack:zzzprivate/exit/eat_chorus";
+    expect(advancement.render()).toBe(id);
+    expect(dp.idOf(fn).render()).toBe(id);
 
     const files = buildDatapack(dp);
     const json = JSON.parse(
-      files.get("data/mypack/advancement/exit/eat_chorus.json")!,
+      files.get("data/mypack/advancement/zzzprivate/exit/eat_chorus.json")!,
     );
     expect(json.criteria.trigger.trigger).toBe("minecraft:consume_item");
-    expect(json.rewards).toEqual({ function: "mypack:exit/eat_chorus" });
+    expect(json.rewards).toEqual({ function: id });
 
     const lines = files
-      .get("data/mypack/function/exit/eat_chorus.mcfunction")!
+      .get("data/mypack/function/zzzprivate/exit/eat_chorus.mcfunction")!
       .trim()
       .split("\n");
-    expect(lines.at(-1)).toBe(
-      "advancement revoke @s only mypack:exit/eat_chorus",
-    );
-  });
-
-  it("nameless event is auto-named in the current group", () => {
-    const dp = new Datapack("mypack", v1_21_4);
-    const { advancement, fn } = dp.group("exit", () =>
-      dp.event(Trigger.consumeItem(Item("chorus_fruit")), (ctx) =>
-        ctx.say("hi"),
-      ),
-    );
-    expect(fn.getName()).toBe("exit/zzz/fn_0");
-    expect(advancement.render()).toBe("mypack:exit/zzz/fn_0");
-    const json = JSON.parse(
-      buildDatapack(dp).get("data/mypack/advancement/exit/zzz/fn_0.json")!,
-    );
-    expect(json.rewards).toEqual({ function: "mypack:exit/zzz/fn_0" });
+    expect(lines.at(-1)).toBe(`advancement revoke @s only ${id}`);
   });
 
   it("rejects re-registering a name with a different definition", () => {

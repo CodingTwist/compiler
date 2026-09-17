@@ -41,7 +41,7 @@ export class ItemBuilder {
     return this;
   }
 
-  /** Emit a `/function <ns>:zzz/item/<slug>/give` that grants the fully-built item to `@s`. */
+  /** Emit a `/function <ns>:item/<slug>/give` that grants the fully-built item to `@s`. */
   give(): this {
     this.giveFn = true;
     return this;

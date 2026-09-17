@@ -21,8 +21,12 @@ export interface OnOptions {
   /** Offset within the `every` period, to spread same-period handlers apart. */
   phase?: number;
 
-  /** Put the body in its own function instead of inlining it. Useful for long bodies. */
-  own?: boolean;
+  /**
+   * Put the body in its own private function instead of inlining it. Useful for long bodies.
+   *
+   * `true` names it after the handler key; an unkeyed handler passes the name as a string.
+   */
+  own?: boolean | string;
 }
 
 /** One registered handler: the metadata `@On` attached, plus the method it marked. */

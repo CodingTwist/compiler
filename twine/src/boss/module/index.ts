@@ -25,7 +25,7 @@ export class BossModule extends BossAbilities implements DatapackModule {
     }
 
     // The phase machine shares the boss's objective; its score holders don't collide.
-    const sm = new StateMachine(dp, this.name);
+    const sm = new StateMachine(dp.root, this.name);
     for (const phase of this.opts.phases) {
       sm.state(phase.label, {
         onEnter: (ctx) => {
@@ -51,20 +51,20 @@ export class BossModule extends BossAbilities implements DatapackModule {
       );
     }
     this.dispatch = sm.build();
-    this.enterFirst = scope.fn(`${this.name}/enter_first`, (ctx) =>
+    this.enterFirst = scope.fn("enter_first", (ctx) =>
       sm.go(ctx, this.opts.phases[0].label),
     );
 
-    this.cleanupFn = scope.fn(`${this.name}/cleanup`, (ctx) =>
+    this.cleanupFn = scope.fn("cleanup", (ctx) =>
       this.cleanup(ctx),
     );
-    this.victoryFn = scope.fn(`${this.name}/victory`, (ctx) => {
+    this.victoryFn = scope.fn("victory", (ctx) => {
       if (this.opts.victory) this.asParticipants(ctx, this.opts.victory);
       ctx.call(this.cleanupFn);
     });
     if (this.opts.defeat) {
       const body = this.opts.defeat;
-      this.defeatFn = scope.fn(`${this.name}/defeat`, (ctx) => {
+      this.defeatFn = scope.fn("defeat", (ctx) => {
         this.asParticipants(ctx, body);
         ctx.call(this.cleanupFn);
       });

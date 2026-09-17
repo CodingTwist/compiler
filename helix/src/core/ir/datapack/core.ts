@@ -12,6 +12,12 @@ import {
   type DebugOptions,
   type SourceLoc,
 } from "../../debug/sources";
+import {
+  PLUGIN_ROOT,
+  privateName,
+  type FunctionLayout,
+} from "../../private-fn";
+import { groupView } from "./group";
 
 export type FunctionTag = "load" | "tick";
 
@@ -41,6 +47,13 @@ export class DatapackCore {
   readonly debug: DebugOptions;
   /** Which output optimization passes run; all on by default. */
   readonly optimize: OptimizeOptions;
+  /** Where private functions go in the output. Default `split`. */
+  readonly layout: FunctionLayout;
+  /** This view's group path; empty on the pack itself. See {@link group}. */
+  readonly path: string = "";
+  private readonly groups = new Map<string, this>();
+  /** Functions created with `public`, so the inliner keeps public plugin functions. */
+  readonly publicNames = new Set<string>();
   /**
    * With `debug.sources`: the author line behind each rendered line (`undefined` for
    * comment lines).
@@ -61,15 +74,63 @@ export class DatapackCore {
     name: string,
     version: VersionProfile,
     target: RuntimeTarget = DEFAULT_TARGET,
-    opts: { debug?: DebugOptions; optimize?: OptimizeOptions } = {},
+    opts: {
+      debug?: DebugOptions;
+      optimize?: OptimizeOptions;
+      layout?: FunctionLayout;
+    } = {},
   ) {
     this.name = name.toLowerCase();
     this.version = version;
     this.target = target;
     this.debug = opts.debug ?? {};
     this.optimize = opts.optimize ?? {};
+    this.layout = opts.layout ?? "split";
     // Capture has to be on before authoring starts - nodes are attributed as they're pushed.
     if (this.debug.sources || this.debug.comments) enableSourceTracking();
+  }
+
+  /** The pack itself, from any group view. */
+  get root(): this {
+    return this;
+  }
+
+  /**
+   * A view of this pack whose functions are created under `name`: `dp.group("door").group("lobby")`
+   * creates `door/lobby/<fn>`.
+   *
+   * Pass it wherever a `Datapack` goes, so plugins called with it nest their output there too.
+   * The same path always returns the same view.
+   */
+  group(name: string): this {
+    const path = this.path ? `${this.path}/${name}` : name;
+    const root = this.root;
+    let view = root.groups.get(path);
+    if (!view) {
+      view = groupView(root, path);
+      root.groups.set(path, view);
+    }
+    return view;
+  }
+
+  /**
+   * The shared home of plugin `name`: its functions go in `zzzplugin/<name>/`, public or not.
+   *
+   * Keeps plugin code out of the pack's own `zzzprivate/` tree.
+   */
+  plugin(name: string): this {
+    return this.root.group(`${PLUGIN_ROOT}/${name}`);
+  }
+
+  /**
+   * The output name of function `name` in this group. Private unless `public`.
+   *
+   * `load` and `tick` at the top are always public, since their tags name them.
+   */
+  functionName(name: string, opts: { public?: boolean } = {}): string {
+    const full = this.path ? `${this.path}/${name}` : name;
+    if (opts.public || full === "load" || full === "tick") return full;
+    return privateName(full, this.layout);
   }
 
   /**

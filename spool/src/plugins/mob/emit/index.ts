@@ -1,5 +1,5 @@
 // The mob a builder compiles to. Wiring only: each job lives in its own file.
-import { Range, ScoreTarget, Selector, privateName } from "helix";
+import { Range, ScoreTarget, Selector } from "helix";
 import { rig } from "../../rig";
 import type { Datapack, FunctionContext, FunctionRef } from "helix";
 import { mobPreview, type MobPreview } from "../preview/rig";
@@ -66,7 +66,7 @@ export class Mob<S extends string = string> {
   }
 
   /**
-   * Emits the mob's functions into `dp`.
+   * Emits the mob's functions into `dp`. Pass a group (`dp.group("sentinel")`) to keep them together.
    *
    * `fn` creates the functions called from outside the tick tree (summon, gestures, wake), so
    * a caller can wrap them, e.g. in a dimension.
@@ -76,8 +76,8 @@ export class Mob<S extends string = string> {
     m.dp = dp;
     m.fn =
       fn ??
-      ((name, body) => {
-        const ref = dp.createFunction(name);
+      ((name, body, opts) => {
+        const ref = opts?.public ? dp.public(name) : dp.createFunction(name);
         ref.build(body);
         return ref;
       });
@@ -89,7 +89,7 @@ export class Mob<S extends string = string> {
       m.stateObj = dp.objective(`${m.name}.state`);
       m.stateClockObj = dp.objective(`${m.name}.state_t`);
       for (const s of states.keys())
-        m.add(`enter/${s}`, dp.createFunction(`${m.name}/enter/${s}`));
+        m.add(`enter/${s}`, dp.createFunction(`enter/${s}`));
     }
     m.handle = stateHandle(m);
 
@@ -100,14 +100,14 @@ export class Mob<S extends string = string> {
       const body = m.def.tick;
       m.add(
         "on_tick",
-        m.fn(privateName(`${m.name}/on_tick`), (ctx) => body(ctx, dp, m.handle)),
+        m.fn("on_tick", (ctx) => body(ctx, dp, m.handle)),
       );
     }
     registerStates(m, dp);
 
     m.add(
       "wake",
-      m.fn(privateName(`${m.name}/wake`), (ctx) => wakeBody(m, ctx)),
+      m.fn("wake", (ctx) => wakeBody(m, ctx)),
     );
     m.add(
       "tick_one",

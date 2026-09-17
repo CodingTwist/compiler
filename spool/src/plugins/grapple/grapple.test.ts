@@ -28,29 +28,29 @@ describe("dp.grapple (kit)", () => {
   it("registers start/drive/constrain/tick/stop + the web ray, and tick-tags the loop", () => {
     const { dp, g } = build();
     for (const f of [
-      "grapple/start",
-      "grapple/drive",
-      "grapple/constrain",
-      "grapple/tick",
-      "grapple/stop",
+      "plugin/grapple/start",
+      "zzzprivate/plugin/grapple/drive",
+      "zzzprivate/plugin/grapple/constrain",
+      "zzzprivate/plugin/grapple/tick",
+      "plugin/grapple/stop",
     ]) {
       expect(dp.files.has(f)).toBe(true);
     }
     // The raycast marcher lives in the `raycast` plugin's own namespace now.
-    expect(dp.files.has("raycast/grapple/web")).toBe(true);
-    expect(dp.tags.get("tick")?.has("grapple/tick")).toBe(true);
-    expect(g.start.getName()).toBe("grapple/start");
-    expect(g.stop.getName()).toBe("grapple/stop");
+    expect(dp.files.has("zzzprivate/plugin/grapple/web")).toBe(true);
+    expect(dp.tags.get("tick")?.has("zzzprivate/plugin/grapple/tick")).toBe(true);
+    expect(g.start.getName()).toBe("plugin/grapple/start");
+    expect(g.stop.getName()).toBe("plugin/grapple/stop");
   });
 
   it("pulls in player_motion (its api functions are present)", () => {
     const { dp } = build();
-    expect(dp.files.has("api/launch_global_xyz")).toBe(true);
-    expect(dp.files.has("internal/launch/main")).toBe(true);
+    expect(dp.files.has("plugin/player_motion/launch_global_xyz")).toBe(true);
+    expect(dp.files.has("zzzprivate/plugin/player_motion/launch/main")).toBe(true);
   });
 
   /** The web ray's loop: its check, then its pass and exit functions. */
-  const LOOP = "raycast/zzz/grapple/web/return_0/while_0";
+  const LOOP = "zzzprivate/plugin/grapple/web/return_0/while_0";
   const rayFiles = (dp: Datapack) =>
     [LOOP, `${LOOP}/pass_0`, `${LOOP}/else_0`]
       .map((f) => dp.files.get(f) ?? "")
@@ -60,7 +60,7 @@ describe("dp.grapple (kit)", () => {
     const { dp } = build();
     const ray = rayFiles(dp);
     expect(ray).toContain(
-      `execute if block ~ ~ ~ #minecraft:air if score #grapple_web_steps raycast.work matches 1.. run return run function test:${LOOP}/pass_0`,
+      `execute if block ~ ~ ~ #minecraft:air if score #plugin_grapple_web_steps raycast.work matches 1.. run return run function test:${LOOP}/pass_0`,
     );
     expect(ray).toContain(
       `execute positioned ^ ^ ^0.5 run return run function test:${LOOP}`,
@@ -80,7 +80,7 @@ describe("dp.grapple (kit)", () => {
     const ray = dp.files.get(`${LOOP}/else_0`)!;
     // start seeds the ray's step budget (via the raycast plugin's step slot) before marching.
     expect(all).toContain(
-      "scoreboard players set #grapple_web_steps raycast.work 100",
+      "scoreboard players set #plugin_grapple_web_steps raycast.work 100",
     );
     // unconditional summon - no `if block` prefix on the summon line.
     expect(ray.startsWith("summon minecraft:marker ~ ~ ~ {Tags:")).toBe(true);
@@ -92,7 +92,7 @@ describe("dp.grapple (kit)", () => {
     const all = [...dp.files.values()].join("\n");
     const ray = rayFiles(dp);
     expect(all).toContain(
-      "scoreboard players set #grapple_web_steps raycast.work 60",
+      "scoreboard players set #plugin_grapple_web_steps raycast.work 60",
     ); // 30 blocks * 2 steps
     // the hit is gated on the block; the summon+read is the raycast plugin's gated on-hit branch.
     expect(ray).toContain(
@@ -105,13 +105,13 @@ describe("dp.grapple (kit)", () => {
 
   it("start attaches only when an anchor was placed, fixing the rope and leashing it", () => {
     const { dp } = build();
-    const start = dp.files.get("grapple/start")!;
+    const start = dp.files.get("plugin/grapple/start")!;
     const all = [...dp.files.values()].join("\n");
     // start roots the web at the eyes and fires the ray (a generated child seeds + calls it).
     expect(start).toContain(
       "execute at @s anchored eyes positioned ^ ^ ^ run function test:",
     );
-    expect(all).toContain("function test:raycast/grapple/web");
+    expect(all).toContain("function test:zzzprivate/plugin/grapple/web");
     // Attach is gated on the just-summoned anchor existing (the miss feedback is DEBUG-only).
     expect(start).toContain(
       "execute if entity @e[tag=grapple._new,limit=1,type=minecraft:marker] run function",
@@ -147,7 +147,7 @@ describe("dp.grapple (kit)", () => {
 
   it("drive draws a particle rope: tags this player's anchor, faces it, marches grapple/rope", () => {
     const { dp } = build();
-    const drive = dp.files.get("grapple/drive")!;
+    const drive = dp.files.get("zzzprivate/plugin/grapple/drive")!;
     // tag exactly this player's anchor as the aim target
     expect(drive).toContain(
       "scoreboard players operation #rope_id grapple.work = @s grapple.id",
@@ -157,26 +157,26 @@ describe("dp.grapple (kit)", () => {
     );
     // aim ^ at it from the eyes and hand off to the marcher, then untag
     expect(drive).toContain(
-      "facing entity @e[tag=grapple._aim,limit=1,type=minecraft:marker] feet run function test:grapple/rope",
+      "facing entity @e[tag=grapple._aim,limit=1,type=minecraft:marker] feet run function test:zzzprivate/plugin/grapple/rope",
     );
     expect(drive).toContain(
       "tag @e[tag=grapple._aim,limit=1,type=minecraft:marker] remove grapple._aim",
     );
 
-    const rope = dp.files.get("grapple/rope")!;
+    const rope = dp.files.get("zzzprivate/plugin/grapple/rope")!;
     expect(rope).toContain("particle minecraft:electric_spark ~ ~ ~ 0 0 0 0 1");
     // step toward the anchor until reached (within 0.6) or out of steps
     expect(rope).toContain(
       "unless entity @e[distance=..0.6,tag=grapple._aim,limit=1,type=minecraft:marker]",
     );
     expect(rope).toContain(
-      "positioned ^ ^ ^1 run return run function test:grapple/rope",
+      "positioned ^ ^ ^1 run return run function test:zzzprivate/plugin/grapple/rope",
     );
   });
 
   it("constrain assigns the full radial cancel, a Baumgarte trim, and a tangential sustain into the launch input", () => {
     const { dp } = build();
-    const c = dp.files.get("grapple/constrain")!;
+    const c = dp.files.get("zzzprivate/plugin/grapple/constrain")!;
     // The Baumgarte trim is a subexpression in the backend's temp (`#_t0`); below is the
     // pre-26.3 chain.
     // coef = -dot (cancel the radial velocity in either direction - rigid rope) ...
@@ -265,7 +265,7 @@ describe("dp.grapple (kit)", () => {
 
   it("drive zeroes the launch, gates the constraint on taut, then clamps and sustains (engine gravity falls)", () => {
     const { dp } = build();
-    const drive = dp.files.get("grapple/drive")!;
+    const drive = dp.files.get("zzzprivate/plugin/grapple/drive")!;
     // Launch starts at zero each tick, so a slack tick adds nothing and gravity acts alone.
     expect(drive).toContain(
       "scoreboard players set $x player_motion.api.launch 0",
@@ -278,7 +278,7 @@ describe("dp.grapple (kit)", () => {
     );
     // constraint runs only when taut (dist² ≥ rope²)
     expect(drive).toContain(
-      "execute if score #dist_sq grapple.work >= @s grapple.rope_len_sq run function test:grapple/constrain",
+      "execute if score #dist_sq grapple.work >= @s grapple.rope_len_sq run function test:zzzprivate/plugin/grapple/constrain",
     );
     // no simulated gravity is injected - the engine's own gravity does the falling
     expect(drive).not.toContain("#grav_impulse");
@@ -292,15 +292,15 @@ describe("dp.grapple (kit)", () => {
     expect(drive).toContain(
       "scoreboard players set #sustain player_motion.internal.dummy 1",
     );
-    expect(drive).toContain("function test:api/launch_global_xyz");
+    expect(drive).toContain("function test:plugin/player_motion/launch_global_xyz");
   });
 
   it("drive drives every grappling player; stop releases the tag and the player's anchor", () => {
     const { dp } = build();
-    expect(dp.files.get("grapple/tick")).toContain(
-      "execute as @a[tag=grappling] at @s run function test:grapple/drive",
+    expect(dp.files.get("zzzprivate/plugin/grapple/tick")).toContain(
+      "execute as @a[tag=grappling] at @s run function test:zzzprivate/plugin/grapple/drive",
     );
-    const stop = dp.files.get("grapple/stop")!;
+    const stop = dp.files.get("plugin/grapple/stop")!;
     expect(stop).toContain("tag @s remove grappling");
     // gravity zeroed on attach is restored by removing the modifier (only when the toggle is on)
     if (ZERO_GRAVITY) {
@@ -322,12 +322,12 @@ describe("dp.grapple (kit)", () => {
   it("stop flings the player along their look direction, scaled by swing speed², at @s", () => {
     const { dp } = build();
     // the kick runs `at @s` (the local-frame launch needs the player's position/rotation context)
-    expect(dp.files.get("grapple/stop")).toContain(
+    expect(dp.files.get("plugin/grapple/stop")).toContain(
       "execute at @s run function",
     );
     const all = [...dp.files.values()].join("\n");
     // drive stashes the per-tick swing velocity into per-player state (so the kick can't race prev)
-    expect(dp.files.get("grapple/drive")).toContain(
+    expect(dp.files.get("zzzprivate/plugin/grapple/drive")).toContain(
       "scoreboard players operation @s grapple.vel_x = #vel_x grapple.work",
     );
     // kick reads that stored velocity and takes speed² = v·v (lengthSquared), NOT a fresh pos−prev
@@ -354,12 +354,12 @@ describe("dp.grapple (kit)", () => {
       "scoreboard players operation $z player_motion.api.launch < #release_kick_max grapple.const",
     );
     // launched in the LOCAL frame (look direction), not global
-    expect(all).toContain("function test:api/launch_local_xyz");
+    expect(all).toContain("function test:plugin/player_motion/launch_local_xyz");
   });
 
   it("init seeds the id counter only when unset", () => {
     const { dp } = build();
-    const init = dp.files.get("grapple/init")!;
+    const init = dp.files.get("zzzprivate/plugin/grapple/init")!;
     expect(init).toContain("scoreboard objectives add grapple.id dummy");
     expect(init).toContain(
       "execute unless score #next_id grapple.const = #next_id grapple.const run scoreboard players set #next_id grapple.const 0",

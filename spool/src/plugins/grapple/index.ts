@@ -12,7 +12,7 @@ export type { GrappleOptions } from "./state";
  *
  * `grapple/start` raycasts to a block and anchors there; each tick pulls grappling players
  * along
- * a rope to their anchor; `grapple/stop` releases. The rope is a particle line, since a
+ * a rope to their anchor; `plugin/grapple/stop` releases. The rope is a particle line, since a
  * real
  * leash can't be drawn by command. Options: {@link GrappleOptions}. Wiring:
  * `grapple.module.ts`.
@@ -38,10 +38,10 @@ export const grapple: KitPlugin = {
       this: Datapack,
       opts: GrappleOptions = {},
     ): Grapple {
-      const existing = installed.get(this);
+      const existing = installed.get(this.root);
       if (existing) return existing;
-      const g = defineGrapple(this, opts);
-      installed.set(this, g);
+      const g = defineGrapple(this.root.plugin("grapple"), opts);
+      installed.set(this.root, g);
       return g;
     };
   },

@@ -2,7 +2,7 @@ import { Marker, Pos } from "helix";
 import type { PlayerMotionInternals } from "./context";
 
 /**
- * `internal/init` (load): creates objectives, forceloads chunk `0 0`, and
+ * `init` (load): creates objectives, forceloads chunk `0 0`, and
  * summons the dummy marker.
  */
 export function defineInit(I: PlayerMotionInternals): void {

@@ -49,12 +49,13 @@ export function emitTick(w: Wiring, node: Node, ctx: FunctionContext): void {
   }
 }
 
-/** `dp.createFunction` + build, when a module has no `defineFunction` of its own. */
+/** `group.createFunction` + build, when a module has no `defineFunction` of its own. */
 function defaultDefine(
-  dp: Datapack,
+  group: Datapack,
+  name: string,
   build: (ctx: FunctionContext) => void,
 ): FunctionRef {
-  const fn = dp.createFunction();
+  const fn = group.createFunction(name);
   fn.build(build);
   return fn;
 }
@@ -77,14 +78,27 @@ function emitHandlerOf(
   // An own body is created once, and every guard calls it.
   let own: FunctionRef | undefined;
   if (handler.opts.own) {
-    own = w.dp.group(handler.group ?? meta.name, () =>
-      instance.defineFunction
-        ? instance.defineFunction(w.dp, body0)
-        : defaultDefine(w.dp, body0),
-    );
+    const group = w.dp.root.group(handler.group ?? meta.name);
+    const name = ownName(handler, meta.name);
+    own = instance.defineFunction
+      ? instance.defineFunction(group, name, body0)
+      : defaultDefine(group, name, body0);
   }
   const body = own ? (c: FunctionContext) => c.call(own) : body0;
   emitHandler(ctx, handler, latch, body);
+}
+
+/** The name of an `own` body: `own`'s string, else the handler key without its group prefix. */
+function ownName(handler: EventHandler, moduleName: string): string {
+  if (typeof handler.opts.own === "string") return handler.opts.own;
+  const key = handler.method;
+  if (key === undefined) {
+    throw new Error(
+      `an unkeyed own handler in "${moduleName}" needs a name - pass own: "<name>"`,
+    );
+  }
+  const prefix = handler.group ? `${handler.group}/` : "";
+  return key.startsWith(prefix) ? key.slice(prefix.length) : key;
 }
 
 /** The body of a decorator handler: its named method, bound to the instance. */
@@ -125,7 +139,7 @@ export function moduleTick(
     }
     return built.fn;
   }
-  if (w.dp.functionRef(name)) {
+  if (w.dp.functionRef(w.dp.functionName(name))) {
     throw new Error(
       `Module tick "${name}" collides with an existing function - rename the module or that function`,
     );

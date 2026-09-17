@@ -15,7 +15,7 @@ function build(
   body: Parameters<ReturnType<Datapack["createFunction"]>["build"]>[0],
 ): string {
   const dp = new Datapack("t", v26_2);
-  dp.createFunction("f").build(body);
+  dp.public("f").build(body);
   return buildDatapack(dp).get("data/t/function/f.mcfunction")!.trim();
 }
 

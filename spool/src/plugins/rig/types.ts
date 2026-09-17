@@ -2,7 +2,11 @@
 import type { DamageType, DisplayValue, FunctionContext, FunctionRef, Selector, Transform } from "helix";
 
 /** Creates and builds a function. */
-export type RigFn = (name: string, body: (ctx: FunctionContext) => void) => FunctionRef;
+export type RigFn = (
+  name: string,
+  body: (ctx: FunctionContext) => void,
+  opts?: { public?: boolean },
+) => FunctionRef;
 
 /** Options for {@link rig}. */
 export interface RigOptions {

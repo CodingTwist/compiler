@@ -7,20 +7,20 @@ import type { Datapack } from "helix";
  */
 export function createFunctions(dp: Datapack) {
   return {
-    /** `grapple/init` (load) - create objectives + seed constants. */
-    init: dp.createFunction("grapple/init", "load"),
-    /** `grapple/start` - raycast an anchor and latch the player. Public. */
-    start: dp.createFunction("grapple/start"),
-    /** `grapple/drive` - one player's per-tick swing step. */
-    drive: dp.createFunction("grapple/drive"),
-    /** `grapple/constrain` - the taut-tick rope constraint. */
-    constrain: dp.createFunction("grapple/constrain"),
-    /** `grapple/rope` - the recursive particle-rope marcher. */
-    rope: dp.createFunction("grapple/rope"),
-    /** `grapple/tick` (tick) - drive every grappling player. */
-    tick: dp.createFunction("grapple/tick", "tick"),
-    /** `grapple/stop` - release the executing player. Public. */
-    stop: dp.createFunction("grapple/stop"),
+    /** `init` (load) - create objectives + seed constants. */
+    init: dp.createFunction("init", "load"),
+    /** `start` - raycast an anchor and latch the player. Public. */
+    start: dp.public("start"),
+    /** `drive` - one player's per-tick swing step. */
+    drive: dp.createFunction("drive"),
+    /** `constrain` - the taut-tick rope constraint. */
+    constrain: dp.createFunction("constrain"),
+    /** `rope` - the recursive particle-rope marcher. */
+    rope: dp.createFunction("rope"),
+    /** `tick` (tick) - drive every grappling player. */
+    tick: dp.createFunction("tick", "tick"),
+    /** `stop` - release the executing player. Public. */
+    stop: dp.public("stop"),
   } as const;
 }
 

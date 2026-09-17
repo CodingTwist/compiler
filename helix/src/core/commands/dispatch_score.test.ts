@@ -6,7 +6,7 @@ import { buildDatapack } from "../codegen/codegen";
 
 function render(build: (ctx: any, dp: Datapack) => void) {
   const dp = new Datapack("testpack", v1_21_4);
-  dp.createFunction("f").build((ctx: any) => build(ctx, dp));
+  dp.public("f").build((ctx: any) => build(ctx, dp));
   buildDatapack(dp);
   return { dp, lines: dp.files.get("f")!.split("\n") };
 }
@@ -16,9 +16,9 @@ describe("ctx.dispatchScore", () => {
     const { lines } = render((ctx, dp) => {
       const art = dp.objective("art");
       const ammo = art.score(ScoreTarget("#ammo"));
-      const a = dp.createFunction("a");
+      const a = dp.public("a");
       a.build((c: any) => c.say("a"));
-      const b = dp.createFunction("b");
+      const b = dp.public("b");
       b.build((c: any) => c.say("b"));
       ctx.dispatchScore(ammo, [
         { range: Range.exactly(1), fn: a },

@@ -40,7 +40,7 @@ export function createInternals(dp: Datapack) {
   const storeBit = (name: string) => store.score(ScoreTarget(name));
   const gamemodeScore = (name: string) => gm.score(ScoreTarget(name));
 
-  // The working `#x/#y/#z` vector, and the `$x/$y/$z` inputs callers set before an `api/*`
+  // The working `#x/#y/#z` vector, and the `$x/$y/$z` inputs callers set before an `launch_*`
   // call.
   const work = ScoreVec3.from((axis) => dummyScore(`#${axis}`));
   // When 1, `launch/main` skips the gamemode swap and lets the player's own movement fire
@@ -55,7 +55,7 @@ export function createInternals(dp: Datapack) {
   dp.registryFile(
     "enchantment",
     "internal/apply_impulse",
-    enchantmentJson(ns, dp.version),
+    enchantmentJson(`${ns}:${dp.functionName("launch/reset")}`, dp.version),
   );
   const largeGlobal = dp.predicate("internal/large_global", largeGlobalDef);
   const fallingCreative = dp.predicate(
@@ -64,22 +64,22 @@ export function createInternals(dp: Datapack) {
   );
 
   // --- Function refs (created up front so bodies can cross-reference) ---------
-  const fInit = dp.createFunction("internal/init", "load");
-  const fStoreX = dp.createFunction("internal/store/x");
-  const fStoreY = dp.createFunction("internal/store/y");
-  const fStoreZ = dp.createFunction("internal/store/z");
-  const fLaunchMain = dp.createFunction("internal/launch/main");
-  const fReset = dp.createFunction("internal/launch/reset");
-  const fUsePrevious = dp.createFunction("internal/launch/use_previous");
-  const fPolarGlobal = dp.createFunction("internal/launch/handle_polar/global");
+  const fInit = dp.createFunction("init", "load");
+  const fStoreX = dp.createFunction("store/x");
+  const fStoreY = dp.createFunction("store/y");
+  const fStoreZ = dp.createFunction("store/z");
+  const fLaunchMain = dp.createFunction("launch/main");
+  const fReset = dp.createFunction("launch/reset");
+  const fUsePrevious = dp.createFunction("launch/use_previous");
+  const fPolarGlobal = dp.createFunction("launch/handle_polar/global");
   const fStoreRefVectors = dp.createFunction(
-    "internal/math/global/store_reference_vectors",
+    "math/global/store_reference_vectors",
   );
   const fConvertToLocal = dp.createFunction(
-    "internal/math/global/convert_to_local",
+    "math/global/convert_to_local",
   );
-  const fLaunchLocal = dp.createFunction("api/launch_local_xyz");
-  const fLaunchGlobal = dp.createFunction("api/launch_global_xyz");
+  const fLaunchLocal = dp.public("launch_local_xyz");
+  const fLaunchGlobal = dp.public("launch_global_xyz");
 
   return {
     dp,

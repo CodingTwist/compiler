@@ -1,6 +1,7 @@
 // Base AST node classes. Each command's own node lives with its handler in
 // src/core/commands/.
 import { CommandValue } from "../values/value";
+import type { FunctionLayout } from "../private-fn";
 import { captureSource } from "../debug/sources";
 import type { Effect } from "./line-info";
 import type { LintRule } from "../report/cost/types";
@@ -24,6 +25,8 @@ export class FunctionNode extends ASTNode {
   refs = 0;
   /** Lint rules silenced for this function and what it calls, with why. Set on the root by `ctx.allow`. */
   readonly allows = new Map<LintRule, string>();
+  /** Where this function's control-flow children are named; set by the pack on the root. */
+  layout: FunctionLayout = "split";
   constructor(public name: string) {
     super();
   }

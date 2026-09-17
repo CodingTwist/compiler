@@ -13,7 +13,7 @@ function output(dp: Datapack): string {
 describe("ctx.ref", () => {
   it("tags @s around the body and finds it by tag from another executor", () => {
     const dp = new Datapack("p", v1_21_4);
-    dp.createFunction("mob/hit").build((ctx) =>
+    dp.public("mob/hit").build((ctx) =>
       ctx.ref(Selector.self(), (c, mob) => {
         c.execute()
           .as(Selector.allPlayers())
@@ -30,7 +30,7 @@ describe("ctx.ref", () => {
 
   it("removes a world selector's tag by tag, and numbers refs per root", () => {
     const dp = new Datapack("p", v1_21_4);
-    dp.createFunction("f").build((ctx) => {
+    dp.public("f").build((ctx) => {
       ctx.ref(Selector.allPlayers(), () => {});
       ctx.ref(Selector.self(), () => {});
     });
@@ -42,7 +42,7 @@ describe("ctx.ref", () => {
 
   it("keeps the target's type on lookups", () => {
     const dp = new Datapack("p", v1_21_4);
-    dp.createFunction("f").build((ctx) =>
+    dp.public("f").build((ctx) =>
       ctx.ref(
         Selector.self().type(EntityType.HUSK),
         (c, mob) => void c.kill(mob()),

@@ -16,7 +16,7 @@ export function createRaycastState(dp: Datapack) {
     work.score(ScoreTarget(`#${name.replace(/\//g, "_")}_steps`));
 
   // One load-init for the whole plugin, wired the first time a pack casts.
-  const init: FunctionRef = dp.createFunction("raycast/init", "load");
+  const init: FunctionRef = dp.createFunction("init", "load");
   init.build(() => work.init());
 
   const vector = (name: string) =>

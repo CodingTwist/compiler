@@ -81,6 +81,7 @@ export async function loadPack(opts: {
     const dp = new Datapack(config.name, version, target, {
       debug: opts.debug ?? (opts.mode === "dev" ? config.debug : undefined),
       optimize: { ...config.optimize, ...opts.optimize },
+      layout: config.layout,
     });
     await entry(dp, { mode: opts.mode, target, only: opts.only });
     packs.push({

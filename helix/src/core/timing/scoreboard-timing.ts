@@ -8,10 +8,10 @@ import type { FunctionContext } from "../frontend/context";
 import type { FunctionRef } from "../function_ref";
 import type { Objective } from "../frontend/nodes/objective";
 import { ScoreTarget } from "../values/score_target";
-import { privateName } from "../private-fn";
 
-// The shared clock driver, under the private root.
-const CLOCK = privateName("clock");
+/** The shared clock driver: `zzzprivate/helix/clock`. */
+const clockName = (dp: Datapack) =>
+  dp.root.group("helix").functionName("clock");
 
 export const TICKS_PER_SECOND = 20;
 
@@ -63,7 +63,9 @@ export class ScoreboardTiming {
   ): FunctionRef {
     const ph = this.ensureCounter(dp, periodTicks, phase);
     const hook =
-      ph === 0 ? `${CLOCK}/every_${label}` : `${CLOCK}/every_${label}_p${ph}`;
+      ph === 0
+        ? `${clockName(dp)}/every_${label}`
+        : `${clockName(dp)}/every_${label}_p${ph}`;
     const holder = `t${periodTicks}`;
     const clock = dp.objective("clock");
 
@@ -71,7 +73,7 @@ export class ScoreboardTiming {
     const key = `${periodTicks}:${ph}`;
     if (!this.firesInstalled.has(key)) {
       this.firesInstalled.add(key);
-      dp.getOrCreateFunction(CLOCK, "tick").build((ctx) => {
+      dp.functionAt(clockName(dp), "tick").build((ctx) => {
         const at = new ScoreRangeNode(
           ScoreTarget(holder),
           clock,
@@ -82,7 +84,7 @@ export class ScoreboardTiming {
     }
 
     // Reused across calls so multiple hooks of the same (period, phase) share one.
-    return dp.getOrCreateFunction(hook);
+    return dp.functionAt(hook);
   }
 
   phaseGate(dp: Datapack, periodTicks: number, phase = 0): ExpressionNode {
@@ -104,7 +106,7 @@ export class ScoreboardTiming {
     const holder = `t${periodTicks}`;
     if (!this.installed.has(periodTicks)) {
       this.installed.add(periodTicks);
-      dp.getOrCreateFunction(CLOCK, "tick").build((ctx) => {
+      dp.functionAt(clockName(dp), "tick").build((ctx) => {
         clock.score(ScoreTarget(holder)).add(1);
         const wrap = new ScoreRangeNode(
           ScoreTarget(holder),

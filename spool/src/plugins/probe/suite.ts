@@ -121,7 +121,7 @@ export class Suite {
       });
     });
 
-    const entry = this.dp.createFunction(`${this.root}/run`);
+    const entry = this.dp.public(`${this.root}/run`);
     entry.build((ctx) => {
       passed.set(0);
       ctx.call(fns[0].setup);

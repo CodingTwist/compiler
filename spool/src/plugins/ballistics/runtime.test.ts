@@ -107,7 +107,7 @@ describe("runtime ballistics", () => {
       .flatMap(([, body]) => body.split("\n"))
       .filter((l) => l.length > 0);
     // `at @s` first, so `@p` is the *thrower's* nearest player. The reads share one `at`.
-    expect(lines).toContain("execute at @s run function art:zzz/throw/group_0");
+    expect(lines).toContain("execute at @s run function art:zzzprivate/throw/group_0");
     expect(lines).toContain(
       "execute store result score #vx ballistics run data get entity @p Pos[0] 100",
     );
@@ -130,17 +130,17 @@ describe("runtime ballistics", () => {
     // Emitted once, however many shots ask for it.
     expect(files.filter(([p]) => p.includes("track_targets"))).toHaveLength(1);
     expect(
-      lines.filter((l) => l.includes("run function art:zzz/track_targets")),
+      lines.filter((l) => l.includes("run function art:zzzprivate/plugin/ballistics/track_targets")),
     ).toHaveLength(1);
     // Only players under fire are diffed, and firing is what enrols them.
     expect(lines).toContain(
-      "execute as @a[tag=ballistics.tracked] run function art:zzz/track_targets",
+      "execute as @a[tag=ballistics.tracked] run function art:zzzprivate/plugin/ballistics/track_targets",
     );
-    expect(lines).toContain("execute as @p run function art:zzz/track_enroll");
+    expect(lines).toContain("execute as @p run function art:zzzprivate/plugin/ballistics/track_enroll");
     expect(lines).toContain("tag @s add ballistics.tracked");
     // Enrolling reseeds the previous position, so the first diff isn't against stale data.
     expect(lines).toContain(
-      "execute unless entity @s[tag=ballistics.tracked] run function art:zzz/track_init",
+      "execute unless entity @s[tag=ballistics.tracked] run function art:zzzprivate/plugin/ballistics/track_init",
     );
     expect(lines).toContain("scoreboard players set @s ballistics.vx 0");
     expect(lines).toContain(
@@ -193,7 +193,7 @@ it("shellFunction lifts the summon into its own one-line function", () => {
   const shell = files.get("data/art/function/shell/throw.mcfunction")!;
   expect(shell.trim().split("\n")).toHaveLength(1);
   expect(shell).toContain("summon minecraft:tnt");
-  const shot = files.get("data/art/function/throw.mcfunction")!;
+  const shot = files.get("data/art/function/zzzprivate/throw.mcfunction")!;
   expect(shot).toContain("execute at @s run function art:shell/throw");
   expect(shot).not.toContain("summon");
   expect(() =>
@@ -213,7 +213,7 @@ it("a shellFunction callback places the shell and is given the shot's spec", () 
   });
   expect(seen).toEqual({ motion: [0, 0, 0], fuse: 20, tags: ["art.shot"] });
   const shot = new Map(buildDatapack(dp)).get(
-    "data/art/function/throw.mcfunction",
+    "data/art/function/zzzprivate/throw.mcfunction",
   )!;
   expect(shot).not.toContain("summon");
   expect(shot).toContain(
@@ -235,7 +235,7 @@ it("shellTypes types the shot selector for a callback shell", () => {
   });
   const files = new Map(buildDatapack(dp));
   const fn = (name: string) =>
-    files.get(`data/art/function/${name}.mcfunction`)!;
+    files.get(`data/art/function/zzzprivate/${name}.mcfunction`)!;
   expect(fn("untyped")).toContain(
     "tag @e[tag=art.shot,limit=1] remove art.shot",
   );

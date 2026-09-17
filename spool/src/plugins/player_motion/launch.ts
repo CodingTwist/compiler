@@ -24,7 +24,7 @@ export function defineLaunch(I: PlayerMotionInternals): void {
     fallingCreative,
   } = I;
 
-  // --- internal/launch/main -------------------------------------------------
+  // --- launch/main -------------------------------------------------
   fLaunchMain.build((ctx) => {
     // Apply the dummy saddle carrying the apply_impulse enchantment.
     const saddle = Item.SADDLE.component(
@@ -83,18 +83,18 @@ export function defineLaunch(I: PlayerMotionInternals): void {
     ctx.returnRun((r) => r.gamemode("creative"));
   });
 
-  // --- internal/launch/reset ------------------------------------------------
+  // --- launch/reset ------------------------------------------------
   fReset.build((ctx) => {
     ctx.item().replaceEntityWith(self(), "saddle", Item.AIR);
   });
 
-  // --- internal/launch/use_previous (reuse cached local vector) -------------
+  // --- launch/use_previous (reuse cached local vector) -------------
   fUsePrevious.build((ctx) => {
     work.assign(prevLocal);
     ctx.returnRun((r) => r.call(fLaunchMain));
   });
 
-  // --- internal/launch/handle_polar/global (pure scoreboard) ----------------
+  // --- launch/handle_polar/global (pure scoreboard) ----------------
   fPolarGlobal.build((ctx) => {
     ctx
       .execute()

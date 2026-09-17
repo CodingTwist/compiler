@@ -7,7 +7,7 @@
  *   export default defineDifficulty({ easy: { hitDamage: 3 }, medium: { hitDamage: 6 }, hard: { hitDamage: 9 } });
  *
  *   difficulty(dp);                                   // creates and seeds the score, once per pack
- *   dp.createFunction("difficulty/easy").build(() => setDifficulty("easy"));
+ *   dp.public("difficulty/easy").build(() => setDifficulty("easy"));
  *   // in game: /scoreboard players set #level twine.difficulty 3
  *
  *   ctx.call(byDifficulty(dp, "hit", (c, level) => c.damage(Selector.nearest(), config[level].hitDamage)));

@@ -13,7 +13,7 @@ import { v1_21_4 } from "../../versions/profiles";
 
 const lines = (main: (ctx: FunctionContext, dp: Datapack) => void) => {
   const dp = new Datapack("p", v1_21_4);
-  dp.createFunction("m").build((ctx) => main(ctx, dp));
+  dp.public("m").build((ctx) => main(ctx, dp));
   return buildDatapack(dp).get("data/p/function/m.mcfunction")!.split("\n");
 };
 
@@ -50,7 +50,7 @@ describe("function macros", () => {
   it("calls with an inline compound and with an NBT source", () => {
     expect(
       lines((ctx, dp) => {
-        const place = dp.createFunction("place");
+        const place = dp.public("place");
         place.build((c) =>
           c.setblock(Macro<Pos>("pos"), Block("minecraft:stone")),
         );

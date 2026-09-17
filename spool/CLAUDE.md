@@ -137,7 +137,7 @@ only the pack changes it (`setDifficulty("hard")`, or a raw scoreboard set). Not
 by itself - scaling is author code reading an author config (`defineDifficulty`, every
 level required). The mechanism: `mob.byDifficulty(ctx, (c, level) => ...)` builds a body once
 per level behind a dispatch on the score (its own function, since the dispatch `return`s);
-`.onDifficulty((ctx, dp, level) => ...)` becomes `<name>/zzz/on_difficulty`, run at summon and,
+`.onDifficulty((ctx, dp, level) => ...)` becomes a private `on_difficulty` in the mob's group, run at summon and,
 when `wake` sees `#level` differ from `#applied`, on every live mob. Gesture switches are the
 author's own `when` clause on `DIFFICULTY`.
 

@@ -60,7 +60,8 @@ export class DatapackFactory {
     // register: arbitrary one-off setup, children-first.
     for (const ref of graph.order) {
       const { instance, meta } = graph.nodes.get(ref)!;
-      instance.register?.(dp, scopeFor(dp, meta.name, dims.get(ref)));
+      const group = dp.root.group(meta.name);
+      instance.register?.(group, scopeFor(group, meta.name, dims.get(ref)));
     }
 
     // load: seed every area's flag, then run all (ungated) load bodies.

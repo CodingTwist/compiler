@@ -9,7 +9,7 @@ const build = (
   fn: Parameters<ReturnType<Datapack["createFunction"]>["build"]>[0],
 ) => {
   const dp = new Datapack("test", v26_2);
-  dp.createFunction("fx").build(fn);
+  dp.public("fx").build(fn);
   dp.report();
   return dp.files.get("fx")!;
 };

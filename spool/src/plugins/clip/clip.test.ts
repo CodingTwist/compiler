@@ -39,23 +39,23 @@ describe("Clip: baked spin", () => {
   it("emits N = 4 frame functions (one revolution), no more", () => {
     [0, 1, 2, 3].forEach((k) =>
       expect(
-        files.has(`data/anim/function/zzz/cog/frame_${k}.mcfunction`),
+        files.has(`data/anim/function/zzzprivate/cog/frame_${k}.mcfunction`),
       ).toBe(true),
     );
-    expect(files.has("data/anim/function/zzz/cog/frame_4.mcfunction")).toBe(
+    expect(files.has("data/anim/function/zzzprivate/cog/frame_4.mcfunction")).toBe(
       false,
     );
   });
 
   it("frame_1 rotates +90° about Z: member offset [1,0,0] -> [0,1,0]", () => {
-    expect(fn(files, "zzz/cog/frame_1")).toContain(
+    expect(fn(files, "zzzprivate/cog/frame_1")).toContain(
       "data merge entity @e[tag=cog_0,limit=1,type=minecraft:block_display] {transformation:{left_rotation:[0.0f,0.0f,0.707107f,0.707107f],right_rotation:[0.0f,0.0f,0.0f,1.0f],scale:[1.0f,1.0f,1.0f],translation:[0.0f,1.0f,0.0f]},start_interpolation:0,interpolation_duration:1}",
     );
   });
 
   it("writes no driver functions until a driver is wired", () => {
-    expect(files.has("data/anim/function/zzz/cog/play.mcfunction")).toBe(false);
-    expect(files.has("data/anim/function/zzz/cog/tick.mcfunction")).toBe(false);
+    expect(files.has("data/anim/function/zzzprivate/cog/play.mcfunction")).toBe(false);
+    expect(files.has("data/anim/function/zzzprivate/cog/tick.mcfunction")).toBe(false);
   });
 });
 
@@ -63,41 +63,41 @@ describe("Clip: play / reverse fan-out", () => {
   const dp = new Datapack("anim", v1_21_4);
   const c = dp.clip(cog()).spin("z", 90);
   dp.load((ctx) => c.play(ctx));
-  dp.createFunction("close").build((ctx) => c.reverse(ctx));
+  dp.public("close").build((ctx) => c.reverse(ctx));
   const files = buildDatapack(dp);
 
   it("play runs frame_0 now and schedules the rest one per tick (append)", () => {
-    const play = fn(files, "zzz/cog/play");
-    expect(play).toContain("function anim:zzz/cog/frame_0");
-    expect(play).toContain("schedule function anim:zzz/cog/frame_1 1 append");
-    expect(play).toContain("schedule function anim:zzz/cog/frame_3 3 append");
+    const play = fn(files, "zzzprivate/cog/play");
+    expect(play).toContain("function anim:zzzprivate/cog/frame_0");
+    expect(play).toContain("schedule function anim:zzzprivate/cog/frame_1 1 append");
+    expect(play).toContain("schedule function anim:zzzprivate/cog/frame_3 3 append");
   });
 
   it("reverse winds back from the rest frame to frame_0", () => {
-    const rev = fn(files, "zzz/cog/reverse");
-    expect(rev).toContain("function anim:zzz/cog/frame_3"); // rest = (4-1) % 4
-    expect(rev).toContain("schedule function anim:zzz/cog/frame_0 3 append"); // lands on 0
+    const rev = fn(files, "zzzprivate/cog/reverse");
+    expect(rev).toContain("function anim:zzzprivate/cog/frame_3"); // rest = (4-1) % 4
+    expect(rev).toContain("schedule function anim:zzzprivate/cog/frame_0 3 append"); // lands on 0
   });
 
   it("load calls play", () => {
-    expect(fn(files, "load")).toContain("function anim:zzz/cog/play");
+    expect(fn(files, "load")).toContain("function anim:zzzprivate/cog/play");
   });
 });
 
 describe("Clip: smooth move (native tween)", () => {
   const dp = new Datapack("anim", v1_21_4);
   const s = dp.clip(door()).move([0, -16, 0]).over(100);
-  dp.createFunction("open").build((ctx) => s.play(ctx));
+  dp.public("open").build((ctx) => s.play(ctx));
   const files = buildDatapack(dp);
 
   it("emits one merge per member with the full-duration interpolation, no frames", () => {
-    const play = fn(files, "zzz/door/play");
+    const play = fn(files, "zzzprivate/door/play");
     // root [0,0,0] + [0,-16,0] = [0,-16,0]; child [0,1,0] + delta = [0,-15,0]
     expect(play).toContain(
       "data merge entity @e[tag=door_0,limit=1,type=minecraft:block_display] {transformation:{left_rotation:[0.0f,0.0f,0.0f,1.0f],right_rotation:[0.0f,0.0f,0.0f,1.0f],scale:[1.0f,1.0f,1.0f],translation:[0.0f,-16.0f,0.0f]},start_interpolation:0,interpolation_duration:100}",
     );
     expect(play).toContain("translation:[0.0f,-15.0f,0.0f]");
-    expect(files.has("data/anim/function/zzz/door/frame_0.mcfunction")).toBe(
+    expect(files.has("data/anim/function/zzzprivate/door/frame_0.mcfunction")).toBe(
       false,
     );
   });
@@ -131,9 +131,9 @@ describe("Clip: continuous loop driver", () => {
   const files = buildDatapack(dp);
 
   it("step cycles frames, advances + wraps the counter, ticks the countdown", () => {
-    const step = fn(files, "zzz/cog/step");
+    const step = fn(files, "zzzprivate/cog/step");
     expect(step).toContain(
-      "execute if score cog anim matches 1 run function anim:zzz/cog/frame_1",
+      "execute if score cog anim matches 1 run function anim:zzzprivate/cog/frame_1",
     );
     expect(step).toContain("scoreboard players add cog anim 1");
     expect(step).toContain(
@@ -143,11 +143,11 @@ describe("Clip: continuous loop driver", () => {
   });
 
   it("tick runs a step only while the countdown is active, tagged minecraft:tick", () => {
-    expect(fn(files, "zzz/cog/tick")).toContain(
-      "execute if score cog anim_life matches 1.. run function anim:zzz/cog/step",
+    expect(fn(files, "zzzprivate/cog/tick")).toContain(
+      "execute if score cog anim_life matches 1.. run function anim:zzzprivate/cog/step",
     );
     const tag = files.get("data/minecraft/tags/function/tick.json")!;
-    expect(JSON.parse(tag).values).toContain("anim:zzz/cog/tick");
+    expect(JSON.parse(tag).values).toContain("anim:zzzprivate/cog/tick");
   });
 });
 
@@ -167,13 +167,13 @@ describe("Clip: generic NBT track + timeline events", () => {
 
   it("samples the path at each tick and merges it", () => {
     // at tick 5 of a 0..10 ramp, scale lerps to 1.5
-    expect(fn(files, "zzz/door/frame_5")).toContain(
+    expect(fn(files, "zzzprivate/door/frame_5")).toContain(
       "data merge entity @e[tag=door_0,limit=1] {transformation:{scale:[1.5f,1.5f,1.5f]}}",
     );
   });
 
   it("fires an event command on its tick", () => {
-    expect(fn(files, "zzz/door/frame_5")).toContain("say halfway");
+    expect(fn(files, "zzzprivate/door/frame_5")).toContain("say halfway");
   });
 });
 
@@ -195,20 +195,20 @@ describe("Clip: gliding tp track", () => {
   const files = buildDatapack(dp);
 
   it("teleports only on keyframes, with the gap ahead as teleport_duration", () => {
-    expect(fn(files, "zzz/swoop/frame_0")).toContain(
+    expect(fn(files, "zzzprivate/swoop/frame_0")).toContain(
       "data merge entity @e[tag=rig,limit=1] {teleport_duration:6}",
     );
-    expect(fn(files, "zzz/swoop/frame_0")).toContain(
+    expect(fn(files, "zzzprivate/swoop/frame_0")).toContain(
       "execute as @e[tag=rig,limit=1] run teleport 0 64 0",
     );
-    expect(fn(files, "zzz/swoop/frame_6")).toContain("{teleport_duration:4}");
+    expect(fn(files, "zzzprivate/swoop/frame_6")).toContain("{teleport_duration:4}");
     // The last keyframe has nothing ahead of it, so it lands immediately.
-    expect(fn(files, "zzz/swoop/frame_10")).toContain("{teleport_duration:0}");
+    expect(fn(files, "zzzprivate/swoop/frame_10")).toContain("{teleport_duration:0}");
   });
 
   it("emits nothing on the ticks between keyframes", () => {
     [1, 2, 3, 4, 5, 7, 8, 9].forEach((f) =>
-      expect(fn(files, `zzz/swoop/frame_${f}`).trim()).toBe(""),
+      expect(fn(files, `zzzprivate/swoop/frame_${f}`).trim()).toBe(""),
     );
   });
 

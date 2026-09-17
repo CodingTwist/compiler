@@ -30,7 +30,7 @@ export function registerItemGiveCommands(
 ): void {
   if (!isDev()) return;
   for (const { name, item } of REGISTRY) {
-    dp.createFunction(`${path}/${name}`).build((ctx: FunctionContext) =>
+    dp.root.public(`${path}/${name}`).build((ctx: FunctionContext) =>
       ctx.playerGive(Selector.self(), item),
     );
   }

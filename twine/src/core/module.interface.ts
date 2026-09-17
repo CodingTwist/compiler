@@ -18,11 +18,16 @@ export interface ModuleScope {
   readonly dimension?: Id;
 
   /**
-   * Creates a function whose body runs in {@link dimension}.
+   * Creates a function in this module's group whose body runs in {@link dimension}. Private
+   * unless `opts.public`.
    *
    * Use it for functions called from outside the tick tree: admin commands, schedules, rewards.
    */
-  fn(name: string, body: (ctx: FunctionContext) => void): FunctionRef;
+  fn(
+    name: string,
+    body: (ctx: FunctionContext) => void,
+    opts?: { public?: boolean },
+  ): FunctionRef;
 }
 
 /**
@@ -33,6 +38,9 @@ export interface ModuleScope {
 export interface DatapackModule {
   /**
    * One-off build-time setup: objectives, functions, structures.
+   *
+   * `dp` is this module's group (`dp.root.group(name)`), so functions it creates go under the
+   * module's name.
    *
    * `scope` has the module's dimension; see {@link ModuleScope}.
    */
@@ -51,11 +59,12 @@ export interface DatapackModule {
   onActivate?(ctx: FunctionContext): void;
 
   /**
-   * Creates the function for an `@On({ own: true })` body. Override to apply your pack's function
-   * conventions. Defaults to `dp.createFunction`.
+   * Creates the function `name` in `group` for an `@On({ own: true })` body. Override to apply your
+   * pack's function conventions. Defaults to `group.createFunction(name)`.
    */
   defineFunction?(
-    dp: Datapack,
+    group: Datapack,
+    name: string,
     body: (ctx: FunctionContext) => void,
   ): FunctionRef;
 

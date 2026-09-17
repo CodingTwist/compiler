@@ -8,7 +8,7 @@ import { v1_21_4 } from "../../versions/profiles";
 
 function render(build: (ctx: FunctionContext) => void): string[] {
   const dp = new Datapack("p", v1_21_4);
-  dp.createFunction("m").build(build);
+  dp.public("m").build(build);
   return buildDatapack(dp).get("data/p/function/m.mcfunction")!.split("\n");
 }
 

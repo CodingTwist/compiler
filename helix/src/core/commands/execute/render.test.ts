@@ -5,7 +5,7 @@ import { buildDatapack } from "../../codegen/codegen";
 
 function render(build: (ctx: any) => void): string[] {
   const dp = new Datapack("t", v26_2);
-  dp.createFunction("f").build(build);
+  dp.public("f").build(build);
   buildDatapack(dp);
   return dp.files.get("f")!.split("\n");
 }
@@ -46,7 +46,7 @@ describe("run-clause peepholes", () => {
         .run(() => {}),
     );
     expect(line).toBe(
-      "execute store success score #ok d as @a run function t:zzz/f/exec_0",
+      "execute store success score #ok d as @a run function t:zzzprivate/f/exec_0",
     );
   });
 });

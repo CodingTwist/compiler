@@ -12,7 +12,7 @@ describe("profile report", () => {
     debug: { sources: true },
   });
   let sayHeavy = 0;
-  const heavy = dp.createFunction("heavy");
+  const heavy = dp.public("heavy");
   heavy.build((ctx) => {
     sayHeavy = here() + 1;
     ctx.say("heavy");

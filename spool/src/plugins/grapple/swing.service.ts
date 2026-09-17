@@ -25,13 +25,13 @@ interface SwingDeps {
 }
 
 /**
- * The per-tick pendulum: `grapple/drive` (one player) and `grapple/constrain` (taut rope
+ * The per-tick pendulum: `drive` (one player) and `constrain` (taut rope
  * solve).
  */
 export function createSwingService(d: SwingDeps) {
   const scratch = swingScratch(d.scratch);
 
-  // grapple/drive - one grappling player's per-tick swing step (run as + at them).
+  // drive - one grappling player's per-tick swing step (run as + at them).
   d.fn.drive.build((ctx) => {
     senseSwingState(d, scratch, ctx); // position, velocity, vector-to-anchor, dist²/dot
 
@@ -43,14 +43,14 @@ export function createSwingService(d: SwingDeps) {
     d.rope.draw(ctx); // the visible particle line
   });
 
-  // grapple/constrain - the rigid-rope constraint for one taut tick (see physics).
+  // constrain - the rigid-rope constraint for one taut tick (see physics).
   d.fn.constrain.build(() => solveConstraint(d, scratch));
 
   /**
    * Builds and fires this tick's launch impulse. `applyGlobal` adds to velocity, so:
    *
    * - Start at zero, so a slack tick leaves the player to gravity.
-   * - When taut (dist² ≥ ropeLen²), `grapple/constrain` writes the rope correction. Gate on
+   * - When taut (dist² ≥ ropeLen²), `constrain` writes the rope correction. Gate on
    *   distance only, since the position trim must still run while moving inward.
    * - Clamp per axis to cap the first yank, then sustain the impulse.
    */

@@ -60,13 +60,13 @@ export function itemGiveFunction(
   item: Item,
   slug: string,
 ): FunctionRef {
-  const name = `zzz/item/${slug}/give`;
-  if (!dp.functions.has(name)) {
-    dp.createFunction(name).build((ctx) =>
-      ctx.playerGive(Selector.self(), item),
-    );
-  }
-  return dp.getOrCreateFunction(name);
+  // Public, so it can be run by hand; shared by every module that asks for this item.
+  const group = dp.root.group(`item/${slug}`);
+  const existing = dp.functionRef(group.functionName("give", { public: true }));
+  if (existing) return existing;
+  const fn = group.public("give");
+  fn.build((ctx) => ctx.playerGive(Selector.self(), item));
+  return fn;
 }
 
 /** The module an `ItemBuilder` compiles to. Only attached behaviours emit anything. */
@@ -85,22 +85,22 @@ export class ItemModule implements DatapackModule {
   }
 
   register(dp: Datapack): void {
-    const base = `zzz/item/${this.slug}`;
+    const group = dp.root.group(`item/${this.slug}`);
 
     if (this.opts.give) itemGiveFunction(dp, this.item, this.slug);
 
     if (this.opts.attack) {
-      dp.event(
-        `${base}/on_attack`,
+      group.event(
+        "on_attack",
         Trigger.playerHurtEntity(this.item),
         this.opts.attack,
       );
     }
     if (this.opts.use) {
-      dp.event(`${base}/on_use`, Trigger.usingItem(this.item), this.opts.use);
+      group.event("on_use", Trigger.usingItem(this.item), this.opts.use);
     }
     if (this.opts.rightClick) {
-      this.rightClick(dp, base, this.opts.rightClick);
+      this.rightClick(group, this.opts.rightClick);
     }
     if (this.opts.held) {
       this.heldSelector = itemHolderSelector(dp, this.item, {
@@ -125,9 +125,8 @@ export class ItemModule implements DatapackModule {
    * predicate so plain items don't fire. Makes its own load and tick functions; idempotent per
    * item.
    */
-  private rightClick(dp: Datapack, base: string, body: ItemBehaviour): void {
-    const tickName = `${base}/rc_tick`;
-    if (dp.functions.has(tickName)) return;
+  private rightClick(dp: Datapack, body: ItemBehaviour): void {
+    if (dp.functionRef(dp.functionName("rc_tick"))) return;
 
     const rc = new Objective(`rc_${this.slug}`, usedStatCriteria(this.item));
     const holder = holdingPredicate(dp, this.item, { exact: this.opts.exact });
@@ -135,8 +134,8 @@ export class ItemModule implements DatapackModule {
       .score(rc, Range.atLeast(1))
       .predicate(holder);
 
-    dp.createFunction(`${base}/rc_load`, "load").build(() => rc.init());
-    dp.createFunction(tickName, "tick").build((ctx) => {
+    dp.createFunction("rc_load", "load").build(() => rc.init());
+    dp.createFunction("rc_tick", "tick").build((ctx) => {
       ctx
         .execute()
         .as(clicked)

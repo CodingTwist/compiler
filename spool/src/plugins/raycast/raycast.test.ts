@@ -7,7 +7,7 @@ installKit([raycast]);
 
 function build(opts?: Partial<Parameters<Datapack["raycast"]>[0]>) {
   const dp = new Datapack("test", v26_2);
-  const ref = dp.raycast({
+  const ref = dp.group("raycast").raycast({
     name: "web",
     maxSteps: 100,
     onHit: (ctx) => ctx.tellraw(Selector.allPlayers(), "ray hit"),
@@ -17,28 +17,28 @@ function build(opts?: Partial<Parameters<Datapack["raycast"]>[0]>) {
   return { dp, ref };
 }
 
-const LOOP = "raycast/zzz/web/return_0/while_0";
+const LOOP = "zzzprivate/raycast/web/return_0/while_0";
 
 describe("dp.raycast (kit)", () => {
-  it("registers raycast/<name> and a load-tagged init that creates raycast.work", () => {
+  it("registers <group>/<name> and a load-tagged init that creates raycast.work", () => {
     const { dp } = build();
-    expect(dp.files.has("raycast/web")).toBe(true);
-    expect(dp.tags.get("load")?.has("raycast/init")).toBe(true);
-    expect(dp.files.get("raycast/init")).toContain(
+    expect(dp.files.has("zzzprivate/raycast/web")).toBe(true);
+    expect(dp.tags.get("load")?.has("zzzprivate/plugin/raycast/init")).toBe(true);
+    expect(dp.files.get("zzzprivate/plugin/raycast/init")).toContain(
       "scoreboard objectives add raycast.work dummy",
     );
   });
 
   it("loops ^ through air while its own step budget remains, returning the loop's result", () => {
     const { dp } = build();
-    expect(dp.files.get("raycast/web")).toBe(
+    expect(dp.files.get("zzzprivate/raycast/web")).toBe(
       `return run function test:${LOOP}`,
     );
     expect(dp.files.get(LOOP)).toContain(
-      `execute if block ~ ~ ~ #minecraft:air if score #web_steps raycast.work matches 1.. run return run function test:${LOOP}/pass_0`,
+      `execute if block ~ ~ ~ #minecraft:air if score #raycast_web_steps raycast.work matches 1.. run return run function test:${LOOP}/pass_0`,
     );
     expect(dp.files.get(`${LOOP}/pass_0`)!.split("\n")).toEqual([
-      "scoreboard players remove #web_steps raycast.work 1",
+      "scoreboard players remove #raycast_web_steps raycast.work 1",
       `execute positioned ^ ^ ^0.5 run return run function test:${LOOP}`,
     ]);
   });
@@ -66,15 +66,15 @@ describe("dp.raycast (kit)", () => {
 
   it("fire seeds the reach budget then calls the marcher", () => {
     const dp = new Datapack("test", v26_2);
-    const ref = dp.raycast({ name: "web", maxSteps: 60, onHit: () => {} });
-    const fn = dp.createFunction("probe");
+    const ref = dp.group("raycast").raycast({ name: "web", maxSteps: 60, onHit: () => {} });
+    const fn = dp.public("probe");
     fn.build((ctx) => ref.fire(ctx));
     dp.report();
     const probe = dp.files.get("probe")!;
     expect(probe).toContain(
-      "scoreboard players set #web_steps raycast.work 60",
+      "scoreboard players set #raycast_web_steps raycast.work 60",
     );
-    expect(probe).toContain("function test:raycast/web");
+    expect(probe).toContain("function test:zzzprivate/raycast/web");
   });
 });
 
@@ -89,13 +89,13 @@ describe("dp.raycast stopAt (line of sight)", () => {
       "unless entity @p[distance=..2] run return run",
     );
     expect(dp.files.get(`${LOOP}/else_0`)!.split("\n")[0]).toBe(
-      "execute if entity @p[distance=..2] run return run function test:raycast/zzz/web_reach",
+      "execute if entity @p[distance=..2] run return run function test:zzzprivate/raycast/web_reach",
     );
-    expect(dp.files.get("raycast/zzz/web_reach")).toContain("return 1");
+    expect(dp.files.get("zzzprivate/raycast/web_reach")).toContain("return 1");
   });
 
   it("leaves the march untouched when no target is given", () => {
     const { dp } = build();
-    expect(dp.files.has("raycast/zzz/web_reach")).toBe(false);
+    expect(dp.files.has("zzzprivate/raycast/web_reach")).toBe(false);
   });
 });

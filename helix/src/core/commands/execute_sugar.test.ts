@@ -6,7 +6,7 @@ import { buildDatapack } from "../codegen/codegen";
 
 function render(build: (ctx: any) => void) {
   const dp = new Datapack("testpack", v1_21_4);
-  dp.createFunction("f").build(build);
+  dp.public("f").build(build);
   buildDatapack(dp);
   return { dp, lines: dp.files.get("f")!.split("\n") };
 }

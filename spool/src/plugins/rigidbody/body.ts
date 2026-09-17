@@ -55,7 +55,7 @@ export function spawnBody(s: RigidState, ctx: FunctionContext, o: SpawnOptions):
 }
 
 /**
- * Builds `rb/impulse`: applies `input.impulse` at world point `input.point` to the
+ * Builds `impulse`: applies `input.impulse` at world point `input.point` to the
  * executing body and wakes it.
  */
 export function defineImpulse(s: RigidState, input: { point: ScoreVec3; impulse: ScoreVec3 }): void {

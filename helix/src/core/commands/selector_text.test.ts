@@ -17,7 +17,7 @@ describe("selectorText", () => {
 
   it("renders a `selector` component carrying the built selector", () => {
     const out = render((dp) => {
-      dp.createFunction("f").build((ctx) => {
+      dp.public("f").build((ctx) => {
         ctx.tellraw(Selector.allPlayers(), selectorText(Selector.self()));
       });
     });
@@ -26,7 +26,7 @@ describe("selectorText", () => {
 
   it("renders selector filters through the typed selector path", () => {
     const out = render((dp) => {
-      dp.createFunction("f").build((ctx) => {
+      dp.public("f").build((ctx) => {
         ctx.tellraw(
           Selector.self(),
           selectorText(Selector.allPlayers().tag("Verbose").limit(1)),
@@ -40,7 +40,7 @@ describe("selectorText", () => {
 
   it("carries style alongside the selector, like any other part", () => {
     const out = render((dp) => {
-      dp.createFunction("f").build((ctx) => {
+      dp.public("f").build((ctx) => {
         ctx.tellraw(Selector.allPlayers(), [
           text("as: ").color(Color.GRAY),
           selectorText(Selector.self()).italic(),

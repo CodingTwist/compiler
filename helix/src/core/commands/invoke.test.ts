@@ -8,8 +8,8 @@ describe("dp.fn / ctx.invoke", () => {
   it("copies args into params and stores the result", () => {
     const dp = new Datapack("p", v26_2);
     const hp = dp.objective("hp").score("@s");
-    const sum = dp.fn("sum", (_ctx, a, b) => a.plus(b));
-    dp.createFunction("f").build((ctx) => ctx.invoke(sum, [2, hp], hp));
+    const sum = dp.fn("sum", (_ctx, a, b) => a.plus(b), { public: true });
+    dp.public("f").build((ctx) => ctx.invoke(sum, [2, hp], hp));
     dp.report();
     expect(lines(dp, "sum")).toEqual([
       "scoreboard players operation #sum.0 helix.var += #sum.1 helix.var",
@@ -24,8 +24,8 @@ describe("dp.fn / ctx.invoke", () => {
 
   it("calls a function with no result", () => {
     const dp = new Datapack("p", v26_2);
-    const greet = dp.fn("greet", (ctx) => ctx.say("hi"));
-    dp.createFunction("f").build((ctx) => ctx.invoke(greet, []));
+    const greet = dp.fn("greet", (ctx) => ctx.say("hi"), { public: true });
+    dp.public("f").build((ctx) => ctx.invoke(greet, []));
     dp.report();
     expect(lines(dp, "f")).toEqual(["function p:greet"]);
   });
@@ -36,10 +36,10 @@ describe("dp.fn / ctx.invoke", () => {
     const one = dp.fn("one", (_ctx, a) => void a.add(1));
     // @ts-expect-error wrong arity
     expect(() =>
-      dp.createFunction("f").build((ctx) => ctx.invoke(one, [1, 2])),
+      dp.public("f").build((ctx) => ctx.invoke(one, [1, 2])),
     ).toThrow(/takes 1 args, got 2/);
     expect(() =>
-      dp.createFunction("g").build((ctx) => ctx.invoke(one, [1], s)),
+      dp.public("g").build((ctx) => ctx.invoke(one, [1], s)),
     ).toThrow(/returns nothing/);
   });
 

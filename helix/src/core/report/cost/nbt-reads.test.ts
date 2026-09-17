@@ -29,13 +29,13 @@ describe("nbt read warnings", () => {
 
   it("reads the cadence off clock gates, nested ones by lcm", () => {
     const dp = new Datapack("testpack", v1_21_4);
-    const inner = dp.createFunction("inner");
+    const inner = dp.public("inner");
     inner.build(read);
-    const outer = dp.createFunction("outer");
+    const outer = dp.public("outer");
     outer.build((ctx) =>
       ctx.if(dp.timing.phaseGate(dp, 2), (c) => c.call(inner)),
     );
-    const slow = dp.createFunction("slow");
+    const slow = dp.public("slow");
     slow.build(read);
     dp.tick((ctx) => {
       ctx.if(dp.timing.phaseGate(dp, 10), (c) => c.call(outer));
@@ -48,9 +48,9 @@ describe("nbt read warnings", () => {
 
   it("allowNbtRead moves a read out of the warnings, down through what it calls", () => {
     const dp = new Datapack("testpack", v1_21_4);
-    const child = dp.createFunction("child");
+    const child = dp.public("child");
     child.build(read);
-    const hot = dp.createFunction("hot");
+    const hot = dp.public("hot");
     hot.build((ctx) => {
       read(ctx);
       ctx.call(child);
@@ -67,7 +67,7 @@ describe("nbt read warnings", () => {
 
   it("ctx.allow silences its own function from inside a nested body", () => {
     const dp = new Datapack("testpack", v1_21_4);
-    const hot = dp.createFunction("hot");
+    const hot = dp.public("hot");
     hot.build((ctx) => {
       read(ctx);
       ctx.if(dp.timing.phaseGate(dp, 2), (c) =>
@@ -83,9 +83,9 @@ describe("nbt read warnings", () => {
 
   it("still warns on a callee reached another way without the allow", () => {
     const dp = new Datapack("testpack", v1_21_4);
-    const shared = dp.createFunction("shared");
+    const shared = dp.public("shared");
     shared.build(read);
-    const hot = dp.createFunction("hot");
+    const hot = dp.public("hot");
     hot.build((ctx) => ctx.call(shared));
     dp.tick((ctx) => {
       ctx.call(hot);

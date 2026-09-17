@@ -18,7 +18,7 @@ const AT = Pos(1, 2, 3);
 /** Emit `detector` into one function and return its rendered lines. */
 function emit(detector: Detector): string[] {
   const dp = new Datapack("t", v26_2);
-  dp.createFunction("f").build((ctx) =>
+  dp.public("f").build((ctx) =>
     detect(ctx, detector, (hit) => hit.say("fired")),
   );
   return buildDatapack(dp)

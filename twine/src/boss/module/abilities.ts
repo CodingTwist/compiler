@@ -36,18 +36,18 @@ export class BossAbilities extends BossFight {
     const picked = this.score("pick");
 
     const tries = phase.abilities.map((a) => {
-      const fire = scope.fn(`${this.name}/${phase.label}/${a.name}`, (ctx) => {
+      const fire = scope.fn(`${phase.label}/${a.name}`, (ctx) => {
         picked.set(1);
         this.cooldown(phase, a).set(a.cooldown);
         a.body(ctx);
       });
-      return scope.fn(`${this.name}/${phase.label}/try_${a.name}`, (ctx) => {
+      return scope.fn(`${phase.label}/try_${a.name}`, (ctx) => {
         roll.remove(a.weight ?? 1);
         ctx.if(roll.matches(Range.atMost(0)), (hit) => hit.call(fire));
       });
     });
 
-    return scope.fn(`${this.name}/${phase.label}/pick`, (ctx) => {
+    return scope.fn(`${phase.label}/pick`, (ctx) => {
       ctx
         .execute()
         .storeResultScore(roll)

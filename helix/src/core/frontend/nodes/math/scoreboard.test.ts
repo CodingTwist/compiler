@@ -12,7 +12,7 @@ const sc = (n: string) => work.score(ScoreTarget(`#${n}`));
 /** Build one function body and return its rendered command lines. */
 function emit(build: () => void, version: VersionProfile = v1_21_4): string[] {
   const dp = new Datapack("test", version);
-  dp.createFunction("f").build(() => build());
+  dp.public("f").build(() => build());
   dp.report();
   return dp.files.get("f")!.split("\n").filter(Boolean);
 }
