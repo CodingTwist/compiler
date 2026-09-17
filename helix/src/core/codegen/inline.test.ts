@@ -5,23 +5,23 @@ import { buildDatapack } from "./codegen";
 
 test("single-command private functions are inlined and dropped", () => {
   const dp = new Datapack("p", v1_21_4);
-  const one = dp.public("m/zzz/one");
+  const one = dp.functionAt("m/zzz/one");
   one.build((c: any) => c.say("one"));
-  const two = dp.public("m/zzz/two");
+  const two = dp.functionAt("m/zzz/two");
   two.build((c: any) => {
     c.say("a");
     c.say("b");
   });
-  const fork = dp.public("m/zzz/fork");
+  const fork = dp.functionAt("m/zzz/fork");
   fork.build((c: any) =>
     c
       .execute()
       .as(Selector.allPlayers())
       .run((b: any) => b.say("hi")),
   );
-  const kept = dp.public("m/zzz/kept");
+  const kept = dp.functionAt("m/zzz/kept");
   kept.build((c: any) => c.say("kept"));
-  const uncalled = dp.public("m/zzz/uncalled");
+  const uncalled = dp.functionAt("m/zzz/uncalled");
   uncalled.build((c: any) => c.say("by hand"));
   const pub = dp.public("m/pub");
   pub.build((c: any) => c.say("pub"));

@@ -11,11 +11,15 @@ const EPSILON = 0.001;
  * The middle joints start lifted by `knee` each poll, which is what bends the knees up.
  */
 export function solve(s: LimbState, ctx: FunctionContext, i: number): void {
-  const { bones, knee = 0.8, iterations = 3, mountY = 0 } = s.opts;
+  const { bones, knee = 0.8, iterations = 2, mountY = 0 } = s.opts;
   const [hx, hy, hz] = s.opts.legs[i].hip;
   const { joints: j, local: foot } = s;
   const n = bones.length;
-  const pinHip = () => [hx, hy - mountY, hz].forEach((v, a) => j[0].components[a].set(v, ctx));
+  const pinHip = () => {
+    math`${s.cos} * ${hx} - ${s.sin} * ${hz}`.into(j[0].x, ctx);
+    j[0].y.set(hy - mountY, ctx);
+    math`${s.sin} * ${hx} + ${s.cos} * ${hz}`.into(j[0].z, ctx);
+  };
   pinHip();
   for (let k = 1; k < n; k++) {
     math`${j[0]} + (${foot} - ${j[0]}) * ${k / n}`.into(j[k], ctx);

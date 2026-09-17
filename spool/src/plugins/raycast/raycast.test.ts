@@ -23,8 +23,8 @@ describe("dp.raycast (kit)", () => {
   it("registers <group>/<name> and a load-tagged init that creates raycast.work", () => {
     const { dp } = build();
     expect(dp.files.has("zzzprivate/raycast/web")).toBe(true);
-    expect(dp.tags.get("load")?.has("zzzprivate/plugin/raycast/init")).toBe(true);
-    expect(dp.files.get("zzzprivate/plugin/raycast/init")).toContain(
+    expect(dp.tags.get("load")?.has("zzzplugin/raycast/init")).toBe(true);
+    expect(dp.files.get("zzzplugin/raycast/init")).toContain(
       "scoreboard objectives add raycast.work dummy",
     );
   });

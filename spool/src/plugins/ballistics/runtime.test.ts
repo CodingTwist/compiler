@@ -130,17 +130,17 @@ describe("runtime ballistics", () => {
     // Emitted once, however many shots ask for it.
     expect(files.filter(([p]) => p.includes("track_targets"))).toHaveLength(1);
     expect(
-      lines.filter((l) => l.includes("run function art:zzzprivate/plugin/ballistics/track_targets")),
+      lines.filter((l) => l.includes("run function art:zzzplugin/ballistics/track_targets")),
     ).toHaveLength(1);
     // Only players under fire are diffed, and firing is what enrols them.
     expect(lines).toContain(
-      "execute as @a[tag=ballistics.tracked] run function art:zzzprivate/plugin/ballistics/track_targets",
+      "execute as @a[tag=ballistics.tracked] run function art:zzzplugin/ballistics/track_targets",
     );
-    expect(lines).toContain("execute as @p run function art:zzzprivate/plugin/ballistics/track_enroll");
+    expect(lines).toContain("execute as @p run function art:zzzplugin/ballistics/track_enroll");
     expect(lines).toContain("tag @s add ballistics.tracked");
     // Enrolling reseeds the previous position, so the first diff isn't against stale data.
     expect(lines).toContain(
-      "execute unless entity @s[tag=ballistics.tracked] run function art:zzzprivate/plugin/ballistics/track_init",
+      "execute unless entity @s[tag=ballistics.tracked] run function art:zzzplugin/ballistics/track_init",
     );
     expect(lines).toContain("scoreboard players set @s ballistics.vx 0");
     expect(lines).toContain(

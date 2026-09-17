@@ -44,7 +44,7 @@ export function createState(dp: Datapack, opts: LimbOptions) {
     yaw: scalar("yaw"),
     sin: scalar("sin", UNIT),
     cos: scalar("cos", UNIT),
-    /** The foot being solved, in the body's frame from the rig's seat. */
+    /** The foot being solved, from the rig's seat on world axes, since bones keep yaw 0. */
     local: vector("local"),
     /** A world point: a rest point being probed. */
     world: vector("world"),
@@ -54,6 +54,8 @@ export function createState(dp: Datapack, opts: LimbOptions) {
     joints: Array.from({ length: opts.bones.length + 1 }, (_, k) => vector(`j${k}`)),
     /** Legs of each group stepping this poll. */
     stepping: [scalar("g0", 1), scalar("g1", 1)],
+    /** Polls each group waits after landing, on the body, so the other group gets the next step. */
+    held: [onSelf("h0", 1), onSelf("h1", 1)],
     /** Solved bone frames, by `b<leg>_<bone>`. */
     frames: Id(`${dp.name}:${name}/frames`),
     /** On a body whose feet have been placed once. */

@@ -1,5 +1,5 @@
 // Bones: block displays on the rig, each stretched along one span of the solved chain.
-import { BlockDisplay, Byte, Float, Nbt, NbtPath, Relation, Selector, math } from "helix";
+import { BlockDisplay, Byte, EntityType, Float, Nbt, NbtPath, Range, Relation, Selector, math } from "helix";
 import type { FunctionContext, Id, Score, ScoreVec3 } from "helix";
 import type { LimbState } from "./state";
 
@@ -85,11 +85,14 @@ export function summonBones(s: LimbState, ctx: FunctionContext): void {
       ),
     ),
   );
+  const near = Range.atMost(2);
+  // The root sits mountY up and the ride runs as a bone at the body's feet, so reach past the seat.
+  const seat = Range.atMost((s.opts.mountY ?? 0) + 2);
   ctx
     .execute()
-    .as(Selector.allEntities().tag(fresh))
+    .as(Selector.allEntities().type(EntityType.BLOCK_DISPLAY).tag(fresh).distance(near))
     .run((b) => {
-      b.ride().mount(Selector.self(), Selector.allEntities().tag(root).limit(1));
+      b.ride().mount(Selector.self(), Selector.allEntities().tag(root).distance(seat).limit(1));
       b.tag().remove(Selector.self(), fresh);
     });
   ctx.execute().on(Relation.PASSENGERS).run((b) => b.tag().remove(Selector.self(), root));

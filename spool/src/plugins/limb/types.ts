@@ -27,11 +27,13 @@ export interface LimbOptions {
   readonly knee?: number;
   /** How far a foot may drift from its rest point before it steps. Default `0.9`. */
   readonly stride?: number;
+  /** How far past its rest point a foot lands, along its drift, in blocks. Default: the stride. */
+  readonly overshoot?: number;
   /** Polls a step takes. Default `3`. */
   readonly stepPolls?: number;
   /** How high a foot lifts mid-step. Default `0.4`. */
   readonly lift?: number;
-  /** FABRIK passes per poll. Default `3`. */
+  /** FABRIK passes per poll, about 30 commands each for a two-bone leg. Default `2`. */
   readonly iterations?: number;
   /**
    * Height of the rig's seat above the body's feet, where the bones are drawn from. Tune per

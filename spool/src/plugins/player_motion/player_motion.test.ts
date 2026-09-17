@@ -31,7 +31,7 @@ describe("dp.playerMotion (kit)", () => {
     // First effect is the reset run_function into this pack's namespace.
     expect(effects[0].effect).toEqual({
       type: "minecraft:run_function",
-      function: "test:zzzprivate/plugin/player_motion/launch/reset",
+      function: "test:zzzplugin/player_motion/launch/reset",
     });
 
     const impulses = effects.slice(1);
@@ -60,9 +60,9 @@ describe("dp.playerMotion (kit)", () => {
     ).toBe(true);
   });
 
-  it("decomposes each axis into 32 bit lines in zzzprivate/plugin/player_motion/store/x", () => {
+  it("decomposes each axis into 32 bit lines in zzzplugin/player_motion/store/x", () => {
     const { dp } = build();
-    const storeX = dp.files.get("zzzprivate/plugin/player_motion/store/x")!;
+    const storeX = dp.files.get("zzzplugin/player_motion/store/x")!;
     const lines = storeX.split("\n");
     // One multi-store clear line, the zero short-circuit, the sign bit, bits 30..1, and bit 0.
     expect(storeX).toContain(
@@ -88,21 +88,21 @@ describe("dp.playerMotion (kit)", () => {
     const { dp } = build();
     expect(dp.predicateDefs.has("internal/large_global")).toBe(true);
     expect(dp.predicateDefs.has("internal/falling_creative_player")).toBe(true);
-    expect(dp.tags.get("load")?.has("zzzprivate/plugin/player_motion/init")).toBe(true);
-    expect(dp.files.get("zzzprivate/plugin/player_motion/init")).toContain(
+    expect(dp.tags.get("load")?.has("zzzplugin/player_motion/init")).toBe(true);
+    expect(dp.files.get("zzzplugin/player_motion/init")).toContain(
       "summon minecraft:marker 0.0 0.0 0.0",
     );
   });
 
   it("launch_global_xyz takes the macro-free path and fails cleanly on large vectors", () => {
     const { dp } = build();
-    const g = dp.files.get("plugin/player_motion/launch_global_xyz")!;
+    const g = dp.files.get("zzzplugin/player_motion/launch_global_xyz")!;
     expect(g).toContain(
       "execute if predicate test:internal/large_global run return fail",
     );
-    expect(g).toContain("function test:zzzprivate/plugin/player_motion/math/global/convert_to_local");
+    expect(g).toContain("function test:zzzplugin/player_motion/math/global/convert_to_local");
     expect(
-      g.trimEnd().endsWith("return run function test:zzzprivate/plugin/player_motion/launch/main"),
+      g.trimEnd().endsWith("return run function test:zzzplugin/player_motion/launch/main"),
     ).toBe(true);
   });
 
@@ -117,7 +117,7 @@ describe("dp.playerMotion (kit)", () => {
       "scoreboard players set $x player_motion.api.launch 0",
       "scoreboard players set $y player_motion.api.launch 8000",
       "scoreboard players set $z player_motion.api.launch 12000",
-      "function test:plugin/player_motion/launch_local_xyz",
+      "function test:zzzplugin/player_motion/launch_local_xyz",
     ]);
   });
 
@@ -137,14 +137,14 @@ describe("dp.playerMotion (kit)", () => {
     expect(leap).toContain(
       "scoreboard players set $z player_motion.api.launch 20000",
     );
-    expect(leap.trimEnd().endsWith("function test:plugin/player_motion/launch_global_xyz")).toBe(
+    expect(leap.trimEnd().endsWith("function test:zzzplugin/player_motion/launch_global_xyz")).toBe(
       true,
     );
   });
 
   it("launch/main gates the gamemode-swap trigger behind a read-and-clear #sustain flag", () => {
     const { dp } = build();
-    const main = dp.files.get("zzzprivate/plugin/player_motion/launch/main")!;
+    const main = dp.files.get("zzzplugin/player_motion/launch/main")!;
     // Sustained callers skip the swap: clear the flag and return in one inlined command.
     expect(main).toContain(
       "execute if score #sustain player_motion.internal.dummy matches 1 run return run scoreboard players set #sustain player_motion.internal.dummy 0",
@@ -162,7 +162,7 @@ describe("dp.playerMotion (kit)", () => {
     const lines = dp.files.get("demo/sustain")!.trimEnd().split("\n");
     expect(lines).toEqual([
       "scoreboard players set #sustain player_motion.internal.dummy 1",
-      "function test:plugin/player_motion/launch_global_xyz",
+      "function test:zzzplugin/player_motion/launch_global_xyz",
     ]);
   });
 
@@ -178,7 +178,7 @@ describe("dp.playerMotion (kit)", () => {
       "scoreboard players set $x player_motion.api.launch 0",
       "scoreboard players set $y player_motion.api.launch 0",
       "scoreboard players set $z player_motion.api.launch 10000",
-      "function test:plugin/player_motion/launch_local_xyz",
+      "function test:zzzplugin/player_motion/launch_local_xyz",
     ]);
   });
 

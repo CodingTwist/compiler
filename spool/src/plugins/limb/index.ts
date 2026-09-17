@@ -6,7 +6,8 @@
  *   legs.tick(ctx);
  *
  * Feet stay put in the world and step, a gait group at a time, when the body walks away from
- * them. Bones ride the mob's rig root, so the rig's orphan sweep removes them. Needs 26.3.
+ * them. Bones ride the mob's rig root, so the rig's orphan sweep removes them, but keep yaw 0 and
+ * are solved on world axes: easing a turn and a frame separately would swing the feet. Needs 26.3.
  */
 import { Selector } from "helix";
 import type { Datapack } from "helix";
@@ -30,6 +31,8 @@ export function limb(dp: Datapack, opts: LimbOptions): Limb {
   const probes = opts.legs.map((_, i) => {
     const ref = dp.createFunction(`probe_${i}`);
     ref.build((ctx) => buildProbe(s, ctx, i));
+    dp.allow("nbt-read", ref, "locator read, once per step");
+    dp.allow("nbt-write", ref, "locator move, once per step");
     return ref;
   });
   const update = dp.createFunction("update");
@@ -47,11 +50,11 @@ export function limb(dp: Datapack, opts: LimbOptions): Limb {
       storeFrames(s, ctx, i);
     });
   });
-  // Two reads per body per poll; each leg's rest point needs the body's position and yaw.
-  dp.allowNbtRead(update, "limb reads its body's Pos and yaw once per poll");
+  dp.allow("nbt-read", update, "the body's Pos and yaw, once per poll for all legs");
 
   const summon = dp.createFunction("summon_bones");
   summon.build((ctx) => summonBones(s, ctx));
+  dp.allow("missing-type", summon, "the rig root's display kind comes from its model; once per body");
   const pose = dp.createFunction("pose");
   pose.build((ctx) => {
     ctx.execute().unlessEntity(Selector.self().tag(s.boned)).run((b) => b.call(summon));

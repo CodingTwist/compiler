@@ -162,7 +162,9 @@ run`. Versions without `return run` (1.20.1) record the branch number in a local
   creation. Top-level `load`/`tick` are always public. Control-flow children
   (`if_0`/`exec_0`/`group_0`) nest under their parent's resolved name. helix's own helpers live in
   `dp.root.group("helix")` (`clock`, `init_objectives`). `functionAt(name)` / `functionRef(name)`
-  take an already-resolved output name.
+  take an already-resolved output name. `dp.plugin(name)` is the group for shared plugin code:
+  everything in it, public or not, goes in `zzzplugin/<name>/`, and `public` names are kept in
+  `publicNames` so the inliner leaves them alone.
 - **Score functions** (`dp.fn` in `ir/datapack/functions.ts`, `ctx.invoke` in
   `commands/function.ts`): params are the callee's first locals, counted from `body.length`; a
   returned score becomes `return run scoreboard players get`, stored by the caller with
@@ -174,7 +176,7 @@ run`. Versions without `return run` (1.20.1) record the branch number in a local
   function, one `return run` line per chain, so the body runs once. `and` puts a chain that moves
   position last so it can't shift the other guards.
 - **Single-command inlining** (`codegen/inline.ts`, end of `buildDatapack`): a _private_
-  (`zzzprivate/` or `zzz/`) function with one command is spliced into its `function` / `execute … run function`
+  (`zzzprivate/`, `zzz/` or `zzzplugin/`, and not in `publicNames`) function with one command is spliced into its `function` / `execute … run function`
   / `return run function` call sites, and dropped if nothing else names it (tags, JSON,
   `schedule`, `if function`). Skipped: macro or `return` bodies, `store` callers, functions
   with a `dp.allow`, and forking bodies (`as`/`at`/`on`/`summon`) under `return run`, which

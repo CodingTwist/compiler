@@ -12,7 +12,7 @@ export type { GrappleOptions } from "./state";
  *
  * `grapple/start` raycasts to a block and anchors there; each tick pulls grappling players
  * along
- * a rope to their anchor; `plugin/grapple/stop` releases. The rope is a particle line, since a
+ * a rope to their anchor; `zzzplugin/grapple/stop` releases. The rope is a particle line, since a
  * real
  * leash can't be drawn by command. Options: {@link GrappleOptions}. Wiring:
  * `grapple.module.ts`.

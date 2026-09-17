@@ -56,7 +56,8 @@ export function rig(dp: Datapack, opts: RigOptions): Rig {
           // Facing a point straight ahead copies the yaw without reading NBT.
           const turn = (b: FunctionContext) => b.rotate().facing(Selector.self(), Pos.local(0, 0, 1));
           turn(c);
-          c.execute().on(Relation.PASSENGERS).run(turn);
+          // Only its own members: other riders, like limb bones, keep their rotation.
+          c.execute().on(Relation.PASSENGERS).ifEntity(Selector.self().tag(group)).run(turn);
           return;
         }
         // The rig tags itself so it's still findable after `on vehicle` switches `@s`.
@@ -68,6 +69,7 @@ export function rig(dp: Datapack, opts: RigOptions): Rig {
           .run((b) => b.entity(me).set(YAW, b.entity(Selector.self()).at(YAW)));
         c.execute()
           .on(Relation.PASSENGERS)
+          .ifEntity(Selector.self().tag(group))
           .run((b) => b.entity(Selector.self()).set(YAW, b.entity(me).at(YAW)));
         c.tag().remove(Selector.self(), cur);
       });
